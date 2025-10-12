@@ -12,10 +12,10 @@ interface Subscription {
   coupon_net: number;
   prochaine_date_coupon: string | null;
   tranches: {
-    nom: string;
+    tranche_name: string;
     frequence: string;
     projets: {
-      nom: string;
+      projet: string;
       emetteur: string;
     };
   };
@@ -45,42 +45,16 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
   const fetchSubscriptions = async () => {
     setLoading(true);
 
-    const { data: projects } = await supabase
-      .from('projets')
-      .select('id')
-      .eq('org_id', organization.id);
-
-    const projectIds = projects?.map((p) => p.id) || [];
-
-    if (projectIds.length === 0) {
-      setSubscriptions([]);
-      setLoading(false);
-      return;
-    }
-
-    const { data: tranches } = await supabase
-      .from('tranches')
-      .select('id')
-      .in('projet_id', projectIds);
-
-    const trancheIds = tranches?.map((t) => t.id) || [];
-
-    if (trancheIds.length === 0) {
-      setSubscriptions([]);
-      setLoading(false);
-      return;
-    }
-
     const { data } = await supabase
       .from('souscriptions')
       .select(
         `
         *,
         tranches (
-          nom,
+          tranche_name,
           frequence,
           projets (
-            nom,
+            projet,
             emetteur
           )
         ),
@@ -92,7 +66,6 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
         )
       `
       )
-      .in('tranche_id', trancheIds)
       .order('date_souscription', { ascending: false });
 
     setSubscriptions((data as any) || []);
@@ -129,9 +102,9 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
     ];
 
     const rows = filteredSubscriptions.map((sub) => [
-      sub.tranches.projets.nom,
+      sub.tranches.projets.projet,
       sub.tranches.projets.emetteur,
-      sub.tranches.nom,
+      sub.tranches.tranche_name,
       sub.investisseurs.nom_raison_sociale || sub.investisseurs.representant_legal || '',
       sub.investisseurs.type,
       sub.investisseurs.email || '',
@@ -157,9 +130,9 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
-      sub.tranches.projets.nom.toLowerCase().includes(term) ||
+      sub.tranches.projets.projet.toLowerCase().includes(term) ||
       sub.tranches.projets.emetteur.toLowerCase().includes(term) ||
-      sub.tranches.nom.toLowerCase().includes(term) ||
+      sub.tranches.tranche_name.toLowerCase().includes(term) ||
       sub.investisseurs.nom_raison_sociale?.toLowerCase().includes(term) ||
       sub.investisseurs.representant_legal?.toLowerCase().includes(term) ||
       sub.investisseurs.email?.toLowerCase().includes(term)
@@ -250,9 +223,9 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
                     <tr key={sub.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-900">
-                          {sub.tranches.projets.nom}
+                          {sub.tranches.projets.projet}
                         </div>
-                        <div className="text-sm text-slate-600">{sub.tranches.nom}</div>
+                        <div className="text-sm text-slate-600">{sub.tranches.tranche_name}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-900">
