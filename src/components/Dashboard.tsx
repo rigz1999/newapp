@@ -351,24 +351,25 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
           ) : (
             <>
               {alerts.length > 0 && (
-                <div className="mb-6 mt-6 space-y-2">
-                  {alerts.map((alert) => (
-                    <div
-                      key={alert.id}
-                      className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                        <p className="text-sm font-medium text-amber-900">{alert.message}</p>
+                <div className="mb-6 mt-6">
+                  <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg flex items-start justify-between">
+                    <div className="flex items-start gap-3 flex-1">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 space-y-2">
+                        {alerts.map((alert, index) => (
+                          <p key={alert.id} className="text-sm font-medium text-amber-900">
+                            {index > 0 && '• '}{alert.message}
+                          </p>
+                        ))}
                       </div>
-                      <button
-                        onClick={() => setAlerts(alerts.filter((a) => a.id !== alert.id))}
-                        className="text-amber-600 hover:text-amber-800 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
                     </div>
-                  ))}
+                    <button
+                      onClick={() => setAlerts([])}
+                      className="text-amber-600 hover:text-amber-800 transition-colors ml-4"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               )}
 
