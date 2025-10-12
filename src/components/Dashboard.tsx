@@ -189,7 +189,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   }, [organization.id]);
 
   const handleRefresh = () => {
-    fetchData();
+    window.location.reload();
   };
 
   const formatCurrency = (amount: number) => {
