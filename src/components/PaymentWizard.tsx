@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, Upload, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle } from 'lucide-react';
+import { FileUpload } from './FileUpload';
 
 interface Project {
   id: string;
@@ -380,31 +381,18 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Preuves de paiement (PDF)
             </label>
-            <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
-              <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <input
-                type="file"
-                accept=".pdf,application/pdf"
-                multiple
-                onChange={handleFileSelect}
-                className="hidden"
-                id="pdf-upload"
-                disabled={!selectedTrancheId || processing}
-              />
-              <label
-                htmlFor="pdf-upload"
-                className={`inline-block px-6 py-2 rounded-lg transition-colors ${
-                  !selectedTrancheId || processing
-                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                    : 'bg-slate-900 text-white hover:bg-slate-800 cursor-pointer'
-                }`}
-              >
-                {processing ? 'Traitement en cours...' : 'Sélectionner des fichiers PDF'}
-              </label>
-              <p className="text-sm text-slate-600 mt-2">
-                Vous pouvez sélectionner plusieurs fichiers
-              </p>
-            </div>
+            <FileUpload
+              accept=".pdf,application/pdf"
+              multiple
+              disabled={!selectedTrancheId || processing}
+              onFileSelect={(files) => {
+                if (files) {
+                  handleFileSelect({ target: { files } } as any);
+                }
+              }}
+              label={processing ? 'Traitement en cours...' : 'Sélectionner des fichiers PDF'}
+              description="Glissez-déposez vos fichiers PDF ici ou cliquez pour sélectionner"
+            />
           </div>
 
           {pdfExtractions.length > 0 && (

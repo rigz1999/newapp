@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, Upload, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { FileUpload } from './FileUpload';
 
 interface Project {
   id: string;
@@ -394,35 +395,29 @@ export function TrancheWizard({ onClose, onSuccess }: TrancheWizardProps) {
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Fichier CSV des souscriptions
             </label>
-            <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
-              <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="csv-upload"
-              />
-              <label
-                htmlFor="csv-upload"
-                className="inline-block bg-slate-900 text-white px-6 py-2 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors"
-              >
-                Sélectionner un fichier CSV
-              </label>
-              {csvFile && (
-                <div className="mt-4">
-                  <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    {csvFile.name}
-                  </div>
-                  {csvData.length > 0 && (
-                    <div className="mt-2 text-sm font-semibold text-green-600">
-                      {csvData.length} souscription{csvData.length > 1 ? 's' : ''} détectée{csvData.length > 1 ? 's' : ''}
-                    </div>
-                  )}
+            <FileUpload
+              accept=".csv"
+              onFileSelect={(files) => {
+                if (files && files.length > 0) {
+                  handleFileSelect({ target: { files } } as any);
+                }
+              }}
+              label="Sélectionner un fichier CSV"
+              description="Glissez-déposez votre fichier CSV ici ou cliquez pour sélectionner"
+            />
+            {csvFile && (
+              <div className="mt-4 text-center">
+                <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  {csvFile.name}
                 </div>
-              )}
-            </div>
+                {csvData.length > 0 && (
+                  <div className="mt-2 text-sm font-semibold text-green-600">
+                    {csvData.length} souscription{csvData.length > 1 ? 's' : ''} détectée{csvData.length > 1 ? 's' : ''}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="mt-4 text-sm text-slate-600 bg-slate-50 p-4 rounded-lg">
               <p className="font-semibold mb-2">Colonnes attendues (noms flexibles):</p>
               <ul className="list-disc list-inside space-y-1">

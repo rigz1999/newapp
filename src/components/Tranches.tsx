@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Sidebar } from './Sidebar';
-import { ArrowLeft, Upload, Download, Layers, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Upload, Download, Layers, AlertCircle, X } from 'lucide-react';
+import { FileUpload } from './FileUpload';
 
 interface Tranche {
   id: string;
@@ -34,6 +35,7 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
     stats?: any;
     errorFileUrl?: string;
   } | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   useEffect(() => {
     fetchTranches();
@@ -220,17 +222,13 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
               <Download className="w-5 h-5" />
               <span>Modèle CSV</span>
             </button>
-            <label className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+            >
               <Upload className="w-5 h-5" />
               <span>Importer CSV</span>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="hidden"
-                disabled={uploading}
-              />
-            </label>
+            </button>
           </div>
         </div>
 
@@ -361,6 +359,46 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
         )}
         </div>
       </main>
+
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900">Importer des souscriptions CSV</h3>
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <FileUpload
+                accept=".csv"
+                disabled={uploading}
+                onFileSelect={(files) => {
+                  if (files && files.length > 0) {
+                    handleFileUpload({ target: { files } } as any);
+                    setShowImportModal(false);
+                  }
+                }}
+                label={uploading ? "Import en cours..." : "Sélectionner un fichier CSV"}
+                description="Glissez-déposez votre fichier CSV ici ou cliquez pour sélectionner"
+              />
+            </div>
+
+            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end">
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
