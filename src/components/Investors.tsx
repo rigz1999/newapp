@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Sidebar } from './Sidebar';
-import { Users, Search, Eye, CreditCard as Edit, Trash2, Building2, User, ArrowUpDown } from 'lucide-react';
+import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle } from 'lucide-react';
 
-interface InvestorWithStats {
+interface Investor {
   id: string;
   id_investisseur: string;
   type: string;
@@ -12,6 +12,27 @@ interface InvestorWithStats {
   siren: number | null;
   residence_fiscale: string | null;
   created_at: string;
+  nom?: string | null;
+  prenom?: string | null;
+  adresse?: string | null;
+  code_postal?: string | null;
+  ville?: string | null;
+  pays?: string | null;
+  telephone?: string | null;
+  date_naissance?: string | null;
+  lieu_naissance?: string | null;
+  nationalite?: string | null;
+  numero_piece_identite?: string | null;
+  type_piece_identite?: string | null;
+  representant_legal?: string | null;
+  forme_juridique?: string | null;
+  date_creation?: string | null;
+  capital_social?: number | null;
+  numero_rcs?: string | null;
+  siege_social?: string | null;
+}
+
+interface InvestorWithStats extends Investor {
   total_investi: number;
   nb_souscriptions: number;
 }
@@ -34,6 +55,11 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('nom_raison_sociale');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedInvestor, setSelectedInvestor] = useState<InvestorWithStats | null>(null);
+  const [editFormData, setEditFormData] = useState<Investor | null>(null);
 
   useEffect(() => {
     fetchInvestors();
@@ -117,6 +143,51 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
     }
   };
 
+  const handleViewDetails = (investor: InvestorWithStats) => {
+    setSelectedInvestor(investor);
+    setShowDetailsModal(true);
+  };
+
+  const handleEditClick = (investor: InvestorWithStats) => {
+    setSelectedInvestor(investor);
+    setEditFormData(investor);
+    setShowEditModal(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!editFormData || !selectedInvestor) return;
+
+    const { error } = await supabase
+      .from('investisseurs')
+      .update(editFormData)
+      .eq('id', selectedInvestor.id);
+
+    if (!error) {
+      setShowEditModal(false);
+      fetchInvestors();
+    }
+  };
+
+  const handleDeleteClick = (investor: InvestorWithStats) => {
+    setSelectedInvestor(investor);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedInvestor) return;
+
+    const { error } = await supabase
+      .from('investisseurs')
+      .delete()
+      .eq('id', selectedInvestor.id);
+
+    if (!error) {
+      setShowDeleteModal(false);
+      setSelectedInvestor(null);
+      fetchInvestors();
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -124,6 +195,11 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('fr-FR');
   };
 
   const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
@@ -255,16 +331,24 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                         <td className="px-6 py-4">
                           <div className="flex justify-end gap-2">
                             <button
-                              onClick={() => onSelectInvestor(investor.id)}
+                              onClick={() => handleViewDetails(investor)}
                               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Voir détails"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" title="Éditer">
-                              <Edit className="w-4 h-4" />
+                            <button
+                              onClick={() => handleEditClick(investor)}
+                              className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                              title="Éditer"
+                            >
+                              <Edit2 className="w-4 h-4" />
                             </button>
-                            <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Supprimer">
+                            <button
+                              onClick={() => handleDeleteClick(investor)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Supprimer"
+                            >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -278,6 +362,403 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
           )}
         </div>
       </main>
+
+      {showDetailsModal && selectedInvestor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900">Détails de l'investisseur</h3>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
+                <div className={`p-3 rounded-xl ${
+                  selectedInvestor.type === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
+                }`}>
+                  {selectedInvestor.type === 'morale' ? (
+                    <Building2 className="w-8 h-8 text-purple-600" />
+                  ) : (
+                    <User className="w-8 h-8 text-blue-600" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900">{selectedInvestor.nom_raison_sociale}</h4>
+                  <p className="text-sm text-slate-600">{selectedInvestor.id_investisseur}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-lg">
+                  <p className="text-xs text-slate-600 mb-1">Total Investi</p>
+                  <p className="text-xl font-bold text-green-600">{formatCurrency(selectedInvestor.total_investi)}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-lg">
+                  <p className="text-xs text-slate-600 mb-1">Souscriptions</p>
+                  <p className="text-xl font-bold text-slate-900">{selectedInvestor.nb_souscriptions}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h5 className="font-semibold text-slate-900">Informations générales</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-slate-500">Type</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {selectedInvestor.type === 'morale' ? 'Personne Morale' : 'Personne Physique'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Email</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.email || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Téléphone</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.telephone || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Résidence Fiscale</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.residence_fiscale || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedInvestor.type === 'physique' && (
+                <div className="space-y-3">
+                  <h5 className="font-semibold text-slate-900">Personne Physique</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-slate-500">Nom</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.nom || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Prénom</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.prenom || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Date de Naissance</p>
+                      <p className="text-sm font-medium text-slate-900">{formatDate(selectedInvestor.date_naissance)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Lieu de Naissance</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.lieu_naissance || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Nationalité</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.nationalite || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Pièce d'identité</p>
+                      <p className="text-sm font-medium text-slate-900">
+                        {selectedInvestor.type_piece_identite || '-'} {selectedInvestor.numero_piece_identite || ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedInvestor.type === 'morale' && (
+                <div className="space-y-3">
+                  <h5 className="font-semibold text-slate-900">Personne Morale</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-slate-500">SIREN</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.siren || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Forme Juridique</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.forme_juridique || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Représentant Légal</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.representant_legal || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Date de Création</p>
+                      <p className="text-sm font-medium text-slate-900">{formatDate(selectedInvestor.date_creation)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Capital Social</p>
+                      <p className="text-sm font-medium text-slate-900">
+                        {selectedInvestor.capital_social ? formatCurrency(selectedInvestor.capital_social) : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Numéro RCS</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.numero_rcs || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <h5 className="font-semibold text-slate-900">Adresse</h5>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <p className="text-xs text-slate-500">Adresse</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {selectedInvestor.adresse || selectedInvestor.siege_social || '-'}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-xs text-slate-500">Code Postal</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.code_postal || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Ville</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.ville || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Pays</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.pays || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end">
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && selectedInvestor && editFormData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900">Modifier l'investisseur</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Nom / Raison Sociale *</label>
+                  <input
+                    type="text"
+                    value={editFormData.nom_raison_sociale}
+                    onChange={(e) => setEditFormData({ ...editFormData, nom_raison_sociale: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={editFormData.email || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
+                  <input
+                    type="text"
+                    value={editFormData.telephone || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, telephone: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Résidence Fiscale</label>
+                  <input
+                    type="text"
+                    value={editFormData.residence_fiscale || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, residence_fiscale: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {editFormData.type === 'physique' && (
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-slate-900">Personne Physique</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Nom</label>
+                      <input
+                        type="text"
+                        value={editFormData.nom || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, nom: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Prénom</label>
+                      <input
+                        type="text"
+                        value={editFormData.prenom || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, prenom: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Nationalité</label>
+                      <input
+                        type="text"
+                        value={editFormData.nationalite || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, nationalite: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {editFormData.type === 'morale' && (
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-slate-900">Personne Morale</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">SIREN</label>
+                      <input
+                        type="number"
+                        value={editFormData.siren || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, siren: Number(e.target.value) })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Forme Juridique</label>
+                      <input
+                        type="text"
+                        value={editFormData.forme_juridique || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, forme_juridique: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Représentant Légal</label>
+                      <input
+                        type="text"
+                        value={editFormData.representant_legal || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, representant_legal: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <h5 className="font-semibold text-slate-900">Adresse</h5>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Adresse</label>
+                    <input
+                      type="text"
+                      value={editFormData.adresse || editFormData.siege_social || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, adresse: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Code Postal</label>
+                      <input
+                        type="text"
+                        value={editFormData.code_postal || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, code_postal: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Ville</label>
+                      <input
+                        type="text"
+                        value={editFormData.ville || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, ville: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Pays</label>
+                      <input
+                        type="text"
+                        value={editFormData.pays || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, pays: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end gap-3">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleEditSave}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && selectedInvestor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 text-center mb-2">Supprimer l'investisseur</h3>
+              <p className="text-slate-600 text-center mb-4">
+                Êtes-vous sûr de vouloir supprimer <strong>{selectedInvestor.nom_raison_sociale}</strong> ?
+                Cette action est irréversible.
+              </p>
+              {selectedInvestor.nb_souscriptions > 0 && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-orange-800">
+                    Attention : Cet investisseur a {selectedInvestor.nb_souscriptions} souscription
+                    {selectedInvestor.nb_souscriptions > 1 ? 's' : ''} active{selectedInvestor.nb_souscriptions > 1 ? 's' : ''}.
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
