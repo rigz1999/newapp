@@ -421,7 +421,15 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Derniers Paiements</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Derniers Paiements</h2>
+                    <button
+                      onClick={() => onNavigate('subscriptions')}
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+                    >
+                      Voir tout <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
                   {recentPayments.length === 0 ? (
                     <p className="text-slate-500 text-center py-8">Aucun paiement récent</p>
                   ) : (
@@ -454,16 +462,18 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                       ))}
                     </div>
                   )}
-                  <button
-                    onClick={() => onNavigate('subscriptions')}
-                    className="w-full mt-4 text-center text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center justify-center gap-2"
-                  >
-                    Voir tout <ArrowRight className="w-4 h-4" />
-                  </button>
                 </div>
 
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-                  <h2 className="text-xl font-bold text-slate-900 mb-4">Coupons à Venir</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Coupons à Venir</h2>
+                    <button
+                      onClick={() => onNavigate('coupons')}
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+                    >
+                      Voir tout <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
                   {upcomingCoupons.length === 0 ? (
                     <p className="text-slate-500 text-center py-8">Aucun coupon à venir</p>
                   ) : (
@@ -484,12 +494,6 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                       ))}
                     </div>
                   )}
-                  <button
-                    onClick={() => onNavigate('coupons')}
-                    className="w-full mt-4 text-center text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center justify-center gap-2"
-                  >
-                    Voir tout <ArrowRight className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
             </>
