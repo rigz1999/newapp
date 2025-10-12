@@ -77,7 +77,7 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
     }
 
     if (typeFilter !== 'all') {
-      filtered = filtered.filter(inv => inv.type === typeFilter);
+      filtered = filtered.filter(inv => inv.type.toLowerCase() === typeFilter.toLowerCase());
     }
 
     filtered = sortInvestors(filtered, sortField, sortDirection);
@@ -251,8 +251,8 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                 className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               >
                 <option value="all">Tous les types</option>
-                <option value="physique">Personne Physique</option>
-                <option value="morale">Personne Morale</option>
+                <option value="Physique">Personne Physique</option>
+                <option value="Morale">Personne Morale</option>
               </select>
             </div>
           </div>
@@ -297,9 +297,9 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-lg ${
-                              investor.type === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
+                              investor.type.toLowerCase() === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
                             }`}>
-                              {investor.type === 'morale' ? (
+                              {investor.type.toLowerCase() === 'morale' ? (
                                 <Building2 className="w-4 h-4 text-purple-600" />
                               ) : (
                                 <User className="w-4 h-4 text-blue-600" />
@@ -310,11 +310,11 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                            investor.type === 'morale'
+                            investor.type.toLowerCase() === 'morale'
                               ? 'bg-purple-100 text-purple-700'
                               : 'bg-blue-100 text-blue-700'
                           }`}>
-                            {investor.type === 'morale' ? 'Morale' : 'Physique'}
+                            {investor.type.toLowerCase() === 'morale' ? 'Morale' : 'Physique'}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -379,9 +379,9 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
             <div className="p-6 space-y-6">
               <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
                 <div className={`p-3 rounded-xl ${
-                  selectedInvestor.type === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
+                  selectedInvestor.type.toLowerCase() === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
                 }`}>
-                  {selectedInvestor.type === 'morale' ? (
+                  {selectedInvestor.type.toLowerCase() === 'morale' ? (
                     <Building2 className="w-8 h-8 text-purple-600" />
                   ) : (
                     <User className="w-8 h-8 text-blue-600" />
@@ -410,7 +410,7 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                   <div>
                     <p className="text-xs text-slate-500">Type</p>
                     <p className="text-sm font-medium text-slate-900">
-                      {selectedInvestor.type === 'morale' ? 'Personne Morale' : 'Personne Physique'}
+                      {selectedInvestor.type.toLowerCase() === 'morale' ? 'Personne Morale' : 'Personne Physique'}
                     </p>
                   </div>
                   <div>
@@ -428,7 +428,7 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                 </div>
               </div>
 
-              {selectedInvestor.type === 'physique' && (
+              {selectedInvestor.type.toLowerCase() === 'physique' && (
                 <div className="space-y-3">
                   <h5 className="font-semibold text-slate-900">Personne Physique</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -462,7 +462,7 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                 </div>
               )}
 
-              {selectedInvestor.type === 'morale' && (
+              {selectedInvestor.type.toLowerCase() === 'morale' && (
                 <div className="space-y-3">
                   <h5 className="font-semibold text-slate-900">Personne Morale</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -588,7 +588,7 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                 </div>
               </div>
 
-              {editFormData.type === 'physique' && (
+              {editFormData.type.toLowerCase() === 'physique' && (
                 <div className="space-y-4">
                   <h5 className="font-semibold text-slate-900">Personne Physique</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -623,7 +623,7 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                 </div>
               )}
 
-              {editFormData.type === 'morale' && (
+              {editFormData.type.toLowerCase() === 'morale' && (
                 <div className="space-y-4">
                   <h5 className="font-semibold text-slate-900">Personne Morale</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
