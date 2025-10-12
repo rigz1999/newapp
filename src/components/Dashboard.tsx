@@ -29,7 +29,12 @@ interface Payment {
   date_paiement: string;
   montant: number;
   statut: string;
-  investisseur_id: string;
+  tranche_id: string;
+  type: string;
+  tranche?: {
+    tranche_name: string;
+    projet_id: string;
+  };
 }
 
 interface UpcomingCoupon {
@@ -132,7 +137,14 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
       if (trancheIds.length > 0) {
         const { data: payments } = await supabase
           .from('paiements')
-          .select('*')
+          .select(`
+            *,
+            tranche:tranches(
+              tranche_name,
+              projet_id
+            )
+          `)
+          .in('tranche_id', trancheIds)
           .order('date_paiement', { ascending: false })
           .limit(5);
 
@@ -285,15 +297,20 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                         <div key={payment.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                           <div className="flex-1">
                             <p className="font-medium text-slate-900 text-sm">
-                              Investisseur
+                              {payment.tranche?.tranche_name || 'Tranche'}
                             </p>
-                            <p className="text-xs text-slate-600">{formatDate(payment.date_paiement)} • Payé</p>
+                            <p className="text-xs text-slate-600">
+                              {formatDate(payment.date_paiement)} • {payment.type || 'Coupon'}
+                            </p>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            payment.statut === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                          }`}>
-                            {payment.statut === 'paid' ? 'Remboursement Nominal' : payment.statut}
-                          </span>
+                          <div className="text-right">
+                            <p className="font-bold text-slate-900 text-sm">{formatCurrency(payment.montant)}</p>
+                            <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              payment.statut === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {payment.statut === 'paid' ? 'Payé' : payment.statut}
+                            </span>
+                          </div>
                         </div>
                       ))}
                     </div>
