@@ -31,7 +31,6 @@ interface ParsedSubscription {
 }
 
 export function TrancheWizard({ onClose, onSuccess }: TrancheWizardProps) {
-  const [step, setStep] = useState(1);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -186,27 +185,6 @@ export function TrancheWizard({ onClose, onSuccess }: TrancheWizardProps) {
     setCsvData(rows);
   };
 
-  const handleNext = () => {
-    if (step === 1 && !selectedProjectId) {
-      setError('Veuillez sélectionner un projet');
-      return;
-    }
-    if (step === 2 && !trancheName.trim()) {
-      setError('Veuillez entrer un nom de tranche');
-      return;
-    }
-    if (step === 3 && !csvFile) {
-      setError('Veuillez sélectionner un fichier CSV');
-      return;
-    }
-    if (step === 3 && csvData.length === 0) {
-      setError('Le fichier CSV ne contient pas de données valides');
-      return;
-    }
-    setError('');
-    setStep(step + 1);
-  };
-
   const formatDate = (dateStr: string): string => {
     if (!dateStr) return new Date().toISOString().split('T')[0];
 
@@ -238,8 +216,16 @@ export function TrancheWizard({ onClose, onSuccess }: TrancheWizardProps) {
   };
 
   const handleSubmit = async () => {
-    if (!selectedProjectId || !trancheName || csvData.length === 0) {
-      setError('Informations manquantes');
+    if (!selectedProjectId) {
+      setError('Veuillez sélectionner un projet');
+      return;
+    }
+    if (!trancheName.trim()) {
+      setError('Veuillez entrer un nom de tranche');
+      return;
+    }
+    if (!csvFile || csvData.length === 0) {
+      setError('Veuillez charger un fichier CSV valide');
       return;
     }
 
@@ -348,115 +334,103 @@ export function TrancheWizard({ onClose, onSuccess }: TrancheWizardProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl">
-          <div>
-            <h3 className="text-xl font-bold text-slate-900">Nouvelle Tranche</h3>
-            <p className="text-sm text-slate-600 mt-1">Étape {step} sur 3</p>
-          </div>
+          <h3 className="text-xl font-bold text-slate-900">Nouvelle Tranche</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="p-6">
-          {step === 1 && (
-            <div>
-              <h4 className="text-lg font-semibold text-slate-900 mb-4">
-                Sélectionnez le projet
-              </h4>
-              {loading ? (
-                <div className="text-center py-8">
-                  <Loader className="w-8 h-8 animate-spin mx-auto text-slate-400" />
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {projects.map((project) => (
-                    <button
-                      key={project.id}
-                      onClick={() => handleProjectSelect(project.id)}
-                      className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-                        selectedProjectId === project.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <p className="font-semibold text-slate-900">{project.projet}</p>
-                    </button>
-                  ))}
+        <div className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">
+              Projet
+            </label>
+            {loading ? (
+              <div className="text-center py-4">
+                <Loader className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+              </div>
+            ) : (
+              <select
+                value={selectedProjectId}
+                onChange={(e) => handleProjectSelect(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="">Sélectionnez un projet</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.projet}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">
+              Nom de la tranche
+            </label>
+            {suggestedName && (
+              <p className="text-sm text-slate-600 mb-2">
+                Nom suggéré: <span className="font-medium">{suggestedName}</span>
+              </p>
+            )}
+            <input
+              type="text"
+              value={trancheName}
+              onChange={(e) => setTrancheName(e.target.value)}
+              placeholder="Ex: T1, Tranche A..."
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">
+              Fichier CSV des souscriptions
+            </label>
+            <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
+              <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="csv-upload"
+              />
+              <label
+                htmlFor="csv-upload"
+                className="inline-block bg-slate-900 text-white px-6 py-2 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors"
+              >
+                Sélectionner un fichier CSV
+              </label>
+              {csvFile && (
+                <div className="mt-4">
+                  <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    {csvFile.name}
+                  </div>
+                  {csvData.length > 0 && (
+                    <div className="mt-2 text-sm font-semibold text-green-600">
+                      {csvData.length} souscription{csvData.length > 1 ? 's' : ''} détectée{csvData.length > 1 ? 's' : ''}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-
-          {step === 2 && (
-            <div>
-              <h4 className="text-lg font-semibold text-slate-900 mb-4">
-                Nom de la tranche
-              </h4>
-              <div className="mb-4">
-                <p className="text-sm text-slate-600 mb-2">
-                  Nom suggéré: <span className="font-medium">{suggestedName}</span>
-                </p>
-                <input
-                  type="text"
-                  value={trancheName}
-                  onChange={(e) => setTrancheName(e.target.value)}
-                  placeholder="Ex: T1, Tranche A..."
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+            <div className="mt-4 text-sm text-slate-600 bg-slate-50 p-4 rounded-lg">
+              <p className="font-semibold mb-2">Colonnes attendues (noms flexibles):</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Type investisseur (physique/morale)</li>
+                <li>Nom investisseur ou Raison sociale</li>
+                <li>Email du représentant légal</li>
+                <li>Date de souscription</li>
+                <li>Quantité (nombre d'obligations)</li>
+                <li>Montant</li>
+              </ul>
             </div>
-          )}
-
-          {step === 3 && (
-            <div>
-              <h4 className="text-lg font-semibold text-slate-900 mb-4">
-                Fichier CSV des souscriptions
-              </h4>
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
-                <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  id="csv-upload"
-                />
-                <label
-                  htmlFor="csv-upload"
-                  className="inline-block bg-slate-900 text-white px-6 py-2 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors"
-                >
-                  Sélectionner un fichier CSV
-                </label>
-                {csvFile && (
-                  <div className="mt-4">
-                    <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                      {csvFile.name}
-                    </div>
-                    {csvData.length > 0 && (
-                      <div className="mt-2 text-sm font-semibold text-green-600">
-                        {csvData.length} souscription{csvData.length > 1 ? 's' : ''} détectée{csvData.length > 1 ? 's' : ''}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="mt-4 text-sm text-slate-600 bg-slate-50 p-4 rounded-lg">
-                <p className="font-semibold mb-2">Colonnes attendues (noms flexibles):</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Type investisseur (physique/morale)</li>
-                  <li>Nom investisseur ou Raison sociale</li>
-                  <li>Email du représentant légal</li>
-                  <li>Date de souscription</li>
-                  <li>Quantité (nombre d'obligations)</li>
-                  <li>Montant</li>
-                </ul>
-              </div>
-            </div>
-          )}
+          </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-700">{error}</p>
             </div>
@@ -464,39 +438,29 @@ export function TrancheWizard({ onClose, onSuccess }: TrancheWizardProps) {
         </div>
 
         <div className="sticky bottom-0 bg-white p-6 border-t border-slate-200 flex gap-3 rounded-b-2xl">
-          {step > 1 && (
-            <button
-              onClick={() => setStep(step - 1)}
-              className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-              disabled={processing}
-            >
-              Retour
-            </button>
-          )}
-          {step < 3 ? (
-            <button
-              onClick={handleNext}
-              className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
-              disabled={loading}
-            >
-              Suivant
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={processing || csvData.length === 0}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {processing ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin" />
-                  Création en cours...
-                </>
-              ) : (
-                `Créer la tranche avec ${csvData.length} souscription${csvData.length > 1 ? 's' : ''}`
-              )}
-            </button>
-          )}
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+            disabled={processing}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={processing || !selectedProjectId || !trancheName || csvData.length === 0}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {processing ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Création en cours...
+              </>
+            ) : (
+              csvData.length > 0
+                ? `Créer avec ${csvData.length} souscription${csvData.length > 1 ? 's' : ''}`
+                : 'Créer la tranche'
+            )}
+          </button>
         </div>
       </div>
     </div>
