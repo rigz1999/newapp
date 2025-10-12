@@ -6,11 +6,13 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setIsAdmin(session?.user?.user_metadata?.is_admin === true);
       setLoading(false);
     });
 
@@ -18,6 +20,7 @@ export function useAuth() {
       (async () => {
         setSession(session);
         setUser(session?.user ?? null);
+        setIsAdmin(session?.user?.user_metadata?.is_admin === true);
         setLoading(false);
       })();
     });
@@ -25,5 +28,5 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  return { user, session, loading };
+  return { user, session, loading, isAdmin };
 }

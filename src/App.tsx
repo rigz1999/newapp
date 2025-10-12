@@ -12,7 +12,7 @@ import { supabase } from './lib/supabase';
 type Page = 'dashboard' | 'projects' | 'tranches' | 'subscriptions' | 'coupons';
 
 function App() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -53,7 +53,7 @@ function App() {
     setSelectedProjectName('');
   };
 
-  if (authLoading || orgLoading) {
+  if (authLoading || (!isAdmin && orgLoading)) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
@@ -65,7 +65,7 @@ function App() {
     return <Login />;
   }
 
-  if (!organization) {
+  if (!isAdmin && !organization) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
@@ -84,10 +84,12 @@ function App() {
     );
   }
 
+  const effectiveOrg = organization || { id: 'admin', name: 'Admin', role: 'admin' };
+
   if (currentPage === 'dashboard') {
     return (
       <Dashboard
-        organization={organization}
+        organization={effectiveOrg}
         onLogout={handleLogout}
         onNavigate={handleNavigate}
       />
@@ -97,7 +99,7 @@ function App() {
   if (currentPage === 'projects') {
     return (
       <Projects
-        organization={organization}
+        organization={effectiveOrg}
         onBack={handleBackToDashboard}
         onSelectProject={handleSelectProject}
       />
@@ -109,7 +111,7 @@ function App() {
       <Tranches
         projectId={selectedProjectId}
         projectName={selectedProjectName}
-        organizationId={organization.id}
+        organizationId={effectiveOrg.id}
         onBack={handleBackToProjects}
       />
     );
@@ -118,7 +120,7 @@ function App() {
   if (currentPage === 'subscriptions') {
     return (
       <Subscriptions
-        organizationId={organization.id}
+        organizationId={effectiveOrg.id}
         onBack={handleBackToDashboard}
       />
     );
@@ -127,7 +129,7 @@ function App() {
   if (currentPage === 'coupons') {
     return (
       <Coupons
-        organizationId={organization.id}
+        organizationId={effectiveOrg.id}
         onBack={handleBackToDashboard}
       />
     );
@@ -135,7 +137,7 @@ function App() {
 
   return (
     <Dashboard
-      organization={organization}
+      organization={effectiveOrg}
       onLogout={handleLogout}
       onNavigate={handleNavigate}
     />
