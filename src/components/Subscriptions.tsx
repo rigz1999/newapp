@@ -37,6 +37,9 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [projectFilter, setProjectFilter] = useState('all');
+  const [investorTypeFilter, setInvestorTypeFilter] = useState('all');
+  const [dateRange, setDateRange] = useState({ from: '', to: '' });
 
   useEffect(() => {
     fetchSubscriptions();
@@ -126,17 +129,39 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
     URL.revokeObjectURL(url);
   };
 
+  const uniqueProjects = Array.from(new Set(subscriptions.map(s => s.tranches.projets.projet)));
+
   const filteredSubscriptions = subscriptions.filter((sub) => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      sub.tranches.projets.projet.toLowerCase().includes(term) ||
-      sub.tranches.projets.emetteur.toLowerCase().includes(term) ||
-      sub.tranches.tranche_name.toLowerCase().includes(term) ||
-      sub.investisseurs.nom_raison_sociale?.toLowerCase().includes(term) ||
-      sub.investisseurs.representant_legal?.toLowerCase().includes(term) ||
-      sub.investisseurs.email?.toLowerCase().includes(term)
-    );
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const matchesSearch = (
+        sub.tranches.projets.projet.toLowerCase().includes(term) ||
+        sub.tranches.projets.emetteur.toLowerCase().includes(term) ||
+        sub.tranches.tranche_name.toLowerCase().includes(term) ||
+        sub.investisseurs.nom_raison_sociale?.toLowerCase().includes(term) ||
+        sub.investisseurs.representant_legal?.toLowerCase().includes(term) ||
+        sub.investisseurs.email?.toLowerCase().includes(term)
+      );
+      if (!matchesSearch) return false;
+    }
+
+    if (projectFilter !== 'all' && sub.tranches.projets.projet !== projectFilter) {
+      return false;
+    }
+
+    if (investorTypeFilter !== 'all' && sub.investisseurs.type.toLowerCase() !== investorTypeFilter.toLowerCase()) {
+      return false;
+    }
+
+    if (dateRange.from && sub.date_souscription < dateRange.from) {
+      return false;
+    }
+
+    if (dateRange.to && sub.date_souscription > dateRange.to) {
+      return false;
+    }
+
+    return true;
   });
 
   return (
@@ -164,16 +189,58 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
           </button>
         </div>
 
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Rechercher par projet, émetteur, tranche, investisseur..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-            />
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+              />
+            </div>
+
+            <select
+              value={projectFilter}
+              onChange={(e) => setProjectFilter(e.target.value)}
+              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white"
+            >
+              <option value="all">Tous les projets</option>
+              {uniqueProjects.map((project) => (
+                <option key={project} value={project}>
+                  {project}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={investorTypeFilter}
+              onChange={(e) => setInvestorTypeFilter(e.target.value)}
+              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white"
+            >
+              <option value="all">Tous les types</option>
+              <option value="Physique">Personne Physique</option>
+              <option value="Morale">Personne Morale</option>
+            </select>
+
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={dateRange.from}
+                onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
+                placeholder="Date début"
+                className="flex-1 px-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+              />
+              <input
+                type="date"
+                value={dateRange.to}
+                onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
+                placeholder="Date fin"
+                className="flex-1 px-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+              />
+            </div>
           </div>
         </div>
 
