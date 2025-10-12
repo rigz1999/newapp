@@ -289,12 +289,15 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   };
 
   const fetchMonthlyData = async (year: number, start: number, end: number) => {
-    const { data: subscriptions } = await supabase
+    const { data: subscriptions, error } = await supabase
       .from('souscriptions')
       .select('montant_investi, date_souscription, tranche_id')
       .eq('investisseur_id', organization.id);
 
-    if (!subscriptions) {
+    console.log('Fetching monthly data for org:', organization.id, 'Year:', year);
+    console.log('Subscriptions:', subscriptions, 'Error:', error);
+
+    if (!subscriptions || subscriptions.length === 0) {
       setMonthlyData([]);
       return;
     }
