@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Sidebar } from './Sidebar';
+import { TrancheWizard } from './TrancheWizard';
 import {
   TrendingUp,
   CheckCircle2,
@@ -110,6 +111,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   const [startMonth, setStartMonth] = useState(0);
   const [endMonth, setEndMonth] = useState(11);
   const [viewMode, setViewMode] = useState<'monthly' | 'cumulative'>('monthly');
+  const [showTrancheWizard, setShowTrancheWizard] = useState(false);
 
   const fetchData = async () => {
     const isRefresh = !loading;
@@ -477,7 +479,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                   </button>
 
                   <button
-                    onClick={() => onNavigate('tranches')}
+                    onClick={() => setShowTrancheWizard(true)}
                     className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all group border border-green-200"
                   >
                     <div className="bg-green-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -750,6 +752,16 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
           )}
         </div>
       </main>
+
+      {showTrancheWizard && (
+        <TrancheWizard
+          onClose={() => setShowTrancheWizard(false)}
+          onSuccess={() => {
+            setShowTrancheWizard(false);
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 }
