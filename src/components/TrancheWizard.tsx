@@ -58,13 +58,20 @@ export function TrancheWizard({ onClose, onSuccess }: TrancheWizardProps) {
   };
 
   const getSuggestedTrancheName = async (projectId: string) => {
+    const { data: project } = await supabase
+      .from('projets')
+      .select('projet')
+      .eq('id', projectId)
+      .single();
+
     const { data, count } = await supabase
       .from('tranches')
       .select('id', { count: 'exact', head: true })
       .eq('projet_id', projectId);
 
     const trancheNumber = (count || 0) + 1;
-    return `T${trancheNumber}`;
+    const projectName = project?.projet || '';
+    return `${projectName} - T${trancheNumber}`;
   };
 
   const handleProjectSelect = async (projectId: string) => {
