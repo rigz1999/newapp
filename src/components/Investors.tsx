@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Sidebar } from './Sidebar';
-import { Users, Plus, Search, Eye, Edit, Trash2, Building2, User } from 'lucide-react';
+import { Users, Search, Eye, Edit, Trash2, Building2, User, ArrowUpDown } from 'lucide-react';
 
 interface InvestorWithStats {
   id: string;
@@ -23,12 +23,17 @@ interface InvestorsProps {
   onSelectInvestor: (investorId: string) => void;
 }
 
+type SortField = 'id_investisseur' | 'nom_raison_sociale' | 'type' | 'email' | 'total_investi' | 'nb_souscriptions';
+type SortDirection = 'asc' | 'desc';
+
 export function Investors({ organization, onLogout, onNavigate, onSelectInvestor }: InvestorsProps) {
   const [investors, setInvestors] = useState<InvestorWithStats[]>([]);
   const [filteredInvestors, setFilteredInvestors] = useState<InvestorWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [sortField, setSortField] = useState<SortField>('nom_raison_sociale');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     fetchInvestors();
@@ -49,8 +54,10 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
       filtered = filtered.filter(inv => inv.type === typeFilter);
     }
 
+    filtered = sortInvestors(filtered, sortField, sortDirection);
+
     setFilteredInvestors(filtered);
-  }, [searchTerm, typeFilter, investors]);
+  }, [searchTerm, typeFilter, investors, sortField, sortDirection]);
 
   const fetchInvestors = async () => {
     setLoading(true);
@@ -85,6 +92,31 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
     setLoading(false);
   };
 
+  const sortInvestors = (data: InvestorWithStats[], field: SortField, direction: SortDirection) => {
+    return [...data].sort((a, b) => {
+      let aValue: any = a[field];
+      let bValue: any = b[field];
+
+      if (field === 'nom_raison_sociale' || field === 'id_investisseur' || field === 'email' || field === 'type') {
+        aValue = (aValue || '').toLowerCase();
+        bValue = (bValue || '').toLowerCase();
+      }
+
+      if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -93,6 +125,20 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+    <th
+      onClick={() => handleSort(field)}
+      className="px-6 py-4 text-left text-sm font-semibold text-slate-900 cursor-pointer hover:bg-slate-100 transition-colors"
+    >
+      <div className="flex items-center gap-2">
+        <span>{children}</span>
+        <ArrowUpDown className={`w-4 h-4 ${
+          sortField === field ? 'text-blue-600' : 'text-slate-400'
+        }`} />
+      </div>
+    </th>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -105,15 +151,9 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-8 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Tous les Investisseurs</h2>
-              <p className="text-slate-600 mt-1">{investors.length} investisseur{investors.length > 1 ? 's' : ''}</p>
-            </div>
-            <button className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors">
-              <Plus className="w-5 h-5" />
-              <span>Nouvel Investisseur</span>
-            </button>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-slate-900">Tous les Investisseurs</h2>
+            <p className="text-slate-600 mt-1">{investors.length} investisseur{investors.length > 1 ? 's' : ''}</p>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
@@ -163,12 +203,12 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">ID</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Nom / Raison Sociale</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Type</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Email</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Total Investi</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">Souscriptions</th>
+                      <SortableHeader field="id_investisseur">ID</SortableHeader>
+                      <SortableHeader field="nom_raison_sociale">Nom / Raison Sociale</SortableHeader>
+                      <SortableHeader field="type">Type</SortableHeader>
+                      <SortableHeader field="email">Email</SortableHeader>
+                      <SortableHeader field="total_investi">Total Investi</SortableHeader>
+                      <SortableHeader field="nb_souscriptions">Souscriptions</SortableHeader>
                       <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
                     </tr>
                   </thead>
