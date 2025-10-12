@@ -59,6 +59,7 @@ export function Login() {
         .single();
 
       if (orgError) {
+        console.error('Organization error:', orgError);
         setError('Erreur lors de la création de l\'organisation: ' + orgError.message);
         setLoading(false);
         return;
@@ -74,12 +75,15 @@ export function Login() {
           });
 
         if (memberError) {
+          console.error('Membership error:', memberError);
           setError('Erreur lors de la création du membership: ' + memberError.message);
           setLoading(false);
           return;
         }
       }
     }
+
+    setLoading(false);
   };
 
   return (
