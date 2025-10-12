@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Sidebar } from './Sidebar';
-import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle } from 'lucide-react';
+import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface Investor {
   id: string;
@@ -35,6 +36,8 @@ interface Investor {
 interface InvestorWithStats extends Investor {
   total_investi: number;
   nb_souscriptions: number;
+  projects?: string[];
+  tranches?: string[];
 }
 
 interface InvestorsProps {
@@ -53,6 +56,8 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [trancheFilter, setTrancheFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('nom_raison_sociale');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -80,10 +85,18 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
       filtered = filtered.filter(inv => inv.type.toLowerCase() === typeFilter.toLowerCase());
     }
 
+    if (projectFilter !== 'all') {
+      filtered = filtered.filter(inv => inv.projects?.includes(projectFilter));
+    }
+
+    if (trancheFilter !== 'all') {
+      filtered = filtered.filter(inv => inv.tranches?.includes(trancheFilter));
+    }
+
     filtered = sortInvestors(filtered, sortField, sortDirection);
 
     setFilteredInvestors(filtered);
-  }, [searchTerm, typeFilter, investors, sortField, sortDirection]);
+  }, [searchTerm, typeFilter, projectFilter, trancheFilter, investors, sortField, sortDirection]);
 
   const fetchInvestors = async () => {
     setLoading(true);
@@ -98,15 +111,19 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
         investorsData.map(async (investor) => {
           const { data: subscriptions } = await supabase
             .from('souscriptions')
-            .select('montant_investi')
+            .select('montant_investi, tranches(tranche_name, projets(projet))')
             .eq('investisseur_id', investor.id);
 
           const totalInvesti = subscriptions?.reduce((sum, sub) => sum + Number(sub.montant_investi || 0), 0) || 0;
+          const projects = Array.from(new Set(subscriptions?.map(s => (s.tranches as any)?.projets?.projet).filter(Boolean)));
+          const tranches = Array.from(new Set(subscriptions?.map(s => (s.tranches as any)?.tranche_name).filter(Boolean)));
 
           return {
             ...investor,
             total_investi: totalInvesti,
             nb_souscriptions: subscriptions?.length || 0,
+            projects,
+            tranches,
           };
         })
       );
@@ -202,6 +219,50 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
     return new Date(dateStr).toLocaleDateString('fr-FR');
   };
 
+  const uniqueProjects = Array.from(new Set(investors.flatMap(inv => inv.projects || [])));
+
+  const availableTranches = projectFilter === 'all'
+    ? []
+    : Array.from(new Set(
+        investors
+          .filter(inv => inv.projects?.includes(projectFilter))
+          .flatMap(inv => inv.tranches || [])
+      ));
+
+  const handleProjectChange = (project: string) => {
+    setProjectFilter(project);
+    setTrancheFilter('all');
+  };
+
+  const exportToExcel = () => {
+    const exportData = filteredInvestors.map(inv => ({
+      'ID': inv.id_investisseur,
+      'Nom / Raison Sociale': inv.nom_raison_sociale,
+      'Type': inv.type === 'Morale' ? 'Personne Morale' : 'Personne Physique',
+      'Email': inv.email || '-',
+      'Téléphone': inv.telephone || '-',
+      'Résidence Fiscale': inv.residence_fiscale || '-',
+      'Total Investi': inv.total_investi,
+      'Nb Souscriptions': inv.nb_souscriptions,
+      'Projets': inv.projects?.join(', ') || '-',
+      'Tranches': inv.tranches?.join(', ') || '-',
+      'Adresse': inv.adresse || inv.siege_social || '-',
+      'Code Postal': inv.code_postal || '-',
+      'Ville': inv.ville || '-',
+      'Pays': inv.pays || '-',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Investisseurs');
+
+    const fileName = projectFilter !== 'all'
+      ? `investisseurs_${projectFilter}_${new Date().toISOString().split('T')[0]}.xlsx`
+      : `investisseurs_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    XLSX.writeFile(wb, fileName);
+  };
+
   const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <th
       onClick={() => handleSort(field)}
@@ -227,18 +288,28 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-8 py-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Tous les Investisseurs</h2>
-            <p className="text-slate-600 mt-1">{investors.length} investisseur{investors.length > 1 ? 's' : ''}</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Tous les Investisseurs</h2>
+              <p className="text-slate-600 mt-1">{filteredInvestors.length} investisseur{filteredInvestors.length > 1 ? 's' : ''}</p>
+            </div>
+            <button
+              onClick={exportToExcel}
+              disabled={filteredInvestors.length === 0}
+              className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-5 h-5" />
+              <span>Exporter Excel</span>
+            </button>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Rechercher par nom, email, ID..."
+                  placeholder="Rechercher..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -253,6 +324,33 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
                 <option value="all">Tous les types</option>
                 <option value="Physique">Personne Physique</option>
                 <option value="Morale">Personne Morale</option>
+              </select>
+
+              <select
+                value={projectFilter}
+                onChange={(e) => handleProjectChange(e.target.value)}
+                className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="all">Tous les projets</option>
+                {uniqueProjects.map((project) => (
+                  <option key={project} value={project}>
+                    {project}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={trancheFilter}
+                onChange={(e) => setTrancheFilter(e.target.value)}
+                disabled={projectFilter === 'all'}
+                className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="all">Toutes les tranches</option>
+                {availableTranches.map((tranche) => (
+                  <option key={tranche} value={tranche}>
+                    {tranche}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
