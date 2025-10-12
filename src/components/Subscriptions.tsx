@@ -1,0 +1,295 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { ArrowLeft, Users, Download, Search } from 'lucide-react';
+
+interface Subscription {
+  id: string;
+  date_souscription: string;
+  nbr_obligations: number;
+  montant_investi: number;
+  coupon_brut: number;
+  coupon_net: number;
+  prochaine_date_coupon: string | null;
+  tranches: {
+    tranche_name: string;
+    frequence: string;
+    projects: {
+      project_name: string;
+      emetteur: string;
+    };
+  };
+  investors: {
+    investor_type: string;
+    raison_sociale: string | null;
+    representant_legal: string | null;
+    email: string | null;
+  };
+}
+
+interface SubscriptionsProps {
+  organizationId: string;
+  onBack: () => void;
+}
+
+export function Subscriptions({ organizationId, onBack }: SubscriptionsProps) {
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchSubscriptions();
+  }, [organizationId]);
+
+  const fetchSubscriptions = async () => {
+    setLoading(true);
+
+    const { data: projects } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('org_id', organizationId);
+
+    const projectIds = projects?.map((p) => p.id) || [];
+
+    if (projectIds.length === 0) {
+      setSubscriptions([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data: tranches } = await supabase
+      .from('tranches')
+      .select('id')
+      .in('project_id', projectIds);
+
+    const trancheIds = tranches?.map((t) => t.id) || [];
+
+    if (trancheIds.length === 0) {
+      setSubscriptions([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data } = await supabase
+      .from('subscriptions')
+      .select(
+        `
+        *,
+        tranches (
+          tranche_name,
+          frequence,
+          projects (
+            project_name,
+            emetteur
+          )
+        ),
+        investors (
+          investor_type,
+          raison_sociale,
+          representant_legal,
+          email
+        )
+      `
+      )
+      .in('tranche_id', trancheIds)
+      .order('date_souscription', { ascending: false });
+
+    setSubscriptions((data as any) || []);
+    setLoading(false);
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('fr-FR');
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount);
+  };
+
+  const exportToCSV = () => {
+    const headers = [
+      'Projet',
+      'Émetteur',
+      'Tranche',
+      'Investisseur',
+      'Type',
+      'Email',
+      'Date souscription',
+      'Quantité',
+      'Montant investi',
+      'Coupon brut',
+      'Coupon net',
+      'Prochaine date coupon',
+    ];
+
+    const rows = filteredSubscriptions.map((sub) => [
+      sub.tranches.projects.project_name,
+      sub.tranches.projects.emetteur,
+      sub.tranches.tranche_name,
+      sub.investors.raison_sociale || sub.investors.representant_legal || '',
+      sub.investors.investor_type,
+      sub.investors.email || '',
+      formatDate(sub.date_souscription),
+      sub.nbr_obligations,
+      sub.montant_investi,
+      sub.coupon_brut,
+      sub.coupon_net,
+      formatDate(sub.prochaine_date_coupon),
+    ]);
+
+    const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `souscriptions_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const filteredSubscriptions = subscriptions.filter((sub) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      sub.tranches.projects.project_name.toLowerCase().includes(term) ||
+      sub.tranches.projects.emetteur.toLowerCase().includes(term) ||
+      sub.tranches.tranche_name.toLowerCase().includes(term) ||
+      sub.investors.raison_sociale?.toLowerCase().includes(term) ||
+      sub.investors.representant_legal?.toLowerCase().includes(term) ||
+      sub.investors.email?.toLowerCase().includes(term)
+    );
+  });
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <nav className="bg-white shadow-sm border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center h-16">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 text-slate-700 hover:text-slate-900 mr-4"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Retour</span>
+            </button>
+            <h1 className="text-xl font-bold text-slate-900">Souscriptions</h1>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h2 className="text-2xl font-bold text-slate-900">
+            Toutes les souscriptions ({filteredSubscriptions.length})
+          </h2>
+          <button
+            onClick={exportToCSV}
+            disabled={filteredSubscriptions.length === 0}
+            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-5 h-5" />
+            <span>Exporter CSV</span>
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par projet, émetteur, tranche, investisseur..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+            />
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+          </div>
+        ) : filteredSubscriptions.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+            <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 mb-2">Aucune souscription</h3>
+            <p className="text-slate-600">
+              {searchTerm ? 'Aucun résultat pour cette recherche' : 'Importez des tranches pour voir les souscriptions'}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                      Projet / Tranche
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                      Investisseur
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
+                      Quantité
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
+                      Montant
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
+                      Coupon Net
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                      Prochain Coupon
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredSubscriptions.map((sub) => (
+                    <tr key={sub.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-slate-900">
+                          {sub.tranches.projects.project_name}
+                        </div>
+                        <div className="text-sm text-slate-600">{sub.tranches.tranche_name}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-slate-900">
+                          {sub.investors.raison_sociale || sub.investors.representant_legal || '-'}
+                        </div>
+                        <div className="text-sm text-slate-600">
+                          {sub.investors.investor_type === 'physique' ? 'Personne physique' : 'Personne morale'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                        {formatDate(sub.date_souscription)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-slate-900">
+                        {sub.nbr_obligations}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-slate-900">
+                        {formatCurrency(sub.montant_investi)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-green-600">
+                        {formatCurrency(sub.coupon_net)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                        {formatDate(sub.prochaine_date_coupon)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
