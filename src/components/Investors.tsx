@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Sidebar } from './Sidebar';
-import { Users, Search, Eye, Edit, Trash2, Building2, User, ArrowUpDown } from 'lucide-react';
+import { Users, Search, Eye, CreditCard as Edit, Trash2, Building2, User, ArrowUpDown } from 'lucide-react';
 
 interface InvestorWithStats {
   id: string;
