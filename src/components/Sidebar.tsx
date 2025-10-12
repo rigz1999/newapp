@@ -1,4 +1,4 @@
-import { Home, Receipt, FolderOpen, Users, TrendingUp } from 'lucide-react';
+import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText } from 'lucide-react';
 
 interface SidebarProps {
   organization: { id: string; name: string; role: string };
@@ -47,13 +47,22 @@ export function Sidebar({ organization, activePage, onNavigate, onLogout }: Side
             <span>Projets</span>
           </button>
           <button
+            onClick={() => onNavigate('investors')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              activePage === 'investors' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            <span>Investisseurs</span>
+          </button>
+          <button
             onClick={() => onNavigate('subscriptions')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
               activePage === 'subscriptions' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <Users className="w-5 h-5" />
-            <span>Investisseurs</span>
+            <FileText className="w-5 h-5" />
+            <span>Souscriptions</span>
           </button>
         </nav>
       </div>

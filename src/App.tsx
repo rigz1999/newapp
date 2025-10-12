@@ -5,12 +5,13 @@ import { Login } from './components/Login';
 import { Dashboard } from './components/Dashboard';
 import { Projects } from './components/Projects';
 import { ProjectDetail } from './components/ProjectDetail';
+import { Investors } from './components/Investors';
 import { Tranches } from './components/Tranches';
 import { Subscriptions } from './components/Subscriptions';
 import { Coupons } from './components/Coupons';
 import { supabase } from './lib/supabase';
 
-type Page = 'dashboard' | 'projects' | 'project-detail' | 'tranches' | 'subscriptions' | 'coupons';
+type Page = 'dashboard' | 'projects' | 'project-detail' | 'investors' | 'investor-detail' | 'tranches' | 'subscriptions' | 'coupons';
 
 function App() {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -18,6 +19,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedProjectName, setSelectedProjectName] = useState<string>('');
+  const [selectedInvestorId, setSelectedInvestorId] = useState<string | null>(null);
   const [openCreateProjectModal, setOpenCreateProjectModal] = useState(false);
 
   const handleLogout = async () => {
@@ -36,6 +38,16 @@ function App() {
   const handleSelectProject = (projectId: string) => {
     setSelectedProjectId(projectId);
     setCurrentPage('project-detail');
+  };
+
+  const handleSelectInvestor = (investorId: string) => {
+    setSelectedInvestorId(investorId);
+    setCurrentPage('investor-detail');
+  };
+
+  const handleBackToInvestors = () => {
+    setCurrentPage('investors');
+    setSelectedInvestorId(null);
   };
 
   const handleBackToDashboard = () => {
@@ -127,6 +139,17 @@ function App() {
         onBack={handleBackToProjects}
         onLogout={handleLogout}
         onNavigate={handleNavigate}
+      />
+    );
+  }
+
+  if (currentPage === 'investors') {
+    return (
+      <Investors
+        organization={effectiveOrg}
+        onLogout={handleLogout}
+        onNavigate={handleNavigate}
+        onSelectInvestor={handleSelectInvestor}
       />
     );
   }
