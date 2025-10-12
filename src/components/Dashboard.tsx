@@ -7,7 +7,9 @@ import {
   Folder,
   Clock,
   RefreshCw,
-  ArrowRight
+  ArrowRight,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -52,6 +54,13 @@ interface UpcomingCoupon {
   };
 }
 
+interface Alert {
+  id: string;
+  type: 'deadline' | 'late_payment' | 'upcoming_coupons';
+  message: string;
+  count?: number;
+}
+
 export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps) {
   const [stats, setStats] = useState<Stats>({
     totalInvested: 0,
@@ -62,6 +71,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   });
   const [recentPayments, setRecentPayments] = useState<Payment[]>([]);
   const [upcomingCoupons, setUpcomingCoupons] = useState<UpcomingCoupon[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activePage, setActivePage] = useState('dashboard');
@@ -177,6 +187,71 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
           .limit(5);
 
         setUpcomingCoupons(coupons as any || []);
+
+        // Fetch alerts
+        const alertsData: Alert[] = [];
+        const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const in7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        // Check for upcoming deadlines (30 days)
+        const { data: tranchesProches } = await supabase
+          .from('tranches')
+          .select('tranche_name, date_echeance')
+          .in('id', trancheIds)
+          .gte('date_echeance', today.toISOString().split('T')[0])
+          .lte('date_echeance', in30Days.toISOString().split('T')[0]);
+
+        if (tranchesProches && tranchesProches.length > 0) {
+          tranchesProches.forEach((tranche) => {
+            const daysUntil = Math.ceil(
+              (new Date(tranche.date_echeance).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+            );
+            alertsData.push({
+              id: `deadline-${tranche.tranche_name}`,
+              type: 'deadline',
+              message: `Échéance proche : ${tranche.tranche_name} dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''} (${formatDate(tranche.date_echeance)})`,
+            });
+          });
+        }
+
+        // Check for late payments
+        const { data: paiementsRetard } = await supabase
+          .from('paiements')
+          .select('*')
+          .in('investisseur_id', [organization.id])
+          .ilike('statut', 'En retard');
+
+        if (paiementsRetard && paiementsRetard.length > 0) {
+          alertsData.push({
+            id: 'late-payments',
+            type: 'late_payment',
+            message: `${paiementsRetard.length} paiement${paiementsRetard.length > 1 ? 's' : ''} en retard`,
+            count: paiementsRetard.length,
+          });
+        }
+
+        // Check for coupons due this week
+        const { data: couponsThisWeek } = await supabase
+          .from('souscriptions')
+          .select('coupon_net, prochaine_date_coupon')
+          .in('tranche_id', trancheIds)
+          .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
+          .lte('prochaine_date_coupon', in7Days.toISOString().split('T')[0]);
+
+        if (couponsThisWeek && couponsThisWeek.length > 0) {
+          const total = couponsThisWeek.reduce(
+            (sum, c) => sum + parseFloat(c.coupon_net?.toString() || '0'),
+            0
+          );
+          alertsData.push({
+            id: 'upcoming-coupons',
+            type: 'upcoming_coupons',
+            message: `${couponsThisWeek.length} coupon${couponsThisWeek.length > 1 ? 's' : ''} à payer cette semaine (Total: ${formatCurrency(total)})`,
+            count: couponsThisWeek.length,
+          });
+        }
+
+        setAlerts(alertsData);
       }
     }
 
@@ -257,6 +332,28 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
             </div>
           ) : (
             <>
+              {alerts.length > 0 && (
+                <div className="mb-6 mt-6 space-y-2">
+                  {alerts.map((alert) => (
+                    <div
+                      key={alert.id}
+                      className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                        <p className="text-sm font-medium text-amber-900">{alert.message}</p>
+                      </div>
+                      <button
+                        onClick={() => setAlerts(alerts.filter((a) => a.id !== alert.id))}
+                        className="text-amber-600 hover:text-amber-800 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-8">
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
                   <div className="flex items-center justify-between mb-4">
