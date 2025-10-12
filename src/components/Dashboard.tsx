@@ -291,7 +291,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   const fetchMonthlyData = async (year: number, start: number, end: number) => {
     const { data: subscriptions } = await supabase
       .from('souscriptions')
-      .select('montant_investi, date_investissement, tranche_id')
+      .select('montant_investi, date_souscription, tranche_id')
       .eq('investisseur_id', organization.id);
 
     if (!subscriptions) {
@@ -308,8 +308,8 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
     }
 
     subscriptions.forEach((sub) => {
-      if (sub.date_investissement) {
-        const date = new Date(sub.date_investissement);
+      if (sub.date_souscription) {
+        const date = new Date(sub.date_souscription);
         const subYear = date.getFullYear();
         const subMonth = date.getMonth();
         const monthKey = `${subYear}-${String(subMonth + 1).padStart(2, '0')}`;
