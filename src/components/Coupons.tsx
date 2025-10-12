@@ -200,7 +200,7 @@ export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
         onLogout={onLogout}
       />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto ml-64">
         <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>

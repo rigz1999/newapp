@@ -418,7 +418,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
         onLogout={onLogout}
       />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto ml-64">
         <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex items-center justify-between mb-2">
             <div>

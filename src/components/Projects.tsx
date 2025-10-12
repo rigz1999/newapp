@@ -149,7 +149,7 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject, 
         onLogout={onLogout}
       />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto ml-64">
         <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex justify-between items-center mb-6">
             <div>
