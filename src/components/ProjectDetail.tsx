@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Sidebar } from './Sidebar';
+import { TrancheWizard } from './TrancheWizard';
 import {
   ArrowLeft,
   Edit,
@@ -74,6 +75,7 @@ export function ProjectDetail({ projectId, organization, onLogout, onNavigate, o
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showTrancheWizard, setShowTrancheWizard] = useState(false);
 
   const [stats, setStats] = useState({
     totalLeve: 0,
@@ -294,7 +296,10 @@ export function ProjectDetail({ projectId, organization, onLogout, onNavigate, o
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-slate-900">Tranches</h2>
-              <button className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
+              <button
+                onClick={() => setShowTrancheWizard(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+              >
                 <Plus className="w-4 h-4" />
                 Nouvelle Tranche
               </button>
@@ -434,6 +439,17 @@ export function ProjectDetail({ projectId, organization, onLogout, onNavigate, o
           </div>
         </div>
       </main>
+
+      {showTrancheWizard && (
+        <TrancheWizard
+          onClose={() => setShowTrancheWizard(false)}
+          onSuccess={() => {
+            setShowTrancheWizard(false);
+            fetchProjectData();
+          }}
+          preselectedProjectId={projectId}
+        />
+      )}
     </div>
   );
 }

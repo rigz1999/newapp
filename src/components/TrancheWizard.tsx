@@ -11,6 +11,7 @@ interface Project {
 interface TrancheWizardProps {
   onClose: () => void;
   onSuccess: () => void;
+  preselectedProjectId?: string;
 }
 
 interface ParsedSubscription {
@@ -31,7 +32,7 @@ interface ParsedSubscription {
   departement_naissance?: string;
 }
 
-export function TrancheWizard({ onClose, onSuccess }: TrancheWizardProps) {
+export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: TrancheWizardProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -46,6 +47,12 @@ export function TrancheWizard({ onClose, onSuccess }: TrancheWizardProps) {
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    if (preselectedProjectId) {
+      setSelectedProjectId(preselectedProjectId);
+    }
+  }, [preselectedProjectId]);
 
   const fetchProjects = async () => {
     setLoading(true);
