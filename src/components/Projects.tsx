@@ -18,9 +18,10 @@ interface ProjectsProps {
   onNavigate: (page: string) => void;
   onSelectProject: (projectId: string) => void;
   openCreateModal?: boolean;
+  onModalClose?: () => void;
 }
 
-export function Projects({ organization, onLogout, onNavigate, onSelectProject, openCreateModal = false }: ProjectsProps) {
+export function Projects({ organization, onLogout, onNavigate, onSelectProject, openCreateModal = false, onModalClose }: ProjectsProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(openCreateModal);
@@ -37,6 +38,12 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject, 
   useEffect(() => {
     fetchProjects();
   }, [organization.id]);
+
+  useEffect(() => {
+    if (openCreateModal) {
+      setShowCreateModal(true);
+    }
+  }, [openCreateModal]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -62,6 +69,7 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject, 
 
     if (!error) {
       setShowCreateModal(false);
+      onModalClose?.();
       setNewProject({
         project_name: '',
         emetteur: '',
@@ -73,6 +81,11 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject, 
       fetchProjects();
     }
     setCreating(false);
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+    onModalClose?.();
   };
 
   return (
@@ -236,7 +249,7 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject, 
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={handleCloseModal}
                   className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   Annuler

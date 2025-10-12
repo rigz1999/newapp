@@ -24,12 +24,12 @@ function App() {
   };
 
   const handleNavigate = (page: Page, options?: { openCreateModal?: boolean }) => {
+    setCurrentPage(page);
     if (page === 'projects' && options?.openCreateModal) {
-      setOpenCreateProjectModal(true);
+      setTimeout(() => setOpenCreateProjectModal(true), 0);
     } else {
       setOpenCreateProjectModal(false);
     }
-    setCurrentPage(page);
   };
 
   const handleSelectProject = (projectId: string) => {
@@ -110,6 +110,7 @@ function App() {
         onNavigate={handleNavigate}
         onSelectProject={handleSelectProject}
         openCreateModal={openCreateProjectModal}
+        onModalClose={() => setOpenCreateProjectModal(false)}
       />
     );
   }
