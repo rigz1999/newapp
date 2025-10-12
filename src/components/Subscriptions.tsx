@@ -39,7 +39,9 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
   const [searchTerm, setSearchTerm] = useState('');
   const [projectFilter, setProjectFilter] = useState('all');
   const [trancheFilter, setTrancheFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('');
+  const [yearFilter, setYearFilter] = useState('all');
+  const [monthFilter, setMonthFilter] = useState('all');
+  const [dayFilter, setDayFilter] = useState('all');
 
   useEffect(() => {
     fetchSubscriptions();
@@ -139,28 +141,55 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
           .map(s => s.tranches.tranche_name)
       ));
 
+  const uniqueYears = Array.from(new Set(
+    subscriptions.map(s => new Date(s.date_souscription).getFullYear())
+  )).sort((a, b) => b - a);
+
+  const availableMonths = yearFilter === 'all' ? [] : Array.from(new Set(
+    subscriptions
+      .filter(s => new Date(s.date_souscription).getFullYear().toString() === yearFilter)
+      .map(s => new Date(s.date_souscription).getMonth() + 1)
+  )).sort((a, b) => a - b);
+
+  const availableDays = (yearFilter === 'all' || monthFilter === 'all') ? [] : Array.from(new Set(
+    subscriptions
+      .filter(s => {
+        const date = new Date(s.date_souscription);
+        return date.getFullYear().toString() === yearFilter &&
+               (date.getMonth() + 1).toString() === monthFilter;
+      })
+      .map(s => new Date(s.date_souscription).getDate())
+  )).sort((a, b) => a - b);
+
   const handleProjectChange = (project: string) => {
     setProjectFilter(project);
     setTrancheFilter('all');
   };
 
+  const handleYearChange = (year: string) => {
+    setYearFilter(year);
+    setMonthFilter('all');
+    setDayFilter('all');
+  };
+
+  const handleMonthChange = (month: string) => {
+    setMonthFilter(month);
+    setDayFilter('all');
+  };
+
   const matchesDateFilter = (dateStr: string) => {
-    if (!dateFilter) return true;
+    const date = new Date(dateStr);
 
-    const subDate = new Date(dateStr);
-
-    if (dateFilter.length === 4) {
-      return subDate.getFullYear().toString() === dateFilter;
+    if (yearFilter !== 'all' && date.getFullYear().toString() !== yearFilter) {
+      return false;
     }
 
-    if (dateFilter.length === 7) {
-      const [year, month] = dateFilter.split('-');
-      return subDate.getFullYear().toString() === year &&
-             (subDate.getMonth() + 1).toString().padStart(2, '0') === month;
+    if (monthFilter !== 'all' && (date.getMonth() + 1).toString() !== monthFilter) {
+      return false;
     }
 
-    if (dateFilter.length === 10) {
-      return dateStr === dateFilter;
+    if (dayFilter !== 'all' && date.getDate().toString() !== dayFilter) {
+      return false;
     }
 
     return true;
@@ -221,7 +250,7 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
@@ -259,14 +288,49 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
                 </option>
               ))}
             </select>
+          </div>
 
-            <input
-              type="text"
-              placeholder="AAAA, AAAA-MM ou AAAA-MM-JJ"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <select
+              value={yearFilter}
+              onChange={(e) => handleYearChange(e.target.value)}
+              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white"
+            >
+              <option value="all">Toutes les années</option>
+              {uniqueYears.map((year) => (
+                <option key={year} value={year.toString()}>
+                  {year}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={monthFilter}
+              onChange={(e) => handleMonthChange(e.target.value)}
+              disabled={yearFilter === 'all'}
+              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="all">Tous les mois</option>
+              {availableMonths.map((month) => (
+                <option key={month} value={month.toString()}>
+                  {new Date(2000, month - 1).toLocaleString('fr-FR', { month: 'long' })}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={dayFilter}
+              onChange={(e) => setDayFilter(e.target.value)}
+              disabled={yearFilter === 'all' || monthFilter === 'all'}
+              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="all">Tous les jours</option>
+              {availableDays.map((day) => (
+                <option key={day} value={day.toString()}>
+                  {day}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
