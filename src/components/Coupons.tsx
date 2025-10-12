@@ -1,26 +1,25 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Sidebar } from './Sidebar';
-import { TrendingUp, Download } from 'lucide-react';
+import { Calendar, Download, Filter, CheckCircle } from 'lucide-react';
 
-interface Coupon {
+interface CouponData {
   id: string;
+  id_souscription: string;
   prochaine_date_coupon: string;
   coupon_net: number;
   montant_investi: number;
-  tranches: {
-    tranche_name: string;
-    frequence: string;
-    projects: {
-      project_name: string;
-      emetteur: string;
-    };
+  projet: {
+    projet: string;
+    emetteur: string;
   };
-  investors: {
-    investor_type: string;
-    raison_sociale: string | null;
-    representant_legal: string | null;
+  tranche: {
+    tranche_name: string;
+  };
+  investisseur: {
+    nom_raison_sociale: string;
     email: string | null;
+    type: string;
   };
 }
 
@@ -31,124 +30,114 @@ interface CouponsProps {
 }
 
 export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [coupons, setCoupons] = useState<CouponData[]>([]);
+  const [filteredCoupons, setFilteredCoupons] = useState<CouponData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
+  const [selectedProject, setSelectedProject] = useState<string>('all');
+  const [projects, setProjects] = useState<Array<{ id: string; projet: string }>>([]);
 
   useEffect(() => {
-    fetchCoupons();
-  }, [organization.id]);
+    fetchData();
+  }, []);
 
-  const fetchCoupons = async () => {
+  useEffect(() => {
+    filterCoupons();
+  }, [coupons, selectedPeriod, selectedProject]);
+
+  const fetchData = async () => {
     setLoading(true);
 
-    const { data: projects } = await supabase
-      .from('projects')
-      .select('id')
-      .eq('org_id', organization.id);
+    const { data: projectsData } = await supabase
+      .from('projets')
+      .select('id, projet')
+      .order('projet');
 
-    const projectIds = projects?.map((p) => p.id) || [];
+    setProjects(projectsData || []);
 
-    if (projectIds.length === 0) {
-      setCoupons([]);
-      setLoading(false);
-      return;
-    }
+    const today = new Date().toISOString().split('T')[0];
 
-    const { data: tranches } = await supabase
-      .from('tranches')
-      .select('id')
-      .in('project_id', projectIds);
-
-    const trancheIds = tranches?.map((t) => t.id) || [];
-
-    if (trancheIds.length === 0) {
-      setCoupons([]);
-      setLoading(false);
-      return;
-    }
-
-    const today = new Date();
-    const in90Days = new Date();
-    in90Days.setDate(today.getDate() + 90);
-
-    const { data } = await supabase
-      .from('subscriptions')
-      .select(
-        `
-        *,
-        tranches (
-          tranche_name,
-          frequence,
-          projects (
-            project_name,
-            emetteur
-          )
-        ),
-        investors (
-          investor_type,
-          raison_sociale,
-          representant_legal,
-          email
-        )
-      `
-      )
-      .in('tranche_id', trancheIds)
-      .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
-      .lte('prochaine_date_coupon', in90Days.toISOString().split('T')[0])
+    const { data: souscriptionsData } = await supabase
+      .from('souscriptions')
+      .select(`
+        id,
+        id_souscription,
+        prochaine_date_coupon,
+        coupon_net,
+        montant_investi,
+        projet:projets(projet, emetteur),
+        tranche:tranches(tranche_name),
+        investisseur:investisseurs(nom_raison_sociale, email, type)
+      `)
+      .not('prochaine_date_coupon', 'is', null)
       .order('prochaine_date_coupon', { ascending: true });
 
-    setCoupons((data as any) || []);
+    if (souscriptionsData) {
+      const validCoupons = souscriptionsData.filter(
+        (s: any) => s.prochaine_date_coupon && s.projet && s.tranche && s.investisseur
+      ) as any;
+
+      setCoupons(validCoupons);
+      setFilteredCoupons(validCoupons);
+    }
+
     setLoading(false);
+  };
+
+  const filterCoupons = () => {
+    let filtered = [...coupons];
+
+    if (selectedPeriod !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let endDate = new Date(today);
+
+      switch (selectedPeriod) {
+        case '7':
+          endDate.setDate(today.getDate() + 7);
+          break;
+        case '30':
+          endDate.setDate(today.getDate() + 30);
+          break;
+        case '90':
+          endDate.setDate(today.getDate() + 90);
+          break;
+      }
+
+      filtered = filtered.filter((coupon) => {
+        const couponDate = new Date(coupon.prochaine_date_coupon);
+        return couponDate >= today && couponDate <= endDate;
+      });
+    }
+
+    if (selectedProject !== 'all') {
+      filtered = filtered.filter((coupon) => {
+        const projectName = coupon.projet?.projet;
+        return projectName === selectedProject;
+      });
+    }
+
+    setFilteredCoupons(filtered);
   };
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-FR');
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
-  };
-
-  const totalCoupons = coupons.reduce((sum, coupon) => sum + coupon.coupon_net, 0);
-
-  const exportToCSV = () => {
-    const headers = [
-      'Date du coupon',
-      'Projet',
-      'Émetteur',
-      'Tranche',
-      'Investisseur',
-      'Type',
-      'Email',
-      'Montant coupon net',
-      'Montant investi',
-    ];
-
-    const rows = coupons.map((coupon) => [
-      formatDate(coupon.prochaine_date_coupon),
-      coupon.tranches.projects.project_name,
-      coupon.tranches.projects.emetteur,
-      coupon.tranches.tranche_name,
-      coupon.investors.raison_sociale || coupon.investors.representant_legal || '',
-      coupon.investors.investor_type,
-      coupon.investors.email || '',
-      coupon.coupon_net,
-      coupon.montant_investi,
-    ]);
-
-    const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `coupons_90jours_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   const getDaysUntil = (dateStr: string) => {
@@ -161,6 +150,47 @@ export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
     return diffDays;
   };
 
+  const getStatusBadge = (daysUntil: number) => {
+    if (daysUntil < 0) {
+      return {
+        text: 'En retard',
+        className: 'bg-red-100 text-red-700',
+      };
+    } else if (daysUntil <= 7) {
+      return {
+        text: 'Urgent',
+        className: 'bg-orange-100 text-orange-700',
+      };
+    } else if (daysUntil <= 30) {
+      return {
+        text: 'À venir',
+        className: 'bg-yellow-100 text-yellow-700',
+      };
+    } else {
+      return {
+        text: 'Futur',
+        className: 'bg-blue-100 text-blue-700',
+      };
+    }
+  };
+
+  const groupByDate = (coupons: CouponData[]) => {
+    const grouped: { [key: string]: CouponData[] } = {};
+
+    coupons.forEach((coupon) => {
+      const date = coupon.prochaine_date_coupon;
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
+      grouped[date].push(coupon);
+    });
+
+    return Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0]));
+  };
+
+  const totalCoupons = filteredCoupons.reduce((sum, coupon) => sum + (coupon.coupon_net || 0), 0);
+  const groupedCoupons = groupByDate(filteredCoupons);
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       <Sidebar
@@ -172,116 +202,146 @@ export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-8 py-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">Coupons à 90 jours</h2>
-            <p className="text-slate-600 mt-1">
-              Total à verser: <span className="font-bold text-slate-900">{formatCurrency(totalCoupons)}</span>
-            </p>
-          </div>
-          <button
-            onClick={exportToCSV}
-            disabled={coupons.length === 0}
-            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download className="w-5 h-5" />
-            <span>Exporter CSV</span>
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-          </div>
-        ) : coupons.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <TrendingUp className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun coupon à venir</h3>
-            <p className="text-slate-600">Aucun coupon n'est prévu dans les 90 prochains jours</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Dans
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Projet / Tranche
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Investisseur
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Montant Investi
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Coupon Net
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {coupons.map((coupon) => {
-                    const daysUntil = getDaysUntil(coupon.prochaine_date_coupon);
-                    return (
-                      <tr key={coupon.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                          {formatDate(coupon.prochaine_date_coupon)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              daysUntil <= 7
-                                ? 'bg-red-100 text-red-800'
-                                : daysUntil <= 30
-                                ? 'bg-orange-100 text-orange-800'
-                                : 'bg-green-100 text-green-800'
-                            }`}
-                          >
-                            {daysUntil} jour{daysUntil > 1 ? 's' : ''}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-slate-900">
-                            {coupon.tranches.projects.project_name}
-                          </div>
-                          <div className="text-sm text-slate-600">{coupon.tranches.tranche_name}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-slate-900">
-                            {coupon.investors.raison_sociale || coupon.investors.representant_legal || '-'}
-                          </div>
-                          <div className="text-sm text-slate-600">{coupon.investors.email || '-'}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-slate-900">
-                          {formatCurrency(coupon.montant_investi)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-green-600">
-                          {formatCurrency(coupon.coupon_net)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot className="bg-slate-50 border-t-2 border-slate-300">
-                  <tr>
-                    <td colSpan={5} className="px-6 py-4 text-right text-sm font-bold text-slate-900">
-                      Total à verser:
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-green-600">
-                      {formatCurrency(totalCoupons)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Tous les Coupons</h2>
+              <p className="text-slate-600 mt-1">
+                {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total: <span className="font-bold text-green-600">{formatCurrency(totalCoupons)}</span>
+              </p>
             </div>
           </div>
-        )}
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-5 h-5 text-slate-600" />
+              <span className="text-sm font-semibold text-slate-900">Filtres</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Période
+                </label>
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="all">Tous les coupons</option>
+                  <option value="7">7 prochains jours</option>
+                  <option value="30">30 prochains jours</option>
+                  <option value="90">90 prochains jours</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Projet
+                </label>
+                <select
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="all">Tous les projets</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.projet}>
+                      {project.projet}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+            </div>
+          ) : filteredCoupons.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+              <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun coupon</h3>
+              <p className="text-slate-600">
+                {coupons.length === 0
+                  ? 'Aucun coupon programmé'
+                  : 'Aucun coupon ne correspond aux filtres sélectionnés'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {groupedCoupons.map(([date, dateCoupons]) => {
+                const daysUntil = getDaysUntil(date);
+                const dateTotal = dateCoupons.reduce((sum, c) => sum + (c.coupon_net || 0), 0);
+
+                return (
+                  <div key={date} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-900">{formatDate(date)}</h3>
+                          <p className="text-sm text-slate-600">
+                            {daysUntil < 0 ? `En retard de ${Math.abs(daysUntil)} jour${Math.abs(daysUntil) > 1 ? 's' : ''}` :
+                             daysUntil === 0 ? 'Aujourd\'hui' :
+                             `Dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''}`}
+                          </p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(daysUntil).className}`}>
+                          {getStatusBadge(daysUntil).text}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-slate-600">Total du jour</p>
+                        <p className="text-lg font-bold text-green-600">{formatCurrency(dateTotal)}</p>
+                      </div>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                      {dateCoupons.map((coupon) => (
+                        <div key={coupon.id} className="p-6 hover:bg-slate-50 transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-start gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-sm font-bold text-slate-900">
+                                      {coupon.projet?.projet || 'N/A'}
+                                    </span>
+                                    <span className="text-slate-400">•</span>
+                                    <span className="text-sm text-slate-600">
+                                      {coupon.tranche?.tranche_name || 'N/A'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3 text-sm text-slate-600">
+                                    <span className="font-medium text-slate-900">
+                                      {coupon.investisseur?.nom_raison_sociale || 'N/A'}
+                                    </span>
+                                    {coupon.investisseur?.email && (
+                                      <>
+                                        <span className="text-slate-400">•</span>
+                                        <span>{coupon.investisseur.email}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right ml-4">
+                              <p className="text-xl font-bold text-green-600">
+                                {formatCurrency(coupon.coupon_net || 0)}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                Investi: {formatCurrency(coupon.montant_investi || 0)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
     </div>
