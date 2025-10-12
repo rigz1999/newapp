@@ -61,6 +61,11 @@ interface Alert {
   count?: number;
 }
 
+interface MonthlyData {
+  month: string;
+  amount: number;
+}
+
 export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps) {
   const [stats, setStats] = useState<Stats>({
     totalInvested: 0,
@@ -93,6 +98,10 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activePage, setActivePage] = useState('dashboard');
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [selectedYear, setSelectedYear] = useState(2025);
+  const [startMonth, setStartMonth] = useState(0);
+  const [endMonth, setEndMonth] = useState(11);
 
   const fetchData = async () => {
     const isRefresh = !loading;
@@ -273,8 +282,54 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
       }
     }
 
+    await fetchMonthlyData(selectedYear, startMonth, endMonth);
+
     setLoading(false);
     if (isRefresh) setRefreshing(false);
+  };
+
+  const fetchMonthlyData = async (year: number, start: number, end: number) => {
+    const { data: subscriptions } = await supabase
+      .from('souscriptions')
+      .select('montant_investi, date_investissement, tranche_id')
+      .eq('investisseur_id', organization.id);
+
+    if (!subscriptions) {
+      setMonthlyData([]);
+      return;
+    }
+
+    const monthlyTotals: { [key: string]: number } = {};
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+    for (let month = start; month <= end; month++) {
+      const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+      monthlyTotals[monthKey] = 0;
+    }
+
+    subscriptions.forEach((sub) => {
+      if (sub.date_investissement) {
+        const date = new Date(sub.date_investissement);
+        const subYear = date.getFullYear();
+        const subMonth = date.getMonth();
+        const monthKey = `${subYear}-${String(subMonth + 1).padStart(2, '0')}`;
+
+        if (subYear === year && subMonth >= start && subMonth <= end) {
+          monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + parseFloat(sub.montant_investi?.toString() || '0');
+        }
+      }
+    });
+
+    const chartData: MonthlyData[] = [];
+    for (let month = start; month <= end; month++) {
+      const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+      chartData.push({
+        month: monthNames[month],
+        amount: monthlyTotals[monthKey] || 0,
+      });
+    }
+
+    setMonthlyData(chartData);
   };
 
   useEffect(() => {
@@ -410,13 +465,72 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
               </div>
 
               <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
-                <h2 className="text-xl font-bold text-slate-900 mb-6">Évolution des Montants Levés</h2>
-                <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white rounded-lg">
-                  <div className="text-center text-slate-400">
-                    <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Graphique en développement</p>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-slate-900">Évolution des Montants Levés</h2>
+                  <div className="flex items-center gap-4">
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => {
+                        const year = parseInt(e.target.value);
+                        setSelectedYear(year);
+                        fetchMonthlyData(year, startMonth, endMonth);
+                      }}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value={2024}>2024</option>
+                      <option value={2025}>2025</option>
+                      <option value={2026}>2026</option>
+                    </select>
+                    <select
+                      value={`${startMonth}-${endMonth}`}
+                      onChange={(e) => {
+                        const [start, end] = e.target.value.split('-').map(Number);
+                        setStartMonth(start);
+                        setEndMonth(end);
+                        fetchMonthlyData(selectedYear, start, end);
+                      }}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="0-11">Année complète</option>
+                      <option value="0-2">Q1 (Jan-Mar)</option>
+                      <option value="3-5">Q2 (Avr-Juin)</option>
+                      <option value="6-8">Q3 (Juil-Sep)</option>
+                      <option value="9-11">Q4 (Oct-Déc)</option>
+                      <option value="0-5">S1 (Jan-Juin)</option>
+                      <option value="6-11">S2 (Juil-Déc)</option>
+                    </select>
                   </div>
                 </div>
+                {monthlyData.length === 0 ? (
+                  <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white rounded-lg">
+                    <div className="text-center text-slate-400">
+                      <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Aucune donnée disponible</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-64 flex items-end justify-between gap-2 px-4">
+                    {monthlyData.map((data, index) => {
+                      const maxAmount = Math.max(...monthlyData.map(d => d.amount), 1);
+                      const heightPercentage = (data.amount / maxAmount) * 100;
+                      return (
+                        <div key={index} className="flex-1 flex flex-col items-center gap-2">
+                          <div className="relative group flex-1 w-full flex items-end">
+                            <div
+                              className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all hover:from-blue-700 hover:to-blue-500 cursor-pointer"
+                              style={{ height: `${heightPercentage}%`, minHeight: data.amount > 0 ? '8px' : '0' }}
+                            >
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                {formatCurrency(data.amount)}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-xs font-medium text-slate-600">{data.month}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
