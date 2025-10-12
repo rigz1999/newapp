@@ -15,7 +15,7 @@ import {
   Plus,
   DollarSign,
   FileText,
-  UserPlus
+  Download
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -497,15 +497,15 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                   </button>
 
                   <button
-                    onClick={() => onNavigate('subscriptions')}
-                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 rounded-lg transition-all group border border-amber-200"
+                    onClick={() => alert('Export en cours de développement')}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
                   >
-                    <div className="bg-amber-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                      <UserPlus className="w-5 h-5 text-white" />
+                    <div className="bg-slate-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <Download className="w-5 h-5 text-white" />
                     </div>
                     <div className="text-left">
-                      <p className="font-semibold text-slate-900 text-sm">Nouvelle Souscription</p>
-                      <p className="text-xs text-slate-600">Ajouter un investisseur</p>
+                      <p className="font-semibold text-slate-900 text-sm">Exporter Synthèse</p>
+                      <p className="text-xs text-slate-600">Télécharger rapport</p>
                     </div>
                   </button>
                 </div>
