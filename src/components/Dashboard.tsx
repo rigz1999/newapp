@@ -42,6 +42,14 @@ interface UpcomingCoupon {
   prochaine_date_coupon: string;
   coupon_brut: number;
   investisseur_id: string;
+  tranche_id: string;
+  tranche?: {
+    tranche_name: string;
+    projet_id: string;
+    projet?: {
+      projet: string;
+    };
+  };
 }
 
 export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps) {
@@ -153,7 +161,16 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
         const today = new Date();
         const { data: coupons } = await supabase
           .from('souscriptions')
-          .select('*')
+          .select(`
+            *,
+            tranche:tranches(
+              tranche_name,
+              projet_id,
+              projet:projets(
+                projet
+              )
+            )
+          `)
           .in('tranche_id', trancheIds)
           .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
           .order('prochaine_date_coupon', { ascending: true })
@@ -306,7 +323,13 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                           <div className="text-right">
                             <p className="font-bold text-slate-900 text-sm">{formatCurrency(payment.montant)}</p>
                             <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                              payment.statut === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                              payment.statut === 'paid' || payment.statut === 'payé'
+                                ? 'bg-green-100 text-green-700'
+                                : payment.statut === 'en attente'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : payment.statut === 'en retard'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-700'
                             }`}>
                               {payment.statut === 'paid' ? 'Payé' : payment.statut}
                             </span>
@@ -331,8 +354,14 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                     <div className="space-y-3">
                       {upcomingCoupons.map((coupon) => (
                         <div key={coupon.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                          <div>
+                          <div className="flex-1">
                             <p className="font-bold text-slate-900">{formatCurrency(parseFloat(coupon.coupon_brut.toString()))}</p>
+                            <p className="text-xs text-slate-600 mt-1">
+                              {coupon.tranche?.projet?.projet || 'Projet'} • {coupon.tranche?.tranche_name || 'Tranche'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-slate-900">{formatDate(coupon.prochaine_date_coupon)}</p>
                             <p className="text-xs text-slate-600">{getRelativeDate(coupon.prochaine_date_coupon)}</p>
                           </div>
                         </div>
