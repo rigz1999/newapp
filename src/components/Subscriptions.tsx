@@ -38,8 +38,8 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [projectFilter, setProjectFilter] = useState('all');
-  const [investorTypeFilter, setInvestorTypeFilter] = useState('all');
-  const [dateRange, setDateRange] = useState({ from: '', to: '' });
+  const [trancheFilter, setTrancheFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('');
 
   useEffect(() => {
     fetchSubscriptions();
@@ -131,6 +131,41 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
 
   const uniqueProjects = Array.from(new Set(subscriptions.map(s => s.tranches.projets.projet)));
 
+  const availableTranches = projectFilter === 'all'
+    ? []
+    : Array.from(new Set(
+        subscriptions
+          .filter(s => s.tranches.projets.projet === projectFilter)
+          .map(s => s.tranches.tranche_name)
+      ));
+
+  const handleProjectChange = (project: string) => {
+    setProjectFilter(project);
+    setTrancheFilter('all');
+  };
+
+  const matchesDateFilter = (dateStr: string) => {
+    if (!dateFilter) return true;
+
+    const subDate = new Date(dateStr);
+
+    if (dateFilter.length === 4) {
+      return subDate.getFullYear().toString() === dateFilter;
+    }
+
+    if (dateFilter.length === 7) {
+      const [year, month] = dateFilter.split('-');
+      return subDate.getFullYear().toString() === year &&
+             (subDate.getMonth() + 1).toString().padStart(2, '0') === month;
+    }
+
+    if (dateFilter.length === 10) {
+      return dateStr === dateFilter;
+    }
+
+    return true;
+  };
+
   const filteredSubscriptions = subscriptions.filter((sub) => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -149,15 +184,11 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
       return false;
     }
 
-    if (investorTypeFilter !== 'all' && sub.investisseurs.type.toLowerCase() !== investorTypeFilter.toLowerCase()) {
+    if (trancheFilter !== 'all' && sub.tranches.tranche_name !== trancheFilter) {
       return false;
     }
 
-    if (dateRange.from && sub.date_souscription < dateRange.from) {
-      return false;
-    }
-
-    if (dateRange.to && sub.date_souscription > dateRange.to) {
+    if (!matchesDateFilter(sub.date_souscription)) {
       return false;
     }
 
@@ -204,7 +235,7 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
 
             <select
               value={projectFilter}
-              onChange={(e) => setProjectFilter(e.target.value)}
+              onChange={(e) => handleProjectChange(e.target.value)}
               className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white"
             >
               <option value="all">Tous les projets</option>
@@ -216,31 +247,26 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
             </select>
 
             <select
-              value={investorTypeFilter}
-              onChange={(e) => setInvestorTypeFilter(e.target.value)}
-              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white"
+              value={trancheFilter}
+              onChange={(e) => setTrancheFilter(e.target.value)}
+              disabled={projectFilter === 'all'}
+              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="all">Tous les types</option>
-              <option value="Physique">Personne Physique</option>
-              <option value="Morale">Personne Morale</option>
+              <option value="all">Toutes les tranches</option>
+              {availableTranches.map((tranche) => (
+                <option key={tranche} value={tranche}>
+                  {tranche}
+                </option>
+              ))}
             </select>
 
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={dateRange.from}
-                onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                placeholder="Date début"
-                className="flex-1 px-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-              />
-              <input
-                type="date"
-                value={dateRange.to}
-                onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                placeholder="Date fin"
-                className="flex-1 px-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-              />
-            </div>
+            <input
+              type="text"
+              placeholder="AAAA, AAAA-MM ou AAAA-MM-JJ"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+            />
           </div>
         </div>
 
