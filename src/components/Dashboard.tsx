@@ -323,15 +323,15 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                           <div className="text-right">
                             <p className="font-bold text-slate-900 text-sm">{formatCurrency(payment.montant)}</p>
                             <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                              payment.statut === 'paid' || payment.statut === 'payé'
+                              payment.statut?.toLowerCase() === 'payé' || payment.statut?.toLowerCase() === 'paid'
                                 ? 'bg-green-100 text-green-700'
-                                : payment.statut === 'en attente'
+                                : payment.statut?.toLowerCase() === 'en attente'
                                 ? 'bg-yellow-100 text-yellow-700'
-                                : payment.statut === 'en retard'
+                                : payment.statut?.toLowerCase() === 'en retard'
                                 ? 'bg-red-100 text-red-700'
                                 : 'bg-gray-100 text-gray-700'
                             }`}>
-                              {payment.statut === 'paid' ? 'Payé' : payment.statut}
+                              {payment.statut}
                             </span>
                           </div>
                         </div>
