@@ -6,22 +6,22 @@ import { Users, Download, Search } from 'lucide-react';
 interface Subscription {
   id: string;
   date_souscription: string;
-  nbr_obligations: number;
+  nombre_obligations: number;
   montant_investi: number;
   coupon_brut: number;
   coupon_net: number;
   prochaine_date_coupon: string | null;
   tranches: {
-    tranche_name: string;
+    nom: string;
     frequence: string;
-    projects: {
-      project_name: string;
+    projets: {
+      nom: string;
       emetteur: string;
     };
   };
-  investors: {
-    investor_type: string;
-    raison_sociale: string | null;
+  investisseurs: {
+    type: string;
+    nom_raison_sociale: string | null;
     representant_legal: string | null;
     email: string | null;
   };
@@ -46,7 +46,7 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
     setLoading(true);
 
     const { data: projects } = await supabase
-      .from('projects')
+      .from('projets')
       .select('id')
       .eq('org_id', organization.id);
 
@@ -61,7 +61,7 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
     const { data: tranches } = await supabase
       .from('tranches')
       .select('id')
-      .in('project_id', projectIds);
+      .in('projet_id', projectIds);
 
     const trancheIds = tranches?.map((t) => t.id) || [];
 
@@ -72,21 +72,21 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
     }
 
     const { data } = await supabase
-      .from('subscriptions')
+      .from('souscriptions')
       .select(
         `
         *,
         tranches (
-          tranche_name,
+          nom,
           frequence,
-          projects (
-            project_name,
+          projets (
+            nom,
             emetteur
           )
         ),
-        investors (
-          investor_type,
-          raison_sociale,
+        investisseurs (
+          type,
+          nom_raison_sociale,
           representant_legal,
           email
         )
@@ -129,14 +129,14 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
     ];
 
     const rows = filteredSubscriptions.map((sub) => [
-      sub.tranches.projects.project_name,
-      sub.tranches.projects.emetteur,
-      sub.tranches.tranche_name,
-      sub.investors.raison_sociale || sub.investors.representant_legal || '',
-      sub.investors.investor_type,
-      sub.investors.email || '',
+      sub.tranches.projets.nom,
+      sub.tranches.projets.emetteur,
+      sub.tranches.nom,
+      sub.investisseurs.nom_raison_sociale || sub.investisseurs.representant_legal || '',
+      sub.investisseurs.type,
+      sub.investisseurs.email || '',
       formatDate(sub.date_souscription),
-      sub.nbr_obligations,
+      sub.nombre_obligations,
       sub.montant_investi,
       sub.coupon_brut,
       sub.coupon_net,
@@ -157,12 +157,12 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
-      sub.tranches.projects.project_name.toLowerCase().includes(term) ||
-      sub.tranches.projects.emetteur.toLowerCase().includes(term) ||
-      sub.tranches.tranche_name.toLowerCase().includes(term) ||
-      sub.investors.raison_sociale?.toLowerCase().includes(term) ||
-      sub.investors.representant_legal?.toLowerCase().includes(term) ||
-      sub.investors.email?.toLowerCase().includes(term)
+      sub.tranches.projets.nom.toLowerCase().includes(term) ||
+      sub.tranches.projets.emetteur.toLowerCase().includes(term) ||
+      sub.tranches.nom.toLowerCase().includes(term) ||
+      sub.investisseurs.nom_raison_sociale?.toLowerCase().includes(term) ||
+      sub.investisseurs.representant_legal?.toLowerCase().includes(term) ||
+      sub.investisseurs.email?.toLowerCase().includes(term)
     );
   });
 
@@ -250,23 +250,23 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
                     <tr key={sub.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-900">
-                          {sub.tranches.projects.project_name}
+                          {sub.tranches.projets.nom}
                         </div>
-                        <div className="text-sm text-slate-600">{sub.tranches.tranche_name}</div>
+                        <div className="text-sm text-slate-600">{sub.tranches.nom}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-900">
-                          {sub.investors.raison_sociale || sub.investors.representant_legal || '-'}
+                          {sub.investisseurs.nom_raison_sociale || sub.investisseurs.representant_legal || '-'}
                         </div>
                         <div className="text-sm text-slate-600">
-                          {sub.investors.investor_type === 'physique' ? 'Personne physique' : 'Personne morale'}
+                          {sub.investisseurs.type.toLowerCase() === 'physique' ? 'Personne physique' : 'Personne morale'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                         {formatDate(sub.date_souscription)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-slate-900">
-                        {sub.nbr_obligations}
+                        {sub.nombre_obligations}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-slate-900">
                         {formatCurrency(sub.montant_investi)}
