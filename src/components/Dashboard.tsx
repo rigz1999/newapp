@@ -206,70 +206,70 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
 
         setUpcomingCoupons(coupons as any || []);
 
-        // Fetch alerts
-        const alertsData: Alert[] = [];
-        const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-        const in7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+        // Fetch alerts - TEMPORARILY DISABLED TO SHOW EXAMPLES
+        // const alertsData: Alert[] = [];
+        // const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+        // const in7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-        // Check for upcoming deadlines (30 days)
-        const { data: tranchesProches } = await supabase
-          .from('tranches')
-          .select('tranche_name, date_echeance')
-          .in('id', trancheIds)
-          .gte('date_echeance', today.toISOString().split('T')[0])
-          .lte('date_echeance', in30Days.toISOString().split('T')[0]);
+        // // Check for upcoming deadlines (30 days)
+        // const { data: tranchesProches } = await supabase
+        //   .from('tranches')
+        //   .select('tranche_name, date_echeance')
+        //   .in('id', trancheIds)
+        //   .gte('date_echeance', today.toISOString().split('T')[0])
+        //   .lte('date_echeance', in30Days.toISOString().split('T')[0]);
 
-        if (tranchesProches && tranchesProches.length > 0) {
-          tranchesProches.forEach((tranche) => {
-            const daysUntil = Math.ceil(
-              (new Date(tranche.date_echeance).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-            );
-            alertsData.push({
-              id: `deadline-${tranche.tranche_name}`,
-              type: 'deadline',
-              message: `Échéance proche : ${tranche.tranche_name} dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''} (${formatDate(tranche.date_echeance)})`,
-            });
-          });
-        }
+        // if (tranchesProches && tranchesProches.length > 0) {
+        //   tranchesProches.forEach((tranche) => {
+        //     const daysUntil = Math.ceil(
+        //       (new Date(tranche.date_echeance).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        //     );
+        //     alertsData.push({
+        //       id: `deadline-${tranche.tranche_name}`,
+        //       type: 'deadline',
+        //       message: `Échéance proche : ${tranche.tranche_name} dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''} (${formatDate(tranche.date_echeance)})`,
+        //     });
+        //   });
+        // }
 
-        // Check for late payments
-        const { data: paiementsRetard } = await supabase
-          .from('paiements')
-          .select('*')
-          .in('investisseur_id', [organization.id])
-          .ilike('statut', 'En retard');
+        // // Check for late payments
+        // const { data: paiementsRetard } = await supabase
+        //   .from('paiements')
+        //   .select('*')
+        //   .in('investisseur_id', [organization.id])
+        //   .ilike('statut', 'En retard');
 
-        if (paiementsRetard && paiementsRetard.length > 0) {
-          alertsData.push({
-            id: 'late-payments',
-            type: 'late_payment',
-            message: `${paiementsRetard.length} paiement${paiementsRetard.length > 1 ? 's' : ''} en retard`,
-            count: paiementsRetard.length,
-          });
-        }
+        // if (paiementsRetard && paiementsRetard.length > 0) {
+        //   alertsData.push({
+        //     id: 'late-payments',
+        //     type: 'late_payment',
+        //     message: `${paiementsRetard.length} paiement${paiementsRetard.length > 1 ? 's' : ''} en retard`,
+        //     count: paiementsRetard.length,
+        //   });
+        // }
 
-        // Check for coupons due this week
-        const { data: couponsThisWeek } = await supabase
-          .from('souscriptions')
-          .select('coupon_net, prochaine_date_coupon')
-          .in('tranche_id', trancheIds)
-          .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
-          .lte('prochaine_date_coupon', in7Days.toISOString().split('T')[0]);
+        // // Check for coupons due this week
+        // const { data: couponsThisWeek } = await supabase
+        //   .from('souscriptions')
+        //   .select('coupon_net, prochaine_date_coupon')
+        //   .in('tranche_id', trancheIds)
+        //   .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
+        //   .lte('prochaine_date_coupon', in7Days.toISOString().split('T')[0]);
 
-        if (couponsThisWeek && couponsThisWeek.length > 0) {
-          const total = couponsThisWeek.reduce(
-            (sum, c) => sum + parseFloat(c.coupon_net?.toString() || '0'),
-            0
-          );
-          alertsData.push({
-            id: 'upcoming-coupons',
-            type: 'upcoming_coupons',
-            message: `${couponsThisWeek.length} coupon${couponsThisWeek.length > 1 ? 's' : ''} à payer cette semaine (Total: ${formatCurrency(total)})`,
-            count: couponsThisWeek.length,
-          });
-        }
+        // if (couponsThisWeek && couponsThisWeek.length > 0) {
+        //   const total = couponsThisWeek.reduce(
+        //     (sum, c) => sum + parseFloat(c.coupon_net?.toString() || '0'),
+        //     0
+        //   );
+        //   alertsData.push({
+        //     id: 'upcoming-coupons',
+        //     type: 'upcoming_coupons',
+        //     message: `${couponsThisWeek.length} coupon${couponsThisWeek.length > 1 ? 's' : ''} à payer cette semaine (Total: ${formatCurrency(total)})`,
+        //     count: couponsThisWeek.length,
+        //   });
+        // }
 
-        setAlerts(alertsData);
+        // setAlerts(alertsData);
       }
     }
 
