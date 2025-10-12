@@ -4,12 +4,13 @@ import { useOrganization } from './hooks/useOrganization';
 import { Login } from './components/Login';
 import { Dashboard } from './components/Dashboard';
 import { Projects } from './components/Projects';
+import { ProjectDetail } from './components/ProjectDetail';
 import { Tranches } from './components/Tranches';
 import { Subscriptions } from './components/Subscriptions';
 import { Coupons } from './components/Coupons';
 import { supabase } from './lib/supabase';
 
-type Page = 'dashboard' | 'projects' | 'tranches' | 'subscriptions' | 'coupons';
+type Page = 'dashboard' | 'projects' | 'project-detail' | 'tranches' | 'subscriptions' | 'coupons';
 
 function App() {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -33,18 +34,8 @@ function App() {
   };
 
   const handleSelectProject = (projectId: string) => {
-    supabase
-      .from('projects')
-      .select('project_name')
-      .eq('id', projectId)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setSelectedProjectId(projectId);
-          setSelectedProjectName(data.project_name);
-          setCurrentPage('tranches');
-        }
-      });
+    setSelectedProjectId(projectId);
+    setCurrentPage('project-detail');
   };
 
   const handleBackToDashboard = () => {
@@ -111,6 +102,18 @@ function App() {
         onSelectProject={handleSelectProject}
         openCreateModal={openCreateProjectModal}
         onModalClose={() => setOpenCreateProjectModal(false)}
+      />
+    );
+  }
+
+  if (currentPage === 'project-detail' && selectedProjectId) {
+    return (
+      <ProjectDetail
+        projectId={selectedProjectId}
+        organization={effectiveOrg}
+        onLogout={handleLogout}
+        onNavigate={handleNavigate}
+        onBack={handleBackToProjects}
       />
     );
   }
