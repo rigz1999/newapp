@@ -17,12 +17,13 @@ interface ProjectsProps {
   onLogout: () => void;
   onNavigate: (page: string) => void;
   onSelectProject: (projectId: string) => void;
+  openCreateModal?: boolean;
 }
 
-export function Projects({ organization, onLogout, onNavigate, onSelectProject }: ProjectsProps) {
+export function Projects({ organization, onLogout, onNavigate, onSelectProject, openCreateModal = false }: ProjectsProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(openCreateModal);
   const [newProject, setNewProject] = useState({
     project_name: '',
     emetteur: '',

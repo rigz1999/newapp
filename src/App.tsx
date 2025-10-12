@@ -17,12 +17,18 @@ function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedProjectName, setSelectedProjectName] = useState<string>('');
+  const [openCreateProjectModal, setOpenCreateProjectModal] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
 
-  const handleNavigate = (page: Page) => {
+  const handleNavigate = (page: Page, options?: { openCreateModal?: boolean }) => {
+    if (page === 'projects' && options?.openCreateModal) {
+      setOpenCreateProjectModal(true);
+    } else {
+      setOpenCreateProjectModal(false);
+    }
     setCurrentPage(page);
   };
 
@@ -103,6 +109,7 @@ function App() {
         onLogout={handleLogout}
         onNavigate={handleNavigate}
         onSelectProject={handleSelectProject}
+        openCreateModal={openCreateProjectModal}
       />
     );
   }
