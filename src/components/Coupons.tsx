@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, TrendingUp, Download } from 'lucide-react';
+import { Sidebar } from './Sidebar';
+import { TrendingUp, Download } from 'lucide-react';
 
 interface Coupon {
   id: string;
@@ -24,17 +25,18 @@ interface Coupon {
 }
 
 interface CouponsProps {
-  organizationId: string;
-  onBack: () => void;
+  organization: { id: string; name: string; role: string };
+  onLogout: () => void;
+  onNavigate: (page: string) => void;
 }
 
-export function Coupons({ organizationId, onBack }: CouponsProps) {
+export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchCoupons();
-  }, [organizationId]);
+  }, [organization.id]);
 
   const fetchCoupons = async () => {
     setLoading(true);
@@ -42,7 +44,7 @@ export function Coupons({ organizationId, onBack }: CouponsProps) {
     const { data: projects } = await supabase
       .from('projects')
       .select('id')
-      .eq('org_id', organizationId);
+      .eq('org_id', organization.id);
 
     const projectIds = projects?.map((p) => p.id) || [];
 
@@ -160,23 +162,16 @@ export function Coupons({ organizationId, onBack }: CouponsProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 text-slate-700 hover:text-slate-900 mr-4"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span>Retour</span>
-            </button>
-            <h1 className="text-xl font-bold text-slate-900">Coupons à venir</h1>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-slate-50 flex">
+      <Sidebar
+        organization={organization}
+        activePage="coupons"
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+      />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Coupons à 90 jours</h2>
@@ -287,6 +282,7 @@ export function Coupons({ organizationId, onBack }: CouponsProps) {
             </div>
           </div>
         )}
+        </div>
       </main>
     </div>
   );

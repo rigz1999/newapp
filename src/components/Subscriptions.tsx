@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Users, Download, Search } from 'lucide-react';
+import { Sidebar } from './Sidebar';
+import { Users, Download, Search } from 'lucide-react';
 
 interface Subscription {
   id: string;
@@ -27,18 +28,19 @@ interface Subscription {
 }
 
 interface SubscriptionsProps {
-  organizationId: string;
-  onBack: () => void;
+  organization: { id: string; name: string; role: string };
+  onLogout: () => void;
+  onNavigate: (page: string) => void;
 }
 
-export function Subscriptions({ organizationId, onBack }: SubscriptionsProps) {
+export function Subscriptions({ organization, onLogout, onNavigate }: SubscriptionsProps) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchSubscriptions();
-  }, [organizationId]);
+  }, [organization.id]);
 
   const fetchSubscriptions = async () => {
     setLoading(true);
@@ -46,7 +48,7 @@ export function Subscriptions({ organizationId, onBack }: SubscriptionsProps) {
     const { data: projects } = await supabase
       .from('projects')
       .select('id')
-      .eq('org_id', organizationId);
+      .eq('org_id', organization.id);
 
     const projectIds = projects?.map((p) => p.id) || [];
 
@@ -165,23 +167,16 @@ export function Subscriptions({ organizationId, onBack }: SubscriptionsProps) {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 text-slate-700 hover:text-slate-900 mr-4"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span>Retour</span>
-            </button>
-            <h1 className="text-xl font-bold text-slate-900">Souscriptions</h1>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-slate-50 flex">
+      <Sidebar
+        organization={organization}
+        activePage="subscriptions"
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+      />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-2xl font-bold text-slate-900">
             Toutes les souscriptions ({filteredSubscriptions.length})
@@ -289,6 +284,7 @@ export function Subscriptions({ organizationId, onBack }: SubscriptionsProps) {
             </div>
           </div>
         )}
+        </div>
       </main>
     </div>
   );

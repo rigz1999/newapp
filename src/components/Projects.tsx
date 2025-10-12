@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, FolderOpen, Plus, Layers } from 'lucide-react';
+import { Sidebar } from './Sidebar';
+import { FolderOpen, Plus, Layers } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -12,12 +13,13 @@ interface Project {
 }
 
 interface ProjectsProps {
-  organization: { id: string; name: string };
-  onBack: () => void;
+  organization: { id: string; name: string; role: string };
+  onLogout: () => void;
+  onNavigate: (page: string) => void;
   onSelectProject: (projectId: string) => void;
 }
 
-export function Projects({ organization, onBack, onSelectProject }: ProjectsProps) {
+export function Projects({ organization, onLogout, onNavigate, onSelectProject }: ProjectsProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -72,23 +74,16 @@ export function Projects({ organization, onBack, onSelectProject }: ProjectsProp
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 text-slate-700 hover:text-slate-900 mr-4"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span>Retour</span>
-            </button>
-            <h1 className="text-xl font-bold text-slate-900">Projets</h1>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-slate-50 flex">
+      <Sidebar
+        organization={organization}
+        activePage="projects"
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+      />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-slate-900">Mes projets</h2>
           <button
@@ -145,9 +140,8 @@ export function Projects({ organization, onBack, onSelectProject }: ProjectsProp
             ))}
           </div>
         )}
-      </main>
 
-      {showCreateModal && (
+        {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200">
@@ -256,7 +250,9 @@ export function Projects({ organization, onBack, onSelectProject }: ProjectsProp
             </form>
           </div>
         </div>
-      )}
+        )}
+        </div>
+      </main>
     </div>
   );
 }

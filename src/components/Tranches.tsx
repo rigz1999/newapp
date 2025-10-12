@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { Sidebar } from './Sidebar';
 import { ArrowLeft, Upload, Download, Layers, AlertCircle } from 'lucide-react';
 
 interface Tranche {
@@ -17,11 +18,13 @@ interface Tranche {
 interface TranchesProps {
   projectId: string;
   projectName: string;
-  organizationId: string;
+  organization: { id: string; name: string; role: string };
   onBack: () => void;
+  onLogout: () => void;
+  onNavigate: (page: string) => void;
 }
 
-export function Tranches({ projectId, projectName, organizationId, onBack }: TranchesProps) {
+export function Tranches({ projectId, projectName, organization, onBack, onLogout, onNavigate }: TranchesProps) {
   const [tranches, setTranches] = useState<Tranche[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -128,7 +131,7 @@ export function Tranches({ projectId, projectName, organizationId, onBack }: Tra
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('org_id', organizationId);
+    formData.append('org_id', organization.id);
     formData.append('project_id', projectId);
 
     try {
@@ -186,26 +189,27 @@ export function Tranches({ projectId, projectName, organizationId, onBack }: Tra
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 text-slate-700 hover:text-slate-900 mr-4"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span>Retour</span>
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Tranches</h1>
-              <p className="text-sm text-slate-600">{projectName}</p>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-slate-50 flex">
+      <Sidebar
+        organization={organization}
+        activePage="projects"
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+      />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-8 py-8">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-slate-700 hover:text-slate-900 mb-4"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Retour aux projets</span>
+          </button>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-slate-900">Tranches</h1>
+            <p className="text-slate-600 mt-1">{projectName}</p>
+          </div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-2xl font-bold text-slate-900">Gérer les tranches</h2>
           <div className="flex gap-3">
@@ -355,6 +359,7 @@ export function Tranches({ projectId, projectName, organizationId, onBack }: Tra
             </div>
           </div>
         )}
+        </div>
       </main>
     </div>
   );

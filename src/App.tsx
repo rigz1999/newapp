@@ -100,7 +100,8 @@ function App() {
     return (
       <Projects
         organization={effectiveOrg}
-        onBack={handleBackToDashboard}
+        onLogout={handleLogout}
+        onNavigate={handleNavigate}
         onSelectProject={handleSelectProject}
       />
     );
@@ -111,8 +112,10 @@ function App() {
       <Tranches
         projectId={selectedProjectId}
         projectName={selectedProjectName}
-        organizationId={effectiveOrg.id}
+        organization={effectiveOrg}
         onBack={handleBackToProjects}
+        onLogout={handleLogout}
+        onNavigate={handleNavigate}
       />
     );
   }
@@ -120,8 +123,9 @@ function App() {
   if (currentPage === 'subscriptions') {
     return (
       <Subscriptions
-        organizationId={effectiveOrg.id}
-        onBack={handleBackToDashboard}
+        organization={effectiveOrg}
+        onLogout={handleLogout}
+        onNavigate={handleNavigate}
       />
     );
   }
@@ -129,8 +133,9 @@ function App() {
   if (currentPage === 'coupons') {
     return (
       <Coupons
-        organizationId={effectiveOrg.id}
-        onBack={handleBackToDashboard}
+        organization={effectiveOrg}
+        onLogout={handleLogout}
+        onNavigate={handleNavigate}
       />
     );
   }
