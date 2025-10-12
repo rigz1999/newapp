@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Sidebar } from './Sidebar';
 import { TrancheWizard } from './TrancheWizard';
+import { PaymentWizard } from './PaymentWizard';
 import {
   TrendingUp,
   CheckCircle2,
@@ -112,6 +113,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   const [endMonth, setEndMonth] = useState(11);
   const [viewMode, setViewMode] = useState<'monthly' | 'cumulative'>('monthly');
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
+  const [showPaymentWizard, setShowPaymentWizard] = useState(false);
 
   const fetchData = async () => {
     const isRefresh = !loading;
@@ -492,7 +494,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                   </button>
 
                   <button
-                    onClick={() => onNavigate('coupons')}
+                    onClick={() => setShowPaymentWizard(true)}
                     className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all group border border-purple-200"
                   >
                     <div className="bg-purple-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -758,6 +760,16 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
           onClose={() => setShowTrancheWizard(false)}
           onSuccess={() => {
             setShowTrancheWizard(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      {showPaymentWizard && (
+        <PaymentWizard
+          onClose={() => setShowPaymentWizard(false)}
+          onSuccess={() => {
+            setShowPaymentWizard(false);
             fetchData();
           }}
         />
