@@ -291,11 +291,13 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   const fetchMonthlyData = async (year: number, start: number, end: number) => {
     const { data: subscriptions, error } = await supabase
       .from('souscriptions')
-      .select('montant_investi, date_souscription, tranche_id')
-      .eq('investisseur_id', organization.id);
+      .select('montant_investi, date_souscription');
 
-    console.log('Fetching monthly data for org:', organization.id, 'Year:', year);
-    console.log('Subscriptions:', subscriptions, 'Error:', error);
+    if (error) {
+      console.error('Error fetching subscriptions:', error);
+      setMonthlyData([]);
+      return;
+    }
 
     if (!subscriptions || subscriptions.length === 0) {
       setMonthlyData([]);
