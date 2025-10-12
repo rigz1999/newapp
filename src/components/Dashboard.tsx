@@ -514,21 +514,22 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                     </div>
                   </div>
                 ) : (
-                  <div className="h-64 flex items-end justify-between gap-2 px-4">
+                  <div className="h-80 flex items-end justify-between gap-2 px-4 pb-4">
                     {monthlyData.map((data, index) => {
                       const maxAmount = Math.max(...monthlyData.map(d => d.amount), 1);
-                      const heightPercentage = (data.amount / maxAmount) * 100;
+                      const heightPercentage = Math.max((data.amount / maxAmount) * 85, data.amount > 0 ? 5 : 0);
                       return (
-                        <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                          <div className="relative group flex-1 w-full flex items-end">
-                            <div
-                              className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all hover:from-blue-700 hover:to-blue-500 cursor-pointer"
-                              style={{ height: `${heightPercentage}%`, minHeight: data.amount > 0 ? '8px' : '0' }}
-                            >
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                        <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full">
+                          <div className="relative group flex-1 w-full flex flex-col justify-end items-center">
+                            {data.amount > 0 && (
+                              <div className="mb-1 text-xs font-semibold text-slate-700 whitespace-nowrap">
                                 {formatCurrency(data.amount)}
                               </div>
-                            </div>
+                            )}
+                            <div
+                              className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all hover:from-blue-700 hover:to-blue-500 cursor-pointer shadow-md"
+                              style={{ height: `${heightPercentage}%` }}
+                            />
                           </div>
                           <span className="text-xs font-medium text-slate-600">{data.month}</span>
                         </div>
