@@ -5,10 +5,10 @@ import { FolderOpen, Plus, Layers } from 'lucide-react';
 
 interface Project {
   id: string;
-  project_name: string;
+  projet: string;
   emetteur: string;
   representant_masse: string | null;
-  rep_masse_email: string | null;
+  email_rep_masse: string | null;
   created_at: string;
 }
 
@@ -40,9 +40,8 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject }
   const fetchProjects = async () => {
     setLoading(true);
     const { data } = await supabase
-      .from('projects')
+      .from('projets')
       .select('*')
-      .eq('org_id', organization.id)
       .order('created_at', { ascending: false });
 
     setProjects(data || []);
@@ -53,9 +52,11 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject }
     e.preventDefault();
     setCreating(true);
 
-    const { error } = await supabase.from('projects').insert({
-      org_id: organization.id,
-      ...newProject,
+    const { error } = await supabase.from('projets').insert({
+      projet: newProject.project_name,
+      emetteur: newProject.emetteur,
+      representant_masse: newProject.representant_masse,
+      email_rep_masse: newProject.rep_masse_email,
     });
 
     if (!error) {
@@ -126,7 +127,7 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject }
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-slate-900 mb-1 truncate">
-                      {project.project_name}
+                      {project.projet}
                     </h3>
                     <p className="text-sm text-slate-600 truncate">{project.emetteur}</p>
                   </div>

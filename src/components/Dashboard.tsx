@@ -26,25 +26,17 @@ interface Stats {
 
 interface Payment {
   id: string;
-  payment_date: string;
-  amount: number;
-  status: string;
-  subscription: {
-    investor: {
-      investisseur_nom?: string;
-      raison_sociale?: string;
-    };
-  };
+  date_paiement: string;
+  montant: number;
+  statut: string;
+  investisseur_id: string;
 }
 
 interface UpcomingCoupon {
   id: string;
   prochaine_date_coupon: string;
   coupon_brut: number;
-  investor: {
-    investisseur_nom?: string;
-    raison_sociale?: string;
-  };
+  investisseur_id: string;
 }
 
 export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps) {
@@ -66,9 +58,8 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
     if (isRefresh) setRefreshing(true);
 
     const { data: projects } = await supabase
-      .from('projects')
-      .select('id')
-      .eq('org_id', organization.id);
+      .from('projets')
+      .select('id');
 
     const projectIds = projects?.map((p) => p.id) || [];
 
@@ -83,13 +74,13 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
       const { data: tranches } = await supabase
         .from('tranches')
         .select('id')
-        .in('project_id', projectIds);
+        .in('projet_id', projectIds);
 
       const trancheIds = tranches?.map((t) => t.id) || [];
 
       if (trancheIds.length > 0) {
         const { data: subscriptions } = await supabase
-          .from('subscriptions')
+          .from('souscriptions')
           .select('montant_investi')
           .in('tranche_id', trancheIds);
 
@@ -99,36 +90,26 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
         firstOfMonth.setDate(1);
         firstOfMonth.setHours(0, 0, 0, 0);
 
-        const { data: subscriptionIds } = await supabase
-          .from('subscriptions')
-          .select('id')
-          .in('tranche_id', trancheIds);
+        const { data: monthPayments } = await supabase
+          .from('paiements')
+          .select('montant')
+          .eq('statut', 'paid')
+          .gte('date_paiement', firstOfMonth.toISOString().split('T')[0]);
 
-        const subIds = subscriptionIds?.map((s) => s.id) || [];
+        couponsPaidThisMonth = monthPayments?.reduce((sum, p) => sum + parseFloat(p.montant.toString()), 0) || 0;
 
-        if (subIds.length > 0) {
-          const { data: monthPayments } = await supabase
-            .from('payments')
-            .select('amount')
-            .in('subscription_id', subIds)
-            .eq('status', 'paid')
-            .gte('payment_date', firstOfMonth.toISOString().split('T')[0]);
+        const today = new Date();
+        const in90Days = new Date();
+        in90Days.setDate(today.getDate() + 90);
 
-          couponsPaidThisMonth = monthPayments?.reduce((sum, p) => sum + parseFloat(p.amount.toString()), 0) || 0;
+        const { data: upcoming } = await supabase
+          .from('souscriptions')
+          .select('id', { count: 'exact', head: true })
+          .in('tranche_id', trancheIds)
+          .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
+          .lte('prochaine_date_coupon', in90Days.toISOString().split('T')[0]);
 
-          const today = new Date();
-          const in90Days = new Date();
-          in90Days.setDate(today.getDate() + 90);
-
-          const { data: upcoming } = await supabase
-            .from('subscriptions')
-            .select('id', { count: 'exact', head: true })
-            .in('tranche_id', trancheIds)
-            .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
-            .lte('prochaine_date_coupon', in90Days.toISOString().split('T')[0]);
-
-          upcomingCount = upcoming?.count || 0;
-        }
+        upcomingCount = upcoming?.count || 0;
       }
     }
 
@@ -144,52 +125,23 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
       const { data: tranches } = await supabase
         .from('tranches')
         .select('id')
-        .in('project_id', projectIds);
+        .in('projet_id', projectIds);
 
       const trancheIds = tranches?.map((t) => t.id) || [];
 
       if (trancheIds.length > 0) {
-        const { data: subscriptionIds } = await supabase
-          .from('subscriptions')
-          .select('id')
-          .in('tranche_id', trancheIds);
+        const { data: payments } = await supabase
+          .from('paiements')
+          .select('*')
+          .order('date_paiement', { ascending: false })
+          .limit(5);
 
-        const subIds = subscriptionIds?.map((s) => s.id) || [];
-
-        if (subIds.length > 0) {
-          const { data: payments } = await supabase
-            .from('payments')
-            .select(`
-              id,
-              payment_date,
-              amount,
-              status,
-              subscription:subscriptions(
-                investor:investors(
-                  investisseur_nom,
-                  raison_sociale
-                )
-              )
-            `)
-            .in('subscription_id', subIds)
-            .order('payment_date', { ascending: false })
-            .limit(5);
-
-          setRecentPayments(payments as any || []);
-        }
+        setRecentPayments(payments as any || []);
 
         const today = new Date();
         const { data: coupons } = await supabase
-          .from('subscriptions')
-          .select(`
-            id,
-            prochaine_date_coupon,
-            coupon_brut,
-            investor:investors(
-              investisseur_nom,
-              raison_sociale
-            )
-          `)
+          .from('souscriptions')
+          .select('*')
           .in('tranche_id', trancheIds)
           .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
           .order('prochaine_date_coupon', { ascending: true })
@@ -333,14 +285,14 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                         <div key={payment.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                           <div className="flex-1">
                             <p className="font-medium text-slate-900 text-sm">
-                              {payment.subscription?.investor?.raison_sociale || payment.subscription?.investor?.investisseur_nom || 'Investisseur'}
+                              Investisseur
                             </p>
-                            <p className="text-xs text-slate-600">{formatDate(payment.payment_date)} • Payé</p>
+                            <p className="text-xs text-slate-600">{formatDate(payment.date_paiement)} • Payé</p>
                           </div>
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            payment.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                            payment.statut === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                           }`}>
-                            {payment.status === 'paid' ? 'Remboursement Nominal' : payment.status}
+                            {payment.statut === 'paid' ? 'Remboursement Nominal' : payment.statut}
                           </span>
                         </div>
                       ))}

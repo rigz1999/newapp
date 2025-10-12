@@ -7,11 +7,11 @@ interface Tranche {
   id: string;
   tranche_name: string;
   frequence: string;
-  taux_interet: number;
+  taux_interet: string;
   maturite_mois: number;
   date_emission: string | null;
   date_echeance: string | null;
-  cgp_nom: string | null;
+  cgp: string | null;
   created_at: string;
 }
 
@@ -44,7 +44,7 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
     const { data } = await supabase
       .from('tranches')
       .select('*')
-      .eq('project_id', projectId)
+      .eq('projet_id', projectId)
       .order('created_at', { ascending: false });
 
     setTranches(data || []);
@@ -338,7 +338,7 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
                         {formatFrequence(tranche.frequence)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">
-                        {(tranche.taux_interet * 100).toFixed(2)}%
+                        {tranche.taux_interet}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                         {tranche.maturite_mois} mois
@@ -350,7 +350,7 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
                         {formatDate(tranche.date_echeance)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                        {tranche.cgp_nom || '-'}
+                        {tranche.cgp || '-'}
                       </td>
                     </tr>
                   ))}
