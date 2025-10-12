@@ -11,7 +11,11 @@ import {
   AlertCircle,
   Users,
   AlertTriangle,
-  X
+  X,
+  Plus,
+  DollarSign,
+  FileText,
+  UserPlus
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -450,7 +454,64 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-8">
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8 mt-8">
+                <h2 className="text-xl font-bold text-slate-900 mb-4">Actions Rapides</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <button
+                    onClick={() => onNavigate('projects')}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
+                  >
+                    <div className="bg-blue-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <Plus className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Nouveau Projet</p>
+                      <p className="text-xs text-slate-600">Créer un projet</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => onNavigate('tranches')}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all group border border-green-200"
+                  >
+                    <div className="bg-green-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <FileText className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Nouvelle Tranche</p>
+                      <p className="text-xs text-slate-600">Ajouter une tranche</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => onNavigate('coupons')}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all group border border-purple-200"
+                  >
+                    <div className="bg-purple-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <DollarSign className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Enregistrer Paiement</p>
+                      <p className="text-xs text-slate-600">Payer un coupon</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => onNavigate('subscriptions')}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 rounded-lg transition-all group border border-amber-200"
+                  >
+                    <div className="bg-amber-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <UserPlus className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Nouvelle Souscription</p>
+                      <p className="text-xs text-slate-600">Ajouter un investisseur</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-slate-600 text-sm">Montant total investi</span>
