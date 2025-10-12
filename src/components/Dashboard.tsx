@@ -8,6 +8,8 @@ import {
   Clock,
   RefreshCw,
   ArrowRight,
+  AlertCircle,
+  Users,
   AlertTriangle,
   X
 } from 'lucide-react';
@@ -210,10 +212,25 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
           `)
           .in('tranche_id', trancheIds)
           .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
-          .order('prochaine_date_coupon', { ascending: true })
-          .limit(5);
+          .order('prochaine_date_coupon', { ascending: true });
 
-        setUpcomingCoupons(coupons as any || []);
+        const groupedCoupons = (coupons || []).reduce((acc: any[], coupon: any) => {
+          const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
+          const existing = acc.find(c => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
+
+          if (existing) {
+            existing.investor_count += 1;
+            existing.coupon_brut = parseFloat(existing.coupon_brut) + parseFloat(coupon.coupon_brut);
+          } else {
+            acc.push({
+              ...coupon,
+              investor_count: 1
+            });
+          }
+          return acc;
+        }, []);
+
+        setUpcomingCoupons(groupedCoupons.slice(0, 5));
 
         // Fetch alerts - TEMPORARILY DISABLED TO SHOW EXAMPLES
         // const alertsData: Alert[] = [];
@@ -598,20 +615,39 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                     <p className="text-slate-500 text-center py-8">Aucun coupon à venir</p>
                   ) : (
                     <div className="space-y-3">
-                      {upcomingCoupons.map((coupon) => (
-                        <div key={coupon.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                          <div className="flex-1">
-                            <p className="font-bold text-slate-900">{formatCurrency(parseFloat(coupon.coupon_brut.toString()))}</p>
-                            <p className="text-xs text-slate-600 mt-1">
-                              {coupon.tranche?.projet?.projet || 'Projet'} • {coupon.tranche?.tranche_name || 'Tranche'}
-                            </p>
+                      {upcomingCoupons.map((coupon) => {
+                        const daysUntil = Math.ceil(
+                          (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                        );
+                        const isUrgent = daysUntil <= 7;
+
+                        return (
+                          <div key={coupon.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-bold text-slate-900">{formatCurrency(parseFloat(coupon.coupon_brut.toString()))}</p>
+                                {isUrgent && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                                    <AlertCircle className="w-3 h-3" />
+                                    Urgent
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-600 mt-1">
+                                {coupon.tranche?.projet?.projet || 'Projet'} • {coupon.tranche?.tranche_name || 'Tranche'}
+                              </p>
+                              <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
+                                <Users className="w-3 h-3" />
+                                <span>{coupon.investor_count} investisseur{coupon.investor_count > 1 ? 's' : ''}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-slate-900">{formatDate(coupon.prochaine_date_coupon)}</p>
+                              <p className="text-xs text-slate-600">{getRelativeDate(coupon.prochaine_date_coupon)}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-slate-900">{formatDate(coupon.prochaine_date_coupon)}</p>
-                            <p className="text-xs text-slate-600">{getRelativeDate(coupon.prochaine_date_coupon)}</p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
