@@ -49,17 +49,35 @@ export function Login() {
     }
 
     if (authData.user) {
-      const { error: orgError } = await supabase
+      const { data: orgData, error: orgError } = await supabase
         .from('organizations')
         .insert({
           name: organizationName.trim(),
           owner_id: authData.user.id,
-        });
+        })
+        .select()
+        .single();
 
       if (orgError) {
         setError('Erreur lors de la création de l\'organisation: ' + orgError.message);
         setLoading(false);
         return;
+      }
+
+      if (orgData) {
+        const { error: memberError } = await supabase
+          .from('memberships')
+          .insert({
+            user_id: authData.user.id,
+            org_id: orgData.id,
+            role: 'owner',
+          });
+
+        if (memberError) {
+          setError('Erreur lors de la création du membership: ' + memberError.message);
+          setLoading(false);
+          return;
+        }
       }
     }
   };
