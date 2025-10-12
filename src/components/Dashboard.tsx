@@ -70,6 +70,7 @@ interface Alert {
 interface MonthlyData {
   month: string;
   amount: number;
+  cumulative?: number;
 }
 
 export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps) {
@@ -108,6 +109,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   const [selectedYear, setSelectedYear] = useState(2025);
   const [startMonth, setStartMonth] = useState(0);
   const [endMonth, setEndMonth] = useState(11);
+  const [viewMode, setViewMode] = useState<'monthly' | 'cumulative'>('monthly');
 
   const fetchData = async () => {
     const isRefresh = !loading;
@@ -347,11 +349,15 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
     });
 
     const chartData: MonthlyData[] = [];
+    let cumulative = 0;
     for (let month = start; month <= end; month++) {
       const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+      const monthAmount = monthlyTotals[monthKey] || 0;
+      cumulative += monthAmount;
       chartData.push({
         month: monthNames[month],
-        amount: monthlyTotals[monthKey] || 0,
+        amount: monthAmount,
+        cumulative: cumulative,
       });
     }
 
@@ -552,6 +558,14 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                   <h2 className="text-xl font-bold text-slate-900">Évolution des Montants Levés</h2>
                   <div className="flex items-center gap-4">
                     <select
+                      value={viewMode}
+                      onChange={(e) => setViewMode(e.target.value as 'monthly' | 'cumulative')}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                    >
+                      <option value="monthly">Vue par mois</option>
+                      <option value="cumulative">Vue cumulée</option>
+                    </select>
+                    <select
                       value={selectedYear}
                       onChange={(e) => {
                         const year = parseInt(e.target.value);
@@ -594,18 +608,37 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                 ) : (
                   <div className="h-80 flex items-end justify-between gap-2 px-4 pb-4">
                     {monthlyData.map((data, index) => {
-                      const maxAmount = Math.max(...monthlyData.map(d => d.amount), 1);
-                      const heightPercentage = Math.max((data.amount / maxAmount) * 85, data.amount > 0 ? 5 : 0);
+                      const displayAmount = viewMode === 'cumulative' ? (data.cumulative || 0) : data.amount;
+                      const maxAmount = Math.max(...monthlyData.map(d => viewMode === 'cumulative' ? (d.cumulative || 0) : d.amount), 1);
+                      const heightPercentage = Math.max((displayAmount / maxAmount) * 85, displayAmount > 0 ? 5 : 0);
                       return (
                         <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full">
                           <div className="relative group flex-1 w-full flex flex-col justify-end items-center">
-                            {data.amount > 0 && (
+                            <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                              <div className="bg-slate-900 text-white px-3 py-2 rounded-lg shadow-lg text-xs whitespace-nowrap">
+                                <div className="font-semibold">{data.month}</div>
+                                {viewMode === 'monthly' ? (
+                                  <div>{formatCurrency(data.amount)}</div>
+                                ) : (
+                                  <>
+                                    <div className="text-slate-300">Mensuel: {formatCurrency(data.amount)}</div>
+                                    <div className="font-semibold">Cumulé: {formatCurrency(data.cumulative || 0)}</div>
+                                  </>
+                                )}
+                              </div>
+                              <div className="w-2 h-2 bg-slate-900 transform rotate-45 mx-auto -mt-1"></div>
+                            </div>
+                            {displayAmount > 0 && (
                               <div className="mb-1 text-xs font-semibold text-slate-700 whitespace-nowrap">
-                                {formatCurrency(data.amount)}
+                                {formatCurrency(displayAmount)}
                               </div>
                             )}
                             <div
-                              className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all hover:from-blue-700 hover:to-blue-500 cursor-pointer shadow-md"
+                              className={`w-full rounded-t-lg transition-all hover:opacity-90 cursor-pointer shadow-md ${
+                                viewMode === 'cumulative'
+                                  ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 hover:from-emerald-700 hover:to-emerald-500'
+                                  : 'bg-gradient-to-t from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500'
+                              }`}
                               style={{ height: `${heightPercentage}%` }}
                             />
                           </div>
