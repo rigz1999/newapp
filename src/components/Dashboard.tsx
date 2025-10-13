@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Sidebar } from './Sidebar';
 import { TrancheWizard } from './TrancheWizard';
 import { PaymentWizard } from './PaymentWizard';
 import {
@@ -22,8 +22,6 @@ import {
 
 interface DashboardProps {
   organization: { id: string; name: string; role: string };
-  onLogout: () => void;
-  onNavigate: (page: string, options?: { openCreateModal?: boolean }) => void;
 }
 
 interface Stats {
@@ -75,7 +73,8 @@ interface MonthlyData {
   cumulative?: number;
 }
 
-export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps) {
+export function Dashboard({ organization }: DashboardProps) {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<Stats>({
     totalInvested: 0,
     couponsPaidThisMonth: 0,
@@ -106,7 +105,6 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   ]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activePage, setActivePage] = useState('dashboard');
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [selectedYear, setSelectedYear] = useState(2025);
   const [startMonth, setStartMonth] = useState(0);
@@ -407,18 +405,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar
-        organization={organization}
-        activePage={activePage}
-        onNavigate={(page) => {
-          setActivePage(page);
-          onNavigate(page);
-        }}
-        onLogout={onLogout}
-      />
-
-      <main className="flex-1 overflow-y-auto ml-64">
+    <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex items-center justify-between mb-2">
             <div>
@@ -468,7 +455,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                 <h2 className="text-xl font-bold text-slate-900 mb-4">Actions Rapides</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <button
-                    onClick={() => onNavigate('projects', { openCreateModal: true })}
+                    onClick={() => navigate('/projets?create=true')}
                     className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
                   >
                     <div className="bg-blue-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -659,7 +646,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-slate-900">Derniers Paiements</h2>
                     <button
-                      onClick={() => onNavigate('subscriptions')}
+                      onClick={() => navigate('/souscriptions')}
                       className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
                     >
                       Voir tout <ArrowRight className="w-4 h-4" />
@@ -703,7 +690,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-slate-900">Coupons à Venir</h2>
                     <button
-                      onClick={() => onNavigate('coupons')}
+                      onClick={() => navigate('/coupons')}
                       className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
                     >
                       Voir tout <ArrowRight className="w-4 h-4" />
@@ -752,8 +739,7 @@ export function Dashboard({ organization, onLogout, onNavigate }: DashboardProps
               </div>
             </>
           )}
-        </div>
-      </main>
+    </div>
 
       {showTrancheWizard && (
         <TrancheWizard

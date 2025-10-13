@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Sidebar } from './Sidebar';
 import { FolderOpen, Plus, Layers, Search, Edit, Trash2, Eye, Users } from 'lucide-react';
 
 interface ProjectWithStats {
@@ -17,18 +17,15 @@ interface ProjectWithStats {
 
 interface ProjectsProps {
   organization: { id: string; name: string; role: string };
-  onLogout: () => void;
-  onNavigate: (page: string) => void;
-  onSelectProject: (projectId: string) => void;
-  openCreateModal?: boolean;
-  onModalClose?: () => void;
 }
 
-export function Projects({ organization, onLogout, onNavigate, onSelectProject, openCreateModal = false, onModalClose }: ProjectsProps) {
+export function Projects({ organization }: ProjectsProps) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<ProjectWithStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(openCreateModal);
+  const [showCreateModal, setShowCreateModal] = useState(searchParams.get('create') === 'true');
   const [searchTerm, setSearchTerm] = useState('');
 
   const [newProject, setNewProject] = useState({
@@ -46,7 +43,7 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject, 
   }, [organization.id]);
 
   useEffect(() => {
-    if (openCreateModal) {
+    if (searchParams.get('create') === 'true') {
       setShowCreateModal(true);
     }
   }, [openCreateModal]);
@@ -141,15 +138,6 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject, 
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar
-        organization={organization}
-        activePage="projects"
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-      />
-
-      <main className="flex-1 overflow-y-auto ml-64">
         <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -242,7 +230,7 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject, 
 
                   <div className="bg-slate-50 px-6 py-3 flex gap-2 border-t border-slate-200">
                     <button
-                      onClick={() => onSelectProject(project.id)}
+                      onClick={() => navigate(`/projets/${project.id}`)}
                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       <Eye className="w-4 h-4" />
@@ -338,8 +326,6 @@ export function Projects({ organization, onLogout, onNavigate, onSelectProject, 
               </div>
             </div>
           )}
-        </div>
-      </main>
     </div>
   );
 }

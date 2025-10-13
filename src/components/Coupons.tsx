@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Sidebar } from './Sidebar';
 import { Calendar, Download, Filter, CheckCircle } from 'lucide-react';
 
 interface CouponData {
@@ -25,11 +24,9 @@ interface CouponData {
 
 interface CouponsProps {
   organization: { id: string; name: string; role: string };
-  onLogout: () => void;
-  onNavigate: (page: string) => void;
 }
 
-export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
+export function Coupons({ organization }: CouponsProps) {
   const [coupons, setCoupons] = useState<CouponData[]>([]);
   const [filteredCoupons, setFilteredCoupons] = useState<CouponData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,15 +215,6 @@ export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
   const groupedCoupons = groupByDate(filteredCoupons);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar
-        organization={organization}
-        activePage="coupons"
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-      />
-
-      <main className="flex-1 overflow-y-auto ml-64">
         <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
@@ -385,8 +373,6 @@ export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
               })}
             </div>
           )}
-        </div>
-      </main>
     </div>
   );
 }
