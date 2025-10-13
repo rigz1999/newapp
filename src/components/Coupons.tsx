@@ -35,6 +35,7 @@ export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
   const [selectedProject, setSelectedProject] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [projects, setProjects] = useState<Array<{ id: string; projet: string }>>([]);
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
 
   useEffect(() => {
     filterCoupons();
-  }, [coupons, selectedPeriod, selectedProject]);
+  }, [coupons, selectedPeriod, selectedProject, selectedStatus]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -115,6 +116,31 @@ export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
       filtered = filtered.filter((coupon) => {
         const projectName = coupon.projet?.projet;
         return projectName === selectedProject;
+      });
+    }
+
+    if (selectedStatus !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      filtered = filtered.filter((coupon) => {
+        const couponDate = new Date(coupon.prochaine_date_coupon);
+        couponDate.setHours(0, 0, 0, 0);
+        const diffTime = couponDate.getTime() - today.getTime();
+        const daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        switch (selectedStatus) {
+          case 'late':
+            return daysUntil < 0;
+          case 'urgent':
+            return daysUntil >= 0 && daysUntil <= 7;
+          case 'upcoming':
+            return daysUntil > 7 && daysUntil <= 30;
+          case 'future':
+            return daysUntil > 30;
+          default:
+            return true;
+        }
       });
     }
 
@@ -216,7 +242,7 @@ export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
               <Filter className="w-5 h-5 text-slate-600" />
               <span className="text-sm font-semibold text-slate-900">Filtres</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Période
@@ -248,6 +274,23 @@ export function Coupons({ organization, onLogout, onNavigate }: CouponsProps) {
                       {project.projet}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Statut
+                </label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="all">Tous les statuts</option>
+                  <option value="late">En retard</option>
+                  <option value="urgent">Urgent (7 jours)</option>
+                  <option value="upcoming">À venir (30 jours)</option>
+                  <option value="future">Futur (&gt;30 jours)</option>
                 </select>
               </div>
             </div>
