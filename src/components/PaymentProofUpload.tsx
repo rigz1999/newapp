@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Upload, X, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure le worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js`;
 
 interface PaymentProofUploadProps {
   payment: {
@@ -28,12 +32,13 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       const validFiles = selectedFiles.filter(f => {
-        if (f.type !== 'application/pdf') {
-          setError('Seuls les fichiers PDF sont acceptés');
+        const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+        if (!validTypes.includes(f.type)) {
+          setError('Seuls les fichiers PDF, PNG, JPG et WEBP sont acceptés');
           return false;
         }
-        if (f.size > 5 * 1024 * 1024) {
-          setError('Taille maximale: 5MB');
+        if (f.size > 10 * 1024 * 1024) {
+          setError('Taille maximale: 10MB');
           return false;
         }
         return true;
@@ -51,26 +56,90 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
 
     try {
       const file = files[0];
-      const fileName = `${Date.now()}_${file.name}`;
-      
-      // Upload vers storage temporaire
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('payment-proofs-temp')
-        .upload(fileName, file);
+      let uploadedUrls: string[] = [];
+      let tempFileNames: string[] = [];
 
-      if (uploadError) throw uploadError;
+      // Si c'est un PDF, convertir TOUTES les pages en images
+      if (file.type === 'application/pdf') {
+        console.log('Conversion PDF → Images...');
+        
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const numPages = pdf.numPages;
+        
+        console.log(`PDF de ${numPages} page(s) détecté`);
 
-      // Obtenir l'URL publique
-      const { data: urlData } = supabase.storage
-        .from('payment-proofs-temp')
-        .getPublicUrl(fileName);
+        // Convertir chaque page
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          
+          const viewport = page.getViewport({ scale: 2.0 });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d')!;
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          await page.render({
+            canvasContext: context,
+            viewport: viewport
+          }).promise;
+
+          // Convertir canvas en blob
+          const blob = await new Promise<Blob>((resolve) => {
+            canvas.toBlob((b) => resolve(b!), 'image/png');
+          });
+          
+          const fileName = `${Date.now()}_page${pageNum}_${file.name.replace('.pdf', '.png')}`;
+          
+          // Upload vers storage temporaire
+          const { error: uploadError } = await supabase.storage
+            .from('payment-proofs-temp')
+            .upload(fileName, blob);
+
+          if (uploadError) throw uploadError;
+
+          // Obtenir l'URL publique
+          const { data: urlData } = supabase.storage
+            .from('payment-proofs-temp')
+            .getPublicUrl(fileName);
+
+          uploadedUrls.push(urlData.publicUrl);
+          tempFileNames.push(fileName);
+          
+          console.log(`Page ${pageNum}/${numPages} convertie`);
+        }
+        
+        console.log('Toutes les pages converties!');
+      } else {
+        // Si c'est déjà une image
+        const fileName = `${Date.now()}_${file.name}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('payment-proofs-temp')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('payment-proofs-temp')
+          .getPublicUrl(fileName);
+
+        uploadedUrls.push(urlData.publicUrl);
+        tempFileNames.push(fileName);
+      }
+
+      console.log('Analyse des fichiers:', uploadedUrls);
 
       // Appeler la fonction Edge pour analyser
       const { data, error: funcError } = await supabase.functions.invoke('analyze-payment', {
         body: {
-          fileUrl: urlData.publicUrl,
+          fileUrls: uploadedUrls,
           expectedAmount: payment.montant,
-          dueDate: new Date(payment.date_paiement).toLocaleDateString('fr-FR').split('/').join('-'),
+          dueDate: new Date(payment.date_paiement).toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric'
+          }).split('/').join('-'),
           trancheName: payment.tranche?.tranche_name || '',
           investorName: payment.investisseur?.nom_raison_sociale || ''
         }
@@ -81,7 +150,7 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
 
       setAnalysisResult({
         ...data,
-        tempFileName: fileName
+        tempFileNames: tempFileNames
       });
 
     } catch (err: any) {
@@ -94,12 +163,13 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
 
   const handleConfirm = async (match: any) => {
     try {
-      const tempFileName = analysisResult.tempFileName;
+      const tempFileNames = analysisResult.tempFileNames;
 
-      // Télécharger depuis temp
+      // Télécharger la première image (ou toutes si besoin)
+      const firstFileName = tempFileNames[0];
       const { data: downloadData, error: downloadError } = await supabase.storage
         .from('payment-proofs-temp')
-        .download(tempFileName);
+        .download(firstFileName);
 
       if (downloadError) throw downloadError;
 
@@ -138,10 +208,10 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
 
       if (updateError) throw updateError;
 
-      // Supprimer fichier temp
+      // Supprimer TOUS les fichiers temp
       await supabase.storage
         .from('payment-proofs-temp')
-        .remove([tempFileName]);
+        .remove(tempFileNames);
 
       onSuccess();
       onClose();
@@ -153,10 +223,10 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
   };
 
   const handleReject = async () => {
-    if (analysisResult?.tempFileName) {
+    if (analysisResult?.tempFileNames) {
       await supabase.storage
         .from('payment-proofs-temp')
-        .remove([analysisResult.tempFileName]);
+        .remove(analysisResult.tempFileNames);
     }
     setFiles([]);
     setAnalysisResult(null);
@@ -221,8 +291,7 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
                 <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                 <input
                   type="file"
-                  accept="application/pdf"
-                  multiple
+                  accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
                   onChange={handleFileChange}
                   className="hidden"
                   id="file-upload"
@@ -231,14 +300,14 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
                   htmlFor="file-upload"
                   className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  Choisir des fichiers PDF
+                  Choisir un PDF ou une image
                 </label>
-                <p className="text-sm text-slate-500 mt-2">Maximum 5MB par fichier</p>
+                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB)</p>
               </div>
 
               {files.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="font-medium text-slate-900 mb-2">Fichiers sélectionnés:</h4>
+                  <h4 className="font-medium text-slate-900 mb-2">Fichier sélectionné:</h4>
                   <ul className="space-y-2">
                     {files.map((file, idx) => (
                       <li key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
