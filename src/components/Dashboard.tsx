@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { TrancheWizard } from './TrancheWizard';
-import { PaymentWizard } from './PaymentWizard';
+import { QuickPaymentModal } from './QuickPaymentModal';
 import {
   TrendingUp,
   CheckCircle2,
@@ -111,7 +111,7 @@ export function Dashboard({ organization }: DashboardProps) {
   const [endMonth, setEndMonth] = useState(11);
   const [viewMode, setViewMode] = useState<'monthly' | 'cumulative'>('monthly');
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
-  const [showPaymentWizard, setShowPaymentWizard] = useState(false);
+  const [showQuickPayment, setShowQuickPayment] = useState(false);
 
   const CACHE_KEY = 'saad_dashboard_cache';
   const CACHE_DURATION = 5 * 60 * 1000;
@@ -510,7 +510,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   </button>
 
                   <button
-                    onClick={() => navigate('/paiements')}
+                    onClick={() => setShowQuickPayment(true)}
                     className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all group border border-purple-200"
                   >
                     <div className="bg-purple-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -782,11 +782,11 @@ export function Dashboard({ organization }: DashboardProps) {
         />
       )}
 
-      {showPaymentWizard && (
-        <PaymentWizard
-          onClose={() => setShowPaymentWizard(false)}
+      {showQuickPayment && (
+        <QuickPaymentModal
+          onClose={() => setShowQuickPayment(false)}
           onSuccess={() => {
-            setShowPaymentWizard(false);
+            setShowQuickPayment(false);
             fetchData();
           }}
         />
