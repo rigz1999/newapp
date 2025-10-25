@@ -1,12 +1,14 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useOrganization } from './hooks/useOrganization';
 import { Login } from './components/Login';
 import { Layout } from './components/Layout';
-import { Dashboard } from './components/Dashboard';
-import { Projects } from './components/Projects';
-import { Coupons } from './components/Coupons';
 import { supabase } from './lib/supabase';
+
+const Dashboard = lazy(() => import('./components/Dashboard').then(module => ({ default: module.Dashboard })));
+const Projects = lazy(() => import('./components/Projects').then(module => ({ default: module.Projects })));
+const Coupons = lazy(() => import('./components/Coupons').then(module => ({ default: module.Coupons })));
 
 function App() {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -49,13 +51,43 @@ function App() {
 
   const effectiveOrg = organization || { id: 'admin', name: 'Admin', role: 'admin' };
 
+  const LoadingFallback = () => (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mb-4"></div>
+        <p className="text-slate-600">Chargement...</p>
+      </div>
+    </div>
+  );
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout organization={effectiveOrg} />}>
-          <Route index element={<Dashboard organization={effectiveOrg} />} />
-          <Route path="projets" element={<Projects organization={effectiveOrg} />} />
-          <Route path="coupons" element={<Coupons organization={effectiveOrg} />} />
+          <Route
+            index
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Dashboard organization={effectiveOrg} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="projets"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Projects organization={effectiveOrg} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="coupons"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Coupons organization={effectiveOrg} />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

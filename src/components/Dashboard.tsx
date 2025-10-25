@@ -367,7 +367,29 @@ export function Dashboard({ organization }: DashboardProps) {
   };
 
   useEffect(() => {
-    fetchData();
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchData();
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+      setStats({
+        totalInvested: 0,
+        couponsPaidThisMonth: 0,
+        activeProjects: 0,
+        upcomingCoupons: 0,
+        nextCouponDays: 90,
+      });
+      setRecentPayments([]);
+      setUpcomingCoupons([]);
+      setMonthlyData([]);
+    };
   }, [organization.id]);
 
   const handleRefresh = () => {

@@ -39,7 +39,21 @@ export function Projects({ organization }: ProjectsProps) {
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    fetchProjects();
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchProjects();
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+      setProjects([]);
+      setFilteredProjects([]);
+    };
   }, [organization.id]);
 
   useEffect(() => {

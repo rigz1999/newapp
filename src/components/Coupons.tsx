@@ -36,7 +36,22 @@ export function Coupons({ organization }: CouponsProps) {
   const [projects, setProjects] = useState<Array<{ id: string; projet: string }>>([]);
 
   useEffect(() => {
-    fetchData();
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchData();
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+      setCoupons([]);
+      setFilteredCoupons([]);
+      setProjects([]);
+    };
   }, []);
 
   useEffect(() => {
