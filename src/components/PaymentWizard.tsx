@@ -480,25 +480,38 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                 </div>
               )}
 
-              <button
-                onClick={handleAnalyze}
-                disabled={files.length === 0 || analyzing}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-              >
-                {analyzing ? (
-                  <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    Analyse en cours...
-                  </>
-                ) : (
-                  'Analyser le justificatif'
-                )}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setStep('select');
+                    setFiles([]);
+                    setError('');
+                  }}
+                  disabled={analyzing}
+                  className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+                >
+                  Retour
+                </button>
+                <button
+                  onClick={handleAnalyze}
+                  disabled={files.length === 0 || analyzing}
+                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                >
+                  {analyzing ? (
+                    <>
+                      <Loader className="w-5 h-5 animate-spin" />
+                      Analyse en cours...
+                    </>
+                  ) : (
+                    'Analyser le justificatif'
+                  )}
+                </button>
+              </div>
             </div>
           )}
 
           {/* STEP 3: RESULTS - COMPACT TABLE VIEW */}
-          {true && (
+          {step === 'results' && (
             <div className="space-y-4">
               {/* Summary */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
