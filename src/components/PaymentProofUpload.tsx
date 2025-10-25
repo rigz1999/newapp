@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Upload, X, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Upload, X, CheckCircle, AlertTriangle, XCircle, Trash2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Configure le worker avec la version 5.4 (correspond au package installé)
@@ -43,9 +43,13 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
         }
         return true;
       });
-      setFiles(validFiles);
+      setFiles(prev => [...prev, ...validFiles]);
       setError(null);
     }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleAnalyze = async () => {
@@ -337,24 +341,34 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
                   onChange={handleFileChange}
                   className="hidden"
                   id="file-upload"
+                  multiple
                 />
                 <label
                   htmlFor="file-upload"
                   className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  Choisir un PDF ou une image
+                  {files.length > 0 ? 'Ajouter d\'autres fichiers' : 'Choisir des fichiers'}
                 </label>
-                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB)</p>
+                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier)</p>
               </div>
 
               {files.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="font-medium text-slate-900 mb-2">Fichier sélectionné:</h4>
+                  <h4 className="font-medium text-slate-900 mb-2">Fichier{files.length > 1 ? 's' : ''} sélectionné{files.length > 1 ? 's' : ''}:</h4>
                   <ul className="space-y-2">
                     {files.map((file, idx) => (
                       <li key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
-                        <span className="text-sm text-slate-700">{file.name}</span>
-                        <span className="text-xs text-slate-500">{(file.size / 1024).toFixed(0)} KB</span>
+                        <div className="flex-1">
+                          <span className="text-sm text-slate-700">{file.name}</span>
+                          <span className="text-xs text-slate-500 ml-2">({(file.size / 1024).toFixed(0)} KB)</span>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveFile(idx)}
+                          className="text-red-600 hover:text-red-700 p-2 hover:bg-red-50 rounded transition-colors"
+                          title="Supprimer ce fichier"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </li>
                     ))}
                   </ul>

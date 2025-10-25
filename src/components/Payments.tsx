@@ -28,6 +28,7 @@ interface Payment {
 }
 
 type StatusFilter = 'all' | 'paid' | 'pending' | 'late';
+type SortOrder = 'desc' | 'asc';
 
 export function Payments({ organization }: PaymentsProps) {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -35,6 +36,7 @@ export function Payments({ organization }: PaymentsProps) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [uploadingPayment, setUploadingPayment] = useState<Payment | null>(null);
   const [viewingProofs, setViewingProofs] = useState<Payment | null>(null);
   const [proofs, setProofs] = useState<any[]>([]);
@@ -51,7 +53,7 @@ export function Payments({ organization }: PaymentsProps) {
 
   useEffect(() => {
     filterPayments();
-  }, [payments, searchTerm, statusFilter]);
+  }, [payments, searchTerm, statusFilter, sortOrder]);
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -146,6 +148,12 @@ export function Payments({ organization }: PaymentsProps) {
         return true;
       });
     }
+
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.date_paiement).getTime();
+      const dateB = new Date(b.date_paiement).getTime();
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
 
     setFilteredPayments(filtered);
   };
@@ -276,6 +284,15 @@ export function Payments({ organization }: PaymentsProps) {
             <option value="pending">En attente</option>
             <option value="late">En retard</option>
           </select>
+
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+            className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="desc">Plus récents</option>
+            <option value="asc">Plus anciens</option>
+          </select>
         </div>
 
         {loading ? (
@@ -378,6 +395,10 @@ export function Payments({ organization }: PaymentsProps) {
           payment={viewingProofs}
           proofs={proofs}
           onClose={() => setViewingProofs(null)}
+          onProofDeleted={() => {
+            fetchPayments();
+            handleViewProofs(viewingProofs);
+          }}
         />
       )}
     </div>
