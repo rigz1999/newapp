@@ -348,15 +348,7 @@ export function Payments({ organization }: PaymentsProps) {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex items-center gap-2">
-                        {(payment.statut?.toLowerCase() === 'pending' || payment.statut?.toLowerCase() === 'en attente') ? (
-                          <button
-                            onClick={() => setUploadingPayment(payment)}
-                            className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
-                          >
-                            <Upload className="w-4 h-4" />
-                            Justificatif
-                          </button>
-                        ) : (
+                        {(payment.statut?.toLowerCase() === 'payé' || payment.statut?.toLowerCase() === 'paid') ? (
                           <button
                             onClick={async () => {
                               const proofsData = await loadProofs(payment.id);
@@ -367,6 +359,14 @@ export function Payments({ organization }: PaymentsProps) {
                           >
                             <Eye className="w-4 h-4" />
                             Voir
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setUploadingPayment(payment)}
+                            className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                          >
+                            <Upload className="w-4 h-4" />
+                            Justificatif
                           </button>
                         )}
                       </div>
