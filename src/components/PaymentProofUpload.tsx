@@ -89,24 +89,36 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
             canvas.toBlob((b) => resolve(b!), 'image/png');
           });
           
-          const fileName = `${Date.now()}_page${pageNum}_${file.name.replace('.pdf', '.png')}`;
+          const fileName = `${Date.now()}_page${pageNum}.png`;
+          
+          console.log(`Upload page ${pageNum}:`, fileName);
           
           // Upload vers storage temporaire
-          const { error: uploadError } = await supabase.storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
             .from('payment-proofs-temp')
-            .upload(fileName, blob);
+            .upload(fileName, blob, {
+              contentType: 'image/png',
+              upsert: false
+            });
 
-          if (uploadError) throw uploadError;
+          if (uploadError) {
+            console.error('Erreur upload:', uploadError);
+            throw uploadError;
+          }
+
+          console.log('Upload réussi:', uploadData);
 
           // Obtenir l'URL publique
           const { data: urlData } = supabase.storage
             .from('payment-proofs-temp')
             .getPublicUrl(fileName);
 
+          console.log('URL générée:', urlData.publicUrl);
+
           uploadedUrls.push(urlData.publicUrl);
           tempFileNames.push(fileName);
           
-          console.log(`Page ${pageNum}/${numPages} convertie`);
+          console.log(`Page ${pageNum}/${numPages} convertie et uploadée`);
         }
         
         console.log('Toutes les pages converties!');
@@ -114,52 +126,64 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
         // Si c'est déjà une image
         const fileName = `${Date.now()}_${file.name}`;
         
-        const { error: uploadError } = await supabase.storage
+        console.log('Upload image:', fileName);
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
           .from('payment-proofs-temp')
-          .upload(fileName, file);
+          .upload(fileName, file, {
+            contentType: file.type,
+            upsert: false
+          });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Erreur upload:', uploadError);
+          throw uploadError;
+        }
+
+        console.log('Upload réussi:', uploadData);
 
         const { data: urlData } = supabase.storage
           .from('payment-proofs-temp')
           .getPublicUrl(fileName);
 
+        console.log('URL générée:', urlData.publicUrl);
+
         uploadedUrls.push(urlData.publicUrl);
         tempFileNames.push(fileName);
       }
 
-      console.log('Analyse des fichiers:', uploadedUrls);
+      console.log('=== URLS FINALES ===');
+      console.log('URLs uploadées:', uploadedUrls);
+      console.log('Fichiers temp:', tempFileNames);
 
-console.log('URLs uploadées:', uploadedUrls);
-console.log('Données envoyées:', {
-  fileUrls: uploadedUrls,
-  expectedAmount: payment.montant,
-  dueDate: new Date(payment.date_paiement).toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: '2-digit', 
-    year: 'numeric'
-  }).split('/').join('-'),
-});
+      // Vérifier que les URLs ne sont pas vides
+      if (uploadedUrls.length === 0 || !uploadedUrls[0]) {
+        throw new Error('Aucune URL de fichier générée - problème d\'upload');
+      }
 
-// Vérifier que les URLs ne sont pas vides
-if (uploadedUrls.length === 0 || !uploadedUrls[0]) {
-  throw new Error('Aucune URL de fichier générée');
-}
-      
+      const requestBody = {
+        fileUrls: uploadedUrls,
+        expectedAmount: payment.montant,
+        dueDate: new Date(payment.date_paiement).toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit', 
+          year: 'numeric'
+        }).split('/').join('-'),
+        trancheName: payment.tranche?.tranche_name || '',
+        investorName: payment.investisseur?.nom_raison_sociale || ''
+      };
+
+      console.log('=== APPEL EDGE FUNCTION ===');
+      console.log('Body envoyé:', requestBody);
+
       // Appeler la fonction Edge pour analyser
       const { data, error: funcError } = await supabase.functions.invoke('analyze-payment', {
-        body: {
-          fileUrls: uploadedUrls,
-          expectedAmount: payment.montant,
-          dueDate: new Date(payment.date_paiement).toLocaleDateString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit', 
-            year: 'numeric'
-          }).split('/').join('-'),
-          trancheName: payment.tranche?.tranche_name || '',
-          investorName: payment.investisseur?.nom_raison_sociale || ''
-        }
+        body: requestBody
       });
+
+      console.log('=== RÉPONSE EDGE FUNCTION ===');
+      console.log('Data:', data);
+      console.log('Error:', funcError);
 
       if (funcError) throw funcError;
       if (!data.succes) throw new Error(data.erreur);
@@ -170,7 +194,9 @@ if (uploadedUrls.length === 0 || !uploadedUrls[0]) {
       });
 
     } catch (err: any) {
+      console.error('=== ERREUR COMPLÈTE ===');
       console.error('Erreur analyse:', err);
+      console.error('Stack:', err.stack);
       setError(err.message || 'Erreur lors de l\'analyse');
     } finally {
       setAnalyzing(false);
@@ -181,7 +207,7 @@ if (uploadedUrls.length === 0 || !uploadedUrls[0]) {
     try {
       const tempFileNames = analysisResult.tempFileNames;
 
-      // Télécharger la première image (ou toutes si besoin)
+      // Télécharger la première image
       const firstFileName = tempFileNames[0];
       const { data: downloadData, error: downloadError } = await supabase.storage
         .from('payment-proofs-temp')
