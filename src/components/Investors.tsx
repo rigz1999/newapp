@@ -111,37 +111,35 @@ export function Investors({ organization }: InvestorsProps) {
   const fetchInvestors = async () => {
     setLoading(true);
 
-    const { data: investorsData } = await supabase
-      .from('investisseurs')
-      .select('*')
-      .order('nom_raison_sociale');
+    const [investorsRes, subscriptionsRes] = await Promise.all([
+      supabase.from('investisseurs').select('*').order('nom_raison_sociale'),
+      supabase.from('souscriptions').select(`
+        investisseur_id, montant_investi,
+        tranche:tranches(tranche_name, projet:projets(projet))
+      `)
+    ]);
 
-    if (investorsData) {
-      const investorsWithStats = await Promise.all(
-        investorsData.map(async (investor) => {
-          const { data: subscriptions } = await supabase
-            .from('souscriptions')
-            .select('montant_investi, tranches(tranche_name, projets(projet))')
-            .eq('investisseur_id', investor.id);
+    const investorsData = investorsRes.data || [];
+    const subscriptionsData = subscriptionsRes.data || [];
 
-          const totalInvesti = subscriptions?.reduce((sum, sub) => sum + Number(sub.montant_investi || 0), 0) || 0;
-          const projects = Array.from(new Set(subscriptions?.map(s => (s.tranches as any)?.projets?.projet).filter(Boolean)));
-          const tranches = Array.from(new Set(subscriptions?.map(s => (s.tranches as any)?.tranche_name).filter(Boolean)));
+    const investorsWithStats = investorsData.map((investor) => {
+      const investorSubs = subscriptionsData.filter((s: any) => s.investisseur_id === investor.id);
 
-          return {
-            ...investor,
-            total_investi: totalInvesti,
-            nb_souscriptions: subscriptions?.length || 0,
-            projects,
-            tranches,
-          };
-        })
-      );
+      const totalInvesti = investorSubs.reduce((sum, sub: any) => sum + Number(sub.montant_investi || 0), 0);
+      const projects = Array.from(new Set(investorSubs.map((s: any) => s.tranche?.projet?.projet).filter(Boolean)));
+      const tranches = Array.from(new Set(investorSubs.map((s: any) => s.tranche?.tranche_name).filter(Boolean)));
 
-      setInvestors(investorsWithStats);
-      setFilteredInvestors(investorsWithStats);
-    }
+      return {
+        ...investor,
+        total_investi: totalInvesti,
+        nb_souscriptions: investorSubs.length,
+        projects,
+        tranches,
+      };
+    });
 
+    setInvestors(investorsWithStats);
+    setFilteredInvestors(investorsWithStats);
     setLoading(false);
   };
 

@@ -113,132 +113,177 @@ export function Dashboard({ organization }: DashboardProps) {
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
 
+  const CACHE_KEY = 'saad_dashboard_cache';
+  const CACHE_DURATION = 5 * 60 * 1000;
+
+  const getCachedData = () => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (!cached) return null;
+      const { data, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp > CACHE_DURATION) {
+        localStorage.removeItem(CACHE_KEY);
+        return null;
+      }
+      return data;
+    } catch {
+      return null;
+    }
+  };
+
+  const setCachedData = (data: any) => {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
+    } catch {}
+  };
+
   const fetchData = async () => {
     const isRefresh = !loading;
     if (isRefresh) setRefreshing(true);
 
-    const { data: projects } = await supabase
-      .from('projets')
-      .select('id');
-
-    const projectIds = projects?.map((p) => p.id) || [];
-
-    let totalInvested = 0;
-    let activeProjectCount = 0;
-    let couponsPaidThisMonth = 0;
-    let upcomingCount = 0;
-
-    if (projectIds.length > 0) {
-      activeProjectCount = projectIds.length;
-
-      const { data: tranches } = await supabase
-        .from('tranches')
-        .select('id')
-        .in('projet_id', projectIds);
-
-      const trancheIds = tranches?.map((t) => t.id) || [];
-
-      if (trancheIds.length > 0) {
-        const { data: subscriptions } = await supabase
-          .from('souscriptions')
-          .select('montant_investi')
-          .in('tranche_id', trancheIds);
-
-        totalInvested = subscriptions?.reduce((sum, s) => sum + parseFloat(s.montant_investi.toString()), 0) || 0;
-
-        const firstOfMonth = new Date();
-        firstOfMonth.setDate(1);
-        firstOfMonth.setHours(0, 0, 0, 0);
-
-        const { data: monthPayments } = await supabase
-          .from('paiements')
-          .select('montant')
-          .eq('statut', 'paid')
-          .gte('date_paiement', firstOfMonth.toISOString().split('T')[0]);
-
-        couponsPaidThisMonth = monthPayments?.reduce((sum, p) => sum + parseFloat(p.montant.toString()), 0) || 0;
-
-        const today = new Date();
-        const in90Days = new Date();
-        in90Days.setDate(today.getDate() + 90);
-
-        const { data: upcoming } = await supabase
-          .from('souscriptions')
-          .select('id', { count: 'exact', head: true })
-          .in('tranche_id', trancheIds)
-          .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
-          .lte('prochaine_date_coupon', in90Days.toISOString().split('T')[0]);
-
-        upcomingCount = upcoming?.count || 0;
-      }
+    const cachedData = getCachedData();
+    if (cachedData && !isRefresh) {
+      setStats(cachedData.stats);
+      setRecentPayments(cachedData.recentPayments);
+      setUpcomingCoupons(cachedData.upcomingCoupons);
+      setMonthlyData(cachedData.monthlyData);
+      setLoading(false);
     }
+
+    const today = new Date();
+    const firstOfMonth = new Date();
+    firstOfMonth.setDate(1);
+    firstOfMonth.setHours(0, 0, 0, 0);
+    const in90Days = new Date();
+    in90Days.setDate(today.getDate() + 90);
+
+    const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes, chartSubsRes] = await Promise.all([
+      supabase.from('projets').select('id'),
+      supabase.from('tranches').select('id, projet_id'),
+      supabase.from('souscriptions').select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
+      supabase.from('paiements').select('montant').eq('statut', 'paid').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
+      supabase.from('souscriptions').select('montant_investi, date_souscription')
+    ]);
+
+    const projects = projectsRes.data || [];
+    const tranches = tranchesRes.data || [];
+    const subscriptions = subscriptionsRes.data || [];
+    const monthPayments = monthPaymentsRes.data || [];
+    const chartSubscriptions = chartSubsRes.data || [];
+
+    const projectIds = projects.map((p) => p.id);
+    const trancheIds = tranches.map((t) => t.id);
+
+    const totalInvested = subscriptions.reduce((sum, s) => sum + parseFloat(s.montant_investi?.toString() || '0'), 0);
+    const couponsPaidThisMonth = monthPayments.reduce((sum, p) => sum + parseFloat(p.montant.toString()), 0);
+    const upcomingCount = subscriptions.filter(
+      s => s.prochaine_date_coupon &&
+           s.prochaine_date_coupon >= today.toISOString().split('T')[0] &&
+           s.prochaine_date_coupon <= in90Days.toISOString().split('T')[0]
+    ).length;
 
     setStats({
       totalInvested,
       couponsPaidThisMonth,
-      activeProjects: activeProjectCount,
+      activeProjects: projectIds.length,
       upcomingCoupons: upcomingCount,
       nextCouponDays: 90,
     });
 
-    if (projectIds.length > 0) {
-      const { data: tranches } = await supabase
-        .from('tranches')
-        .select('id')
-        .in('projet_id', projectIds);
-
-      const trancheIds = tranches?.map((t) => t.id) || [];
-
-      if (trancheIds.length > 0) {
-        const { data: payments } = await supabase
-          .from('paiements')
-          .select(`
-            *,
+    if (trancheIds.length > 0) {
+      const [paymentsRes, couponsRes] = await Promise.all([
+        supabase.from('paiements').select(`
+            id, id_paiement, montant, date_paiement, statut,
+            tranche:tranches(tranche_name, projet_id)
+          `).in('tranche_id', trancheIds).order('date_paiement', { ascending: false }).limit(5),
+        supabase.from('souscriptions').select(`
+            id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
             tranche:tranches(
-              tranche_name,
-              projet_id
+              tranche_name, projet_id,
+              projet:projets(projet)
             )
-          `)
-          .in('tranche_id', trancheIds)
-          .order('date_paiement', { ascending: false })
-          .limit(5);
+          `).in('tranche_id', trancheIds).gte('prochaine_date_coupon', today.toISOString().split('T')[0]).order('prochaine_date_coupon', { ascending: true }).limit(10)
+      ]);
 
-        setRecentPayments(payments as any || []);
+      setRecentPayments(paymentsRes.data as any || []);
 
-        const today = new Date();
-        const { data: coupons } = await supabase
-          .from('souscriptions')
-          .select(`
-            *,
-            tranche:tranches(
-              tranche_name,
-              projet_id,
-              projet:projets(
-                projet
-              )
-            )
-          `)
-          .in('tranche_id', trancheIds)
-          .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
-          .order('prochaine_date_coupon', { ascending: true });
+      const groupedCoupons = (couponsRes.data || []).reduce((acc: any[], coupon: any) => {
+        const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
+        const existing = acc.find(c => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
 
-        const groupedCoupons = (coupons || []).reduce((acc: any[], coupon: any) => {
-          const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
-          const existing = acc.find(c => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
+        if (existing) {
+          existing.investor_count += 1;
+          existing.coupon_brut = parseFloat(existing.coupon_brut) + parseFloat(coupon.coupon_brut);
+        } else {
+          acc.push({ ...coupon, investor_count: 1 });
+        }
+        return acc;
+      }, []);
 
-          if (existing) {
-            existing.investor_count += 1;
-            existing.coupon_brut = parseFloat(existing.coupon_brut) + parseFloat(coupon.coupon_brut);
-          } else {
-            acc.push({
-              ...coupon,
-              investor_count: 1
-            });
-          }
-          return acc;
-        }, []);
+      setUpcomingCoupons(groupedCoupons.slice(0, 5));
 
-        setUpcomingCoupons(groupedCoupons.slice(0, 5));
+    }
+
+    const monthlyDataResult = processMonthlyData(chartSubscriptions, selectedYear, startMonth, endMonth);
+    setMonthlyData(monthlyDataResult);
+
+    const cacheData = {
+      stats: {
+        totalInvested,
+        couponsPaidThisMonth,
+        activeProjects: projectIds.length,
+        upcomingCoupons: upcomingCount,
+        nextCouponDays: 90,
+      },
+      recentPayments: paymentsRes?.data || [],
+      upcomingCoupons: groupedCoupons.slice(0, 5),
+      monthlyData: monthlyDataResult
+    };
+    setCachedData(cacheData);
+
+    setLoading(false);
+    if (isRefresh) setRefreshing(false);
+  };
+
+  const processMonthlyData = (subscriptions: any[], year: number, start: number, end: number) => {
+    if (!subscriptions || subscriptions.length === 0) return [];
+
+    const monthlyTotals: { [key: string]: number } = {};
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+    for (let month = start; month <= end; month++) {
+      const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+      monthlyTotals[monthKey] = 0;
+    }
+
+    subscriptions.forEach((sub) => {
+      if (sub.date_souscription) {
+        const date = new Date(sub.date_souscription);
+        const subYear = date.getFullYear();
+        const subMonth = date.getMonth();
+        const monthKey = `${subYear}-${String(subMonth + 1).padStart(2, '0')}`;
+
+        if (subYear === year && subMonth >= start && subMonth <= end) {
+          monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + parseFloat(sub.montant_investi?.toString() || '0');
+        }
+      }
+    });
+
+    const chartData: MonthlyData[] = [];
+    let cumulative = 0;
+    for (let month = start; month <= end; month++) {
+      const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+      const monthAmount = monthlyTotals[monthKey] || 0;
+      cumulative += monthAmount;
+      chartData.push({
+        month: monthNames[month],
+        amount: monthAmount,
+        cumulative: cumulative,
+      });
+    }
+
+    return chartData;
+  };
 
         // Fetch alerts - TEMPORARILY DISABLED TO SHOW EXAMPLES
         // const alertsData: Alert[] = [];
@@ -304,67 +349,6 @@ export function Dashboard({ organization }: DashboardProps) {
         // }
 
         // setAlerts(alertsData);
-      }
-    }
-
-    await fetchMonthlyData(selectedYear, startMonth, endMonth);
-
-    setLoading(false);
-    if (isRefresh) setRefreshing(false);
-  };
-
-  const fetchMonthlyData = async (year: number, start: number, end: number) => {
-    const { data: subscriptions, error } = await supabase
-      .from('souscriptions')
-      .select('montant_investi, date_souscription');
-
-    if (error) {
-      console.error('Error fetching subscriptions:', error);
-      setMonthlyData([]);
-      return;
-    }
-
-    if (!subscriptions || subscriptions.length === 0) {
-      setMonthlyData([]);
-      return;
-    }
-
-    const monthlyTotals: { [key: string]: number } = {};
-    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-
-    for (let month = start; month <= end; month++) {
-      const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
-      monthlyTotals[monthKey] = 0;
-    }
-
-    subscriptions.forEach((sub) => {
-      if (sub.date_souscription) {
-        const date = new Date(sub.date_souscription);
-        const subYear = date.getFullYear();
-        const subMonth = date.getMonth();
-        const monthKey = `${subYear}-${String(subMonth + 1).padStart(2, '0')}`;
-
-        if (subYear === year && subMonth >= start && subMonth <= end) {
-          monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + parseFloat(sub.montant_investi?.toString() || '0');
-        }
-      }
-    });
-
-    const chartData: MonthlyData[] = [];
-    let cumulative = 0;
-    for (let month = start; month <= end; month++) {
-      const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
-      const monthAmount = monthlyTotals[monthKey] || 0;
-      cumulative += monthAmount;
-      chartData.push({
-        month: monthNames[month],
-        amount: monthAmount,
-        cumulative: cumulative,
-      });
-    }
-
-    setMonthlyData(chartData);
-  };
 
   useEffect(() => {
     let isMounted = true;
@@ -580,10 +564,11 @@ export function Dashboard({ organization }: DashboardProps) {
                     </select>
                     <select
                       value={selectedYear}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const year = parseInt(e.target.value);
                         setSelectedYear(year);
-                        fetchMonthlyData(year, startMonth, endMonth);
+                        const { data } = await supabase.from('souscriptions').select('montant_investi, date_souscription');
+                        setMonthlyData(processMonthlyData(data || [], year, startMonth, endMonth));
                       }}
                       className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
@@ -593,11 +578,12 @@ export function Dashboard({ organization }: DashboardProps) {
                     </select>
                     <select
                       value={`${startMonth}-${endMonth}`}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const [start, end] = e.target.value.split('-').map(Number);
                         setStartMonth(start);
                         setEndMonth(end);
-                        fetchMonthlyData(selectedYear, start, end);
+                        const { data } = await supabase.from('souscriptions').select('montant_investi, date_souscription');
+                        setMonthlyData(processMonthlyData(data || [], selectedYear, start, end));
                       }}
                       className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >

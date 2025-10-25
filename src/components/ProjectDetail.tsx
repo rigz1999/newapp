@@ -90,40 +90,29 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const fetchProjectData = async () => {
     setLoading(true);
 
-    const { data: projectData } = await supabase
-      .from('projets')
-      .select('*')
-      .eq('id', projectId)
-      .single();
-
-    const { data: tranchesData } = await supabase
-      .from('tranches')
-      .select('*')
-      .eq('projet_id', projectId)
-      .order('created_at', { ascending: false });
-
-    const { data: subscriptionsData } = await supabase
-      .from('souscriptions')
-      .select(`
-        *,
+    const [projectRes, tranchesRes, subscriptionsRes, paymentsRes] = await Promise.all([
+      supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
+      supabase.from('tranches').select('*').eq('projet_id', projectId).order('created_at', { ascending: false }),
+      supabase.from('souscriptions').select(`
+        id, id_souscription, date_souscription, nombre_obligations, montant_investi,
+        coupon_brut, coupon_net, prochaine_date_coupon, investisseur_id,
         investisseur:investisseurs(nom_raison_sociale),
         tranche:tranches(tranche_name)
-      `)
-      .eq('projet_id', projectId)
-      .order('date_souscription', { ascending: false });
+      `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
+      supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false })
+    ]);
 
-    const { data: paymentsData } = await supabase
-      .from('paiements')
-      .select('*')
-      .eq('projet_id', projectId)
-      .order('date_paiement', { ascending: false });
+    const projectData = projectRes.data;
+    const tranchesData = tranchesRes.data || [];
+    const subscriptionsData = subscriptionsRes.data || [];
+    const paymentsData = paymentsRes.data || [];
 
-    if (projectData) setProject(projectData);
-    if (tranchesData) setTranches(tranchesData);
-    if (subscriptionsData) setSubscriptions(subscriptionsData as any);
-    if (paymentsData) setPayments(paymentsData);
+    setProject(projectData);
+    setTranches(tranchesData);
+    setSubscriptions(subscriptionsData as any);
+    setPayments(paymentsData);
 
-    if (subscriptionsData) {
+    if (subscriptionsData.length > 0) {
       const totalLeve = subscriptionsData.reduce((sum, sub) => sum + Number(sub.montant_investi || 0), 0);
       const uniqueInvestors = new Set(subscriptionsData.map(s => s.investisseur_id)).size;
 
@@ -140,7 +129,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
       setStats({
         totalLeve,
         investisseursCount: uniqueInvestors,
-        tranchesCount: tranchesData?.length || 0,
+        tranchesCount: tranchesData.length,
         nextCouponDate: nextCoupon?.prochaine_date_coupon || null,
         nextCouponAmount,
       });

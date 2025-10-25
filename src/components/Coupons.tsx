@@ -61,39 +61,24 @@ export function Coupons({ organization }: CouponsProps) {
   const fetchData = async () => {
     setLoading(true);
 
-    const { data: projectsData } = await supabase
-      .from('projets')
-      .select('id, projet')
-      .order('projet');
-
-    setProjects(projectsData || []);
-
-    const today = new Date().toISOString().split('T')[0];
-
-    const { data: souscriptionsData } = await supabase
-      .from('souscriptions')
-      .select(`
-        id,
-        id_souscription,
-        prochaine_date_coupon,
-        coupon_net,
-        montant_investi,
+    const [projectsRes, souscriptionsRes] = await Promise.all([
+      supabase.from('projets').select('id, projet').order('projet'),
+      supabase.from('souscriptions').select(`
+        id, id_souscription, prochaine_date_coupon, coupon_net, montant_investi,
         projet:projets(projet, emetteur),
         tranche:tranches(tranche_name),
         investisseur:investisseurs(nom_raison_sociale, email, type)
-      `)
-      .not('prochaine_date_coupon', 'is', null)
-      .order('prochaine_date_coupon', { ascending: true });
+      `).not('prochaine_date_coupon', 'is', null).order('prochaine_date_coupon', { ascending: true })
+    ]);
 
-    if (souscriptionsData) {
-      const validCoupons = souscriptionsData.filter(
-        (s: any) => s.prochaine_date_coupon && s.projet && s.tranche && s.investisseur
-      ) as any;
+    setProjects(projectsRes.data || []);
 
-      setCoupons(validCoupons);
-      setFilteredCoupons(validCoupons);
-    }
+    const validCoupons = (souscriptionsRes.data || []).filter(
+      (s: any) => s.prochaine_date_coupon && s.projet && s.tranche && s.investisseur
+    ) as any;
 
+    setCoupons(validCoupons);
+    setFilteredCoupons(validCoupons);
     setLoading(false);
   };
 
