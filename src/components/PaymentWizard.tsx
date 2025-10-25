@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase';
 import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure le worker avec la version 5.4
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
 interface Project {
@@ -61,6 +60,8 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   const [selectedTrancheId, setSelectedTrancheId] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [matches, setMatches] = useState<PaymentMatch[]>([]);
+  const [selectedMatches, setSelectedMatches] = useState<Set<number>>(new Set());
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [step, setStep] = useState<'select' | 'upload' | 'results'>('select');
 
@@ -158,27 +159,19 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
       for (const file of files) {
         if (file.type === 'application/pdf') {
-          console.log('Conversion PDF → Images:', file.name);
-          
           const arrayBuffer = await file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
           const numPages = pdf.numPages;
-          
-          console.log(`PDF de ${numPages} page(s)`);
 
           for (let pageNum = 1; pageNum <= numPages; pageNum++) {
             const page = await pdf.getPage(pageNum);
-            
             const viewport = page.getViewport({ scale: 2.0 });
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d')!;
             canvas.height = viewport.height;
             canvas.width = viewport.width;
 
-            await page.render({
-              canvasContext: context,
-              viewport: viewport
-            }).promise;
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
 
             const blob = await new Promise<Blob>((resolve) => {
               canvas.toBlob((b) => resolve(b!), 'image/png');
@@ -188,10 +181,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             
             const { error: uploadError } = await supabase.storage
               .from('payment-proofs-temp')
-              .upload(fileName, blob, {
-                contentType: 'image/png',
-                upsert: false
-              });
+              .upload(fileName, blob, { contentType: 'image/png', upsert: false });
 
             if (uploadError) throw uploadError;
 
@@ -207,10 +197,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
           
           const { error: uploadError } = await supabase.storage
             .from('payment-proofs-temp')
-            .upload(fileName, file, {
-              contentType: file.type,
-              upsert: false
-            });
+            .upload(fileName, file, { contentType: file.type, upsert: false });
 
           if (uploadError) throw uploadError;
 
@@ -223,8 +210,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
         }
       }
 
-      console.log('Fichiers uploadés:', uploadedUrls);
-
       const expectedPayments = subscriptions.map(sub => ({
         investorName: sub.investisseur.nom_raison_sociale,
         expectedAmount: sub.coupon_net,
@@ -232,35 +217,33 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
         investisseurId: sub.investisseur_id
       }));
 
-      console.log('Paiements attendus:', expectedPayments);
-
       const { data, error: funcError } = await supabase.functions.invoke('analyze-payment-batch', {
-        body: {
-          fileUrls: uploadedUrls,
-          expectedPayments: expectedPayments
-        }
+        body: { fileUrls: uploadedUrls, expectedPayments: expectedPayments }
       });
-
-      console.log('Réponse Edge Function:', data);
 
       if (funcError) throw funcError;
       if (!data.succes) throw new Error(data.erreur);
 
-      await supabase.storage
-        .from('payment-proofs-temp')
-        .remove(tempFileNames);
+      await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
 
       const enrichedMatches = data.correspondances.map((match: any) => {
         const subscription = subscriptions.find(
           s => s.investisseur.nom_raison_sociale.toLowerCase() === match.paiement.beneficiaire.toLowerCase()
         );
-        return {
-          ...match,
-          matchedSubscription: subscription
-        };
+        return { ...match, matchedSubscription: subscription };
       });
 
       setMatches(enrichedMatches);
+      
+      // Auto-select valid matches
+      const autoSelected = new Set<number>();
+      enrichedMatches.forEach((match: PaymentMatch, idx: number) => {
+        if (match.statut === 'correspondance') {
+          autoSelected.add(idx);
+        }
+      });
+      setSelectedMatches(autoSelected);
+      
       setStep('results');
 
     } catch (err: any) {
@@ -271,14 +254,72 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
     }
   };
 
+  const toggleSelectMatch = (idx: number) => {
+    const newSelected = new Set(selectedMatches);
+    if (newSelected.has(idx)) {
+      newSelected.delete(idx);
+    } else {
+      newSelected.add(idx);
+    }
+    setSelectedMatches(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedMatches.size === validMatches.length) {
+      setSelectedMatches(new Set());
+    } else {
+      const allValid = new Set<number>();
+      matches.forEach((match, idx) => {
+        if (match.statut === 'correspondance' || match.statut === 'partielle') {
+          allValid.add(idx);
+        }
+      });
+      setSelectedMatches(allValid);
+    }
+  };
+
+  const handleValidateSelected = async () => {
+    setProcessing(true);
+    setError('');
+
+    try {
+      const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
+      
+      const payments = selectedMatchesList
+        .filter(m => m.matchedSubscription)
+        .map(match => ({
+          id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: 'Coupon',
+          projet_id: selectedProjectId,
+          tranche_id: selectedTrancheId,
+          investisseur_id: match.matchedSubscription!.investisseur_id,
+          souscription_id: match.matchedSubscription!.id,
+          montant: match.paiement.montant,
+          date_paiement: new Date().toISOString().split('T')[0],
+          statut: 'Payé'
+        }));
+
+      const { error: insertError } = await supabase.from('paiements').insert(payments);
+      if (insertError) throw insertError;
+
+      setShowConfirmModal(false);
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la validation');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleValidateAll = async () => {
     setProcessing(true);
     setError('');
 
     try {
-      const validMatches = matches.filter(m => m.statut === 'correspondance' && m.matchedSubscription);
+      const validMatchesList = matches.filter(m => m.statut === 'correspondance' && m.matchedSubscription);
 
-      const payments = validMatches.map(match => ({
+      const payments = validMatchesList.map(match => ({
         id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: 'Coupon',
         projet_id: selectedProjectId,
@@ -290,10 +331,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
         statut: 'Payé'
       }));
 
-      const { error: insertError } = await supabase
-        .from('paiements')
-        .insert(payments);
-
+      const { error: insertError } = await supabase.from('paiements').insert(payments);
       if (insertError) throw insertError;
 
       onSuccess();
@@ -302,37 +340,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       setError(err.message || 'Erreur lors de la validation');
     } finally {
       setProcessing(false);
-    }
-  };
-
-  const handleValidateOne = async (match: PaymentMatch) => {
-    if (!match.matchedSubscription) return;
-
-    try {
-      const { error: insertError } = await supabase
-        .from('paiements')
-        .insert({
-          id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: 'Coupon',
-          projet_id: selectedProjectId,
-          tranche_id: selectedTrancheId,
-          investisseur_id: match.matchedSubscription.investisseur_id,
-          souscription_id: match.matchedSubscription.id,
-          montant: match.paiement.montant,
-          date_paiement: new Date().toISOString().split('T')[0],
-          statut: 'Payé'
-        });
-
-      if (insertError) throw insertError;
-
-      setMatches(matches.filter(m => m !== match));
-
-      if (matches.length === 1) {
-        onSuccess();
-        onClose();
-      }
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la validation');
     }
   };
 
@@ -346,6 +353,8 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
   const totalExpected = subscriptions.reduce((sum, sub) => sum + sub.coupon_net, 0);
   const validMatches = matches.filter(m => m.statut === 'correspondance');
+  const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
+  const hasPartialInSelection = selectedMatchesList.some(m => m.statut === 'partielle');
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -360,7 +369,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             <p className="text-sm text-slate-600 mt-1">
               {step === 'select' && 'Sélectionnez un projet et une tranche à payer'}
               {step === 'upload' && `Paiement de tranche - ${subscriptions.length} investisseur${subscriptions.length > 1 ? 's' : ''}`}
-              {step === 'results' && `${validMatches.length}/${matches.length} paiement${matches.length > 1 ? 's' : ''} validé${validMatches.length > 1 ? 's' : ''}`}
+              {step === 'results' && `${selectedMatches.size} paiement${selectedMatches.size > 1 ? 's' : ''} sélectionné${selectedMatches.size > 1 ? 's' : ''}`}
             </p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -369,7 +378,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
         </div>
 
         <div className="p-6">
-          {/* STEP 1: SELECT PROJECT & TRANCHE */}
+          {/* STEP 1: SELECT */}
           {step === 'select' && (
             <div className="space-y-4">
               <div>
@@ -403,7 +412,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             </div>
           )}
 
-          {/* STEP 2: UPLOAD FILES */}
+          {/* STEP 2: UPLOAD */}
           {step === 'upload' && (
             <div className="space-y-6">
               <div className="bg-blue-50 rounded-lg p-4">
@@ -447,10 +456,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                   id="file-upload"
                   disabled={analyzing}
                 />
-                <label
-                  htmlFor="file-upload"
-                  className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium"
-                >
+                <label htmlFor="file-upload" className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
                   Choisir des fichiers
                 </label>
                 <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier)</p>
@@ -480,44 +486,30 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                 </div>
               )}
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setStep('select');
-                    setFiles([]);
-                    setError('');
-                  }}
-                  disabled={analyzing}
-                  className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
-                >
-                  Retour
-                </button>
-                <button
-                  onClick={handleAnalyze}
-                  disabled={files.length === 0 || analyzing}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                >
-                  {analyzing ? (
-                    <>
-                      <Loader className="w-5 h-5 animate-spin" />
-                      Analyse en cours...
-                    </>
-                  ) : (
-                    'Analyser le justificatif'
-                  )}
-                </button>
-              </div>
+              <button
+                onClick={handleAnalyze}
+                disabled={files.length === 0 || analyzing}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {analyzing ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" />
+                    Analyse en cours...
+                  </>
+                ) : (
+                  'Analyser le justificatif'
+                )}
+              </button>
             </div>
           )}
 
-          {/* STEP 3: RESULTS - COMPACT TABLE VIEW */}
+          {/* STEP 3: RESULTS */}
           {step === 'results' && (
             <div className="space-y-4">
-              {/* Summary */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm text-blue-700">
-                    <span className="font-semibold">{validMatches.length}/{matches.length}</span> paiement{matches.length > 1 ? 's' : ''} validé{validMatches.length > 1 ? 's' : ''}
+                    <span className="font-semibold">{validMatches.length}/{matches.length}</span> correspondance{validMatches.length > 1 ? 's' : ''} valide{validMatches.length > 1 ? 's' : ''}
                   </p>
                 </div>
                 <div className="text-right">
@@ -528,16 +520,22 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                 </div>
               </div>
 
-              {/* Compact Table */}
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="px-3 py-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedMatches.size > 0 && selectedMatches.size === matches.filter(m => m.statut !== 'pas-de-correspondance').length}
+                          onChange={toggleSelectAll}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                        />
+                      </th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Statut</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Bénéficiaire Détecté</th>
                       <th className="px-3 py-2 text-right text-xs font-semibold text-slate-700">Montant</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Correspondance</th>
-                      <th className="px-3 py-2 text-center text-xs font-semibold text-slate-700">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -550,6 +548,16 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                           'bg-red-50'
                         }`}
                       >
+                        <td className="px-3 py-3 text-center">
+                          {match.statut !== 'pas-de-correspondance' && (
+                            <input
+                              type="checkbox"
+                              checked={selectedMatches.has(idx)}
+                              onChange={() => toggleSelectMatch(idx)}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                          )}
+                        </td>
                         <td className="px-3 py-3">
                           {match.statut === 'correspondance' ? (
                             <div className="flex items-center gap-1">
@@ -601,28 +609,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                             <span className="text-xs text-slate-400 italic">Aucune correspondance</span>
                           )}
                         </td>
-
-                        <td className="px-3 py-3 text-center">
-                          {match.statut === 'correspondance' ? (
-                            <button
-                              onClick={() => handleValidateOne(match)}
-                              className="inline-flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
-                            >
-                              <CheckCircle className="w-3 h-3" />
-                              Valider
-                            </button>
-                          ) : match.statut === 'partielle' ? (
-                            <button
-                              onClick={() => handleValidateOne(match)}
-                              className="inline-flex items-center gap-1 px-3 py-1 bg-orange-600 text-white text-xs font-medium rounded hover:bg-orange-700 transition-colors"
-                            >
-                              <AlertTriangle className="w-3 h-3" />
-                              Forcer
-                            </button>
-                          ) : (
-                            <span className="text-xs text-slate-400">-</span>
-                          )}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -639,36 +625,111 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
           )}
         </div>
 
-        {/* Footer */}
+        {/* FOOTER */}
         {step === 'results' && (
-          <div className="sticky bottom-0 bg-white p-6 border-t border-slate-200 flex gap-3 rounded-b-2xl">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-              disabled={processing}
-            >
-              Annuler
-            </button>
-            <button
-              onClick={handleValidateAll}
-              disabled={processing || validMatches.length === 0}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {processing ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin" />
-                  Validation...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-5 h-5" />
-                  Valider tous ({validMatches.length})
-                </>
-              )}
-            </button>
+          <div className="sticky bottom-0 bg-white p-6 border-t border-slate-200 rounded-b-2xl">
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                disabled={processing}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => setShowConfirmModal(true)}
+                disabled={processing || selectedMatches.size === 0}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-5 h-5" />
+                Valider la sélection ({selectedMatches.size})
+              </button>
+              <button
+                onClick={handleValidateAll}
+                disabled={processing || validMatches.length === 0}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {processing ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" />
+                    Validation...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-5 h-5" />
+                    Tout valider ({validMatches.length})
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         )}
       </div>
+
+      {/* CONFIRMATION MODAL */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">Confirmer la validation</h3>
+              
+              <div className="space-y-3 mb-6">
+                <p className="text-sm text-slate-700">
+                  Vous allez valider <span className="font-bold">{selectedMatches.size} paiement{selectedMatches.size > 1 ? 's' : ''}</span>:
+                </p>
+                
+                <ul className="space-y-2 max-h-40 overflow-y-auto">
+                  {selectedMatchesList.map((match, idx) => (
+                    <li key={idx} className="text-sm bg-slate-50 p-2 rounded">
+                      <span className="font-medium">{match.paiement.beneficiaire}</span>
+                      <span className="text-slate-600"> - {formatCurrency(match.paiement.montant)}</span>
+                      {match.statut === 'partielle' && (
+                        <span className="ml-2 text-xs text-orange-600">⚠️ Partiel</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+
+                {hasPartialInSelection && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-start gap-2">
+                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-orange-800">
+                      Attention: Certaines correspondances sont partielles. Vérifiez les données avant de continuer.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                  disabled={processing}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleValidateSelected}
+                  disabled={processing}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {processing ? (
+                    <>
+                      <Loader className="w-5 h-5 animate-spin" />
+                      Validation...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Confirmer
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
