@@ -112,6 +112,19 @@ export function Dashboard({ organization }: DashboardProps) {
   const [viewMode, setViewMode] = useState<'monthly' | 'cumulative'>('monthly');
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
   const [showQuickPayment, setShowQuickPayment] = useState(false);
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectData, setNewProjectData] = useState({
+    projet: '',
+    emetteur: '',
+    siren_emetteur: '',
+    nom_representant: '',
+    prenom_representant: '',
+    email_representant: '',
+    representant_masse: '',
+    email_rep_masse: '',
+    telephone_rep_masse: ''
+  });
+  const [creatingProject, setCreatingProject] = useState(false);
 
   const CACHE_KEY = 'saad_dashboard_cache';
   const CACHE_DURATION = 5 * 60 * 1000;
@@ -484,7 +497,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 <h2 className="text-xl font-bold text-slate-900 mb-4">Actions Rapides</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <button
-                    onClick={() => navigate('/projets?create=true')}
+                    onClick={() => setShowNewProject(true)}
                     className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
                   >
                     <div className="bg-blue-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -790,6 +803,235 @@ export function Dashboard({ organization }: DashboardProps) {
             fetchData();
           }}
         />
+      )}
+
+      {showNewProject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Nouveau Projet</h3>
+                  <p className="text-sm text-slate-600 mt-1">Créer un nouveau projet obligataire</p>
+                </div>
+                <button onClick={() => setShowNewProject(false)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setCreatingProject(true);
+
+                try {
+                  const projectToCreate: any = {
+                    projet: newProjectData.projet,
+                    emetteur: newProjectData.emetteur || null,
+                  };
+
+                  if (newProjectData.siren_emetteur) {
+                    projectToCreate.siren_emetteur = parseInt(newProjectData.siren_emetteur);
+                  }
+                  if (newProjectData.nom_representant) {
+                    projectToCreate.nom_representant = newProjectData.nom_representant;
+                  }
+                  if (newProjectData.prenom_representant) {
+                    projectToCreate.prenom_representant = newProjectData.prenom_representant;
+                  }
+                  if (newProjectData.email_representant) {
+                    projectToCreate.email_representant = newProjectData.email_representant;
+                  }
+                  if (newProjectData.representant_masse) {
+                    projectToCreate.representant_masse = newProjectData.representant_masse;
+                  }
+                  if (newProjectData.email_rep_masse) {
+                    projectToCreate.email_rep_masse = newProjectData.email_rep_masse;
+                  }
+                  if (newProjectData.telephone_rep_masse) {
+                    projectToCreate.telephone_rep_masse = parseInt(newProjectData.telephone_rep_masse);
+                  }
+
+                  const { data, error } = await supabase
+                    .from('projets')
+                    .insert([projectToCreate])
+                    .select()
+                    .single();
+
+                  if (error) throw error;
+
+                  setShowNewProject(false);
+                  setNewProjectData({
+                    projet: '',
+                    emetteur: '',
+                    siren_emetteur: '',
+                    nom_representant: '',
+                    prenom_representant: '',
+                    email_representant: '',
+                    representant_masse: '',
+                    email_rep_masse: '',
+                    telephone_rep_masse: ''
+                  });
+
+                  navigate(`/projets/${data.id}`);
+                } catch (err: any) {
+                  console.error('Error creating project:', err);
+                  alert('Erreur lors de la création du projet: ' + err.message);
+                } finally {
+                  setCreatingProject(false);
+                }
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Nom du projet <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newProjectData.projet}
+                      onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ex: GreenTech 2025"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Émetteur
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjectData.emetteur}
+                      onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ex: GreenTech SAS"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      SIREN de l'émetteur
+                    </label>
+                    <input
+                      type="text"
+                      pattern="[0-9]*"
+                      value={newProjectData.siren_emetteur}
+                      onChange={(e) => setNewProjectData({ ...newProjectData, siren_emetteur: e.target.value.replace(/\D/g, '') })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ex: 123456789"
+                      maxLength={9}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Prénom du représentant
+                      </label>
+                      <input
+                        type="text"
+                        value={newProjectData.prenom_representant}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: Jean"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Nom du représentant
+                      </label>
+                      <input
+                        type="text"
+                        value={newProjectData.nom_representant}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: Dupont"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Email du représentant
+                    </label>
+                    <input
+                      type="email"
+                      value={newProjectData.email_representant}
+                      onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ex: jean.dupont@example.com"
+                    />
+                  </div>
+
+                  <div className="border-t border-slate-200 pt-4 mt-4">
+                    <h4 className="text-sm font-semibold text-slate-900 mb-3">Représentant de la masse</h4>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Nom du représentant de la masse
+                      </label>
+                      <input
+                        type="text"
+                        value={newProjectData.representant_masse}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: Cabinet Lefevre"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Email du représentant de la masse
+                      </label>
+                      <input
+                        type="email"
+                        value={newProjectData.email_rep_masse}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: contact@cabinet-lefevre.fr"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Téléphone du représentant de la masse
+                      </label>
+                      <input
+                        type="tel"
+                        pattern="[0-9]*"
+                        value={newProjectData.telephone_rep_masse}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: 0123456789"
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewProject(false)}
+                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                    disabled={creatingProject}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creatingProject || !newProjectData.projet}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                  >
+                    {creatingProject ? 'Création...' : 'Créer le projet'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
