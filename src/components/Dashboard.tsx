@@ -131,6 +131,9 @@ export function Dashboard({ organization }: DashboardProps) {
     telephone_rep_masse: '' // SEUL champ non requis
   });
 
+  // Erreur SIREN (affichage + blocage submit)
+  const [sirenError, setSirenError] = useState<string>('');
+
   const [creatingProject, setCreatingProject] = useState(false);
 
   const CACHE_KEY = 'saad_dashboard_cache';
@@ -375,8 +378,8 @@ export function Dashboard({ organization }: DashboardProps) {
     return `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
   };
 
-  // Validation SIREN (exactement 9 chiffres)
-  const isSirenValid = /^\d{9}$/.test(newProjectData.siren_emetteur || '');
+  // Helpers SIREN
+  const validateSiren = (value: string) => /^\d{9}$/.test(value);
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
@@ -443,4 +446,636 @@ export function Dashboard({ organization }: DashboardProps) {
 
                   <button
                     onClick={() => setShowTrancheWizard(true)}
-                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all group border border-green-200"
+                  >
+                    <div className="bg-green-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <FileText className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Nouvelle Tranche</p>
+                      <p className="text-xs text-slate-600">Ajouter une tranche</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setShowQuickPayment(true)}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all group border border-purple-200"
+                  >
+                    <div className="bg-purple-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <DollarSign className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Enregistrer Paiement</p>
+                      <p className="text-xs text-slate-600">Télécharger justificatif</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => alert('Export en cours de développement')}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
+                  >
+                    <div className="bg-slate-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <Download className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Exporter Synthèse</p>
+                      <p className="text-xs text-slate-600">Télécharger rapport</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-slate-600 text-sm">Montant total investi</span>
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-slate-900 mb-1">{formatCurrency(stats.totalInvested)}</p>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-slate-600 text-sm">Coupons payés ce mois</span>
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-slate-900 mb-1">{formatCurrency(stats.couponsPaidThisMonth)}</p>
+                  <p className="text-sm text-green-600">{stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}</p>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-slate-600 text-sm">Projets actifs</span>
+                    <Folder className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-slate-900">{stats.activeProjects}</p>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-slate-600 text-sm">Coupons à venir</span>
+                    <Clock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
+                  <p className="text-sm text-slate-600">{stats.nextCouponDays} prochains jours</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-slate-900">Évolution des Montants Levés</h2>
+                  <div className="flex items-center gap-4">
+                    <select
+                      value={viewMode}
+                      onChange={(e) => setViewMode(e.target.value as 'monthly' | 'cumulative')}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                    >
+                      <option value="monthly">Vue par mois</option>
+                      <option value="cumulative">Vue cumulée</option>
+                    </select>
+                    <select
+                      value={selectedYear}
+                      onChange={async (e) => {
+                        const year = parseInt(e.target.value);
+                        setSelectedYear(year);
+                        const { data } = await supabase.from('souscriptions').select('montant_investi, date_souscription');
+                        setMonthlyData(processMonthlyData(data || [], year, startMonth, endMonth));
+                      }}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value={2024}>2024</option>
+                      <option value={2025}>2025</option>
+                      <option value={2026}>2026</option>
+                    </select>
+                    <select
+                      value={`${startMonth}-${endMonth}`}
+                      onChange={async (e) => {
+                        const [start, end] = e.target.value.split('-').map(Number);
+                        setStartMonth(start);
+                        setEndMonth(end);
+                        const { data } = await supabase.from('souscriptions').select('montant_investi, date_souscription');
+                        setMonthlyData(processMonthlyData(data || [], selectedYear, start, end));
+                      }}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="0-11">Année complète</option>
+                      <option value="0-2">Q1 (Jan-Mar)</option>
+                      <option value="3-5">Q2 (Avr-Juin)</option>
+                      <option value="6-8">Q3 (Juil-Sep)</option>
+                      <option value="9-11">Q4 (Oct-Déc)</option>
+                      <option value="0-5">S1 (Jan-Juin)</option>
+                      <option value="6-11">S2 (Juil-Déc)</option>
+                    </select>
+                  </div>
+                </div>
+                {monthlyData.length === 0 ? (
+                  <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white rounded-lg">
+                    <div className="text-center text-slate-400">
+                      <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Aucune donnée disponible</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-80 flex items-end justify-between gap-2 px-4 pb-4">
+                    {monthlyData.map((data, index) => {
+                      const displayAmount = viewMode === 'cumulative' ? (data.cumulative || 0) : data.amount;
+                      const maxAmount = Math.max(...monthlyData.map(d => viewMode === 'cumulative' ? (d.cumulative || 0) : d.amount), 1);
+                      const heightPercentage = Math.max((displayAmount / maxAmount) * 85, displayAmount > 0 ? 5 : 0);
+                      return (
+                        <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full">
+                          <div className="relative group flex-1 w-full flex flex-col justify-end items-center">
+                            <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                              <div className="bg-slate-900 text-white px-3 py-2 rounded-lg shadow-lg text-xs whitespace-nowrap">
+                                <div className="font-semibold">{data.month}</div>
+                                {viewMode === 'monthly' ? (
+                                  <div>{formatCurrency(data.amount)}</div>
+                                ) : (
+                                  <>
+                                    <div className="text-slate-300">Mensuel: {formatCurrency(data.amount)}</div>
+                                    <div className="font-semibold">Cumulé: {formatCurrency(data.cumulative || 0)}</div>
+                                  </>
+                                )}
+                              </div>
+                              <div className="w-2 h-2 bg-slate-900 transform rotate-45 mx-auto -mt-1"></div>
+                            </div>
+                            {displayAmount > 0 && (
+                              <div className="mb-1 text-xs font-semibold text-slate-700 whitespace-nowrap">
+                                {formatCurrency(displayAmount)}
+                              </div>
+                            )}
+                            <div
+                              className={`w-full rounded-t-lg transition-all hover:opacity-90 cursor-pointer shadow-md ${
+                                viewMode === 'cumulative'
+                                  ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 hover:from-emerald-700 hover:to-emerald-500'
+                                  : 'bg-gradient-to-t from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500'
+                              }`}
+                              style={{ height: `${heightPercentage}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-slate-600">{data.month}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Derniers Paiements</h2>
+                    <button
+                      onClick={() => navigate('/paiements')}
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+                    >
+                      Voir tout <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {recentPayments.length === 0 ? (
+                    <p className="text-slate-500 text-center py-8">Aucun paiement récent</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {recentPayments.map((payment) => (
+                        <div key={payment.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                          <div className="flex-1">
+                            <p className="font-medium text-slate-900 text-sm">
+                              {payment.tranche?.tranche_name || 'Tranche'}
+                            </p>
+                            <p className="text-xs text-slate-600">
+                              {formatDate(payment.date_paiement)} • {payment.type || 'Coupon'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-slate-900 text-sm">{formatCurrency(payment.montant)}</p>
+                            <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              payment.statut?.toLowerCase() === 'payé' || payment.statut?.toLowerCase() === 'paid'
+                                ? 'bg-green-100 text-green-700'
+                                : payment.statut?.toLowerCase() === 'en attente'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : payment.statut?.toLowerCase() === 'en retard'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {payment.statut}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Coupons à Venir</h2>
+                    <button
+                      onClick={() => navigate('/coupons')}
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+                    >
+                      Voir tout <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {upcomingCoupons.length === 0 ? (
+                    <p className="text-slate-500 text-center py-8">Aucun coupon à venir</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {upcomingCoupons.map((coupon) => {
+                        const daysUntil = Math.ceil(
+                          (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                        );
+                        const isUrgent = daysUntil <= 7;
+
+                        return (
+                          <div key={coupon.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-bold text-slate-900">{formatCurrency(parseFloat(coupon.coupon_brut.toString()))}</p>
+                                {isUrgent && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                                    <AlertCircle className="w-3 h-3" />
+                                    Urgent
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-600 mt-1">
+                                {coupon.tranche?.projet?.projet || 'Projet'} • {coupon.tranche?.tranche_name || 'Tranche'}
+                              </p>
+                              <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
+                                <Users className="w-3 h-3" />
+                                <span>{coupon.investor_count} investisseur{coupon.investor_count > 1 ? 's' : ''}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-slate-900">{formatDate(coupon.prochaine_date_coupon)}</p>
+                              <p className="text-xs text-slate-600">{getRelativeDate(coupon.prochaine_date_coupon)}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+    </div>
+
+      {showTrancheWizard && (
+        <TrancheWizard
+          onClose={() => setShowTrancheWizard(false)}
+          onSuccess={() => {
+            setShowTrancheWizard(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      {showQuickPayment && (
+        <PaymentWizard
+          onClose={() => setShowQuickPayment(false)}
+          onSuccess={() => {
+            setShowQuickPayment(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      {showNewProject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Nouveau Projet</h3>
+                  <p className="text-sm text-slate-600 mt-1">Créer un nouveau projet obligataire</p>
+                </div>
+                <button onClick={() => setShowNewProject(false)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setCreatingProject(true);
+
+                // validation front de sécurité
+                if (!validateSiren(newProjectData.siren_emetteur)) {
+                  setSirenError('Le SIREN doit comporter exactement 9 chiffres.');
+                  setCreatingProject(false);
+                  return;
+                }
+
+                try {
+                  const projectToCreate: any = {
+                    projet: newProjectData.projet,
+                    emetteur: newProjectData.emetteur, // requis
+                    taux_interet: parseFloat(newProjectData.taux_interet),
+                    montant_global_eur: parseFloat(newProjectData.montant_global_eur),
+                    periodicite_coupon: newProjectData.periodicite_coupon,
+                  };
+
+                  if (newProjectData.siren_emetteur) {
+                    projectToCreate.siren_emetteur = parseInt(newProjectData.siren_emetteur);
+                  }
+                  if (newProjectData.nom_representant) {
+                    projectToCreate.nom_representant = newProjectData.nom_representant;
+                  }
+                  if (newProjectData.prenom_representant) {
+                    projectToCreate.prenom_representant = newProjectData.prenom_representant;
+                  }
+                  if (newProjectData.email_representant) {
+                    projectToCreate.email_representant = newProjectData.email_representant;
+                  }
+                  if (newProjectData.representant_masse) {
+                    projectToCreate.representant_masse = newProjectData.representant_masse;
+                  }
+                  if (newProjectData.email_rep_masse) {
+                    projectToCreate.email_rep_masse = newProjectData.email_rep_masse;
+                  }
+                  if (newProjectData.telephone_rep_masse) {
+                    projectToCreate.telephone_rep_masse = parseInt(newProjectData.telephone_rep_masse);
+                  }
+
+                  const { data, error } = await supabase
+                    .from('projets')
+                    .insert([projectToCreate])
+                    .select()
+                    .single();
+
+                  if (error) throw error;
+
+                  setShowNewProject(false);
+                  setNewProjectData({
+                    projet: '',
+                    taux_interet: '',
+                    montant_global_eur: '',
+                    periodicite_coupon: '',
+                    emetteur: '',
+                    siren_emetteur: '',
+                    nom_representant: '',
+                    prenom_representant: '',
+                    email_representant: '',
+                    representant_masse: '',
+                    email_rep_masse: '',
+                    telephone_rep_masse: '' // reste optionnel
+                  });
+                  setSirenError('');
+
+                  navigate(`/projets/${data.id}`);
+                } catch (err: any) {
+                  console.error('Error creating project:', err);
+                  alert('Erreur lors de la création du projet: ' + err.message);
+                } finally {
+                  setCreatingProject(false);
+                }
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Nom du projet <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newProjectData.projet}
+                      onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ex: GreenTech 2025"
+                    />
+                  </div>
+
+                  {/* Nouveaux champs requis */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Taux d’intérêt (%) <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        inputMode="decimal"
+                        value={newProjectData.taux_interet}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: 8.50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Montant global à lever (€) <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        step="1"
+                        min="0"
+                        inputMode="numeric"
+                        value={newProjectData.montant_global_eur}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, montant_global_eur: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: 1500000"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Périodicité du coupon <span className="text-red-600">*</span>
+                      </label>
+                      <select
+                        required
+                        value={newProjectData.periodicite_coupon}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="" disabled>Choisir…</option>
+                        <option value="annuel">Annuel</option>
+                        <option value="semestriel">Semestriel</option>
+                        <option value="trimestriel">Trimestriel</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Émetteur <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newProjectData.emetteur}
+                      onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ex: GreenTech SAS"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      SIREN de l'émetteur <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      pattern="^\d{9}$"
+                      title="Le SIREN doit comporter exactement 9 chiffres."
+                      value={newProjectData.siren_emetteur}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
+                        setNewProjectData({ ...newProjectData, siren_emetteur: digits });
+                        // reset erreur si on revient à une saisie valide partielle
+                        if (sirenError) setSirenError('');
+                      }}
+                      onBlur={(e) => {
+                        const v = e.target.value;
+                        setSirenError(validateSiren(v) ? '' : 'Le SIREN doit comporter exactement 9 chiffres.');
+                      }}
+                      aria-invalid={!!sirenError}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        sirenError ? 'border-red-500' : 'border-slate-300'
+                      }`}
+                      placeholder="Ex: 123456789"
+                      maxLength={9}
+                      inputMode="numeric"
+                    />
+                    {sirenError && (
+                      <p className="mt-1 text-sm text-red-600">{sirenError}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Prénom du représentant <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newProjectData.prenom_representant}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: Jean"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Nom du représentant <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newProjectData.nom_representant}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: Dupont"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Email du représentant <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={newProjectData.email_representant}
+                      onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Ex: jean.dupont@example.com"
+                    />
+                  </div>
+
+                  <div className="border-t border-slate-200 pt-4 mt-4">
+                    <h4 className="text-sm font-semibold text-slate-900 mb-3">Représentant de la masse</h4>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Nom du représentant de la masse <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newProjectData.representant_masse}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: Cabinet Lefevre"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Email du représentant de la masse <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={newProjectData.email_rep_masse}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: contact@cabinet-lefevre.fr"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Téléphone du représentant de la masse
+                      </label>
+                      <input
+                        type="tel"
+                        pattern="[0-9]*"
+                        value={newProjectData.telephone_rep_masse}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: 0123456789"
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewProject(false)}
+                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                    disabled={creatingProject}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={
+                      creatingProject
+                      || !!sirenError
+                      || !newProjectData.projet
+                      || !newProjectData.taux_interet
+                      || !newProjectData.montant_global_eur
+                      || !newProjectData.periodicite_coupon
+                      || !newProjectData.emetteur
+                      || !newProjectData.siren_emetteur
+                      || !newProjectData.prenom_representant
+                      || !newProjectData.nom_representant
+                      || !newProjectData.email_representant
+                      || !newProjectData.representant_masse
+                      || !newProjectData.email_rep_masse
+                    }
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                  >
+                    {creatingProject ? 'Création...' : 'Créer le projet'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+export default Dashboard;
