@@ -265,16 +265,14 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   };
 
   const toggleSelectAll = () => {
-    if (selectedMatches.size === validMatches.length) {
+    if (selectedMatches.size === matches.length) {
       setSelectedMatches(new Set());
     } else {
-      const allValid = new Set<number>();
+      const allIndexes = new Set<number>();
       matches.forEach((match, idx) => {
-        if (match.statut === 'correspondance' || match.statut === 'partielle') {
-          allValid.add(idx);
-        }
+        allIndexes.add(idx);
       });
-      setSelectedMatches(allValid);
+      setSelectedMatches(allIndexes);
     }
   };
 
@@ -355,6 +353,8 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   const validMatches = matches.filter(m => m.statut === 'correspondance');
   const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
   const hasPartialInSelection = selectedMatchesList.some(m => m.statut === 'partielle');
+  const hasNoMatchInSelection = selectedMatchesList.some(m => m.statut === 'pas-de-correspondance');
+  const noMatchList = selectedMatchesList.filter(m => m.statut === 'pas-de-correspondance');
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -527,7 +527,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                       <th className="px-3 py-2 text-center">
                         <input
                           type="checkbox"
-                          checked={selectedMatches.size > 0 && selectedMatches.size === matches.filter(m => m.statut !== 'pas-de-correspondance').length}
+                          checked={selectedMatches.size > 0 && selectedMatches.size === matches.length}
                           onChange={toggleSelectAll}
                           className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                         />
@@ -549,14 +549,12 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                         }`}
                       >
                         <td className="px-3 py-3 text-center">
-                          {match.statut !== 'pas-de-correspondance' && (
-                            <input
-                              type="checkbox"
-                              checked={selectedMatches.has(idx)}
-                              onChange={() => toggleSelectMatch(idx)}
-                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                            />
-                          )}
+                          <input
+                            type="checkbox"
+                            checked={selectedMatches.has(idx)}
+                            onChange={() => toggleSelectMatch(idx)}
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                          />
                         </td>
                         <td className="px-3 py-3">
                           {match.statut === 'correspondance' ? (
@@ -678,26 +676,64 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                   Vous allez valider <span className="font-bold">{selectedMatches.size} paiement{selectedMatches.size > 1 ? 's' : ''}</span>:
                 </p>
                 
-                <ul className="space-y-2 max-h-40 overflow-y-auto">
+                {/* WARNINGS EN HAUT */}
+                {hasNoMatchInSelection && (
+                  <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-2 mb-3">
+                      <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-red-900 text-sm">⛔ ATTENTION CRITIQUE</p>
+                        <p className="text-sm text-red-800 mt-1">
+                          {noMatchList.length} paiement{noMatchList.length > 1 ? 's' : ''} sans correspondance (0%)
+                        </p>
+                      </div>
+                    </div>
+                    <ul className="space-y-1 ml-8">
+                      {noMatchList.map((match, idx) => (
+                        <li key={idx} className="text-sm text-red-700">
+                          ❌ <span className="font-semibold">{match.paiement.beneficiaire}</span> - {formatCurrency(match.paiement.montant)}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-xs text-red-700 mt-3 ml-8">
+                      Ces paiements seront enregistrés SANS correspondance vérifiée!
+                    </p>
+                  </div>
+                )}
+
+                {hasPartialInSelection && !hasNoMatchInSelection && (
+                  <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 flex items-start gap-2 mb-3">
+                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-orange-800">
+                      Certaines correspondances sont partielles. Vérifiez les données avant de continuer.
+                    </p>
+                  </div>
+                )}
+                
+                {/* LISTE DES PAIEMENTS */}
+                <ul className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-2">
                   {selectedMatchesList.map((match, idx) => (
-                    <li key={idx} className="text-sm bg-slate-50 p-2 rounded">
-                      <span className="font-medium">{match.paiement.beneficiaire}</span>
-                      <span className="text-slate-600"> - {formatCurrency(match.paiement.montant)}</span>
+                    <li key={idx} className={`text-sm p-2 rounded ${
+                      match.statut === 'pas-de-correspondance' ? 'bg-red-50 border border-red-200' :
+                      match.statut === 'partielle' ? 'bg-orange-50' :
+                      'bg-green-50'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{match.paiement.beneficiaire}</span>
+                        <span className="text-slate-600">{formatCurrency(match.paiement.montant)}</span>
+                      </div>
+                      {match.statut === 'pas-de-correspondance' && (
+                        <span className="text-xs text-red-600 font-semibold">❌ 0% - AUCUNE CORRESPONDANCE</span>
+                      )}
                       {match.statut === 'partielle' && (
-                        <span className="ml-2 text-xs text-orange-600">⚠️ Partiel</span>
+                        <span className="text-xs text-orange-600">⚠️ Partiel ({match.confiance}%)</span>
+                      )}
+                      {match.statut === 'correspondance' && (
+                        <span className="text-xs text-green-600">✅ Valide ({match.confiance}%)</span>
                       )}
                     </li>
                   ))}
                 </ul>
-
-                {hasPartialInSelection && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-start gap-2">
-                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-orange-800">
-                      Attention: Certaines correspondances sont partielles. Vérifiez les données avant de continuer.
-                    </p>
-                  </div>
-                )}
               </div>
 
               <div className="flex gap-3">
@@ -711,7 +747,11 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                 <button
                   onClick={handleValidateSelected}
                   disabled={processing}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${
+                    hasNoMatchInSelection 
+                      ? 'bg-red-600 hover:bg-red-700' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
                 >
                   {processing ? (
                     <>
@@ -720,8 +760,17 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-5 h-5" />
-                      Confirmer
+                      {hasNoMatchInSelection ? (
+                        <>
+                          <AlertCircle className="w-5 h-5" />
+                          Forcer quand même
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-5 h-5" />
+                          Confirmer
+                        </>
+                      )}
                     </>
                   )}
                 </button>
