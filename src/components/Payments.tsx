@@ -13,7 +13,6 @@ interface Payment {
   type: string;
   montant: number;
   date_paiement: string;
-  statut: string;
   tranche: {
     tranche_name: string;
     projet: {
@@ -66,7 +65,6 @@ export function Payments({ organization }: PaymentsProps) {
           type,
           montant,
           date_paiement,
-          statut,
           tranche:tranches(
             tranche_name,
             projet:projets(
@@ -78,7 +76,6 @@ export function Payments({ organization }: PaymentsProps) {
             nom_raison_sociale
           )
         `)
-        .in('statut', ['Payé', 'paid'])
         .order('date_paiement', { ascending: false });
 
       if (error) throw error;
@@ -166,7 +163,7 @@ export function Payments({ organization }: PaymentsProps) {
   };
 
   const exportToCSV = () => {
-    const headers = ['ID Paiement', 'Projet', 'Émetteur', 'Tranche', 'Investisseur', 'Type', 'Montant', 'Date', 'Statut'];
+    const headers = ['ID Paiement', 'Projet', 'Émetteur', 'Tranche', 'Investisseur', 'Type', 'Montant', 'Date'];
     const rows = filteredPayments.map((payment) => [
       payment.id_paiement,
       payment.tranche?.projet?.projet || '',
@@ -176,7 +173,6 @@ export function Payments({ organization }: PaymentsProps) {
       payment.type || 'Coupon',
       payment.montant,
       formatDate(payment.date_paiement),
-      payment.statut,
     ]);
 
     const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
@@ -255,7 +251,7 @@ export function Payments({ organization }: PaymentsProps) {
             <DollarSign className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun paiement</h3>
             <p className="text-slate-600">
-              {searchTerm || statusFilter !== 'all'
+              {searchTerm
                 ? "Aucun paiement ne correspond à vos critères"
                 : "Aucun paiement enregistré"}
             </p>
@@ -271,7 +267,6 @@ export function Payments({ organization }: PaymentsProps) {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Type</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Montant</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Date</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Statut</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Actions</th>
                 </tr>
               </thead>
@@ -289,12 +284,6 @@ export function Payments({ organization }: PaymentsProps) {
                     <td className="px-4 py-3 text-sm text-slate-600">{payment.type || 'Coupon'}</td>
                     <td className="px-4 py-3 text-sm font-semibold text-slate-900">{formatCurrency(payment.montant)}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{formatDate(payment.date_paiement)}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(payment.statut)}`}>
-                        {getStatusIcon(payment.statut)}
-                        {payment.statut}
-                      </span>
-                    </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex items-center gap-2">
                         <button

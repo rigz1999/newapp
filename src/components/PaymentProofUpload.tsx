@@ -290,8 +290,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
             investisseur_id: subscription.investisseur_id,
             type: 'Coupon',
             montant: match.paiement.montant,
-            date_paiement: match.paiement.date,
-            statut: 'Payé'
+            date_paiement: match.paiement.date
           })
           .select()
           .single();
@@ -352,14 +351,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           });
 
         if (dbError) throw dbError;
-
-        // Mettre à jour le statut du paiement
-        const { error: updateError } = await supabase
-          .from('paiements')
-          .update({ statut: 'Payé' })
-          .eq('id', payment!.id);
-
-        if (updateError) throw updateError;
       }
 
       // Supprimer TOUS les fichiers temp

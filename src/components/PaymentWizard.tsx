@@ -301,8 +301,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             investisseur_id: match.matchedSubscription!.investisseur_id,
             souscription_id: match.matchedSubscription!.id,
             montant: match.paiement.montant,
-            date_paiement: match.paiement.date || new Date().toISOString().split('T')[0],
-            statut: 'Payé'
+            date_paiement: match.paiement.date || new Date().toISOString().split('T')[0]
           })
           .select()
           .single();
@@ -382,8 +381,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             investisseur_id: match.matchedSubscription!.investisseur_id,
             souscription_id: match.matchedSubscription!.id,
             montant: match.paiement.montant,
-            date_paiement: match.paiement.date || new Date().toISOString().split('T')[0],
-            statut: 'Payé'
+            date_paiement: match.paiement.date || new Date().toISOString().split('T')[0]
           })
           .select()
           .single();
