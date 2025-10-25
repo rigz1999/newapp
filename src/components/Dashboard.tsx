@@ -785,3 +785,4 @@ export function Dashboard({ organization }: DashboardProps) {
     </div>
   );
 }
+export default Dashboard;

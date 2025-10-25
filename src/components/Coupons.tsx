@@ -391,3 +391,4 @@ export function Coupons({ organization }: CouponsProps) {
     </div>
   );
 }
+export default Coupons;

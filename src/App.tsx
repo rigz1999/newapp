@@ -6,9 +6,11 @@ import { Login } from './components/Login';
 import { Layout } from './components/Layout';
 import { supabase } from './lib/supabase';
 
-const Dashboard = lazy(() => import('./components/Dashboard').then(module => ({ default: module.Dashboard })));
-const Projects = lazy(() => import('./components/Projects').then(module => ({ default: module.Projects })));
-const Coupons = lazy(() => import('./components/Coupons').then(module => ({ default: module.Coupons })));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const Projects = lazy(() => import('./components/Projects'));
+const Coupons = lazy(() => import('./components/Coupons'));
+const Investors = lazy(() => import('./components/Investors'));
+const Subscriptions = lazy(() => import('./components/Subscriptions'));
 
 function App() {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -85,6 +87,22 @@ function App() {
             element={
               <Suspense fallback={<LoadingFallback />}>
                 <Coupons organization={effectiveOrg} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="investisseurs"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Investors organization={effectiveOrg} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="souscriptions"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Subscriptions organization={effectiveOrg} />
               </Suspense>
             }
           />

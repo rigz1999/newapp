@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Sidebar } from './Sidebar';
 import { Users, Download, Search } from 'lucide-react';
 
 interface Subscription {
@@ -29,11 +28,9 @@ interface Subscription {
 
 interface SubscriptionsProps {
   organization: { id: string; name: string; role: string };
-  onLogout: () => void;
-  onNavigate: (page: string) => void;
 }
 
-export function Subscriptions({ organization, onLogout, onNavigate }: SubscriptionsProps) {
+export function Subscriptions({ organization }: SubscriptionsProps) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -225,16 +222,7 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar
-        organization={organization}
-        activePage="subscriptions"
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-      />
-
-      <main className="flex-1 overflow-y-auto ml-64">
-        <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="max-w-7xl mx-auto px-8 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-2xl font-bold text-slate-900">
             Toutes les souscriptions ({filteredSubscriptions.length})
@@ -414,8 +402,8 @@ export function Subscriptions({ organization, onLogout, onNavigate }: Subscripti
             </div>
           </div>
         )}
-        </div>
-      </main>
     </div>
   );
 }
+
+export default Subscriptions;

@@ -60,7 +60,7 @@ export function Projects({ organization }: ProjectsProps) {
     if (searchParams.get('create') === 'true') {
       setShowCreateModal(true);
     }
-  }, [openCreateModal]);
+  }, [searchParams]);
 
   useEffect(() => {
     const filtered = projects.filter(project =>
@@ -123,7 +123,6 @@ export function Projects({ organization }: ProjectsProps) {
 
     if (!error) {
       setShowCreateModal(false);
-      onModalClose?.();
       setNewProject({
         project_name: '',
         emetteur: '',
@@ -139,7 +138,6 @@ export function Projects({ organization }: ProjectsProps) {
 
   const handleCloseModal = () => {
     setShowCreateModal(false);
-    onModalClose?.();
   };
 
   const formatCurrency = (amount: number) => {
@@ -343,3 +341,4 @@ export function Projects({ organization }: ProjectsProps) {
     </div>
   );
 }
+export default Projects;

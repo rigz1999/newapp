@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Sidebar } from './Sidebar';
 import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -42,15 +41,12 @@ interface InvestorWithStats extends Investor {
 
 interface InvestorsProps {
   organization: { id: string; name: string; role: string };
-  onLogout: () => void;
-  onNavigate: (page: string) => void;
-  onSelectInvestor: (investorId: string) => void;
 }
 
 type SortField = 'id_investisseur' | 'nom_raison_sociale' | 'type' | 'email' | 'total_investi' | 'nb_souscriptions';
 type SortDirection = 'asc' | 'desc';
 
-export function Investors({ organization, onLogout, onNavigate, onSelectInvestor }: InvestorsProps) {
+export function Investors({ organization }: InvestorsProps) {
   const [investors, setInvestors] = useState<InvestorWithStats[]>([]);
   const [filteredInvestors, setFilteredInvestors] = useState<InvestorWithStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -278,16 +274,7 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar
-        organization={organization}
-        activePage="investors"
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-      />
-
-      <main className="flex-1 overflow-y-auto ml-64">
-        <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="max-w-7xl mx-auto px-8 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">Tous les Investisseurs</h2>
@@ -458,8 +445,6 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
               </div>
             </div>
           )}
-        </div>
-      </main>
 
       {showDetailsModal && selectedInvestor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -860,3 +845,5 @@ export function Investors({ organization, onLogout, onNavigate, onSelectInvestor
     </div>
   );
 }
+
+export default Investors;
