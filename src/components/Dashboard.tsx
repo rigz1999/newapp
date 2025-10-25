@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { TrancheWizard } from './TrancheWizard';
-import { QuickPaymentModal } from './QuickPaymentModal';
+import { PaymentWizard } from './PaymentWizard';
 import {
   TrendingUp,
   CheckCircle2,
@@ -796,7 +796,7 @@ export function Dashboard({ organization }: DashboardProps) {
       )}
 
       {showQuickPayment && (
-        <QuickPaymentModal
+        <PaymentWizard
           onClose={() => setShowQuickPayment(false)}
           onSuccess={() => {
             setShowQuickPayment(false);
