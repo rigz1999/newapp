@@ -54,7 +54,6 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
     return () => {
       isMounted = false;
       setSubscriptions([]);
-      setFilteredSubscriptions([]);
     };
   }, [organization.id]);
 
