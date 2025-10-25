@@ -677,7 +677,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-slate-900">Derniers Paiements</h2>
                     <button
-                      onClick={() => navigate('/souscriptions')}
+                      onClick={() => navigate('/paiements')}
                       className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
                     >
                       Voir tout <ArrowRight className="w-4 h-4" />

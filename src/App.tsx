@@ -12,6 +12,7 @@ const ProjectDetail = lazy(() => import('./components/ProjectDetail'));
 const Coupons = lazy(() => import('./components/Coupons'));
 const Investors = lazy(() => import('./components/Investors'));
 const Subscriptions = lazy(() => import('./components/Subscriptions'));
+const Payments = lazy(() => import('./components/Payments'));
 
 function App() {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -112,6 +113,14 @@ function App() {
             element={
               <Suspense fallback={<LoadingFallback />}>
                 <Subscriptions organization={effectiveOrg} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="paiements"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Payments organization={effectiveOrg} />
               </Suspense>
             }
           />

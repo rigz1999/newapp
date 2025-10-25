@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText } from 'lucide-react';
+import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface LayoutProps {
@@ -78,6 +78,15 @@ export function Layout({ organization }: LayoutProps) {
             >
               <FileText className="w-5 h-5" />
               <span>Souscriptions</span>
+            </Link>
+            <Link
+              to="/paiements"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive('/paiements') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <DollarSign className="w-5 h-5" />
+              <span>Paiements</span>
             </Link>
           </nav>
         </div>
