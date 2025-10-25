@@ -113,8 +113,14 @@ export function Dashboard({ organization }: DashboardProps) {
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
   const [showQuickPayment, setShowQuickPayment] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
+
   const [newProjectData, setNewProjectData] = useState({
     projet: '',
+    // --- Nouveaux champs ---
+    taux_interet: '',           // % ex: "8.50"
+    montant_global_eur: '',     // € ex: "1500000"
+    periodicite_coupon: '',     // 'annuel' | 'semestriel' | 'trimestriel'
+    // -----------------------
     emetteur: '',
     siren_emetteur: '',
     nom_representant: '',
@@ -124,6 +130,7 @@ export function Dashboard({ organization }: DashboardProps) {
     email_rep_masse: '',
     telephone_rep_masse: ''
   });
+
   const [creatingProject, setCreatingProject] = useState(false);
 
   const CACHE_KEY = 'saad_dashboard_cache';
@@ -321,71 +328,7 @@ export function Dashboard({ organization }: DashboardProps) {
     return chartData;
   };
 
-        // Fetch alerts - TEMPORARILY DISABLED TO SHOW EXAMPLES
-        // const alertsData: Alert[] = [];
-        // const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-        // const in7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-        // // Check for upcoming deadlines (30 days)
-        // const { data: tranchesProches } = await supabase
-        //   .from('tranches')
-        //   .select('tranche_name, date_echeance')
-        //   .in('id', trancheIds)
-        //   .gte('date_echeance', today.toISOString().split('T')[0])
-        //   .lte('date_echeance', in30Days.toISOString().split('T')[0]);
-
-        // if (tranchesProches && tranchesProches.length > 0) {
-        //   tranchesProches.forEach((tranche) => {
-        //     const daysUntil = Math.ceil(
-        //       (new Date(tranche.date_echeance).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-        //     );
-        //     alertsData.push({
-        //       id: `deadline-${tranche.tranche_name}`,
-        //       type: 'deadline',
-        //       message: `Échéance proche : ${tranche.tranche_name} dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''} (${formatDate(tranche.date_echeance)})`,
-        //     });
-        //   });
-        // }
-
-        // // Check for late payments
-        // const { data: paiementsRetard } = await supabase
-        //   .from('paiements')
-        //   .select('*')
-        //   .in('investisseur_id', [organization.id])
-        //   .ilike('statut', 'En retard');
-
-        // if (paiementsRetard && paiementsRetard.length > 0) {
-        //   alertsData.push({
-        //     id: 'late-payments',
-        //     type: 'late_payment',
-        //     message: `${paiementsRetard.length} paiement${paiementsRetard.length > 1 ? 's' : ''} en retard`,
-        //     count: paiementsRetard.length,
-        //   });
-        // }
-
-        // // Check for coupons due this week
-        // const { data: couponsThisWeek } = await supabase
-        //   .from('souscriptions')
-        //   .select('coupon_net, prochaine_date_coupon')
-        //   .in('tranche_id', trancheIds)
-        //   .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
-        //   .lte('prochaine_date_coupon', in7Days.toISOString().split('T')[0]);
-
-        // if (couponsThisWeek && couponsThisWeek.length > 0) {
-        //   const total = couponsThisWeek.reduce(
-        //     (sum, c) => sum + parseFloat(c.coupon_net?.toString() || '0'),
-        //     0
-        //   );
-        //   alertsData.push({
-        //     id: 'upcoming-coupons',
-        //     type: 'upcoming_coupons',
-        //     message: `${couponsThisWeek.length} coupon${couponsThisWeek.length > 1 ? 's' : ''} à payer cette semaine (Total: ${formatCurrency(total)})`,
-        //     count: couponsThisWeek.length,
-        //   });
-        // }
-
-        // setAlerts(alertsData);
-
+  // useEffect & cleanup
   useEffect(() => {
     let isMounted = true;
 
@@ -829,6 +772,16 @@ export function Dashboard({ organization }: DashboardProps) {
                   const projectToCreate: any = {
                     projet: newProjectData.projet,
                     emetteur: newProjectData.emetteur || null,
+
+                    // --- Nouveaux champs mappés vers la DB ---
+                    taux_interet: newProjectData.taux_interet !== ''
+                      ? parseFloat(newProjectData.taux_interet)
+                      : null,
+                    montant_global_eur: newProjectData.montant_global_eur !== ''
+                      ? parseFloat(newProjectData.montant_global_eur)
+                      : null,
+                    periodicite_coupon: newProjectData.periodicite_coupon || null,
+                    // -----------------------------------------
                   };
 
                   if (newProjectData.siren_emetteur) {
@@ -864,6 +817,11 @@ export function Dashboard({ organization }: DashboardProps) {
                   setShowNewProject(false);
                   setNewProjectData({
                     projet: '',
+                    // reset nouveaux champs
+                    taux_interet: '',
+                    montant_global_eur: '',
+                    periodicite_coupon: '',
+                    // reset anciens champs
                     emetteur: '',
                     siren_emetteur: '',
                     nom_representant: '',
@@ -896,6 +854,62 @@ export function Dashboard({ organization }: DashboardProps) {
                       placeholder="Ex: GreenTech 2025"
                     />
                   </div>
+
+                  {/* --- Nouveaux champs juste après le nom du projet --- */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Taux d’intérêt (%) <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        inputMode="decimal"
+                        value={newProjectData.taux_interet}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: 8.50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Montant global à lever (€) <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        step="1"
+                        min="0"
+                        inputMode="numeric"
+                        value={newProjectData.montant_global_eur}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, montant_global_eur: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: 1500000"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">
+                        Périodicité du coupon <span className="text-red-600">*</span>
+                      </label>
+                      <select
+                        required
+                        value={newProjectData.periodicite_coupon}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="" disabled>Choisir…</option>
+                        <option value="annuel">Annuel</option>
+                        <option value="semestriel">Semestriel</option>
+                        <option value="trimestriel">Trimestriel</option>
+                      </select>
+                    </div>
+                  </div>
+                  {/* ---------------------------------------------------- */}
 
                   <div>
                     <label className="block text-sm font-medium text-slate-900 mb-2">
@@ -1022,7 +1036,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   </button>
                   <button
                     type="submit"
-                    disabled={creatingProject || !newProjectData.projet}
+                    disabled={creatingProject || !newProjectData.projet || !newProjectData.taux_interet || !newProjectData.montant_global_eur || !newProjectData.periodicite_coupon}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     {creatingProject ? 'Création...' : 'Créer le projet'}
