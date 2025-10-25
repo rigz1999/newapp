@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, ChevronRight } from 'lucide-react';
+import { X } from 'lucide-react';
 import { PaymentProofUpload } from './PaymentProofUpload';
 
 interface QuickPaymentModalProps {
@@ -34,12 +34,11 @@ interface Payment {
 }
 
 export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps) {
-  const [step, setStep] = useState<'project' | 'tranche' | 'payment' | 'upload'>('project');
   const [projects, setProjects] = useState<Project[]>([]);
   const [tranches, setTranches] = useState<Tranche[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [selectedTranche, setSelectedTranche] = useState<Tranche | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedTrancheId, setSelectedTrancheId] = useState<string>('');
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -48,16 +47,24 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
   }, []);
 
   useEffect(() => {
-    if (selectedProject) {
-      fetchTranches(selectedProject.id);
+    if (selectedProjectId) {
+      fetchTranches(selectedProjectId);
+      setSelectedTrancheId('');
+      setPayments([]);
+    } else {
+      setTranches([]);
+      setSelectedTrancheId('');
+      setPayments([]);
     }
-  }, [selectedProject]);
+  }, [selectedProjectId]);
 
   useEffect(() => {
-    if (selectedTranche) {
-      fetchPayments(selectedTranche.id);
+    if (selectedTrancheId) {
+      fetchPayments(selectedTrancheId);
+    } else {
+      setPayments([]);
     }
-  }, [selectedTranche]);
+  }, [selectedTrancheId]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -120,39 +127,6 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
     }
   };
 
-  const handleProjectSelect = (project: Project) => {
-    setSelectedProject(project);
-    setSelectedTranche(null);
-    setSelectedPayment(null);
-    setStep('tranche');
-  };
-
-  const handleTrancheSelect = (tranche: Tranche) => {
-    setSelectedTranche(tranche);
-    setSelectedPayment(null);
-    setStep('payment');
-  };
-
-  const handlePaymentSelect = (payment: Payment) => {
-    setSelectedPayment(payment);
-    setStep('upload');
-  };
-
-  const handleBack = () => {
-    if (step === 'upload') {
-      setStep('payment');
-      setSelectedPayment(null);
-    } else if (step === 'payment') {
-      setStep('tranche');
-      setSelectedTranche(null);
-      setPayments([]);
-    } else if (step === 'tranche') {
-      setStep('project');
-      setSelectedProject(null);
-      setTranches([]);
-    }
-  };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -177,11 +151,13 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
     return <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">{status}</span>;
   };
 
-  if (step === 'upload' && selectedPayment) {
+  if (selectedPayment) {
     return (
       <PaymentProofUpload
         payment={selectedPayment}
-        onClose={onClose}
+        onClose={() => {
+          setSelectedPayment(null);
+        }}
         onSuccess={() => {
           onSuccess();
           onClose();
@@ -197,15 +173,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-xl font-bold text-slate-900">Enregistrer un Paiement</h3>
-              <div className="flex items-center gap-2 mt-2 text-sm text-slate-600">
-                <span className={step === 'project' ? 'font-semibold text-blue-600' : ''}>1. Projet</span>
-                <ChevronRight className="w-4 h-4" />
-                <span className={step === 'tranche' ? 'font-semibold text-blue-600' : ''}>2. Tranche</span>
-                <ChevronRight className="w-4 h-4" />
-                <span className={step === 'payment' ? 'font-semibold text-blue-600' : ''}>3. Paiement</span>
-                <ChevronRight className="w-4 h-4" />
-                <span className={step === 'upload' ? 'font-semibold text-blue-600' : ''}>4. Justificatif</span>
-              </div>
+              <p className="text-sm text-slate-600 mt-1">Sélectionnez un projet et une tranche</p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
               <X className="w-6 h-6" />
@@ -214,102 +182,77 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
         </div>
 
         <div className="p-6">
-          {step !== 'project' && (
-            <button
-              onClick={handleBack}
-              className="mb-4 text-blue-600 hover:text-blue-700 text-sm font-medium"
-            >
-              ← Retour
-            </button>
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-900 mb-2">Projet</label>
+              <select
+                value={selectedProjectId}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Sélectionner un projet</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.projet} - {project.emetteur}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-900 mb-2">Tranche</label>
+              <select
+                value={selectedTrancheId}
+                onChange={(e) => setSelectedTrancheId(e.target.value)}
+                disabled={!selectedProjectId || tranches.length === 0}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
+              >
+                <option value="">Sélectionner une tranche</option>
+                {tranches.map((tranche) => (
+                  <option key={tranche.id} value={tranche.id}>
+                    {tranche.tranche_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {loading && (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+            </div>
           )}
 
-          {step === 'project' && (
-            <>
-              <h4 className="font-semibold text-slate-900 mb-4">Sélectionner un projet</h4>
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-                </div>
-              ) : projects.length === 0 ? (
-                <p className="text-center text-slate-500 py-8">Aucun projet disponible</p>
-              ) : (
-                <div className="space-y-2">
-                  {projects.map((project) => (
-                    <button
-                      key={project.id}
-                      onClick={() => handleProjectSelect(project)}
-                      className="w-full p-4 text-left border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-blue-300 transition-colors"
-                    >
-                      <p className="font-medium text-slate-900">{project.projet}</p>
-                      <p className="text-sm text-slate-600">{project.emetteur}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
+          {!loading && selectedTrancheId && payments.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-slate-500">Aucun paiement en attente pour cette tranche</p>
+            </div>
           )}
 
-          {step === 'tranche' && selectedProject && (
-            <>
-              <h4 className="font-semibold text-slate-900 mb-2">Sélectionner une tranche</h4>
-              <p className="text-sm text-slate-600 mb-4">Projet: {selectedProject.projet}</p>
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-                </div>
-              ) : tranches.length === 0 ? (
-                <p className="text-center text-slate-500 py-8">Aucune tranche disponible</p>
-              ) : (
-                <div className="space-y-2">
-                  {tranches.map((tranche) => (
-                    <button
-                      key={tranche.id}
-                      onClick={() => handleTrancheSelect(tranche)}
-                      className="w-full p-4 text-left border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-blue-300 transition-colors"
-                    >
-                      <p className="font-medium text-slate-900">{tranche.tranche_name}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {step === 'payment' && selectedTranche && (
-            <>
-              <h4 className="font-semibold text-slate-900 mb-2">Sélectionner un paiement</h4>
-              <p className="text-sm text-slate-600 mb-4">
-                Tranche: {selectedTranche.tranche_name}
-              </p>
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-                </div>
-              ) : payments.length === 0 ? (
-                <p className="text-center text-slate-500 py-8">Aucun paiement en attente</p>
-              ) : (
-                <div className="space-y-2">
-                  {payments.map((payment) => (
-                    <button
-                      key={payment.id}
-                      onClick={() => handlePaymentSelect(payment)}
-                      className="w-full p-4 text-left border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-blue-300 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium text-slate-900">{formatCurrency(payment.montant)}</p>
-                        {getStatusBadge(payment.statut)}
-                      </div>
-                      <p className="text-sm text-slate-600">
-                        {payment.investisseur?.nom_raison_sociale || 'Investisseur non spécifié'}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Date: {formatDate(payment.date_paiement)}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
+          {!loading && payments.length > 0 && (
+            <div>
+              <h4 className="font-medium text-slate-900 mb-3">Paiements en attente ({payments.length})</h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {payments.map((payment) => (
+                  <button
+                    key={payment.id}
+                    onClick={() => setSelectedPayment(payment)}
+                    className="w-full p-4 text-left border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-blue-300 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-semibold text-slate-900">{formatCurrency(payment.montant)}</p>
+                      {getStatusBadge(payment.statut)}
+                    </div>
+                    <p className="text-sm text-slate-600">
+                      {payment.investisseur?.nom_raison_sociale || 'Investisseur non spécifié'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Date: {formatDate(payment.date_paiement)}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
