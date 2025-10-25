@@ -68,12 +68,12 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
   const handleAnalyze = async () => {
     if (files.length === 0) return;
 
-    if (isTrancheMode) {
-      setError('Analyse de paiements de tranche en développement. Veuillez utiliser l\'ancienne méthode pour l\'instant.');
+    if (isTrancheMode && (!trancheId || !subscriptions || subscriptions.length === 0)) {
+      setError('Données de tranche manquantes');
       return;
     }
 
-    if (!payment) {
+    if (!isTrancheMode && !payment) {
       setError('Données de paiement manquantes');
       return;
     }
@@ -82,49 +82,81 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
     setError(null);
 
     try {
-      const file = files[0];
       let uploadedUrls: string[] = [];
       let tempFileNames: string[] = [];
 
-      // Si c'est un PDF, convertir TOUTES les pages en images
-      if (file.type === 'application/pdf') {
-        console.log('Conversion PDF → Images...');
-        
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        const numPages = pdf.numPages;
-        
-        console.log(`PDF de ${numPages} page(s) détecté`);
+      // Process all files (convert PDFs to images, upload images directly)
+      for (const file of files) {
+        if (file.type === 'application/pdf') {
+          console.log('Conversion PDF → Images:', file.name);
 
-        // Convertir chaque page
-        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum);
-          
-          const viewport = page.getViewport({ scale: 2.0 });
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d')!;
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          const numPages = pdf.numPages;
 
-          await page.render({
-            canvasContext: context,
-            viewport: viewport
-          }).promise;
+          console.log(`PDF de ${numPages} page(s) détecté`);
 
-          // Convertir canvas en blob
-          const blob = await new Promise<Blob>((resolve) => {
-            canvas.toBlob((b) => resolve(b!), 'image/png');
-          });
-          
-          const fileName = `${Date.now()}_page${pageNum}.png`;
-          
-          console.log(`Upload page ${pageNum}:`, fileName);
-          
-          // Upload vers storage temporaire
+          // Convert each page
+          for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+
+            const viewport = page.getViewport({ scale: 2.0 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d')!;
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({
+              canvasContext: context,
+              viewport: viewport
+            }).promise;
+
+            // Convert canvas to blob
+            const blob = await new Promise<Blob>((resolve) => {
+              canvas.toBlob((b) => resolve(b!), 'image/png');
+            });
+
+            const fileName = `${Date.now()}_${file.name.replace('.pdf', '')}_page${pageNum}.png`;
+
+            console.log(`Upload page ${pageNum}:`, fileName);
+
+            // Upload to temp storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('payment-proofs-temp')
+              .upload(fileName, blob, {
+                contentType: 'image/png',
+                upsert: false
+              });
+
+            if (uploadError) {
+              console.error('Erreur upload:', uploadError);
+              throw uploadError;
+            }
+
+            console.log('Upload réussi:', uploadData);
+
+            // Get public URL
+            const { data: urlData } = supabase.storage
+              .from('payment-proofs-temp')
+              .getPublicUrl(fileName);
+
+            console.log('URL générée:', urlData.publicUrl);
+
+            uploadedUrls.push(urlData.publicUrl);
+            tempFileNames.push(fileName);
+
+            console.log(`Page ${pageNum}/${numPages} convertie et uploadée`);
+          }
+        } else {
+          // Upload image directly
+          const fileName = `${Date.now()}_${file.name}`;
+
+          console.log('Upload image:', fileName);
+
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('payment-proofs-temp')
-            .upload(fileName, blob, {
-              contentType: 'image/png',
+            .upload(fileName, file, {
+              contentType: file.type,
               upsert: false
             });
 
@@ -135,7 +167,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
           console.log('Upload réussi:', uploadData);
 
-          // Obtenir l'URL publique
           const { data: urlData } = supabase.storage
             .from('payment-proofs-temp')
             .getPublicUrl(fileName);
@@ -144,69 +175,62 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
           uploadedUrls.push(urlData.publicUrl);
           tempFileNames.push(fileName);
-          
-          console.log(`Page ${pageNum}/${numPages} convertie et uploadée`);
         }
-        
-        console.log('Toutes les pages converties!');
-      } else {
-        // Si c'est déjà une image
-        const fileName = `${Date.now()}_${file.name}`;
-        
-        console.log('Upload image:', fileName);
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('payment-proofs-temp')
-          .upload(fileName, file, {
-            contentType: file.type,
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('Erreur upload:', uploadError);
-          throw uploadError;
-        }
-
-        console.log('Upload réussi:', uploadData);
-
-        const { data: urlData } = supabase.storage
-          .from('payment-proofs-temp')
-          .getPublicUrl(fileName);
-
-        console.log('URL générée:', urlData.publicUrl);
-
-        uploadedUrls.push(urlData.publicUrl);
-        tempFileNames.push(fileName);
       }
-
-      console.log('=== URLS FINALES ===');
-      console.log('URLs uploadées:', uploadedUrls);
-      console.log('Fichiers temp:', tempFileNames);
 
       // Vérifier que les URLs ne sont pas vides
       if (uploadedUrls.length === 0 || !uploadedUrls[0]) {
         throw new Error('Aucune URL de fichier générée - problème d\'upload');
       }
 
-      const requestBody = {
-        fileUrls: uploadedUrls,
-        expectedAmount: payment.montant,
-        dueDate: new Date(payment.date_paiement).toLocaleDateString('fr-FR', {
-          day: '2-digit',
-          month: '2-digit', 
-          year: 'numeric'
-        }).split('/').join('-'),
-        trancheName: payment.tranche?.tranche_name || '',
-        investorName: payment.investisseur?.nom_raison_sociale || ''
-      };
-
       console.log('=== APPEL EDGE FUNCTION ===');
-      console.log('Body envoyé:', requestBody);
 
-      // Appeler la fonction Edge pour analyser
-      const { data, error: funcError } = await supabase.functions.invoke('analyze-payment', {
-        body: requestBody
-      });
+      let data, funcError;
+
+      if (isTrancheMode) {
+        // Batch analysis for tranche payments
+        const expectedPayments = subscriptions!.map(sub => ({
+          investorName: sub.investisseur.nom_raison_sociale,
+          expectedAmount: Number(sub.coupon_net) || 0,
+          subscriptionId: sub.id
+        }));
+
+        const requestBody = {
+          fileUrls: uploadedUrls,
+          expectedPayments
+        };
+
+        console.log('Body envoyé (batch):', requestBody);
+
+        const response = await supabase.functions.invoke('analyze-payment-batch', {
+          body: requestBody
+        });
+
+        data = response.data;
+        funcError = response.error;
+      } else {
+        // Single payment analysis
+        const requestBody = {
+          fileUrls: uploadedUrls,
+          expectedAmount: payment!.montant,
+          dueDate: new Date(payment!.date_paiement).toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          }).split('/').join('-'),
+          trancheName: payment!.tranche?.tranche_name || '',
+          investorName: payment!.investisseur?.nom_raison_sociale || ''
+        };
+
+        console.log('Body envoyé (single):', requestBody);
+
+        const response = await supabase.functions.invoke('analyze-payment', {
+          body: requestBody
+        });
+
+        data = response.data;
+        funcError = response.error;
+      }
 
       console.log('=== RÉPONSE EDGE FUNCTION ===');
       console.log('Data:', data);
@@ -242,40 +266,101 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
       if (downloadError) throw downloadError;
 
-      // Upload vers storage permanent
-      const permanentFileName = `${payment.id}/${Date.now()}_${files[0].name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('payment-proofs')
-        .upload(permanentFileName, downloadData);
+      if (isTrancheMode) {
+        // Batch payment confirmation - create payment records for each matched payment
+        const subscriptionId = match.attendu?.subscriptionId;
+        if (!subscriptionId) {
+          throw new Error('ID de souscription manquant');
+        }
 
-      if (uploadError) throw uploadError;
+        // Get subscription details to create payment
+        const { data: subscription, error: subError } = await supabase
+          .from('souscriptions')
+          .select('*, investisseur:investisseurs(*)')
+          .eq('id', subscriptionId)
+          .single();
 
-      // Obtenir URL permanente
-      const { data: urlData } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(permanentFileName);
+        if (subError) throw subError;
 
-      // Sauvegarder dans la base de données
-      const { error: dbError } = await supabase
-        .from('payment_proofs')
-        .insert({
-          paiement_id: payment.id,
-          file_url: urlData.publicUrl,
-          file_name: files[0].name,
-          file_size: files[0].size,
-          extracted_data: match.paiement,
-          confidence: match.confiance
-        });
+        // Create payment record
+        const { data: paymentData, error: paymentError } = await supabase
+          .from('paiements')
+          .insert({
+            tranche_id: trancheId,
+            investisseur_id: subscription.investisseur_id,
+            type: 'Coupon',
+            montant: match.paiement.montant,
+            date_paiement: match.paiement.date,
+            statut: 'Payé'
+          })
+          .select()
+          .single();
 
-      if (dbError) throw dbError;
+        if (paymentError) throw paymentError;
 
-      // Mettre à jour le statut du paiement
-      const { error: updateError } = await supabase
-        .from('paiements')
-        .update({ statut: 'Payé' })
-        .eq('id', payment.id);
+        // Upload file to permanent storage
+        const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('payment-proofs')
+          .upload(permanentFileName, downloadData);
 
-      if (updateError) throw updateError;
+        if (uploadError) throw uploadError;
+
+        // Get permanent URL
+        const { data: urlData } = supabase.storage
+          .from('payment-proofs')
+          .getPublicUrl(permanentFileName);
+
+        // Save proof to database
+        const { error: dbError } = await supabase
+          .from('payment_proofs')
+          .insert({
+            paiement_id: paymentData.id,
+            file_url: urlData.publicUrl,
+            file_name: files[0].name,
+            file_size: files[0].size,
+            extracted_data: match.paiement,
+            confidence: match.confiance
+          });
+
+        if (dbError) throw dbError;
+
+      } else {
+        // Single payment confirmation
+        const permanentFileName = `${payment!.id}/${Date.now()}_${files[0].name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('payment-proofs')
+          .upload(permanentFileName, downloadData);
+
+        if (uploadError) throw uploadError;
+
+        // Obtenir URL permanente
+        const { data: urlData } = supabase.storage
+          .from('payment-proofs')
+          .getPublicUrl(permanentFileName);
+
+        // Sauvegarder dans la base de données
+        const { error: dbError } = await supabase
+          .from('payment_proofs')
+          .insert({
+            paiement_id: payment!.id,
+            file_url: urlData.publicUrl,
+            file_name: files[0].name,
+            file_size: files[0].size,
+            extracted_data: match.paiement,
+            confidence: match.confiance
+          });
+
+        if (dbError) throw dbError;
+
+        // Mettre à jour le statut du paiement
+        const { error: updateError } = await supabase
+          .from('paiements')
+          .update({ statut: 'Payé' })
+          .eq('id', payment!.id);
+
+        if (updateError) throw updateError;
+      }
 
       // Supprimer TOUS les fichiers temp
       await supabase.storage
@@ -463,17 +548,24 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                     <div>
                       <p className="text-xs font-semibold text-slate-600 mb-2">ATTENDU</p>
                       <div className="space-y-1 text-sm">
-                        <p><span className="text-slate-600">Investisseur:</span> <span className="font-medium">{match.attendu.investisseur}</span></p>
-                        <p><span className="text-slate-600">Montant:</span> <span className="font-medium">{formatCurrency(match.attendu.montant)}</span></p>
-                        <p><span className="text-slate-600">Date échéance:</span> <span className="font-medium">{match.attendu.dateEcheance}</span></p>
+                        <p><span className="text-slate-600">Investisseur:</span> <span className="font-medium">{match.attendu?.investorName || match.attendu?.investisseur || '-'}</span></p>
+                        <p><span className="text-slate-600">Montant:</span> <span className="font-medium">{formatCurrency(match.attendu?.expectedAmount || match.attendu?.montant || 0)}</span></p>
+                        {!isTrancheMode && match.attendu?.dateEcheance && (
+                          <p><span className="text-slate-600">Date échéance:</span> <span className="font-medium">{match.attendu.dateEcheance}</span></p>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-slate-200">
                     <p className="text-xs text-slate-600">
-                      Différence montant: {formatCurrency(parseFloat(match.details.ecartMontant))} ({match.details.ecartMontantPourcent}%) • 
-                      Différence date: {match.details.ecartJours} jour{match.details.ecartJours > 1 ? 's' : ''}
+                      Différence montant: {formatCurrency(parseFloat(match.details?.ecartMontant || 0))} ({match.details?.ecartMontantPourcent || 0}%)
+                      {match.details?.ecartJours !== undefined && (
+                        <> • Différence date: {match.details.ecartJours} jour{match.details.ecartJours > 1 ? 's' : ''}</>
+                      )}
+                      {match.details?.nameScore && (
+                        <> • Score nom: {match.details.nameScore}%</>
+                      )}
                     </p>
                   </div>
 
