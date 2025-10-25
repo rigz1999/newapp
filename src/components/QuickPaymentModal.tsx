@@ -18,28 +18,27 @@ interface Tranche {
   id: string;
   tranche_name: string;
   projet_id: string;
+  subscription_count: number;
+  total_amount: number;
 }
 
-interface Payment {
+interface Subscription {
   id: string;
-  montant: number;
-  date_paiement: string;
-  statut: string;
-  tranche: {
-    tranche_name: string;
-  };
+  id_souscription: string;
+  montant_investi: number;
+  coupon_net: number;
   investisseur: {
     nom_raison_sociale: string;
-  } | null;
+  };
 }
 
 export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tranches, setTranches] = useState<Tranche[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedTrancheId, setSelectedTrancheId] = useState<string>('');
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -50,19 +49,19 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
     if (selectedProjectId) {
       fetchTranches(selectedProjectId);
       setSelectedTrancheId('');
-      setPayments([]);
+      setSubscriptions([]);
     } else {
       setTranches([]);
       setSelectedTrancheId('');
-      setPayments([]);
+      setSubscriptions([]);
     }
   }, [selectedProjectId]);
 
   useEffect(() => {
     if (selectedTrancheId) {
-      fetchPayments(selectedTrancheId);
+      fetchSubscriptions(selectedTrancheId);
     } else {
-      setPayments([]);
+      setSubscriptions([]);
     }
   }, [selectedTrancheId]);
 
@@ -86,14 +85,41 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
   const fetchTranches = async (projectId: string) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: tranchesData, error: tranchesError } = await supabase
         .from('tranches')
         .select('id, tranche_name, projet_id')
         .eq('projet_id', projectId)
         .order('tranche_name');
 
-      if (error) throw error;
-      setTranches(data || []);
+      if (tranchesError) throw tranchesError;
+
+      const tranchesWithStats = await Promise.all(
+        (tranchesData || []).map(async (tranche) => {
+          const { data: subs, error: subsError } = await supabase
+            .from('souscriptions')
+            .select('coupon_net')
+            .eq('tranche_id', tranche.id);
+
+          if (subsError) {
+            console.error('Error fetching subscription stats:', subsError);
+            return {
+              ...tranche,
+              subscription_count: 0,
+              total_amount: 0,
+            };
+          }
+
+          const total = (subs || []).reduce((sum, sub) => sum + (Number(sub.coupon_net) || 0), 0);
+
+          return {
+            ...tranche,
+            subscription_count: subs?.length || 0,
+            total_amount: total,
+          };
+        })
+      );
+
+      setTranches(tranchesWithStats);
     } catch (err) {
       console.error('Error fetching tranches:', err);
     } finally {
@@ -101,27 +127,25 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
     }
   };
 
-  const fetchPayments = async (trancheId: string) => {
+  const fetchSubscriptions = async (trancheId: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('paiements')
+        .from('souscriptions')
         .select(`
           id,
-          montant,
-          date_paiement,
-          statut,
-          tranche:tranches(tranche_name),
+          id_souscription,
+          montant_investi,
+          coupon_net,
           investisseur:investisseurs(nom_raison_sociale)
         `)
         .eq('tranche_id', trancheId)
-        .in('statut', ['En attente', 'En retard', 'pending', 'late'])
-        .order('date_paiement', { ascending: false });
+        .order('id_souscription');
 
       if (error) throw error;
-      setPayments((data || []) as Payment[]);
+      setSubscriptions((data || []) as Subscription[]);
     } catch (err) {
-      console.error('Error fetching payments:', err);
+      console.error('Error fetching subscriptions:', err);
     } finally {
       setLoading(false);
     }
@@ -136,27 +160,17 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
     }).format(amount);
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('fr-FR');
+  const getTotalPayment = () => {
+    return subscriptions.reduce((sum, sub) => sum + (Number(sub.coupon_net) || 0), 0);
   };
 
-  const getStatusBadge = (status: string) => {
-    const s = status?.toLowerCase();
-    if (s === 'en attente' || s === 'pending') {
-      return <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">En attente</span>;
-    }
-    if (s === 'en retard' || s === 'late') {
-      return <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">En retard</span>;
-    }
-    return <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">{status}</span>;
-  };
-
-  if (selectedPayment) {
+  if (showUpload && selectedTrancheId) {
     return (
       <PaymentProofUpload
-        payment={selectedPayment}
+        trancheId={selectedTrancheId}
+        subscriptions={subscriptions}
         onClose={() => {
-          setSelectedPayment(null);
+          setShowUpload(false);
         }}
         onSuccess={() => {
           onSuccess();
@@ -168,12 +182,12 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-xl font-bold text-slate-900">Enregistrer un Paiement</h3>
-              <p className="text-sm text-slate-600 mt-1">Sélectionnez un projet et une tranche</p>
+              <h3 className="text-xl font-bold text-slate-900">Enregistrer un Paiement de Tranche</h3>
+              <p className="text-sm text-slate-600 mt-1">Sélectionnez un projet et une tranche à payer</p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
               <X className="w-6 h-6" />
@@ -210,7 +224,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
                 <option value="">Sélectionner une tranche</option>
                 {tranches.map((tranche) => (
                   <option key={tranche.id} value={tranche.id}>
-                    {tranche.tranche_name}
+                    {tranche.tranche_name} ({tranche.subscription_count} investisseurs - Total: {formatCurrency(tranche.total_amount)})
                   </option>
                 ))}
               </select>
@@ -223,35 +237,55 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
             </div>
           )}
 
-          {!loading && selectedTrancheId && payments.length === 0 && (
+          {!loading && selectedTrancheId && subscriptions.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-slate-500">Aucun paiement en attente pour cette tranche</p>
+              <p className="text-slate-500">Aucune souscription trouvée pour cette tranche</p>
             </div>
           )}
 
-          {!loading && payments.length > 0 && (
+          {!loading && subscriptions.length > 0 && (
             <div>
-              <h4 className="font-medium text-slate-900 mb-3">Paiements en attente ({payments.length})</h4>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {payments.map((payment) => (
-                  <button
-                    key={payment.id}
-                    onClick={() => setSelectedPayment(payment)}
-                    className="w-full p-4 text-left border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-blue-300 transition-colors"
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="font-semibold text-blue-900 mb-2">Paiement de Tranche</h4>
+                <p className="text-sm text-blue-700 mb-3">
+                  Cette tranche contient {subscriptions.length} investisseur{subscriptions.length > 1 ? 's' : ''}.
+                  Le justificatif de paiement doit contenir tous les paiements individuels.
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-900">Montant total à payer:</span>
+                  <span className="text-lg font-bold text-blue-900">{formatCurrency(getTotalPayment())}</span>
+                </div>
+              </div>
+
+              <h4 className="font-medium text-slate-900 mb-3">Détails des Paiements ({subscriptions.length})</h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
+                {subscriptions.map((subscription) => (
+                  <div
+                    key={subscription.id}
+                    className="p-3 border border-slate-200 rounded-lg bg-slate-50"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-semibold text-slate-900">{formatCurrency(payment.montant)}</p>
-                      {getStatusBadge(payment.statut)}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-slate-900">
+                          {subscription.investisseur?.nom_raison_sociale || 'Investisseur non spécifié'}
+                        </p>
+                        <p className="text-xs text-slate-500">{subscription.id_souscription}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-slate-900">{formatCurrency(Number(subscription.coupon_net) || 0)}</p>
+                        <p className="text-xs text-slate-500">À payer</p>
+                      </div>
                     </div>
-                    <p className="text-sm text-slate-600">
-                      {payment.investisseur?.nom_raison_sociale || 'Investisseur non spécifié'}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Date: {formatDate(payment.date_paiement)}
-                    </p>
-                  </button>
+                  </div>
                 ))}
               </div>
+
+              <button
+                onClick={() => setShowUpload(true)}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Télécharger le Justificatif de Paiement
+              </button>
             </div>
           )}
         </div>

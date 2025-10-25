@@ -317,7 +317,6 @@ export function Payments({ organization }: PaymentsProps) {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">ID</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Projet</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Tranche</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Investisseur</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Type</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Montant</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Date</th>
@@ -336,7 +335,6 @@ export function Payments({ organization }: PaymentsProps) {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">{payment.tranche?.tranche_name || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{payment.investisseur?.nom_raison_sociale || '-'}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{payment.type || 'Coupon'}</td>
                     <td className="px-4 py-3 text-sm font-semibold text-slate-900">{formatCurrency(payment.montant)}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{formatDate(payment.date_paiement)}</td>

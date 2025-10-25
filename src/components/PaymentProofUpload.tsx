@@ -6,8 +6,18 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Configure le worker avec la version 5.4 (correspond au package installé)
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
+interface Subscription {
+  id: string;
+  id_souscription: string;
+  montant_investi: number;
+  coupon_net: number;
+  investisseur: {
+    nom_raison_sociale: string;
+  };
+}
+
 interface PaymentProofUploadProps {
-  payment: {
+  payment?: {
     id: string;
     montant: number;
     date_paiement: string;
@@ -18,11 +28,14 @@ interface PaymentProofUploadProps {
       nom_raison_sociale: string;
     } | null;
   };
+  trancheId?: string;
+  subscriptions?: Subscription[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProofUploadProps) {
+export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose, onSuccess }: PaymentProofUploadProps) {
+  const isTrancheMode = Boolean(trancheId && subscriptions);
   const [files, setFiles] = useState<File[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
@@ -54,6 +67,16 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
 
   const handleAnalyze = async () => {
     if (files.length === 0) return;
+
+    if (isTrancheMode) {
+      setError('Analyse de paiements de tranche en développement. Veuillez utiliser l\'ancienne méthode pour l\'instant.');
+      return;
+    }
+
+    if (!payment) {
+      setError('Données de paiement manquantes');
+      return;
+    }
 
     setAnalyzing(true);
     setError(null);
@@ -306,7 +329,10 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
             <div>
               <h3 className="text-xl font-bold text-slate-900">Télécharger Justificatif de Paiement</h3>
               <p className="text-sm text-slate-600 mt-1">
-                {payment.tranche?.tranche_name} • {payment.investisseur?.nom_raison_sociale}
+                {isTrancheMode
+                  ? `Paiement de tranche - ${subscriptions?.length || 0} investisseurs`
+                  : `${payment?.tranche?.tranche_name} • ${payment?.investisseur?.nom_raison_sociale}`
+                }
               </p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -318,20 +344,40 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
         <div className="p-6">
           {!analysisResult ? (
             <>
-              <div className="bg-slate-50 rounded-lg p-4 mb-6">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-slate-600">Montant attendu</p>
-                    <p className="font-bold text-slate-900">{formatCurrency(payment.montant)}</p>
+              {isTrancheMode ? (
+                <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                  <h4 className="font-semibold text-blue-900 mb-2">Paiements Attendus</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {subscriptions?.map((sub) => (
+                      <div key={sub.id} className="flex items-center justify-between text-sm bg-white p-2 rounded">
+                        <span className="text-slate-700">{sub.investisseur.nom_raison_sociale}</span>
+                        <span className="font-semibold text-slate-900">{formatCurrency(Number(sub.coupon_net) || 0)}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-slate-600">Date d'échéance</p>
-                    <p className="font-bold text-slate-900">
-                      {new Date(payment.date_paiement).toLocaleDateString('fr-FR')}
-                    </p>
+                  <div className="mt-3 pt-3 border-t border-blue-200 flex justify-between items-center">
+                    <span className="font-semibold text-blue-900">Total:</span>
+                    <span className="font-bold text-blue-900 text-lg">
+                      {formatCurrency(subscriptions?.reduce((sum, sub) => sum + (Number(sub.coupon_net) || 0), 0) || 0)}
+                    </span>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-slate-50 rounded-lg p-4 mb-6">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-slate-600">Montant attendu</p>
+                      <p className="font-bold text-slate-900">{formatCurrency(payment?.montant || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-600">Date d'échéance</p>
+                      <p className="font-bold text-slate-900">
+                        {payment?.date_paiement ? new Date(payment.date_paiement).toLocaleDateString('fr-FR') : '-'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center mb-6">
                 <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
