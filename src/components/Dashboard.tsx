@@ -141,108 +141,131 @@ export function Dashboard({ organization }: DashboardProps) {
     const isRefresh = !loading;
     if (isRefresh) setRefreshing(true);
 
-    const cachedData = getCachedData();
-    if (cachedData && !isRefresh) {
-      setStats(cachedData.stats);
-      setRecentPayments(cachedData.recentPayments);
-      setUpcomingCoupons(cachedData.upcomingCoupons);
-      setMonthlyData(cachedData.monthlyData);
-      setLoading(false);
-    }
+    try {
+      console.log('Dashboard: Starting data fetch...');
 
-    const today = new Date();
-    const firstOfMonth = new Date();
-    firstOfMonth.setDate(1);
-    firstOfMonth.setHours(0, 0, 0, 0);
-    const in90Days = new Date();
-    in90Days.setDate(today.getDate() + 90);
+      const cachedData = getCachedData();
+      if (cachedData && !isRefresh) {
+        console.log('Dashboard: Using cached data');
+        setStats(cachedData.stats);
+        setRecentPayments(cachedData.recentPayments || []);
+        setUpcomingCoupons(cachedData.upcomingCoupons || []);
+        setMonthlyData(cachedData.monthlyData || []);
+        setLoading(false);
+      }
 
-    const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes, chartSubsRes] = await Promise.all([
-      supabase.from('projets').select('id'),
-      supabase.from('tranches').select('id, projet_id'),
-      supabase.from('souscriptions').select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
-      supabase.from('paiements').select('montant').eq('statut', 'paid').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
-      supabase.from('souscriptions').select('montant_investi, date_souscription')
-    ]);
+      const today = new Date();
+      const firstOfMonth = new Date();
+      firstOfMonth.setDate(1);
+      firstOfMonth.setHours(0, 0, 0, 0);
+      const in90Days = new Date();
+      in90Days.setDate(today.getDate() + 90);
 
-    const projects = projectsRes.data || [];
-    const tranches = tranchesRes.data || [];
-    const subscriptions = subscriptionsRes.data || [];
-    const monthPayments = monthPaymentsRes.data || [];
-    const chartSubscriptions = chartSubsRes.data || [];
-
-    const projectIds = projects.map((p) => p.id);
-    const trancheIds = tranches.map((t) => t.id);
-
-    const totalInvested = subscriptions.reduce((sum, s) => sum + parseFloat(s.montant_investi?.toString() || '0'), 0);
-    const couponsPaidThisMonth = monthPayments.reduce((sum, p) => sum + parseFloat(p.montant.toString()), 0);
-    const upcomingCount = subscriptions.filter(
-      s => s.prochaine_date_coupon &&
-           s.prochaine_date_coupon >= today.toISOString().split('T')[0] &&
-           s.prochaine_date_coupon <= in90Days.toISOString().split('T')[0]
-    ).length;
-
-    setStats({
-      totalInvested,
-      couponsPaidThisMonth,
-      activeProjects: projectIds.length,
-      upcomingCoupons: upcomingCount,
-      nextCouponDays: 90,
-    });
-
-    if (trancheIds.length > 0) {
-      const [paymentsRes, couponsRes] = await Promise.all([
-        supabase.from('paiements').select(`
-            id, id_paiement, montant, date_paiement, statut,
-            tranche:tranches(tranche_name, projet_id)
-          `).in('tranche_id', trancheIds).order('date_paiement', { ascending: false }).limit(5),
-        supabase.from('souscriptions').select(`
-            id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
-            tranche:tranches(
-              tranche_name, projet_id,
-              projet:projets(projet)
-            )
-          `).in('tranche_id', trancheIds).gte('prochaine_date_coupon', today.toISOString().split('T')[0]).order('prochaine_date_coupon', { ascending: true }).limit(10)
+      console.log('Dashboard: Fetching initial data (5 queries in parallel)...');
+      const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes, chartSubsRes] = await Promise.all([
+        supabase.from('projets').select('id'),
+        supabase.from('tranches').select('id, projet_id'),
+        supabase.from('souscriptions').select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
+        supabase.from('paiements').select('montant').eq('statut', 'paid').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
+        supabase.from('souscriptions').select('montant_investi, date_souscription')
       ]);
 
-      setRecentPayments(paymentsRes.data as any || []);
+      console.log('Dashboard: Initial data fetched', {
+        projects: projectsRes.data?.length,
+        tranches: tranchesRes.data?.length,
+        subscriptions: subscriptionsRes.data?.length
+      });
 
-      const groupedCoupons = (couponsRes.data || []).reduce((acc: any[], coupon: any) => {
-        const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
-        const existing = acc.find(c => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
+      const projects = projectsRes.data || [];
+      const tranches = tranchesRes.data || [];
+      const subscriptions = subscriptionsRes.data || [];
+      const monthPayments = monthPaymentsRes.data || [];
+      const chartSubscriptions = chartSubsRes.data || [];
 
-        if (existing) {
-          existing.investor_count += 1;
-          existing.coupon_brut = parseFloat(existing.coupon_brut) + parseFloat(coupon.coupon_brut);
-        } else {
-          acc.push({ ...coupon, investor_count: 1 });
-        }
-        return acc;
-      }, []);
+      const projectIds = projects.map((p) => p.id);
+      const trancheIds = tranches.map((t) => t.id);
 
-      setUpcomingCoupons(groupedCoupons.slice(0, 5));
+      const totalInvested = subscriptions.reduce((sum, s) => sum + parseFloat(s.montant_investi?.toString() || '0'), 0);
+      const couponsPaidThisMonth = monthPayments.reduce((sum, p) => sum + parseFloat(p.montant.toString()), 0);
+      const upcomingCount = subscriptions.filter(
+        s => s.prochaine_date_coupon &&
+             s.prochaine_date_coupon >= today.toISOString().split('T')[0] &&
+             s.prochaine_date_coupon <= in90Days.toISOString().split('T')[0]
+      ).length;
 
-    }
-
-    const monthlyDataResult = processMonthlyData(chartSubscriptions, selectedYear, startMonth, endMonth);
-    setMonthlyData(monthlyDataResult);
-
-    const cacheData = {
-      stats: {
+      setStats({
         totalInvested,
         couponsPaidThisMonth,
         activeProjects: projectIds.length,
         upcomingCoupons: upcomingCount,
         nextCouponDays: 90,
-      },
-      recentPayments: paymentsRes?.data || [],
-      upcomingCoupons: groupedCoupons.slice(0, 5),
-      monthlyData: monthlyDataResult
-    };
-    setCachedData(cacheData);
+      });
 
-    setLoading(false);
-    if (isRefresh) setRefreshing(false);
+      let recentPaymentsData: any[] = [];
+      let groupedCoupons: any[] = [];
+
+      if (trancheIds.length > 0) {
+        console.log('Dashboard: Fetching payments and coupons...');
+        const [paymentsRes, couponsRes] = await Promise.all([
+          supabase.from('paiements').select(`
+              id, id_paiement, montant, date_paiement, statut,
+              tranche:tranches(tranche_name, projet_id)
+            `).in('tranche_id', trancheIds).order('date_paiement', { ascending: false }).limit(5),
+          supabase.from('souscriptions').select(`
+              id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
+              tranche:tranches(
+                tranche_name, projet_id,
+                projet:projets(projet)
+              )
+            `).in('tranche_id', trancheIds).gte('prochaine_date_coupon', today.toISOString().split('T')[0]).order('prochaine_date_coupon', { ascending: true }).limit(10)
+        ]);
+
+        recentPaymentsData = paymentsRes.data || [];
+        setRecentPayments(recentPaymentsData as any);
+
+        groupedCoupons = (couponsRes.data || []).reduce((acc: any[], coupon: any) => {
+          const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
+          const existing = acc.find(c => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
+
+          if (existing) {
+            existing.investor_count += 1;
+            existing.coupon_brut = parseFloat(existing.coupon_brut) + parseFloat(coupon.coupon_brut);
+          } else {
+            acc.push({ ...coupon, investor_count: 1 });
+          }
+          return acc;
+        }, []);
+
+        setUpcomingCoupons(groupedCoupons.slice(0, 5));
+      }
+
+      console.log('Dashboard: Processing monthly data...');
+      const monthlyDataResult = processMonthlyData(chartSubscriptions, selectedYear, startMonth, endMonth);
+      setMonthlyData(monthlyDataResult);
+
+      const cacheData = {
+        stats: {
+          totalInvested,
+          couponsPaidThisMonth,
+          activeProjects: projectIds.length,
+          upcomingCoupons: upcomingCount,
+          nextCouponDays: 90,
+        },
+        recentPayments: recentPaymentsData,
+        upcomingCoupons: groupedCoupons.slice(0, 5),
+        monthlyData: monthlyDataResult
+      };
+      setCachedData(cacheData);
+
+      console.log('Dashboard: Data fetch complete!');
+      setLoading(false);
+      if (isRefresh) setRefreshing(false);
+    } catch (error) {
+      console.error('Dashboard: Error fetching data', error);
+      localStorage.removeItem(CACHE_KEY);
+      setLoading(false);
+      if (isRefresh) setRefreshing(false);
+    }
   };
 
   const processMonthlyData = (subscriptions: any[], year: number, start: number, end: number) => {

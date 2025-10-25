@@ -73,34 +73,43 @@ export function Projects({ organization }: ProjectsProps) {
   const fetchProjects = async () => {
     setLoading(true);
 
-    const [projectsRes, tranchesRes, subscriptionsRes] = await Promise.all([
-      supabase.from('projets').select('*').order('created_at', { ascending: false }),
-      supabase.from('tranches').select('id, projet_id'),
-      supabase.from('souscriptions').select('montant_investi, investisseur_id, tranche:tranches!inner(projet_id)')
-    ]);
+    try {
+      console.log('Projects: Fetching data...');
+      const [projectsRes, tranchesRes, subscriptionsRes] = await Promise.all([
+        supabase.from('projets').select('*').order('created_at', { ascending: false }),
+        supabase.from('tranches').select('id, projet_id'),
+        supabase.from('souscriptions').select('montant_investi, investisseur_id, tranche:tranches!inner(projet_id)')
+      ]);
 
-    const projectsData = projectsRes.data || [];
-    const tranchesData = tranchesRes.data || [];
-    const subscriptionsData = subscriptionsRes.data || [];
+      const projectsData = projectsRes.data || [];
+      const tranchesData = tranchesRes.data || [];
+      const subscriptionsData = subscriptionsRes.data || [];
 
-    const projectsWithStats = projectsData.map((project) => {
-      const projectTranches = tranchesData.filter(t => t.projet_id === project.id);
-      const projectSubscriptions = subscriptionsData.filter((s: any) => s.tranche?.projet_id === project.id);
+      console.log('Projects: Data fetched', { projects: projectsData.length, tranches: tranchesData.length });
 
-      const totalLeve = projectSubscriptions.reduce((sum, sub) => sum + (Number(sub.montant_investi) || 0), 0);
-      const uniqueInvestors = new Set(projectSubscriptions.map(s => s.investisseur_id)).size;
+      const projectsWithStats = projectsData.map((project) => {
+        const projectTranches = tranchesData.filter(t => t.projet_id === project.id);
+        const projectSubscriptions = subscriptionsData.filter((s: any) => s.tranche?.projet_id === project.id);
 
-      return {
-        ...project,
-        tranches_count: projectTranches.length,
-        total_leve: totalLeve,
-        investisseurs_count: uniqueInvestors,
-      };
-    });
+        const totalLeve = projectSubscriptions.reduce((sum, sub) => sum + (Number(sub.montant_investi) || 0), 0);
+        const uniqueInvestors = new Set(projectSubscriptions.map(s => s.investisseur_id)).size;
 
-    setProjects(projectsWithStats);
-    setFilteredProjects(projectsWithStats);
-    setLoading(false);
+        return {
+          ...project,
+          tranches_count: projectTranches.length,
+          total_leve: totalLeve,
+          investisseurs_count: uniqueInvestors,
+        };
+      });
+
+      setProjects(projectsWithStats);
+      setFilteredProjects(projectsWithStats);
+      console.log('Projects: Complete');
+    } catch (error) {
+      console.error('Projects: Error', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
