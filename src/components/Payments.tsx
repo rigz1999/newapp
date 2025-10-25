@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Upload, Eye } from 'lucide-react';
+import { PaymentProofUpload } from './PaymentProofUpload';
+import { ViewProofsModal } from './ViewProofsModal';
 
 interface PaymentsProps {
   organization: { id: string; name: string; role: string };
@@ -33,6 +35,9 @@ export function Payments({ organization }: PaymentsProps) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [uploadingPayment, setUploadingPayment] = useState<Payment | null>(null);
+  const [viewingProofs, setViewingProofs] = useState<Payment | null>(null);
+  const [proofs, setProofs] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalPaid: 0,
     totalPending: 0,
@@ -109,6 +114,14 @@ export function Payments({ organization }: PaymentsProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadProofs = async (paymentId: string) => {
+    const { data } = await supabase
+      .from('payment_proofs')
+      .select('*')
+      .eq('paiement_id', paymentId);
+    return data || [];
   };
 
   const filterPayments = () => {
@@ -292,6 +305,7 @@ export function Payments({ organization }: PaymentsProps) {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Montant</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Date</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Statut</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,6 +329,31 @@ export function Payments({ organization }: PaymentsProps) {
                         {payment.statut}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        {(payment.statut?.toLowerCase() === 'pending' || payment.statut?.toLowerCase() === 'en attente') ? (
+                          <button
+                            onClick={() => setUploadingPayment(payment)}
+                            className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
+                          >
+                            <Upload className="w-4 h-4" />
+                            Justificatif
+                          </button>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              const proofsData = await loadProofs(payment.id);
+                              setProofs(proofsData);
+                              setViewingProofs(payment);
+                            }}
+                            className="flex items-center gap-1 px-3 py-1 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs font-medium"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Voir
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -322,6 +361,25 @@ export function Payments({ organization }: PaymentsProps) {
           </div>
         )}
       </div>
+
+      {uploadingPayment && (
+        <PaymentProofUpload
+          payment={uploadingPayment}
+          onClose={() => setUploadingPayment(null)}
+          onSuccess={() => {
+            fetchPayments();
+            setUploadingPayment(null);
+          }}
+        />
+      )}
+
+      {viewingProofs && (
+        <ViewProofsModal
+          payment={viewingProofs}
+          proofs={proofs}
+          onClose={() => setViewingProofs(null)}
+        />
+      )}
     </div>
   );
 }
