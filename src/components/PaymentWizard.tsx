@@ -682,7 +682,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                     <div className="flex items-start gap-2 mb-3">
                       <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-bold text-red-900 text-sm">⛔ ATTENTION CRITIQUE</p>
+                        <p className="font-bold text-red-900 text-sm">ATTENTION CRITIQUE</p>
                         <p className="text-sm text-red-800 mt-1">
                           {noMatchList.length} paiement{noMatchList.length > 1 ? 's' : ''} sans correspondance (0%)
                         </p>
@@ -691,7 +691,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                     <ul className="space-y-1 ml-8">
                       {noMatchList.map((match, idx) => (
                         <li key={idx} className="text-sm text-red-700">
-                          ❌ <span className="font-semibold">{match.paiement.beneficiaire}</span> - {formatCurrency(match.paiement.montant)}
+                          <span className="font-semibold">{match.paiement.beneficiaire}</span> - {formatCurrency(match.paiement.montant)}
                         </li>
                       ))}
                     </ul>
@@ -723,13 +723,13 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                         <span className="text-slate-600">{formatCurrency(match.paiement.montant)}</span>
                       </div>
                       {match.statut === 'pas-de-correspondance' && (
-                        <span className="text-xs text-red-600 font-semibold">❌ 0% - AUCUNE CORRESPONDANCE</span>
+                        <span className="text-xs text-red-600 font-semibold">0% - AUCUNE CORRESPONDANCE</span>
                       )}
                       {match.statut === 'partielle' && (
-                        <span className="text-xs text-orange-600">⚠️ Partiel ({match.confiance}%)</span>
+                        <span className="text-xs text-orange-600">Partiel ({match.confiance}%)</span>
                       )}
                       {match.statut === 'correspondance' && (
-                        <span className="text-xs text-green-600">✅ Valide ({match.confiance}%)</span>
+                        <span className="text-xs text-green-600">Valide ({match.confiance}%)</span>
                       )}
                     </li>
                   ))}
