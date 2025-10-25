@@ -156,10 +156,8 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       let uploadedUrls: string[] = [];
       let tempFileNames: string[] = [];
 
-      // Traiter chaque fichier
       for (const file of files) {
         if (file.type === 'application/pdf') {
-          // Convertir PDF en images
           console.log('Conversion PDF → Images:', file.name);
           
           const arrayBuffer = await file.arrayBuffer();
@@ -205,7 +203,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             tempFileNames.push(fileName);
           }
         } else {
-          // Image directe
           const fileName = `${Date.now()}_${file.name}`;
           
           const { error: uploadError } = await supabase.storage
@@ -228,7 +225,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
       console.log('Fichiers uploadés:', uploadedUrls);
 
-      // Préparer la liste des paiements attendus pour l'Edge Function
       const expectedPayments = subscriptions.map(sub => ({
         investorName: sub.investisseur.nom_raison_sociale,
         expectedAmount: sub.coupon_net,
@@ -238,7 +234,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
       console.log('Paiements attendus:', expectedPayments);
 
-      // Appeler l'Edge Function
       const { data, error: funcError } = await supabase.functions.invoke('analyze-payment-batch', {
         body: {
           fileUrls: uploadedUrls,
@@ -251,12 +246,10 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       if (funcError) throw funcError;
       if (!data.succes) throw new Error(data.erreur);
 
-      // Nettoyer les fichiers temp
       await supabase.storage
         .from('payment-proofs-temp')
         .remove(tempFileNames);
 
-      // Enrichir les matches avec les souscriptions
       const enrichedMatches = data.correspondances.map((match: any) => {
         const subscription = subscriptions.find(
           s => s.investisseur.nom_raison_sociale.toLowerCase() === match.paiement.beneficiaire.toLowerCase()
@@ -332,7 +325,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
       if (insertError) throw insertError;
 
-      // Retirer le match validé
       setMatches(matches.filter(m => m !== match));
 
       if (matches.length === 1) {
@@ -358,7 +350,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl z-10">
           <div>
             <h3 className="text-xl font-bold text-slate-900">
@@ -415,7 +406,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
           {/* STEP 2: UPLOAD FILES */}
           {step === 'upload' && (
             <div className="space-y-6">
-              {/* Info Box */}
               <div className="bg-blue-50 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-2">Paiement de Tranche</h4>
                 <p className="text-sm text-blue-700 mb-3">
@@ -428,7 +418,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                 </div>
               </div>
 
-              {/* Expected Payments List */}
               <div>
                 <h4 className="font-semibold text-slate-900 mb-3">Détails des Paiements ({subscriptions.length})</h4>
                 <div className="space-y-2">
@@ -447,7 +436,6 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                 </div>
               </div>
 
-              {/* File Upload */}
               <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
                 <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                 <input
@@ -509,75 +497,128 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             </div>
           )}
 
-          {/* STEP 3: RESULTS */}
+          {/* STEP 3: RESULTS - COMPACT TABLE VIEW */}
           {step === 'results' && (
             <div className="space-y-4">
-              {matches.map((match, idx) => (
-                <div
-                  key={idx}
-                  className={`border-2 rounded-lg p-6 ${
-                    match.statut === 'correspondance' ? 'bg-green-50 border-green-200' :
-                    match.statut === 'partielle' ? 'bg-yellow-50 border-yellow-200' :
-                    'bg-red-50 border-red-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-4 mb-4">
-                    {match.statut === 'correspondance' ? (
-                      <CheckCircle className="w-6 h-6 text-green-600" />
-                    ) : match.statut === 'partielle' ? (
-                      <AlertTriangle className="w-6 h-6 text-yellow-600" />
-                    ) : (
-                      <AlertCircle className="w-6 h-6 text-red-600" />
-                    )}
-                    <div className="flex-1">
-                      <h4 className="font-bold text-slate-900 mb-1">
-                        {match.statut === 'correspondance' && `✅ Correspondance (${match.confiance}%)`}
-                        {match.statut === 'partielle' && `⚠️ Correspondance partielle (${match.confiance}%)`}
-                        {match.statut === 'pas-de-correspondance' && `❌ Pas de correspondance (${match.confiance}%)`}
-                      </h4>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-xs font-semibold text-slate-600 mb-2">EXTRAIT DU JUSTIFICATIF</p>
-                      <div className="space-y-1 text-sm">
-                        <p><span className="text-slate-600">Bénéficiaire:</span> <span className="font-medium">{match.paiement.beneficiaire}</span></p>
-                        <p><span className="text-slate-600">Montant:</span> <span className="font-medium">{formatCurrency(match.paiement.montant)}</span></p>
-                        <p><span className="text-slate-600">Date:</span> <span className="font-medium">{match.paiement.date}</span></p>
-                        {match.paiement.reference && (
-                          <p><span className="text-slate-600">Référence:</span> <span className="font-medium text-xs">{match.paiement.reference}</span></p>
-                        )}
-                      </div>
-                    </div>
-
-                    {match.matchedSubscription && (
-                      <div>
-                        <p className="text-xs font-semibold text-slate-600 mb-2">ATTENDU</p>
-                        <div className="space-y-1 text-sm">
-                          <p><span className="text-slate-600">Investisseur:</span> <span className="font-medium">{match.matchedSubscription.investisseur.nom_raison_sociale}</span></p>
-                          <p><span className="text-slate-600">Montant:</span> <span className="font-medium">{formatCurrency(match.matchedSubscription.coupon_net)}</span></p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {match.statut === 'correspondance' && (
-                    <div className="mt-4">
-                      <button
-                        onClick={() => handleValidateOne(match)}
-                        className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors"
-                      >
-                        ✓ Valider ce paiement
-                      </button>
-                    </div>
-                  )}
+              {/* Summary */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-700">
+                    <span className="font-semibold">{validMatches.length}/{matches.length}</span> paiement{matches.length > 1 ? 's' : ''} validé{validMatches.length > 1 ? 's' : ''}
+                  </p>
                 </div>
-              ))}
+                <div className="text-right">
+                  <p className="text-xs text-blue-600">Total extrait</p>
+                  <p className="text-lg font-bold text-blue-900">
+                    {formatCurrency(matches.reduce((sum, m) => sum + m.paiement.montant, 0))}
+                  </p>
+                </div>
+              </div>
+
+              {/* Compact Table */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Statut</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Bénéficiaire Détecté</th>
+                      <th className="px-3 py-2 text-right text-xs font-semibold text-slate-700">Montant</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Correspondance</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-slate-700">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matches.map((match, idx) => (
+                      <tr 
+                        key={idx} 
+                        className={`border-b border-slate-100 ${
+                          match.statut === 'correspondance' ? 'bg-green-50' :
+                          match.statut === 'partielle' ? 'bg-yellow-50' :
+                          'bg-red-50'
+                        }`}
+                      >
+                        <td className="px-3 py-3">
+                          {match.statut === 'correspondance' ? (
+                            <div className="flex items-center gap-1">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              <span className="text-xs font-medium text-green-700">{match.confiance}%</span>
+                            </div>
+                          ) : match.statut === 'partielle' ? (
+                            <div className="flex items-center gap-1">
+                              <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                              <span className="text-xs font-medium text-yellow-700">{match.confiance}%</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <AlertCircle className="w-4 h-4 text-red-600" />
+                              <span className="text-xs font-medium text-red-700">{match.confiance}%</span>
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{match.paiement.beneficiaire}</p>
+                            {match.paiement.date && (
+                              <p className="text-xs text-slate-500">{match.paiement.date}</p>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-3 text-right">
+                          <p className="text-sm font-bold text-slate-900">{formatCurrency(match.paiement.montant)}</p>
+                        </td>
+
+                        <td className="px-3 py-3">
+                          {match.matchedSubscription ? (
+                            <div>
+                              <p className="text-sm font-medium text-slate-900">
+                                {match.matchedSubscription.investisseur.nom_raison_sociale}
+                              </p>
+                              <p className="text-xs text-slate-600">
+                                Attendu: {formatCurrency(match.matchedSubscription.coupon_net)}
+                                {match.details?.ecartMontantPourcent && parseFloat(match.details.ecartMontantPourcent) > 0 && (
+                                  <span className="text-orange-600 ml-1">
+                                    (±{match.details.ecartMontantPourcent}%)
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">Aucune correspondance</span>
+                          )}
+                        </td>
+
+                        <td className="px-3 py-3 text-center">
+                          {match.statut === 'correspondance' ? (
+                            <button
+                              onClick={() => handleValidateOne(match)}
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                              Valider
+                            </button>
+                          ) : match.statut === 'partielle' ? (
+                            <button
+                              onClick={() => handleValidateOne(match)}
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-orange-600 text-white text-xs font-medium rounded hover:bg-orange-700 transition-colors"
+                            >
+                              <AlertTriangle className="w-3 h-3" />
+                              Forcer
+                            </button>
+                          ) : (
+                            <span className="text-xs text-slate-400">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-red-700">{error}</p>
                 </div>
               )}
