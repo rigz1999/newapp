@@ -16,21 +16,52 @@ function parseEuropeanDate(dateStr: string): Date {
   return new Date(dateStr);
 }
 
+function fuzzyMatch(str1: string, str2: string): number {
+  const s1 = str1.toLowerCase().trim();
+  const s2 = str2.toLowerCase().trim();
+
+  if (s1 === s2) return 1.0;
+  if (s1.includes(s2) || s2.includes(s1)) return 0.9;
+
+  const words1 = s1.split(/\s+/);
+  const words2 = s2.split(/\s+/);
+
+  let matches = 0;
+  for (const w1 of words1) {
+    for (const w2 of words2) {
+      if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) {
+        matches++;
+        break;
+      }
+    }
+  }
+
+  return matches / Math.max(words1.length, words2.length);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { fileUrls, expectedAmount, dueDate, trancheName, investorName } = await req.json()
+    const { fileUrls, expectedPayments } = await req.json()
 
-    console.log('Analyse du justificatif:', { fileUrls, expectedAmount, dueDate })
+    console.log('Analyse batch:', { fileUrls, expectedPayments })
+
+    if (!fileUrls || (Array.isArray(fileUrls) && fileUrls.length === 0)) {
+      throw new Error('Aucune URL de fichier fournie')
+    }
+
+    const urls = Array.isArray(fileUrls) ? fileUrls : [fileUrls]
+    
+    console.log('URLs à analyser:', urls)
 
     // Construire le contenu avec toutes les images
     const content: any[] = [
       {
         type: 'text',
-        text: `Analyse ce justificatif de paiement français (peut contenir plusieurs pages).
+        text: `Analyse ce ou ces justificatifs de paiement français (peuvent contenir plusieurs pages avec plusieurs paiements).
 
 Retourne UNIQUEMENT du JSON valide (pas de markdown, pas de code blocks):
 
@@ -38,30 +69,35 @@ Retourne UNIQUEMENT du JSON valide (pas de markdown, pas de code blocks):
   "emetteur": "société émettrice",
   "paiements": [
     {
-      "beneficiaire": "nom du bénéficiaire",
+      "beneficiaire": "nom exact du bénéficiaire",
       "montant": nombre_sans_symbole,
       "date": "JJ-MM-AAAA",
-      "reference": "référence du paiement"
+      "reference": "référence du paiement si visible"
     }
   ]
 }
 
-CRITIQUE:
+CRITIQUE - EXTRAIS TOUS LES PAIEMENTS:
 - Format date: JJ-MM-AAAA (ex: 05-09-2025 pour 5 septembre 2025)
 - Montant: nombre pur sans symbole (ex: 1000.50)
-- Extrais TOUS les paiements visibles sur toutes les pages
+- Extrais TOUS les paiements visibles (peut être 1, 3, 5 ou plus)
+- Chaque paiement = une ligne différente dans le tableau
 - Retourne uniquement du JSON valide, aucune explication`
       }
-    ];
+    ]
 
     // Ajouter toutes les images
-    const urls = Array.isArray(fileUrls) ? fileUrls : [fileUrls];
-    urls.forEach((url: string) => {
-      content.push({
-        type: 'image_url',
-        image_url: { url, detail: 'high' }
-      });
-    });
+    for (const url of urls) {
+      if (url && typeof url === 'string' && url.trim() !== '') {
+        content.push({
+          type: 'image_url',
+          image_url: { url: url }
+        })
+        console.log('Image ajoutée:', url)
+      }
+    }
+
+    console.log('Appel OpenAI avec', content.length - 1, 'image(s)')
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -75,7 +111,7 @@ CRITIQUE:
           role: 'user',
           content: content
         }],
-        max_tokens: 2000,
+        max_tokens: 3000,
         temperature: 0.1
       })
     })
@@ -91,53 +127,72 @@ CRITIQUE:
       .replace(/```\n?/g, '')
       .trim()
     
+    console.log('Réponse OpenAI:', extractedStr)
+    
     const extractedData = JSON.parse(extractedStr)
 
+    console.log(`${extractedData.paiements.length} paiement(s) extrait(s)`)
+
+    // Matcher chaque paiement extrait avec les paiements attendus
     const matches = extractedData.paiements.map((paiement: any) => {
-      const ecartMontant = Math.abs(paiement.montant - expectedAmount)
-      const ecartMontantPourcent = (ecartMontant / expectedAmount) * 100
+      let bestMatch: any = null;
+      let bestScore = 0;
 
-      const datePaiement = parseEuropeanDate(paiement.date)
-      const dateAttendue = parseEuropeanDate(dueDate)
-      const ecartJours = Math.abs((datePaiement.getTime() - dateAttendue.getTime()) / (1000 * 60 * 60 * 24))
+      // Chercher le meilleur match parmi les paiements attendus
+      for (const expected of expectedPayments) {
+        const nameScore = fuzzyMatch(paiement.beneficiaire, expected.investorName);
+        const ecartMontant = Math.abs(paiement.montant - expected.expectedAmount);
+        const ecartMontantPourcent = (ecartMontant / expected.expectedAmount) * 100;
 
-      let statut = 'pas-de-correspondance'
-      let confiance = 0
+        // Score combiné: nom + montant
+        let totalScore = nameScore * 70; // 70% sur le nom
+        if (ecartMontantPourcent < 5) {
+          totalScore += 30; // 30% sur le montant
+        } else if (ecartMontantPourcent < 10) {
+          totalScore += 15;
+        }
 
-      if (ecartMontantPourcent < 2 && ecartJours <= 7) {
-        statut = 'correspondance'
-        confiance = 95
-      } 
-      else if (ecartMontantPourcent < 5 && ecartJours <= 15) {
-        statut = 'correspondance'
-        confiance = 85
+        if (totalScore > bestScore) {
+          bestScore = totalScore;
+          bestMatch = {
+            expected,
+            nameScore,
+            ecartMontant,
+            ecartMontantPourcent
+          };
+        }
       }
-      else if (ecartMontantPourcent < 10 || ecartJours <= 30) {
-        statut = 'partielle'
-        confiance = 60
-      }
-      else {
-        statut = 'pas-de-correspondance'
-        confiance = 30
+
+      // Déterminer le statut
+      let statut = 'pas-de-correspondance';
+      let confiance = 0;
+
+      if (bestMatch) {
+        if (bestMatch.nameScore > 0.8 && bestMatch.ecartMontantPourcent < 5) {
+          statut = 'correspondance';
+          confiance = Math.round(bestScore);
+        } else if (bestMatch.nameScore > 0.6 || bestMatch.ecartMontantPourcent < 10) {
+          statut = 'partielle';
+          confiance = Math.round(bestScore);
+        } else {
+          confiance = Math.round(bestScore);
+        }
       }
 
       return {
         paiement,
-        attendu: {
-          montant: expectedAmount,
-          dateEcheance: dueDate,
-          tranche: trancheName,
-          investisseur: investorName
-        },
+        attendu: bestMatch ? bestMatch.expected : null,
         statut,
         confiance,
-        details: {
-          ecartMontant: ecartMontant.toFixed(2),
-          ecartMontantPourcent: ecartMontantPourcent.toFixed(2),
-          ecartJours: Math.round(ecartJours)
-        }
-      }
-    })
+        details: bestMatch ? {
+          ecartMontant: bestMatch.ecartMontant.toFixed(2),
+          ecartMontantPourcent: bestMatch.ecartMontantPourcent.toFixed(2),
+          nameScore: (bestMatch.nameScore * 100).toFixed(0)
+        } : {}
+      };
+    });
+
+    console.log('Matches générés:', matches.length)
 
     return new Response(
       JSON.stringify({ 
@@ -149,7 +204,7 @@ CRITIQUE:
     )
 
   } catch (error: any) {
-    console.error('Erreur:', error)
+    console.error('Erreur complète:', error)
     return new Response(
       JSON.stringify({ 
         succes: false, 
