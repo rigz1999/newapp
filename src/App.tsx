@@ -8,6 +8,7 @@ import { supabase } from './lib/supabase';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const Projects = lazy(() => import('./components/Projects'));
+const ProjectDetail = lazy(() => import('./components/ProjectDetail'));
 const Coupons = lazy(() => import('./components/Coupons'));
 const Investors = lazy(() => import('./components/Investors'));
 const Subscriptions = lazy(() => import('./components/Subscriptions'));
@@ -79,6 +80,14 @@ function App() {
             element={
               <Suspense fallback={<LoadingFallback />}>
                 <Projects organization={effectiveOrg} />
+              </Suspense>
+            }
+          />
+          <Route
+            path="projets/:projectId"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <ProjectDetail organization={effectiveOrg} />
               </Suspense>
             }
           />

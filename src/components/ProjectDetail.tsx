@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Sidebar } from './Sidebar';
 import { TrancheWizard } from './TrancheWizard';
 import {
   ArrowLeft,
@@ -15,11 +15,7 @@ import {
 } from 'lucide-react';
 
 interface ProjectDetailProps {
-  projectId: string;
   organization: { id: string; name: string; role: string };
-  onLogout: () => void;
-  onNavigate: (page: string) => void;
-  onBack: () => void;
 }
 
 interface Project {
@@ -69,7 +65,9 @@ interface Payment {
   statut: string;
 }
 
-export function ProjectDetail({ projectId, organization, onLogout, onNavigate, onBack }: ProjectDetailProps) {
+export function ProjectDetail({ organization }: ProjectDetailProps) {
+  const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [tranches, setTranches] = useState<Tranche[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -167,62 +165,38 @@ export function ProjectDetail({ projectId, organization, onLogout, onNavigate, o
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex">
-        <Sidebar
-          organization={organization}
-          activePage="projects"
-          onNavigate={onNavigate}
-          onLogout={onLogout}
-        />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader className="w-8 h-8 animate-spin text-slate-400" />
-        </main>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader className="w-8 h-8 animate-spin text-slate-400" />
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-slate-50 flex">
-        <Sidebar
-          organization={organization}
-          activePage="projects"
-          onNavigate={onNavigate}
-          onLogout={onLogout}
-        />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-slate-600">Projet non trouvé</p>
-            <button
-              onClick={onBack}
-              className="mt-4 text-blue-600 hover:text-blue-700"
-            >
-              Retour
-            </button>
-          </div>
-        </main>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-slate-600">Projet non trouvé</p>
+          <button
+            onClick={() => navigate('/projets')}
+            className="mt-4 text-blue-600 hover:text-blue-700"
+          >
+            Retour
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <Sidebar
-        organization={organization}
-        activePage="projects"
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-      />
-
-      <main className="flex-1 overflow-y-auto ml-64">
-        <div className="max-w-7xl mx-auto px-8 py-8">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Retour aux projets</span>
-          </button>
+    <>
+      <div className="max-w-7xl mx-auto px-8 py-8">
+        <button
+          onClick={() => navigate('/projets')}
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Retour aux projets</span>
+        </button>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
             <div className="flex items-start justify-between mb-4">
@@ -437,19 +411,20 @@ export function ProjectDetail({ projectId, organization, onLogout, onNavigate, o
               </div>
             )}
           </div>
-        </div>
-      </main>
 
-      {showTrancheWizard && (
-        <TrancheWizard
-          onClose={() => setShowTrancheWizard(false)}
-          onSuccess={() => {
-            setShowTrancheWizard(false);
-            fetchProjectData();
-          }}
-          preselectedProjectId={projectId}
-        />
-      )}
-    </div>
+        {showTrancheWizard && (
+          <TrancheWizard
+            onClose={() => setShowTrancheWizard(false)}
+            onSuccess={() => {
+              setShowTrancheWizard(false);
+              fetchProjectData();
+            }}
+            preselectedProjectId={projectId}
+          />
+        )}
+      </div>
+    </>
   );
 }
+
+export default ProjectDetail;
