@@ -41,7 +41,21 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
   const [dayFilter, setDayFilter] = useState('all');
 
   useEffect(() => {
-    fetchSubscriptions();
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchSubscriptions();
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+      setSubscriptions([]);
+      setFilteredSubscriptions([]);
+    };
   }, [organization.id]);
 
   const fetchSubscriptions = async () => {

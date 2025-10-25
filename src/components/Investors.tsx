@@ -63,7 +63,21 @@ export function Investors({ organization }: InvestorsProps) {
   const [editFormData, setEditFormData] = useState<Investor | null>(null);
 
   useEffect(() => {
-    fetchInvestors();
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchInvestors();
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+      setInvestors([]);
+      setFilteredInvestors([]);
+    };
   }, []);
 
   useEffect(() => {
