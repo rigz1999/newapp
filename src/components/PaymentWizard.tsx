@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, ArrowLeft } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
@@ -66,6 +66,18 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [step, setStep] = useState<'select' | 'upload' | 'results'>('select');
+
+  const handleBackToSelect = () => {
+    setStep('select');
+    setSelectedProjectId('');
+    setSelectedTrancheId('');
+    setFiles([]);
+    setMatches([]);
+    setSelectedMatches(new Set());
+    setUploadedFileUrls([]);
+    setTempFileNames([]);
+    setError('');
+  };
 
   useEffect(() => {
     fetchProjects();
@@ -459,17 +471,29 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl z-10">
-          <div>
-            <h3 className="text-xl font-bold text-slate-900">
-              {step === 'select' && 'Enregistrer un Paiement de Tranche'}
-              {step === 'upload' && 'Télécharger Justificatif de Paiement'}
-              {step === 'results' && 'Résultats de l\'Analyse'}
-            </h3>
-            <p className="text-sm text-slate-600 mt-1">
-              {step === 'select' && 'Sélectionnez un projet et une tranche à payer'}
-              {step === 'upload' && `Paiement de tranche - ${subscriptions.length} investisseur${subscriptions.length > 1 ? 's' : ''}`}
-              {step === 'results' && `${selectedMatches.size} paiement${selectedMatches.size > 1 ? 's' : ''} sélectionné${selectedMatches.size > 1 ? 's' : ''}`}
-            </p>
+          <div className="flex items-center gap-3">
+            {(step === 'upload' || step === 'results') && (
+              <button
+                onClick={handleBackToSelect}
+                className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                title="Retour à la sélection"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="text-sm font-medium">Retour</span>
+              </button>
+            )}
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">
+                {step === 'select' && 'Enregistrer un Paiement de Tranche'}
+                {step === 'upload' && 'Télécharger Justificatif de Paiement'}
+                {step === 'results' && 'Résultats de l\'Analyse'}
+              </h3>
+              <p className="text-sm text-slate-600 mt-1">
+                {step === 'select' && 'Sélectionnez un projet et une tranche à payer'}
+                {step === 'upload' && `Paiement de tranche - ${subscriptions.length} investisseur${subscriptions.length > 1 ? 's' : ''}`}
+                {step === 'results' && `${selectedMatches.size} paiement${selectedMatches.size > 1 ? 's' : ''} sélectionné${selectedMatches.size > 1 ? 's' : ''}`}
+              </p>
+            </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X className="w-6 h-6" />
