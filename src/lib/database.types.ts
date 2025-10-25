@@ -216,6 +216,41 @@ export interface Database {
           created_at?: string
         }
       }
+      payment_proofs: {
+        Row: {
+          id: string
+          paiement_id: string
+          file_url: string
+          file_name: string
+          file_size: number | null
+          extracted_data: Json | null
+          confidence: number | null
+          validated_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          paiement_id: string
+          file_url: string
+          file_name: string
+          file_size?: number | null
+          extracted_data?: Json | null
+          confidence?: number | null
+          validated_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          paiement_id?: string
+          file_url?: string
+          file_name?: string
+          file_size?: number | null
+          extracted_data?: Json | null
+          confidence?: number | null
+          validated_at?: string
+          created_at?: string
+        }
+      }
     }
     Views: {}
     Functions: {}
