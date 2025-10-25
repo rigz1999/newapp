@@ -130,6 +130,22 @@ export function PaymentProofUpload({ payment, onClose, onSuccess }: PaymentProof
 
       console.log('Analyse des fichiers:', uploadedUrls);
 
+console.log('URLs uploadées:', uploadedUrls);
+console.log('Données envoyées:', {
+  fileUrls: uploadedUrls,
+  expectedAmount: payment.montant,
+  dueDate: new Date(payment.date_paiement).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit', 
+    year: 'numeric'
+  }).split('/').join('-'),
+});
+
+// Vérifier que les URLs ne sont pas vides
+if (uploadedUrls.length === 0 || !uploadedUrls[0]) {
+  throw new Error('Aucune URL de fichier générée');
+}
+      
       // Appeler la fonction Edge pour analyser
       const { data, error: funcError } = await supabase.functions.invoke('analyze-payment', {
         body: {
