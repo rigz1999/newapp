@@ -3,8 +3,8 @@ import { supabase } from '../lib/supabase';
 import { Upload, X, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure le worker avec unpkg
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs`;
+// Configure le worker avec la version 5.4 (correspond au package installé)
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
 interface PaymentProofUploadProps {
   payment: {
