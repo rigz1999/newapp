@@ -223,7 +223,7 @@ export function Dashboard({ organization }: DashboardProps) {
           supabase.from('paiements').select(`
               id, id_paiement, montant, date_paiement, statut,
               tranche:tranches(tranche_name, projet_id)
-            `).in('tranche_id', trancheIds).order('date_paiement', { ascending: false }).limit(5),
+            `).in('tranche_id', trancheIds).in('statut', ['Payé', 'paid']).order('date_paiement', { ascending: false }).limit(5),
           supabase.from('souscriptions').select(`
               id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
               tranche:tranches(

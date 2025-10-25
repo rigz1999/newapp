@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Upload, Eye } from 'lucide-react';
-import { PaymentProofUpload } from './PaymentProofUpload';
+import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Eye } from 'lucide-react';
 import { ViewProofsModal } from './ViewProofsModal';
 
 interface PaymentsProps {
@@ -35,9 +34,7 @@ export function Payments({ organization }: PaymentsProps) {
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [uploadingPayment, setUploadingPayment] = useState<Payment | null>(null);
   const [viewingProofs, setViewingProofs] = useState<Payment | null>(null);
   const [proofs, setProofs] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -53,7 +50,7 @@ export function Payments({ organization }: PaymentsProps) {
 
   useEffect(() => {
     filterPayments();
-  }, [payments, searchTerm, statusFilter, sortOrder]);
+  }, [payments, searchTerm, sortOrder]);
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -81,6 +78,7 @@ export function Payments({ organization }: PaymentsProps) {
             nom_raison_sociale
           )
         `)
+        .in('statut', ['Payé', 'paid'])
         .order('date_paiement', { ascending: false });
 
       if (error) throw error;
@@ -91,22 +89,12 @@ export function Payments({ organization }: PaymentsProps) {
       setPayments(paymentsData);
       setFilteredPayments(paymentsData);
 
-      const totalPaid = paymentsData
-        .filter(p => p.statut?.toLowerCase() === 'paid' || p.statut?.toLowerCase() === 'payé')
-        .reduce((sum, p) => sum + Number(p.montant), 0);
-
-      const totalPending = paymentsData
-        .filter(p => p.statut?.toLowerCase() === 'pending' || p.statut?.toLowerCase() === 'en attente')
-        .reduce((sum, p) => sum + Number(p.montant), 0);
-
-      const totalLate = paymentsData
-        .filter(p => p.statut?.toLowerCase() === 'late' || p.statut?.toLowerCase() === 'en retard')
-        .reduce((sum, p) => sum + Number(p.montant), 0);
+      const totalPaid = paymentsData.reduce((sum, p) => sum + Number(p.montant), 0);
 
       setStats({
         totalPaid,
-        totalPending,
-        totalLate,
+        totalPending: 0,
+        totalLate: 0,
         paymentsCount: paymentsData.length,
       });
 
@@ -137,16 +125,6 @@ export function Payments({ organization }: PaymentsProps) {
           p.investisseur?.nom_raison_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           p.id_paiement?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-    }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((p) => {
-        const status = p.statut?.toLowerCase();
-        if (statusFilter === 'paid') return status === 'paid' || status === 'payé';
-        if (statusFilter === 'pending') return status === 'pending' || status === 'en attente';
-        if (statusFilter === 'late') return status === 'late' || status === 'en retard';
-        return true;
-      });
     }
 
     filtered.sort((a, b) => {
@@ -227,10 +205,10 @@ export function Payments({ organization }: PaymentsProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-600 text-sm">Total Payé</span>
+            <span className="text-slate-600 text-sm">Montant Total Payé</span>
             <CheckCircle2 className="w-5 h-5 text-green-600" />
           </div>
           <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalPaid)}</p>
@@ -238,23 +216,7 @@ export function Payments({ organization }: PaymentsProps) {
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-600 text-sm">En Attente</span>
-            <Clock className="w-5 h-5 text-yellow-600" />
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalPending)}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-600 text-sm">En Retard</span>
-            <XCircle className="w-5 h-5 text-red-600" />
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalLate)}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-600 text-sm">Nombre Total</span>
+            <span className="text-slate-600 text-sm">Nombre de Paiements</span>
             <DollarSign className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-2xl font-bold text-slate-900">{stats.paymentsCount}</p>
@@ -273,17 +235,6 @@ export function Payments({ organization }: PaymentsProps) {
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Tous les statuts</option>
-            <option value="paid">Payé</option>
-            <option value="pending">En attente</option>
-            <option value="late">En retard</option>
-          </select>
 
           <select
             value={sortOrder}
@@ -346,27 +297,17 @@ export function Payments({ organization }: PaymentsProps) {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex items-center gap-2">
-                        {(payment.statut?.toLowerCase() === 'payé' || payment.statut?.toLowerCase() === 'paid') ? (
-                          <button
-                            onClick={async () => {
-                              const proofsData = await loadProofs(payment.id);
-                              setProofs(proofsData);
-                              setViewingProofs(payment);
-                            }}
-                            className="flex items-center gap-1 px-3 py-1 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs font-medium"
-                          >
-                            <Eye className="w-4 h-4" />
-                            Voir
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setUploadingPayment(payment)}
-                            className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium"
-                          >
-                            <Upload className="w-4 h-4" />
-                            Justificatif
-                          </button>
-                        )}
+                        <button
+                          onClick={async () => {
+                            const proofsData = await loadProofs(payment.id);
+                            setProofs(proofsData);
+                            setViewingProofs(payment);
+                          }}
+                          className="flex items-center gap-1 px-3 py-1 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs font-medium"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Voir Justificatifs
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -376,17 +317,6 @@ export function Payments({ organization }: PaymentsProps) {
           </div>
         )}
       </div>
-
-      {uploadingPayment && (
-        <PaymentProofUpload
-          payment={uploadingPayment}
-          onClose={() => setUploadingPayment(null)}
-          onSuccess={() => {
-            fetchPayments();
-            setUploadingPayment(null);
-          }}
-        />
-      )}
 
       {viewingProofs && (
         <ViewProofsModal
