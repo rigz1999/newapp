@@ -60,6 +60,8 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   const [selectedTrancheId, setSelectedTrancheId] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [matches, setMatches] = useState<PaymentMatch[]>([]);
+  const [uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
+  const [tempFileNames, setTempFileNames] = useState<string[]>([]);
   const [selectedMatches, setSelectedMatches] = useState<Set<number>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -224,7 +226,9 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       if (funcError) throw funcError;
       if (!data.succes) throw new Error(data.erreur);
 
-      await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
+      // Keep temp files for later use when validating
+      setUploadedFileUrls(uploadedUrls);
+      setTempFileNames(tempFileNames);
 
       const enrichedMatches = data.correspondances.map((match: any) => {
         const subscription = subscriptions.find(
@@ -282,23 +286,71 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
     try {
       const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
-      
-      const payments = selectedMatchesList
-        .filter(m => m.matchedSubscription)
-        .map(match => ({
-          id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          type: 'Coupon',
-          projet_id: selectedProjectId,
-          tranche_id: selectedTrancheId,
-          investisseur_id: match.matchedSubscription!.investisseur_id,
-          souscription_id: match.matchedSubscription!.id,
-          montant: match.paiement.montant,
-          date_paiement: new Date().toISOString().split('T')[0],
-          statut: 'Payé'
-        }));
+      const validMatches = selectedMatchesList.filter(m => m.matchedSubscription);
 
-      const { error: insertError } = await supabase.from('paiements').insert(payments);
-      if (insertError) throw insertError;
+      // Create payment records and save proofs
+      for (const match of validMatches) {
+        // Create payment record
+        const { data: paymentData, error: paymentError } = await supabase
+          .from('paiements')
+          .insert({
+            id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'Coupon',
+            projet_id: selectedProjectId,
+            tranche_id: selectedTrancheId,
+            investisseur_id: match.matchedSubscription!.investisseur_id,
+            souscription_id: match.matchedSubscription!.id,
+            montant: match.paiement.montant,
+            date_paiement: match.paiement.date || new Date().toISOString().split('T')[0],
+            statut: 'Payé'
+          })
+          .select()
+          .single();
+
+        if (paymentError) throw paymentError;
+
+        // Download first temp file and upload to permanent storage
+        if (tempFileNames.length > 0) {
+          const firstTempFile = tempFileNames[0];
+          const { data: downloadData, error: downloadError } = await supabase.storage
+            .from('payment-proofs-temp')
+            .download(firstTempFile);
+
+          if (downloadError) throw downloadError;
+
+          // Upload to permanent storage
+          const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('payment-proofs')
+            .upload(permanentFileName, downloadData);
+
+          if (uploadError) throw uploadError;
+
+          // Get permanent URL
+          const { data: urlData } = supabase.storage
+            .from('payment-proofs')
+            .getPublicUrl(permanentFileName);
+
+          // Save proof record
+          const { error: proofError } = await supabase
+            .from('payment_proofs')
+            .insert({
+              paiement_id: paymentData.id,
+              file_url: urlData.publicUrl,
+              file_name: files[0].name,
+              file_size: files[0].size,
+              extracted_data: match.paiement,
+              confidence: match.confiance
+            });
+
+          if (proofError) throw proofError;
+        }
+      }
+
+      // Clean up temp files
+      if (tempFileNames.length > 0) {
+        await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
+      }
 
       setShowConfirmModal(false);
       onSuccess();
@@ -317,20 +369,69 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
     try {
       const validMatchesList = matches.filter(m => m.statut === 'correspondance' && m.matchedSubscription);
 
-      const payments = validMatchesList.map(match => ({
-        id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'Coupon',
-        projet_id: selectedProjectId,
-        tranche_id: selectedTrancheId,
-        investisseur_id: match.matchedSubscription!.investisseur_id,
-        souscription_id: match.matchedSubscription!.id,
-        montant: match.paiement.montant,
-        date_paiement: new Date().toISOString().split('T')[0],
-        statut: 'Payé'
-      }));
+      // Create payment records and save proofs
+      for (const match of validMatchesList) {
+        // Create payment record
+        const { data: paymentData, error: paymentError } = await supabase
+          .from('paiements')
+          .insert({
+            id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'Coupon',
+            projet_id: selectedProjectId,
+            tranche_id: selectedTrancheId,
+            investisseur_id: match.matchedSubscription!.investisseur_id,
+            souscription_id: match.matchedSubscription!.id,
+            montant: match.paiement.montant,
+            date_paiement: match.paiement.date || new Date().toISOString().split('T')[0],
+            statut: 'Payé'
+          })
+          .select()
+          .single();
 
-      const { error: insertError } = await supabase.from('paiements').insert(payments);
-      if (insertError) throw insertError;
+        if (paymentError) throw paymentError;
+
+        // Download first temp file and upload to permanent storage
+        if (tempFileNames.length > 0) {
+          const firstTempFile = tempFileNames[0];
+          const { data: downloadData, error: downloadError } = await supabase.storage
+            .from('payment-proofs-temp')
+            .download(firstTempFile);
+
+          if (downloadError) throw downloadError;
+
+          // Upload to permanent storage
+          const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('payment-proofs')
+            .upload(permanentFileName, downloadData);
+
+          if (uploadError) throw uploadError;
+
+          // Get permanent URL
+          const { data: urlData } = supabase.storage
+            .from('payment-proofs')
+            .getPublicUrl(permanentFileName);
+
+          // Save proof record
+          const { error: proofError } = await supabase
+            .from('payment_proofs')
+            .insert({
+              paiement_id: paymentData.id,
+              file_url: urlData.publicUrl,
+              file_name: files[0].name,
+              file_size: files[0].size,
+              extracted_data: match.paiement,
+              confidence: match.confiance
+            });
+
+          if (proofError) throw proofError;
+        }
+      }
+
+      // Clean up temp files
+      if (tempFileNames.length > 0) {
+        await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
+      }
 
       onSuccess();
       onClose();
