@@ -122,10 +122,7 @@ export function Dashboard({ organization }: DashboardProps) {
     email_representant: '',
     representant_masse: '',
     email_rep_masse: '',
-    telephone_rep_masse: '',
-    periodicite_coupon: '',
-    maturite_mois: '',
-    type_obligations: ''
+    telephone_rep_masse: ''
   });
   const [creatingProject, setCreatingProject] = useState(false);
 
@@ -182,7 +179,7 @@ export function Dashboard({ organization }: DashboardProps) {
         supabase.from('projets').select('id'),
         supabase.from('tranches').select('id, projet_id'),
         supabase.from('souscriptions').select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
-        supabase.from('paiements').select('montant').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
+        supabase.from('paiements').select('montant').eq('statut', 'paid').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
         supabase.from('souscriptions').select('montant_investi, date_souscription')
       ]);
 
@@ -201,133 +198,223 @@ export function Dashboard({ organization }: DashboardProps) {
       const projectIds = projects.map((p) => p.id);
       const trancheIds = tranches.map((t) => t.id);
 
-      const activeProjectIds = new Set<string>();
-      tranches.forEach((t) => {
-        if (subscriptions.some((s) => s.tranche_id === t.id)) {
-          activeProjectIds.add(t.projet_id);
-        }
-      });
+      const totalInvested = subscriptions.reduce((sum, s) => sum + parseFloat(s.montant_investi?.toString() || '0'), 0);
+      const couponsPaidThisMonth = monthPayments.reduce((sum, p) => sum + parseFloat(p.montant.toString()), 0);
+      const upcomingCount = subscriptions.filter(
+        s => s.prochaine_date_coupon &&
+             s.prochaine_date_coupon >= today.toISOString().split('T')[0] &&
+             s.prochaine_date_coupon <= in90Days.toISOString().split('T')[0]
+      ).length;
 
-      const totalInvested = subscriptions.reduce((sum, sub) => sum + (sub.montant_investi || 0), 0);
-
-      const couponsPaidThisMonth = monthPayments.reduce((sum, p) => sum + (p.montant || 0), 0);
-
-      const upcomingCouponsList = subscriptions.filter((s) => {
-        if (!s.prochaine_date_coupon) return false;
-        const couponDate = new Date(s.prochaine_date_coupon);
-        return couponDate >= today && couponDate <= in90Days;
-      });
-
-      const upcomingCouponsCount = upcomingCouponsList.length;
-
-      let nextCouponDays = 90;
-      if (upcomingCouponsList.length > 0) {
-        const sortedCoupons = upcomingCouponsList
-          .map((s) => new Date(s.prochaine_date_coupon!))
-          .sort((a, b) => a.getTime() - b.getTime());
-        const nextCoupon = sortedCoupons[0];
-        nextCouponDays = Math.ceil((nextCoupon.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      }
-
-      console.log('Dashboard: Fetching payments and coupons...');
-      const [paymentsRes, couponsRes] = await Promise.all([
-        supabase
-          .from('paiements')
-          .select(`
-            id,
-            date_paiement,
-            montant,
-            tranche_id,
-            type,
-            tranche:tranches(tranche_name, projet_id)
-          `)
-          .order('date_paiement', { ascending: false })
-          .limit(5),
-        supabase
-          .from('souscriptions')
-          .select(`
-            id,
-            prochaine_date_coupon,
-            coupon_brut,
-            investisseur_id,
-            tranche_id,
-            tranche:tranches(
-              tranche_name,
-              projet_id,
-              projet:projets(projet)
-            )
-          `)
-          .not('prochaine_date_coupon', 'is', null)
-          .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
-          .order('prochaine_date_coupon', { ascending: true })
-          .limit(5)
-      ]);
-
-      const payments = paymentsRes.data || [];
-      const coupons = couponsRes.data || [];
-
-      console.log('Dashboard: Processing monthly data...');
-      const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-      const monthlyAmounts: { [key: string]: number } = {};
-
-      chartSubscriptions.forEach((sub) => {
-        if (sub.date_souscription) {
-          const date = new Date(sub.date_souscription);
-          if (date.getFullYear() === selectedYear) {
-            const monthIndex = date.getMonth();
-            const monthKey = monthNames[monthIndex];
-            monthlyAmounts[monthKey] = (monthlyAmounts[monthKey] || 0) + (sub.montant_investi || 0);
-          }
-        }
-      });
-
-      const monthlyDataArray: MonthlyData[] = monthNames.slice(startMonth, endMonth + 1).map((month, idx) => ({
-        month,
-        amount: monthlyAmounts[month] || 0,
-      }));
-
-      let cumulative = 0;
-      monthlyDataArray.forEach((data) => {
-        cumulative += data.amount;
-        data.cumulative = cumulative;
-      });
-
-      const newStats = {
+      setStats({
         totalInvested,
         couponsPaidThisMonth,
-        activeProjects: activeProjectIds.size,
-        upcomingCoupons: upcomingCouponsCount,
-        nextCouponDays,
+        activeProjects: projectIds.length,
+        upcomingCoupons: upcomingCount,
+        nextCouponDays: 90,
+      });
+
+      let recentPaymentsData: any[] = [];
+      let groupedCoupons: any[] = [];
+
+      if (trancheIds.length > 0) {
+        console.log('Dashboard: Fetching payments and coupons...');
+        const [paymentsRes, couponsRes] = await Promise.all([
+          supabase.from('paiements').select(`
+              id, id_paiement, montant, date_paiement, statut,
+              tranche:tranches(tranche_name, projet_id)
+            `).in('tranche_id', trancheIds).in('statut', ['Payé', 'paid']).order('date_paiement', { ascending: false }).limit(5),
+          supabase.from('souscriptions').select(`
+              id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
+              tranche:tranches(
+                tranche_name, projet_id,
+                projet:projets(projet)
+              )
+            `).in('tranche_id', trancheIds).gte('prochaine_date_coupon', today.toISOString().split('T')[0]).order('prochaine_date_coupon', { ascending: true }).limit(10)
+        ]);
+
+        recentPaymentsData = paymentsRes.data || [];
+        setRecentPayments(recentPaymentsData as any);
+
+        groupedCoupons = (couponsRes.data || []).reduce((acc: any[], coupon: any) => {
+          const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
+          const existing = acc.find(c => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
+
+          if (existing) {
+            existing.investor_count += 1;
+            existing.coupon_brut = parseFloat(existing.coupon_brut) + parseFloat(coupon.coupon_brut);
+          } else {
+            acc.push({ ...coupon, investor_count: 1 });
+          }
+          return acc;
+        }, []);
+
+        setUpcomingCoupons(groupedCoupons.slice(0, 5));
+      }
+
+      console.log('Dashboard: Processing monthly data...');
+      const monthlyDataResult = processMonthlyData(chartSubscriptions, selectedYear, startMonth, endMonth);
+      setMonthlyData(monthlyDataResult);
+
+      const cacheData = {
+        stats: {
+          totalInvested,
+          couponsPaidThisMonth,
+          activeProjects: projectIds.length,
+          upcomingCoupons: upcomingCount,
+          nextCouponDays: 90,
+        },
+        recentPayments: recentPaymentsData,
+        upcomingCoupons: groupedCoupons.slice(0, 5),
+        monthlyData: monthlyDataResult
       };
+      setCachedData(cacheData);
 
       console.log('Dashboard: Data fetch complete!');
-
-      setStats(newStats);
-      setRecentPayments(payments);
-      setUpcomingCoupons(coupons);
-      setMonthlyData(monthlyDataArray);
-
-      setCachedData({
-        stats: newStats,
-        recentPayments: payments,
-        upcomingCoupons: coupons,
-        monthlyData: monthlyDataArray,
-      });
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
       setLoading(false);
-      setRefreshing(false);
+      if (isRefresh) setRefreshing(false);
+    } catch (error) {
+      console.error('Dashboard: Error fetching data', error);
+      localStorage.removeItem(CACHE_KEY);
+      setLoading(false);
+      if (isRefresh) setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const processMonthlyData = (subscriptions: any[], year: number, start: number, end: number) => {
+    if (!subscriptions || subscriptions.length === 0) return [];
+
+    const monthlyTotals: { [key: string]: number } = {};
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+    for (let month = start; month <= end; month++) {
+      const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+      monthlyTotals[monthKey] = 0;
+    }
+
+    subscriptions.forEach((sub) => {
+      if (sub.date_souscription) {
+        const date = new Date(sub.date_souscription);
+        const subYear = date.getFullYear();
+        const subMonth = date.getMonth();
+        const monthKey = `${subYear}-${String(subMonth + 1).padStart(2, '0')}`;
+
+        if (subYear === year && subMonth >= start && subMonth <= end) {
+          monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + parseFloat(sub.montant_investi?.toString() || '0');
+        }
+      }
+    });
+
+    const chartData: MonthlyData[] = [];
+    let cumulative = 0;
+    for (let month = start; month <= end; month++) {
+      const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+      const monthAmount = monthlyTotals[monthKey] || 0;
+      cumulative += monthAmount;
+      chartData.push({
+        month: monthNames[month],
+        amount: monthAmount,
+        cumulative: cumulative,
+      });
+    }
+
+    return chartData;
+  };
+
+        // Fetch alerts - TEMPORARILY DISABLED TO SHOW EXAMPLES
+        // const alertsData: Alert[] = [];
+        // const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+        // const in7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        // // Check for upcoming deadlines (30 days)
+        // const { data: tranchesProches } = await supabase
+        //   .from('tranches')
+        //   .select('tranche_name, date_echeance')
+        //   .in('id', trancheIds)
+        //   .gte('date_echeance', today.toISOString().split('T')[0])
+        //   .lte('date_echeance', in30Days.toISOString().split('T')[0]);
+
+        // if (tranchesProches && tranchesProches.length > 0) {
+        //   tranchesProches.forEach((tranche) => {
+        //     const daysUntil = Math.ceil(
+        //       (new Date(tranche.date_echeance).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        //     );
+        //     alertsData.push({
+        //       id: `deadline-${tranche.tranche_name}`,
+        //       type: 'deadline',
+        //       message: `Échéance proche : ${tranche.tranche_name} dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''} (${formatDate(tranche.date_echeance)})`,
+        //     });
+        //   });
+        // }
+
+        // // Check for late payments
+        // const { data: paiementsRetard } = await supabase
+        //   .from('paiements')
+        //   .select('*')
+        //   .in('investisseur_id', [organization.id])
+        //   .ilike('statut', 'En retard');
+
+        // if (paiementsRetard && paiementsRetard.length > 0) {
+        //   alertsData.push({
+        //     id: 'late-payments',
+        //     type: 'late_payment',
+        //     message: `${paiementsRetard.length} paiement${paiementsRetard.length > 1 ? 's' : ''} en retard`,
+        //     count: paiementsRetard.length,
+        //   });
+        // }
+
+        // // Check for coupons due this week
+        // const { data: couponsThisWeek } = await supabase
+        //   .from('souscriptions')
+        //   .select('coupon_net, prochaine_date_coupon')
+        //   .in('tranche_id', trancheIds)
+        //   .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
+        //   .lte('prochaine_date_coupon', in7Days.toISOString().split('T')[0]);
+
+        // if (couponsThisWeek && couponsThisWeek.length > 0) {
+        //   const total = couponsThisWeek.reduce(
+        //     (sum, c) => sum + parseFloat(c.coupon_net?.toString() || '0'),
+        //     0
+        //   );
+        //   alertsData.push({
+        //     id: 'upcoming-coupons',
+        //     type: 'upcoming_coupons',
+        //     message: `${couponsThisWeek.length} coupon${couponsThisWeek.length > 1 ? 's' : ''} à payer cette semaine (Total: ${formatCurrency(total)})`,
+        //     count: couponsThisWeek.length,
+        //   });
+        // }
+
+        // setAlerts(alertsData);
 
   useEffect(() => {
-    fetchData();
-  }, [selectedYear, startMonth, endMonth]);
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchData();
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+      setStats({
+        totalInvested: 0,
+        couponsPaidThisMonth: 0,
+        activeProjects: 0,
+        upcomingCoupons: 0,
+        nextCouponDays: 90,
+      });
+      setRecentPayments([]);
+      setUpcomingCoupons([]);
+      setMonthlyData([]);
+    };
+  }, [organization.id]);
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -339,276 +426,365 @@ export function Dashboard({ organization }: DashboardProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('fr-FR', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric',
-    });
+      year: 'numeric'
+    }).format(date);
   };
 
-  const maxAmount = Math.max(...monthlyData.map((d) => (viewMode === 'monthly' ? d.amount : d.cumulative || 0)), 1);
+  const getRelativeDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = date.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  const QuickActionCard = ({ icon: Icon, title, onClick }: any) => (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all group"
-    >
-      <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-        <Icon className="w-5 h-5 text-blue-600" />
-      </div>
-      <span className="font-medium text-slate-900">{title}</span>
-    </button>
-  );
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-slate-600">Chargement du dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+    if (diffDays === 0) return "Aujourd'hui";
+    if (diffDays === 1) return "Demain";
+    if (diffDays < 0) return `Il y a ${Math.abs(diffDays)} jour${Math.abs(diffDays) > 1 ? 's' : ''}`;
+    return `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-600">Vue d'ensemble de vos investissements</p>
-        </div>
-        <button
-          onClick={() => fetchData()}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 text-sm bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Actualiser
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-blue-600" />
+    <div className="max-w-7xl mx-auto px-8 py-8">
+        <div className="max-w-7xl mx-auto px-8 py-8">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+              <p className="text-slate-600 mt-1">Voici ce qui se passe cette semaine</p>
             </div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>Actualiser</span>
+            </button>
           </div>
-          <p className="text-sm text-slate-600 mb-1">Total Investi</p>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalInvested)}</p>
-        </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-green-50 rounded-lg">
-              <CheckCircle2 className="w-6 h-6 text-green-600" />
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
             </div>
-          </div>
-          <p className="text-sm text-slate-600 mb-1">Coupons Payés (mois)</p>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.couponsPaidThisMonth)}</p>
-        </div>
+          ) : (
+            <>
+              {alerts.length > 0 && (
+                <div className="mb-6 mt-6">
+                  <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg flex items-start justify-between">
+                    <div className="flex items-start gap-3 flex-1">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 space-y-2">
+                        {alerts.map((alert, index) => (
+                          <p key={alert.id} className="text-sm font-medium text-amber-900">
+                            {index > 0 && '• '}{alert.message}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setAlerts([])}
+                      className="text-amber-600 hover:text-amber-800 transition-colors ml-4"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-purple-50 rounded-lg">
-              <Folder className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-          <p className="text-sm text-slate-600 mb-1">Projets Actifs</p>
-          <p className="text-2xl font-bold text-slate-900">{stats.activeProjects}</p>
-        </div>
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8 mt-8">
+                <h2 className="text-xl font-bold text-slate-900 mb-4">Actions Rapides</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <button
+                    onClick={() => setShowNewProject(true)}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
+                  >
+                    <div className="bg-blue-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <Plus className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Nouveau Projet</p>
+                      <p className="text-xs text-slate-600">Créer un projet</p>
+                    </div>
+                  </button>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-orange-50 rounded-lg">
-              <Clock className="w-6 h-6 text-orange-600" />
-            </div>
-          </div>
-          <p className="text-sm text-slate-600 mb-1">Prochains Coupons</p>
-          <p className="text-2xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
-          <p className="text-xs text-slate-500 mt-1">Dans {stats.nextCouponDays} jours</p>
-        </div>
-      </div>
+                  <button
+                    onClick={() => setShowTrancheWizard(true)}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all group border border-green-200"
+                  >
+                    <div className="bg-green-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <FileText className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Nouvelle Tranche</p>
+                      <p className="text-xs text-slate-600">Ajouter une tranche</p>
+                    </div>
+                  </button>
 
-      {/* Quick Actions */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Actions Rapides</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <QuickActionCard icon={Plus} title="Nouveau Projet" onClick={() => setShowNewProject(true)} />
-          <QuickActionCard icon={FileText} title="Nouvelle Tranche" onClick={() => setShowTrancheWizard(true)} />
-          <QuickActionCard icon={DollarSign} title="Enregistrer Paiement" onClick={() => setShowQuickPayment(true)} />
-        </div>
-      </div>
+                  <button
+                    onClick={() => setShowQuickPayment(true)}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all group border border-purple-200"
+                  >
+                    <div className="bg-purple-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <DollarSign className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Enregistrer Paiement</p>
+                      <p className="text-xs text-slate-600">Télécharger justificatif</p>
+                    </div>
+                  </button>
 
-      {/* Alerts */}
-      {alerts.length > 0 && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Alertes</h2>
-          <div className="space-y-3">
-            {alerts.map((alert) => (
-              <div
-                key={alert.id}
-                className={`flex items-start gap-3 p-4 rounded-lg ${
-                  alert.type === 'deadline'
-                    ? 'bg-orange-50 border border-orange-200'
-                    : alert.type === 'late_payment'
-                    ? 'bg-red-50 border border-red-200'
-                    : 'bg-blue-50 border border-blue-200'
-                }`}
-              >
-                {alert.type === 'deadline' && <Clock className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />}
-                {alert.type === 'late_payment' && <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />}
-                {alert.type === 'upcoming_coupons' && <AlertTriangle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />}
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-900">{alert.message}</p>
+                  <button
+                    onClick={() => alert('Export en cours de développement')}
+                    className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
+                  >
+                    <div className="bg-slate-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                      <Download className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-slate-900 text-sm">Exporter Synthèse</p>
+                      <p className="text-xs text-slate-600">Télécharger rapport</p>
+                    </div>
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Charts and Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chart */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">Investissements {selectedYear}</h2>
-            <div className="flex items-center gap-2">
-              <select
-                value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as 'monthly' | 'cumulative')}
-                className="px-3 py-1 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="monthly">Mensuel</option>
-                <option value="cumulative">Cumulatif</option>
-              </select>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="px-3 py-1 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {[2024, 2025, 2026].map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-slate-600 text-sm">Montant total investi</span>
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-slate-900 mb-1">{formatCurrency(stats.totalInvested)}</p>
+                </div>
 
-          <div className="h-64">
-            {monthlyData.length > 0 ? (
-              <div className="flex items-end justify-between h-full gap-2">
-                {monthlyData.map((data, index) => {
-                  const value = viewMode === 'monthly' ? data.amount : data.cumulative || 0;
-                  const height = maxAmount > 0 ? (value / maxAmount) * 100 : 0;
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                      <div className="relative flex-1 w-full flex items-end">
-                        <div
-                          className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all hover:from-blue-700 hover:to-blue-500 cursor-pointer group"
-                          style={{ height: `${height}%` }}
-                          title={`${data.month}: ${formatCurrency(value)}`}
-                        >
-                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            {formatCurrency(value)}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-slate-600 text-sm">Coupons payés ce mois</span>
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-slate-900 mb-1">{formatCurrency(stats.couponsPaidThisMonth)}</p>
+                  <p className="text-sm text-green-600">{stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}</p>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-slate-600 text-sm">Projets actifs</span>
+                    <Folder className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-slate-900">{stats.activeProjects}</p>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-slate-600 text-sm">Coupons à venir</span>
+                    <Clock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
+                  <p className="text-sm text-slate-600">{stats.nextCouponDays} prochains jours</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-slate-900">Évolution des Montants Levés</h2>
+                  <div className="flex items-center gap-4">
+                    <select
+                      value={viewMode}
+                      onChange={(e) => setViewMode(e.target.value as 'monthly' | 'cumulative')}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                    >
+                      <option value="monthly">Vue par mois</option>
+                      <option value="cumulative">Vue cumulée</option>
+                    </select>
+                    <select
+                      value={selectedYear}
+                      onChange={async (e) => {
+                        const year = parseInt(e.target.value);
+                        setSelectedYear(year);
+                        const { data } = await supabase.from('souscriptions').select('montant_investi, date_souscription');
+                        setMonthlyData(processMonthlyData(data || [], year, startMonth, endMonth));
+                      }}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value={2024}>2024</option>
+                      <option value={2025}>2025</option>
+                      <option value={2026}>2026</option>
+                    </select>
+                    <select
+                      value={`${startMonth}-${endMonth}`}
+                      onChange={async (e) => {
+                        const [start, end] = e.target.value.split('-').map(Number);
+                        setStartMonth(start);
+                        setEndMonth(end);
+                        const { data } = await supabase.from('souscriptions').select('montant_investi, date_souscription');
+                        setMonthlyData(processMonthlyData(data || [], selectedYear, start, end));
+                      }}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="0-11">Année complète</option>
+                      <option value="0-2">Q1 (Jan-Mar)</option>
+                      <option value="3-5">Q2 (Avr-Juin)</option>
+                      <option value="6-8">Q3 (Juil-Sep)</option>
+                      <option value="9-11">Q4 (Oct-Déc)</option>
+                      <option value="0-5">S1 (Jan-Juin)</option>
+                      <option value="6-11">S2 (Juil-Déc)</option>
+                    </select>
+                  </div>
+                </div>
+                {monthlyData.length === 0 ? (
+                  <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white rounded-lg">
+                    <div className="text-center text-slate-400">
+                      <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Aucune donnée disponible</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-80 flex items-end justify-between gap-2 px-4 pb-4">
+                    {monthlyData.map((data, index) => {
+                      const displayAmount = viewMode === 'cumulative' ? (data.cumulative || 0) : data.amount;
+                      const maxAmount = Math.max(...monthlyData.map(d => viewMode === 'cumulative' ? (d.cumulative || 0) : d.amount), 1);
+                      const heightPercentage = Math.max((displayAmount / maxAmount) * 85, displayAmount > 0 ? 5 : 0);
+                      return (
+                        <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full">
+                          <div className="relative group flex-1 w-full flex flex-col justify-end items-center">
+                            <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                              <div className="bg-slate-900 text-white px-3 py-2 rounded-lg shadow-lg text-xs whitespace-nowrap">
+                                <div className="font-semibold">{data.month}</div>
+                                {viewMode === 'monthly' ? (
+                                  <div>{formatCurrency(data.amount)}</div>
+                                ) : (
+                                  <>
+                                    <div className="text-slate-300">Mensuel: {formatCurrency(data.amount)}</div>
+                                    <div className="font-semibold">Cumulé: {formatCurrency(data.cumulative || 0)}</div>
+                                  </>
+                                )}
+                              </div>
+                              <div className="w-2 h-2 bg-slate-900 transform rotate-45 mx-auto -mt-1"></div>
+                            </div>
+                            {displayAmount > 0 && (
+                              <div className="mb-1 text-xs font-semibold text-slate-700 whitespace-nowrap">
+                                {formatCurrency(displayAmount)}
+                              </div>
+                            )}
+                            <div
+                              className={`w-full rounded-t-lg transition-all hover:opacity-90 cursor-pointer shadow-md ${
+                                viewMode === 'cumulative'
+                                  ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 hover:from-emerald-700 hover:to-emerald-500'
+                                  : 'bg-gradient-to-t from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500'
+                              }`}
+                              style={{ height: `${heightPercentage}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-slate-600">{data.month}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Derniers Paiements</h2>
+                    <button
+                      onClick={() => navigate('/paiements')}
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+                    >
+                      Voir tout <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {recentPayments.length === 0 ? (
+                    <p className="text-slate-500 text-center py-8">Aucun paiement récent</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {recentPayments.map((payment) => (
+                        <div key={payment.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                          <div className="flex-1">
+                            <p className="font-medium text-slate-900 text-sm">
+                              {payment.tranche?.tranche_name || 'Tranche'}
+                            </p>
+                            <p className="text-xs text-slate-600">
+                              {formatDate(payment.date_paiement)} • {payment.type || 'Coupon'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-slate-900 text-sm">{formatCurrency(payment.montant)}</p>
+                            <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              payment.statut?.toLowerCase() === 'payé' || payment.statut?.toLowerCase() === 'paid'
+                                ? 'bg-green-100 text-green-700'
+                                : payment.statut?.toLowerCase() === 'en attente'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : payment.statut?.toLowerCase() === 'en retard'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {payment.statut}
+                            </span>
                           </div>
                         </div>
-                      </div>
-                      <span className="text-xs text-slate-600 font-medium">{data.month}</span>
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-400">
-                <p>Aucune donnée disponible</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Recent Payments */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">Paiements Récents</h2>
-            <button
-              onClick={() => navigate('/paiements')}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-            >
-              Voir tout
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {recentPayments.length > 0 ? (
-            <div className="space-y-3">
-              {recentPayments.map((payment) => (
-                <div key={payment.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-50 rounded-lg">
-                      <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">{payment.tranche?.tranche_name || 'N/A'}</p>
-                      <p className="text-xs text-slate-500">{formatDate(payment.date_paiement)}</p>
-                    </div>
-                  </div>
-                  <p className="font-semibold text-slate-900">{formatCurrency(payment.montant)}</p>
+                  )}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-400">
-              <p>Aucun paiement récent</p>
-            </div>
-          )}
-        </div>
 
-        {/* Upcoming Coupons */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">Prochains Coupons</h2>
-            <button
-              onClick={() => navigate('/souscriptions')}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-            >
-              Voir tout
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {upcomingCoupons.length > 0 ? (
-            <div className="space-y-3">
-              {upcomingCoupons.map((coupon) => (
-                <div key={coupon.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-orange-50 rounded-lg">
-                      <Clock className="w-4 h-4 text-orange-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">{coupon.tranche?.projet?.projet || 'N/A'}</p>
-                      <p className="text-sm text-slate-600">{coupon.tranche?.tranche_name || 'N/A'}</p>
-                      <p className="text-xs text-slate-500">{formatDate(coupon.prochaine_date_coupon)}</p>
-                    </div>
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Coupons à Venir</h2>
+                    <button
+                      onClick={() => navigate('/coupons')}
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+                    >
+                      Voir tout <ArrowRight className="w-4 h-4" />
+                    </button>
                   </div>
-                  <p className="font-semibold text-slate-900">{formatCurrency(coupon.coupon_brut)}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-400">
-              <p>Aucun coupon à venir</p>
-            </div>
-          )}
-        </div>
-      </div>
+                  {upcomingCoupons.length === 0 ? (
+                    <p className="text-slate-500 text-center py-8">Aucun coupon à venir</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {upcomingCoupons.map((coupon) => {
+                        const daysUntil = Math.ceil(
+                          (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                        );
+                        const isUrgent = daysUntil <= 7;
 
-      {/* Modals */}
+                        return (
+                          <div key={coupon.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-bold text-slate-900">{formatCurrency(parseFloat(coupon.coupon_brut.toString()))}</p>
+                                {isUrgent && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                                    <AlertCircle className="w-3 h-3" />
+                                    Urgent
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-600 mt-1">
+                                {coupon.tranche?.projet?.projet || 'Projet'} • {coupon.tranche?.tranche_name || 'Tranche'}
+                              </p>
+                              <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
+                                <Users className="w-3 h-3" />
+                                <span>{coupon.investor_count} investisseur{coupon.investor_count > 1 ? 's' : ''}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-slate-900">{formatDate(coupon.prochaine_date_coupon)}</p>
+                              <p className="text-xs text-slate-600">{getRelativeDate(coupon.prochaine_date_coupon)}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+    </div>
+
       {showTrancheWizard && (
         <TrancheWizard
           onClose={() => setShowTrancheWizard(false)}
@@ -652,18 +828,27 @@ export function Dashboard({ organization }: DashboardProps) {
                 try {
                   const projectToCreate: any = {
                     projet: newProjectData.projet,
-                    emetteur: newProjectData.emetteur,
-                    siren_emetteur: parseInt(newProjectData.siren_emetteur),
-                    nom_representant: newProjectData.nom_representant,
-                    prenom_representant: newProjectData.prenom_representant,
-                    email_representant: newProjectData.email_representant,
-                    representant_masse: newProjectData.representant_masse,
-                    email_rep_masse: newProjectData.email_rep_masse,
-                    periodicite_coupon: newProjectData.periodicite_coupon,
-                    maturite_mois: parseInt(newProjectData.maturite_mois),
-                    type_obligations: newProjectData.type_obligations
+                    emetteur: newProjectData.emetteur || null,
                   };
 
+                  if (newProjectData.siren_emetteur) {
+                    projectToCreate.siren_emetteur = parseInt(newProjectData.siren_emetteur);
+                  }
+                  if (newProjectData.nom_representant) {
+                    projectToCreate.nom_representant = newProjectData.nom_representant;
+                  }
+                  if (newProjectData.prenom_representant) {
+                    projectToCreate.prenom_representant = newProjectData.prenom_representant;
+                  }
+                  if (newProjectData.email_representant) {
+                    projectToCreate.email_representant = newProjectData.email_representant;
+                  }
+                  if (newProjectData.representant_masse) {
+                    projectToCreate.representant_masse = newProjectData.representant_masse;
+                  }
+                  if (newProjectData.email_rep_masse) {
+                    projectToCreate.email_rep_masse = newProjectData.email_rep_masse;
+                  }
                   if (newProjectData.telephone_rep_masse) {
                     projectToCreate.telephone_rep_masse = parseInt(newProjectData.telephone_rep_masse);
                   }
@@ -686,10 +871,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     email_representant: '',
                     representant_masse: '',
                     email_rep_masse: '',
-                    telephone_rep_masse: '',
-                    periodicite_coupon: '',
-                    maturite_mois: '',
-                    type_obligations: ''
+                    telephone_rep_masse: ''
                   });
 
                   navigate(`/projets/${data.id}`);
@@ -701,7 +883,6 @@ export function Dashboard({ organization }: DashboardProps) {
                 }
               }}>
                 <div className="space-y-4">
-                  {/* Nom du projet */}
                   <div>
                     <label className="block text-sm font-medium text-slate-900 mb-2">
                       Nom du projet <span className="text-red-600">*</span>
@@ -716,14 +897,12 @@ export function Dashboard({ organization }: DashboardProps) {
                     />
                   </div>
 
-                  {/* Émetteur */}
                   <div>
                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                      Émetteur <span className="text-red-600">*</span>
+                      Émetteur
                     </label>
                     <input
                       type="text"
-                      required
                       value={newProjectData.emetteur}
                       onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -731,14 +910,12 @@ export function Dashboard({ organization }: DashboardProps) {
                     />
                   </div>
 
-                  {/* SIREN */}
                   <div>
                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                      SIREN de l'émetteur <span className="text-red-600">*</span>
+                      SIREN de l'émetteur
                     </label>
                     <input
                       type="text"
-                      required
                       pattern="[0-9]*"
                       value={newProjectData.siren_emetteur}
                       onChange={(e) => setNewProjectData({ ...newProjectData, siren_emetteur: e.target.value.replace(/\D/g, '') })}
@@ -748,69 +925,13 @@ export function Dashboard({ organization }: DashboardProps) {
                     />
                   </div>
 
-                  {/* Type d'obligations */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
-                      Type d'obligations <span className="text-red-600">*</span>
-                    </label>
-                    <select
-                      required
-                      value={newProjectData.type_obligations}
-                      onChange={(e) => setNewProjectData({ ...newProjectData, type_obligations: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Sélectionnez le type</option>
-                      <option value="Obligations simples">Obligations simples</option>
-                      <option value="Obligations convertibles">Obligations convertibles</option>
-                      <option value="Obligations remboursables en actions">Obligations remboursables en actions (ORA)</option>
-                      <option value="Autres">Autres</option>
-                    </select>
-                  </div>
-
-                  {/* Fréquence des coupons */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
-                      Fréquence des coupons <span className="text-red-600">*</span>
-                    </label>
-                    <select
-                      required
-                      value={newProjectData.periodicite_coupon}
-                      onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Sélectionnez la fréquence</option>
-                      <option value="Mensuel">Mensuel</option>
-                      <option value="Trimestriel">Trimestriel</option>
-                      <option value="Semestriel">Semestriel</option>
-                      <option value="Annuel">Annuel</option>
-                    </select>
-                  </div>
-
-                  {/* Maturité en mois */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
-                      Maturité (en mois) <span className="text-red-600">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      value={newProjectData.maturite_mois}
-                      onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Ex: 60 (pour 5 ans)"
-                    />
-                  </div>
-
-                  {/* Prénom et Nom du représentant */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-900 mb-2">
-                        Prénom du représentant <span className="text-red-600">*</span>
+                        Prénom du représentant
                       </label>
                       <input
                         type="text"
-                        required
                         value={newProjectData.prenom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -819,11 +940,10 @@ export function Dashboard({ organization }: DashboardProps) {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-900 mb-2">
-                        Nom du représentant <span className="text-red-600">*</span>
+                        Nom du représentant
                       </label>
                       <input
                         type="text"
-                        required
                         value={newProjectData.nom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -832,14 +952,12 @@ export function Dashboard({ organization }: DashboardProps) {
                     </div>
                   </div>
 
-                  {/* Email du représentant */}
                   <div>
                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                      Email du représentant <span className="text-red-600">*</span>
+                      Email du représentant
                     </label>
                     <input
                       type="email"
-                      required
                       value={newProjectData.email_representant}
                       onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -847,17 +965,15 @@ export function Dashboard({ organization }: DashboardProps) {
                     />
                   </div>
 
-                  {/* Représentant de la masse */}
                   <div className="border-t border-slate-200 pt-4 mt-4">
                     <h4 className="text-sm font-semibold text-slate-900 mb-3">Représentant de la masse</h4>
 
                     <div>
                       <label className="block text-sm font-medium text-slate-900 mb-2">
-                        Nom du représentant de la masse <span className="text-red-600">*</span>
+                        Nom du représentant de la masse
                       </label>
                       <input
                         type="text"
-                        required
                         value={newProjectData.representant_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -867,11 +983,10 @@ export function Dashboard({ organization }: DashboardProps) {
 
                     <div className="mt-4">
                       <label className="block text-sm font-medium text-slate-900 mb-2">
-                        Email du représentant de la masse <span className="text-red-600">*</span>
+                        Email du représentant de la masse
                       </label>
                       <input
                         type="email"
-                        required
                         value={newProjectData.email_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -885,6 +1000,7 @@ export function Dashboard({ organization }: DashboardProps) {
                       </label>
                       <input
                         type="tel"
+                        pattern="[0-9]*"
                         value={newProjectData.telephone_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -895,19 +1011,19 @@ export function Dashboard({ organization }: DashboardProps) {
                   </div>
                 </div>
 
-                <div className="flex gap-3 mt-6 pt-6 border-t border-slate-200">
+                <div className="flex gap-3 mt-6">
                   <button
                     type="button"
                     onClick={() => setShowNewProject(false)}
-                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
                     disabled={creatingProject}
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                    disabled={creatingProject}
+                    disabled={creatingProject || !newProjectData.projet}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     {creatingProject ? 'Création...' : 'Créer le projet'}
                   </button>
@@ -920,3 +1036,4 @@ export function Dashboard({ organization }: DashboardProps) {
     </div>
   );
 }
+export default Dashboard;
