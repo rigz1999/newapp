@@ -498,7 +498,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
           )}
 
           {/* STEP 3: RESULTS - COMPACT TABLE VIEW */}
-          {step === 'results' && (
+          {true && (
             <div className="space-y-4">
               {/* Summary */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
