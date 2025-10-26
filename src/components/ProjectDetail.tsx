@@ -14,6 +14,10 @@ import {
   Loader,
   X,
   AlertTriangle,
+  CalendarDays,
+  Coins,
+  UserCircle,
+  BarChart3,
 } from 'lucide-react';
 
 interface ProjectDetailProps {
@@ -312,54 +316,54 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-600 text-sm">Total Levé</p>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-slate-600 text-sm">Montant Total Levé</p>
                 <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(stats.totalLeve)}</p>
               </div>
-              <div className="p-3 bg-slate-50 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-slate-600" />
+              <div className="p-2 bg-green-50 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-green-600" />
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
                 <p className="text-slate-600 text-sm">Investisseurs</p>
                 <p className="text-2xl font-bold text-slate-900 mt-1">{stats.investisseursCount}</p>
               </div>
-              <div className="p-3 bg-slate-50 rounded-lg">
-                <Users className="w-6 h-6 text-slate-600" />
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Users className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
                 <p className="text-slate-600 text-sm">Tranches</p>
                 <p className="text-2xl font-bold text-slate-900 mt-1">{stats.tranchesCount}</p>
               </div>
-              <div className="p-3 bg-slate-50 rounded-lg">
-                <Layers className="w-6 h-6 text-slate-600" />
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Layers className="w-5 h-5 text-purple-600" />
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
                 <p className="text-slate-600 text-sm">Prochain Coupon</p>
                 <p className="text-base font-bold text-slate-900 mt-1">
                   {stats.nextCouponDate ? formatDate(stats.nextCouponDate) : '-'}
                 </p>
-                <p className="text-sm text-slate-600 mt-1">
+                <p className="text-sm font-semibold text-green-600 mt-1">
                   {stats.nextCouponAmount > 0 ? formatCurrency(stats.nextCouponAmount) : '-'}
                 </p>
               </div>
-              <div className="p-3 bg-slate-50 rounded-lg">
-                <Calendar className="w-6 h-6 text-slate-600" />
+              <div className="p-2 bg-orange-50 rounded-lg">
+                <Calendar className="w-5 h-5 text-orange-600" />
               </div>
             </div>
           </div>
@@ -450,11 +454,18 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                     <div className="flex-1">
                       <p className="text-base font-semibold text-slate-900">{tranche.tranche_name}</p>
                       <div className="flex flex-wrap gap-4 mt-2 text-sm text-slate-600">
-                        <span>📅 Émission : {formatDate(tranche.date_emission)}</span>
-                        <span>💰 Levé : {formatCurrency(totalInvested)}</span>
-                        <span>👥 {trancheSubscriptions.length} souscripteur(s)</span>
-                        <span>📊 {formatFrequence(tranche.periodicite_coupons)}</span>
-                        {tranche.taux_nominal && <span>📈 Taux : {tranche.taux_nominal}%</span>}
+                        <span className="flex items-center gap-1.5">
+                          <CalendarDays className="w-4 h-4" />
+                          {formatDate(tranche.date_emission)}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <Coins className="w-4 h-4" />
+                          {formatCurrency(totalInvested)}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <UserCircle className="w-4 h-4" />
+                          {trancheSubscriptions.length} souscripteur(s)
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -657,7 +668,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                   <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3">
                     <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-orange-800">
-                      <p className="font-semibold mb-1">⚠️ Modification de paramètres financiers détectée</p>
+                      <p className="font-semibold mb-1">Modification de paramètres financiers détectée</p>
                       <p>Les coupons et échéances de toutes les souscriptions seront automatiquement recalculés.</p>
                     </div>
                   </div>
