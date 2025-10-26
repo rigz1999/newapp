@@ -101,35 +101,45 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const fetchProjectData = async () => {
     setLoading(true);
 
-    const [projectRes, tranchesRes, subscriptionsRes, paymentsRes] = await Promise.all([
+    const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
       supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
       supabase.from('tranches').select('*').eq('projet_id', projectId).order('created_at', { ascending: false }),
       supabase.from('souscriptions').select(`
         id, id_souscription, date_souscription, nombre_obligations, montant_investi,
         coupon_net, investisseur_id,
         investisseur:investisseurs(nom_raison_sociale),
-        tranche:tranches(tranche_name, date_emission),
-        prochain_coupon:v_prochains_coupons(date_prochain_coupon, montant_prochain_coupon, statut)
+        tranche:tranches(tranche_name, date_emission)
       `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
-      supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false })
+      supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }),
+      supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut')
     ]);
 
     const projectData = projectRes.data;
     const tranchesData = tranchesRes.data || [];
     const subscriptionsData = subscriptionsRes.data || [];
     const paymentsData = paymentsRes.data || [];
+    const prochainsCouponsData = prochainsCouponsRes.data || [];
+
+    // Merge prochain_coupon data into subscriptions
+    const subscriptionsWithCoupons = subscriptionsData.map((sub: any) => {
+      const prochainCoupon = prochainsCouponsData.find((pc: any) => pc.souscription_id === sub.id);
+      return {
+        ...sub,
+        prochain_coupon: prochainCoupon || null
+      };
+    });
 
     setProject(projectData);
     setTranches(tranchesData);
-    setSubscriptions(subscriptionsData as any);
+    setSubscriptions(subscriptionsWithCoupons as any);
     setPayments(paymentsData);
 
-    if (subscriptionsData.length > 0) {
-      const totalLeve = subscriptionsData.reduce((sum, sub) => sum + Number(sub.montant_investi || 0), 0);
-      const uniqueInvestors = new Set(subscriptionsData.map(s => s.investisseur_id)).size;
+    if (subscriptionsWithCoupons.length > 0) {
+      const totalLeve = subscriptionsWithCoupons.reduce((sum: number, sub: any) => sum + Number(sub.montant_investi || 0), 0);
+      const uniqueInvestors = new Set(subscriptionsWithCoupons.map((s: any) => s.investisseur_id)).size;
 
-      // Get next coupon from the view
-      const upcomingCoupons = subscriptionsData
+      // Get next coupon from the merged data
+      const upcomingCoupons = subscriptionsWithCoupons
         .filter((s: any) => s.prochain_coupon?.date_prochain_coupon)
         .sort((a: any, b: any) => 
           new Date(a.prochain_coupon.date_prochain_coupon).getTime() - 
