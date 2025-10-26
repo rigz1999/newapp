@@ -116,11 +116,11 @@ export function Dashboard({ organization }: DashboardProps) {
 
   const [newProjectData, setNewProjectData] = useState({
     projet: '',
-    // Nouveaux champs
+    // Champs financiers
     taux_interet: '',           // % ex "8.50"
-    montant_global_eur: '',     // € ex "1500000"
+    montant_global_eur: '',     // valeur "raw" (digits only) pour la DB
     periodicite_coupon: '',     // 'annuel' | 'semestriel' | 'trimestriel'
-    // Anciens champs
+    // Autres champs
     emetteur: '',
     siren_emetteur: '',
     nom_representant: '',
@@ -133,12 +133,12 @@ export function Dashboard({ organization }: DashboardProps) {
 
   // Erreur SIREN (affichage + blocage submit)
   const [sirenError, setSirenError] = useState<string>('');
-
   const [creatingProject, setCreatingProject] = useState(false);
 
   const CACHE_KEY = 'saad_dashboard_cache';
   const CACHE_DURATION = 5 * 60 * 1000;
 
+  // ----- Helpers -----
   const getCachedData = () => {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
@@ -160,6 +160,49 @@ export function Dashboard({ organization }: DashboardProps) {
     } catch {}
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }).format(date);
+  };
+
+  const getRelativeDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = date.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Aujourd'hui";
+    if (diffDays === 1) return "Demain";
+    if (diffDays < 0) return `Il y a ${Math.abs(diffDays)} jour${Math.abs(diffDays) > 1 ? 's' : ''}`;
+    return `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+  };
+
+  // SIREN & montant helpers
+  const validateSiren = (value: string) => /^\d{9}$/.test(value);
+  const groupDigitsWithSpaces = (digitsOnly: string) => {
+    if (!digitsOnly) return '';
+    // insère un espace entre chaque groupe de 3 en partant de la droite
+    return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
+  const formatMontantDisplay = (digitsOnly: string) => {
+    const grouped = groupDigitsWithSpaces(digitsOnly);
+    return grouped ? `${grouped} €` : '';
+  };
+
+  // ----- Data fetch -----
   const fetchData = async () => {
     const isRefresh = !loading;
     if (isRefresh) setRefreshing(true);
@@ -218,7 +261,7 @@ export function Dashboard({ organization }: DashboardProps) {
       let groupedCoupons: any[] = [];
 
       if (trancheIds.length > 0) {
-        const [paymentsRes, couponsRes] = await Promise.all([
+        const [paymentsRes2, couponsRes] = await Promise.all([
           supabase.from('paiements').select(`
               id, id_paiement, montant, date_paiement, statut,
               tranche:tranches(tranche_name, projet_id)
@@ -232,7 +275,7 @@ export function Dashboard({ organization }: DashboardProps) {
             `).in('tranche_id', trancheIds).gte('prochaine_date_coupon', today.toISOString().split('T')[0]).order('prochaine_date_coupon', { ascending: true }).limit(10)
         ]);
 
-        recentPaymentsData = paymentsRes.data || [];
+        recentPaymentsData = paymentsRes2.data || [];
         setRecentPayments(recentPaymentsData as any);
 
         groupedCoupons = (couponsRes.data || []).reduce((acc: any[], coupon: any) => {
@@ -320,15 +363,12 @@ export function Dashboard({ organization }: DashboardProps) {
 
   useEffect(() => {
     let isMounted = true;
-
     const loadData = async () => {
       if (isMounted) {
         await fetchData();
       }
     };
-
     loadData();
-
     return () => {
       isMounted = false;
       setStats({
@@ -344,42 +384,8 @@ export function Dashboard({ organization }: DashboardProps) {
     };
   }, [organization.id]);
 
-  const handleRefresh = () => {
-    window.location.reload();
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('fr-FR', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    }).format(date);
-  };
-
-  const getRelativeDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return "Aujourd'hui";
-    if (diffDays === 1) return "Demain";
-    if (diffDays < 0) return `Il y a ${Math.abs(diffDays)} jour${Math.abs(diffDays) > 1 ? 's' : ''}`;
-    return `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
-  };
-
-  // Helpers SIREN
-  const validateSiren = (value: string) => /^\d{9}$/.test(value);
+  // UI handlers
+  const handleRefresh = () => window.location.reload();
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
@@ -772,7 +778,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     projet: newProjectData.projet,
                     emetteur: newProjectData.emetteur, // requis
                     taux_interet: parseFloat(newProjectData.taux_interet),
-                    montant_global_eur: parseFloat(newProjectData.montant_global_eur),
+                    montant_global_eur: newProjectData.montant_global_eur ? parseFloat(newProjectData.montant_global_eur) : null,
                     periodicite_coupon: newProjectData.periodicite_coupon,
                   };
 
@@ -846,7 +852,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     />
                   </div>
 
-                  {/* Nouveaux champs requis */}
+                  {/* Champs financiers requis */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-900 mb-2">
@@ -870,16 +876,18 @@ export function Dashboard({ organization }: DashboardProps) {
                       <label className="block text-sm font-medium text-slate-900 mb-2">
                         Montant global à lever (€) <span className="text-red-600">*</span>
                       </label>
+                      {/* Input texte avec formatage live: "1 234 567 €" */}
                       <input
-                        type="number"
+                        type="text"
                         required
-                        step="1"
-                        min="0"
                         inputMode="numeric"
-                        value={newProjectData.montant_global_eur}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, montant_global_eur: e.target.value })}
+                        value={formatMontantDisplay(newProjectData.montant_global_eur)}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, ''); // ne garde que les chiffres
+                          setNewProjectData({ ...newProjectData, montant_global_eur: digits });
+                        }}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Ex: 1500000"
+                        placeholder="Ex: 1 500 000 €"
                       />
                     </div>
 
@@ -928,7 +936,6 @@ export function Dashboard({ organization }: DashboardProps) {
                       onChange={(e) => {
                         const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
                         setNewProjectData({ ...newProjectData, siren_emetteur: digits });
-                        // reset erreur si on revient à une saisie valide partielle
                         if (sirenError) setSirenError('');
                       }}
                       onBlur={(e) => {
