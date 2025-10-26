@@ -41,8 +41,6 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
 
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [trancheName, setTrancheName] = useState('');
-  const [dateTransfertFonds, setDateTransfertFonds] = useState('');     // NEW
-  const [dateEcheance, setDateEcheance] = useState('');                 // NEW
   const [suggestedName, setSuggestedName] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<ParsedSubscription[]>([]);
@@ -240,16 +238,8 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
     return new Date().toISOString().split('T')[0];
   };
 
-  // Calculate date_emission preview
-  const getDateEmission = () => {
-    if (!dateTransfertFonds) return '';
-    const date = new Date(dateTransfertFonds);
-    date.setDate(date.getDate() + 1);
-    return date.toISOString().split('T')[0];
-  };
-
   const handleSubmit = async () => {
-    if (!selectedProjectId || !trancheName || !dateTransfertFonds || !dateEcheance || csvData.length === 0) {
+    if (!selectedProjectId || !trancheName || csvData.length === 0) {
       setError('Veuillez remplir tous les champs requis');
       return;
     }
@@ -258,16 +248,12 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
     setError('');
 
     try {
-      // UPDATED: Create tranche with new fields, without redundant fields
+      // Create tranche without date fields
       const { data: trancheData, error: trancheError } = await supabase
         .from('tranches')
         .insert({
           projet_id: selectedProjectId,
           tranche_name: trancheName,
-          date_transfert_fonds: dateTransfertFonds,          // NEW
-          date_echeance: dateEcheance,                       // NEW
-          // date_emission will be auto-set by trigger
-          // Removed: frequence, taux_interet, maturite_mois (now in projets)
         })
         .select()
         .single();
@@ -413,46 +399,6 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
             />
           </div>
 
-          {/* NEW: Date fields */}
-          <div className="space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-slate-900">Dates de la tranche</h4>
-            
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Date de transfert des fonds <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="date"
-                value={dateTransfertFonds}
-                onChange={(e) => setDateTransfertFonds(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {dateTransfertFonds && (
-              <div className="bg-white p-3 rounded border border-blue-300">
-                <p className="text-sm text-blue-900">
-                  <strong>Date d'émission (automatique):</strong> {getDateEmission()}
-                </p>
-                <p className="text-xs text-blue-700 mt-1">
-                  💡 La date d'émission est automatiquement fixée au lendemain du transfert des fonds
-                </p>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Date d'échéance <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="date"
-                value={dateEcheance}
-                onChange={(e) => setDateEcheance(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
           <div>
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Fichier CSV des souscriptions
@@ -480,19 +426,6 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
                 )}
               </div>
             )}
-            <div className="mt-4 text-sm text-slate-600 bg-slate-50 p-4 rounded-lg">
-              <p className="font-semibold mb-2">Colonnes attendues (noms flexibles):</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Type investisseur (physique/morale)</li>
-                <li>Nom investisseur ou Raison sociale</li>
-                <li>Email du représentant légal</li>
-                <li>Date de souscription</li>
-                <li>Quantité (nombre d'obligations)</li>
-                <li>Montant</li>
-                <li><strong className="text-blue-700">CGP (optionnel)</strong></li>
-                <li><strong className="text-blue-700">Email CGP (optionnel)</strong></li>
-              </ul>
-            </div>
           </div>
 
           {error && (
@@ -513,7 +446,7 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
           </button>
           <button
             onClick={handleSubmit}
-            disabled={processing || !selectedProjectId || !trancheName || !dateTransfertFonds || !dateEcheance || csvData.length === 0}
+            disabled={processing || !selectedProjectId || !trancheName || csvData.length === 0}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {processing ? (
