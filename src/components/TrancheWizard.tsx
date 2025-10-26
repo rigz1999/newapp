@@ -83,7 +83,7 @@ export function TrancheWizard({
     setProgress(0);
 
     try {
-      // Étape 1 : créer la tranche
+      // 1) Créer la tranche
       const { data: trancheData, error: trancheError } = await supabase
         .from("tranches")
         .insert({
@@ -96,7 +96,7 @@ export function TrancheWizard({
       if (trancheError) throw trancheError;
       if (!trancheData) throw new Error("Erreur lors de la création de la tranche");
 
-      // Étape 2 : envoyer le fichier CSV à la fonction Edge
+      // 2) Upload CSV vers Edge Function (publique)
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
       const form = new FormData();
       form.append("projet_id", trancheData.projet_id);
@@ -108,38 +108,33 @@ export function TrancheWizard({
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          setProgress(percent);
+          const p = Math.round((event.loaded / event.total) * 100);
+          setProgress(p);
         }
       };
 
-      xhr.onload = async () => {
+      xhr.onload = () => {
         setProcessing(false);
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
+        try {
+          if (xhr.status >= 200 && xhr.status < 300) {
             const result = JSON.parse(xhr.responseText);
-            console.log("✅ Import terminé :", result);
-            alert(
-              `✅ Import terminé : ${
-                result.createdSouscriptions || 0
-              } souscriptions créées`
-            );
+            // Affichage discret : petite carte verte en toast-like
+            // (ici simplifié par alert, à remplacer par votre système de toasts si vous en avez un)
+            alert(`✅ Import terminé : ${result.createdSouscriptions || 0} souscriptions créées`);
             onSuccess();
             onClose();
-          } catch {
-            alert("✅ Import terminé avec succès !");
-            onSuccess();
-            onClose();
+          } else {
+            console.error("Erreur import registre:", xhr.responseText);
+            setError("Erreur lors de l'import du registre CSV");
           }
-        } else {
-          console.error("Erreur import registre:", xhr.responseText);
-          alert("Erreur lors de l'import du registre CSV");
+        } catch {
+          setError("Réponse invalide du serveur après l'import");
         }
       };
 
       xhr.onerror = () => {
         setProcessing(false);
-        alert("Erreur réseau pendant l'import du CSV");
+        setError("Erreur réseau pendant l'import du CSV");
       };
 
       xhr.send(form);
@@ -153,22 +148,19 @@ export function TrancheWizard({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
         <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl">
           <h3 className="text-xl font-bold text-slate-900">Nouvelle Tranche</h3>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600"
-          >
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X className="w-6 h-6" />
           </button>
         </div>
 
+        {/* Body */}
         <div className="p-6 space-y-6">
-          {/* Sélecteur projet */}
+          {/* Projet */}
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Projet
-            </label>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">Projet</label>
             {loading ? (
               <div className="text-center py-4">
                 <Loader className="w-6 h-6 animate-spin mx-auto text-slate-400" />
@@ -191,13 +183,10 @@ export function TrancheWizard({
 
           {/* Nom tranche */}
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Nom de la tranche
-            </label>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">Nom de la tranche</label>
             {suggestedName && (
               <p className="text-sm text-slate-600 mb-2">
-                Nom suggéré:{" "}
-                <span className="font-medium">{suggestedName}</span>
+                Nom suggéré : <span className="font-medium">{suggestedName}</span>
               </p>
             )}
             <input
@@ -209,7 +198,7 @@ export function TrancheWizard({
             />
           </div>
 
-          {/* Fichier CSV */}
+          {/* CSV */}
           <div>
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Fichier CSV des souscriptions
@@ -232,11 +221,11 @@ export function TrancheWizard({
             )}
           </div>
 
-          {/* Barre de progression */}
+          {/* Barre de progression (compacte) */}
           {processing && (
-            <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
               <div
-                className="h-3 bg-blue-600 transition-all duration-200"
+                className="h-2 bg-blue-600 transition-all duration-150"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -251,7 +240,7 @@ export function TrancheWizard({
           )}
         </div>
 
-        {/* Boutons */}
+        {/* Footer */}
         <div className="sticky bottom-0 bg-white p-6 border-t border-slate-200 flex gap-3 rounded-b-2xl">
           <button
             onClick={onClose}
