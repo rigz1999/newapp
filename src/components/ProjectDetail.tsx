@@ -12,6 +12,7 @@ import {
   Calendar,
   Plus,
   Loader,
+  X,
 } from 'lucide-react';
 
 interface ProjectDetailProps {
@@ -76,6 +77,8 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
   const [editingTranche, setEditingTranche] = useState<Tranche | null>(null);
   const [deletingTranche, setDeletingTranche] = useState<Tranche | null>(null);
+  const [showEditProject, setShowEditProject] = useState(false);
+  const [editedProject, setEditedProject] = useState<Partial<Project>>({});
 
   const [stats, setStats] = useState({
     totalLeve: 0,
@@ -182,6 +185,48 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (tranches.length > 0) {
+      alert(`Impossible de supprimer ce projet car il contient ${tranches.length} tranche(s). Supprimez d'abord les tranches.`);
+      return;
+    }
+
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le projet "${project?.projet}" ?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projets')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      navigate('/projets');
+    } catch (error: any) {
+      console.error('Error deleting project:', error);
+      alert('Erreur lors de la suppression du projet: ' + error.message);
+    }
+  };
+
+  const handleUpdateProject = async () => {
+    try {
+      const { error } = await supabase
+        .from('projets')
+        .update(editedProject)
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      setShowEditProject(false);
+      fetchProjectData();
+    } catch (error: any) {
+      console.error('Error updating project:', error);
+      alert('Erreur lors de la mise à jour du projet: ' + error.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -235,10 +280,21 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                <button
+                  onClick={() => {
+                    setEditedProject(project);
+                    setShowEditProject(true);
+                  }}
+                  className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  title="Modifier le projet"
+                >
                   <Edit className="w-5 h-5" />
                 </button>
-                <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                <button
+                  onClick={handleDeleteProject}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Supprimer le projet"
+                >
                   <Trash2 className="w-5 h-5" />
                 </button>
               </div>
@@ -456,6 +512,124 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             preselectedProjectId={projectId}
             editingTranche={editingTranche}
           />
+        )}
+
+        {showEditProject && project && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-slate-200">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">Modifier le Projet</h3>
+                    <p className="text-sm text-slate-600 mt-1">Mettre à jour les informations du projet</p>
+                  </div>
+                  <button onClick={() => setShowEditProject(false)} className="text-slate-400 hover:text-slate-600">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">Nom du projet</label>
+                    <input
+                      type="text"
+                      value={editedProject.projet || ''}
+                      onChange={(e) => setEditedProject({ ...editedProject, projet: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">Émetteur</label>
+                    <input
+                      type="text"
+                      value={editedProject.emetteur || ''}
+                      onChange={(e) => setEditedProject({ ...editedProject, emetteur: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">SIREN</label>
+                    <input
+                      type="text"
+                      value={editedProject.siren_emetteur?.toString() || ''}
+                      onChange={(e) => setEditedProject({ ...editedProject, siren_emetteur: parseInt(e.target.value) || null })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">Prénom représentant</label>
+                      <input
+                        type="text"
+                        value={editedProject.prenom_representant || ''}
+                        onChange={(e) => setEditedProject({ ...editedProject, prenom_representant: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-900 mb-2">Nom représentant</label>
+                      <input
+                        type="text"
+                        value={editedProject.nom_representant || ''}
+                        onChange={(e) => setEditedProject({ ...editedProject, nom_representant: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">Email représentant</label>
+                    <input
+                      type="email"
+                      value={editedProject.email_representant || ''}
+                      onChange={(e) => setEditedProject({ ...editedProject, email_representant: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">Représentant de la masse</label>
+                    <input
+                      type="text"
+                      value={editedProject.representant_masse || ''}
+                      onChange={(e) => setEditedProject({ ...editedProject, representant_masse: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">Email représentant de la masse</label>
+                    <input
+                      type="email"
+                      value={editedProject.email_rep_masse || ''}
+                      onChange={(e) => setEditedProject({ ...editedProject, email_rep_masse: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6 pt-6 border-t border-slate-200">
+                  <button
+                    onClick={() => setShowEditProject(false)}
+                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleUpdateProject}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Enregistrer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </>
