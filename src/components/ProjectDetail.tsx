@@ -13,6 +13,7 @@ import {
   Plus,
   Loader,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface ProjectDetailProps {
@@ -30,6 +31,13 @@ interface Project {
   representant_masse: string | null;
   email_rep_masse: string | null;
   created_at: string;
+  // Champs financiers
+  taux_nominal: number | null;
+  periodicite_coupons: string | null;
+  duree_mois: number | null;
+  maturite_mois: number | null;
+  base_interet: number | null;
+  type: string | null;
 }
 
 interface Tranche {
@@ -194,63 +202,47 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
     let confirmMessage = `Êtes-vous sûr de vouloir supprimer la tranche "${tranche.tranche_name}" ?`;
 
     if (trancheSubscriptions.length > 0) {
-      confirmMessage = `⚠️ ATTENTION: Cette tranche contient ${trancheSubscriptions.length} souscription(s).\n\nSupprimer la tranche supprimera également toutes les souscriptions associées.\n\nÊtes-vous sûr de vouloir continuer ?`;
+      confirmMessage += `\n\n⚠️ ATTENTION : Cette tranche contient ${trancheSubscriptions.length} souscription(s) pour un montant total de ${formatCurrency(
+        trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0)
+      )}.`;
+      confirmMessage += '\n\nToutes les souscriptions et échéances associées seront également supprimées.';
     }
 
-    if (!confirm(confirmMessage)) {
-      return;
-    }
+    if (!window.confirm(confirmMessage)) return;
 
     try {
-      // Delete all subscriptions first
-      if (trancheSubscriptions.length > 0) {
-        const subscriptionIds = trancheSubscriptions.map(s => s.id);
-        const { error: subsError } = await supabase
-          .from('souscriptions')
-          .delete()
-          .in('id', subscriptionIds);
-
-        if (subsError) throw subsError;
-      }
-
-      // Then delete the tranche
-      const { error } = await supabase
-        .from('tranches')
-        .delete()
-        .eq('id', tranche.id);
+      const { error } = await supabase.from('tranches').delete().eq('id', tranche.id);
 
       if (error) throw error;
 
-      setDeletingTranche(null);
+      alert('✅ Tranche supprimée avec succès');
       fetchProjectData();
-    } catch (error: any) {
-      console.error('Error deleting tranche:', error);
-      alert('Erreur lors de la suppression de la tranche: ' + error.message);
-    }
-  };
-
-  const handleDeleteSubscription = async (subscription: Subscription) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer cette souscription ?`)) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('souscriptions')
-        .delete()
-        .eq('id', subscription.id);
-
-      if (error) throw error;
-
-      fetchProjectData();
-    } catch (error: any) {
-      console.error('Error deleting subscription:', error);
-      alert('Erreur lors de la suppression: ' + error.message);
+    } catch (err: any) {
+      console.error('Error deleting tranche:', err);
+      alert('❌ Erreur lors de la suppression de la tranche : ' + err.message);
     }
   };
 
   const handleUpdateProject = async () => {
     if (!project) return;
+
+    // Vérification si des champs financiers critiques changent
+    const hasFinancialChanges = 
+      editedProject.periodicite_coupons !== undefined && editedProject.periodicite_coupons !== project.periodicite_coupons ||
+      editedProject.taux_nominal !== undefined && editedProject.taux_nominal !== project.taux_nominal ||
+      editedProject.duree_mois !== undefined && editedProject.duree_mois !== project.duree_mois;
+
+    if (hasFinancialChanges && subscriptions.length > 0) {
+      const confirmMsg = `⚠️ ATTENTION : Vous modifiez des paramètres financiers critiques.\n\n` +
+        `Cela va automatiquement :\n` +
+        `• Mettre à jour toutes les tranches du projet\n` +
+        `• Recalculer tous les coupons nets\n` +
+        `• Régénérer toutes les échéances de paiement\n\n` +
+        `${subscriptions.length} souscription(s) seront impactées.\n\n` +
+        `Voulez-vous continuer ?`;
+
+      if (!window.confirm(confirmMsg)) return;
+    }
 
     try {
       const { error } = await supabase
@@ -260,38 +252,12 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
       if (error) throw error;
 
+      alert('✅ Projet mis à jour avec succès' + (hasFinancialChanges ? '\n\nLes coupons et échéances ont été recalculés automatiquement.' : ''));
       setShowEditProject(false);
       fetchProjectData();
-    } catch (error: any) {
-      console.error('Error updating project:', error);
-      alert('Erreur lors de la mise à jour: ' + error.message);
-    }
-  };
-
-  const handleDeleteProject = async () => {
-    if (!project) return;
-
-    if (tranches.length > 0) {
-      alert(`Impossible de supprimer ce projet car il contient ${tranches.length} tranche(s). Supprimez d'abord les tranches.`);
-      return;
-    }
-
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer le projet "${project.projet}" ?`)) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('projets')
-        .delete()
-        .eq('id', project.id);
-
-      if (error) throw error;
-
-      navigate('/projets');
-    } catch (error: any) {
-      console.error('Error deleting project:', error);
-      alert('Erreur lors de la suppression du projet: ' + error.message);
+    } catch (err: any) {
+      console.error('Error updating project:', err);
+      alert('❌ Erreur lors de la mise à jour : ' + err.message);
     }
   };
 
@@ -305,103 +271,147 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
   if (!project) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <p className="text-center text-slate-600">Projet non trouvé</p>
+      <div className="text-center py-12">
+        <p className="text-slate-600">Projet introuvable</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/projects')}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-slate-600" />
+            </button>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">{project.projet}</h1>
+              <p className="text-slate-600 mt-1">{project.emetteur}</p>
+            </div>
+          </div>
+
           <button
-            onClick={() => navigate('/projets')}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-900"
+            onClick={() => {
+              setEditedProject(project);
+              setShowEditProject(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
-            Retour aux projets
+            <Edit className="w-4 h-4" />
+            Modifier
           </button>
         </div>
 
-        {/* Project Info */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">{project.projet}</h1>
-              <div className="mt-2 space-y-1 text-sm text-slate-600">
-                <p><span className="font-medium">Émetteur:</span> {project.emetteur}</p>
-                {project.siren_emetteur && (
-                  <p><span className="font-medium">SIREN:</span> {project.siren_emetteur}</p>
-                )}
-                {project.nom_representant && project.prenom_representant && (
-                  <p><span className="font-medium">Représentant:</span> {project.prenom_representant} {project.nom_representant}</p>
-                )}
-                {project.email_representant && (
-                  <p><span className="font-medium">Email:</span> {project.email_representant}</p>
-                )}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">Total Levé</p>
+                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalLeve)}</p>
               </div>
+              <TrendingUp className="w-8 h-8 text-blue-200" />
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setEditedProject(project);
-                  setShowEditProject(true);
-                }}
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                title="Modifier le projet"
-              >
-                <Edit className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleDeleteProject}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Supprimer le projet"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm">Investisseurs</p>
+                <p className="text-2xl font-bold mt-1">{stats.investisseursCount}</p>
+              </div>
+              <Users className="w-8 h-8 text-purple-200" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm">Tranches</p>
+                <p className="text-2xl font-bold mt-1">{stats.tranchesCount}</p>
+              </div>
+              <Layers className="w-8 h-8 text-orange-200" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm">Prochain Coupon</p>
+                <p className="text-lg font-bold mt-1">
+                  {stats.nextCouponDate ? formatDate(stats.nextCouponDate) : '-'}
+                </p>
+                <p className="text-sm text-green-100 mt-1">
+                  {stats.nextCouponAmount > 0 ? formatCurrency(stats.nextCouponAmount) : '-'}
+                </p>
+              </div>
+              <Calendar className="w-8 h-8 text-green-200" />
             </div>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-slate-600">Montant Total Levé</p>
-              <TrendingUp className="w-5 h-5 text-green-600" />
+        {/* Project Details Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Détails du Projet</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-slate-600">SIREN</p>
+              <p className="text-base font-medium text-slate-900">{project.siren_emetteur || '-'}</p>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalLeve)}</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-slate-600">Investisseurs</p>
-              <Users className="w-5 h-5 text-blue-600" />
+            <div>
+              <p className="text-sm text-slate-600">Représentant</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.prenom_representant && project.nom_representant
+                  ? `${project.prenom_representant} ${project.nom_representant}`
+                  : '-'}
+              </p>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.investisseursCount}</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-slate-600">Tranches</p>
-              <Layers className="w-5 h-5 text-purple-600" />
+            <div>
+              <p className="text-sm text-slate-600">Email Représentant</p>
+              <p className="text-base font-medium text-slate-900">{project.email_representant || '-'}</p>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{stats.tranchesCount}</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-slate-600">Prochain Coupon</p>
-              <Calendar className="w-5 h-5 text-orange-600" />
+            <div>
+              <p className="text-sm text-slate-600">Type d'obligation</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.type === 'obligations_simples' ? 'Obligations simples' : 
+                 project.type === 'obligations_convertibles' ? 'Obligations convertibles' : '-'}
+              </p>
             </div>
-            <p className="text-2xl font-bold text-slate-900">
-              {stats.nextCouponDate ? formatDate(stats.nextCouponDate) : '-'}
-            </p>
-            <p className="text-sm text-green-600 font-medium mt-1">
-              {stats.nextCouponAmount > 0 ? formatCurrency(stats.nextCouponAmount) : ''}
-            </p>
+            <div>
+              <p className="text-sm text-slate-600">Taux Nominal</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.taux_nominal ? `${project.taux_nominal}%` : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Périodicité des Coupons</p>
+              <p className="text-base font-medium text-slate-900">
+                {formatFrequence(project.periodicite_coupons)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Durée (mois)</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.duree_mois ? `${project.duree_mois} mois` : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Maturité (mois)</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.maturite_mois ? `${project.maturite_mois} mois` : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Base de calcul</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.base_interet ? `${project.base_interet} jours` : '-'}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -411,9 +421,9 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             <h2 className="text-xl font-bold text-slate-900">Tranches</h2>
             <button
               onClick={() => setShowTrancheWizard(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Nouvelle Tranche
             </button>
           </div>
@@ -421,77 +431,50 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           {tranches.length === 0 ? (
             <p className="text-center text-slate-400 py-8">Aucune tranche créée</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Nom</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Fréquence</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Taux</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Échéance</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Souscriptions</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {tranches.map((tranche) => {
-                    const trancheSubscriptions = subscriptions.filter(
-                      s => s.tranche.tranche_name === tranche.tranche_name
-                    );
-                    
-                    return (
-                      <tr key={tranche.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3">
-                          <span className="text-sm font-medium text-slate-900">
-                            {tranche.tranche_name}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-sm text-slate-600 capitalize">
-                            {formatFrequence(tranche.periodicite_coupons)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-sm text-slate-900 font-medium">
-                            {tranche.taux_nominal ? `${tranche.taux_nominal}%` : '-'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-sm text-slate-600">
-                            {formatDate(tranche.date_echeance_finale)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {trancheSubscriptions.length}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => {
-                                setEditingTranche(tranche);
-                                setShowTrancheWizard(true);
-                              }}
-                              className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="Modifier la tranche"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTranche(tranche)}
-                              className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Supprimer la tranche"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              {tranches.map((tranche) => {
+                const trancheSubscriptions = subscriptions.filter(
+                  (s) => s.tranche.tranche_name === tranche.tranche_name
+                );
+                const totalInvested = trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0);
+
+                return (
+                  <div
+                    key={tranche.id}
+                    className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50"
+                  >
+                    <div className="flex-1">
+                      <p className="text-base font-semibold text-slate-900">{tranche.tranche_name}</p>
+                      <div className="flex flex-wrap gap-4 mt-2 text-sm text-slate-600">
+                        <span>📅 Émission : {formatDate(tranche.date_emission)}</span>
+                        <span>💰 Levé : {formatCurrency(totalInvested)}</span>
+                        <span>👥 {trancheSubscriptions.length} souscripteur(s)</span>
+                        <span>📊 {formatFrequence(tranche.periodicite_coupons)}</span>
+                        {tranche.taux_nominal && <span>📈 Taux : {tranche.taux_nominal}%</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingTranche(tranche);
+                          setShowTrancheWizard(true);
+                        }}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Modifier la tranche"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTranche(tranche)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Supprimer la tranche"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -501,47 +484,78 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           <h2 className="text-xl font-bold text-slate-900 mb-4">Souscriptions</h2>
 
           {subscriptions.length === 0 ? (
-            <p className="text-center text-slate-400 py-8">Aucune souscription</p>
+            <p className="text-center text-slate-400 py-8">Aucune souscription enregistrée</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Investisseur</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Tranche</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Date</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Montant Investi</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Coupon Net</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Prochain Coupon</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Investisseur
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Tranche
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Montant
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Prochain Coupon
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-200">
                   {subscriptions.map((sub) => (
                     <tr key={sub.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-sm font-medium text-slate-900">
-                        {sub.investisseur?.nom_raison_sociale || '-'}
+                      <td className="px-4 py-3 text-sm text-slate-900">
+                        {sub.investisseur.nom_raison_sociale}
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">{sub.tranche?.tranche_name || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600">{sub.tranche.tranche_name}</td>
                       <td className="px-4 py-3 text-sm text-slate-600">
-                        {sub.tranche?.date_emission ? formatDate(sub.tranche.date_emission) : formatDate(sub.date_souscription)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right font-medium text-green-600">
-                        {formatCurrency(sub.montant_investi)}
+                        {formatDate(sub.date_souscription)}
                       </td>
                       <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
-                        {sub.coupon_net ? formatCurrency(sub.coupon_net) : '-'}
+                        {formatCurrency(sub.montant_investi)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
-                        {sub.prochain_coupon?.date_prochain_coupon 
-                          ? formatDate(sub.prochain_coupon.date_prochain_coupon)
-                          : '-'
-                        }
+                      <td className="px-4 py-3 text-sm text-right">
+                        {sub.prochain_coupon ? (
+                          <div>
+                            <p className="text-slate-900 font-medium">
+                              {formatDate(sub.prochain_coupon.date_prochain_coupon)}
+                            </p>
+                            <p className="text-slate-600 text-xs">
+                              {formatCurrency(sub.prochain_coupon.montant_prochain_coupon)}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-2">
+                      <td className="px-4 py-3">
+                        <div className="flex justify-center gap-2">
                           <button
-                            onClick={() => handleDeleteSubscription(sub)}
+                            onClick={() => navigate(`/subscriptions/${sub.id}`)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Voir la souscription"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur.nom_raison_sociale} ?`
+                                )
+                              ) {
+                                // Handle delete
+                              }
+                            }}
                             className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
                             title="Supprimer la souscription"
                           >
@@ -617,8 +631,8 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         {/* Edit Project Modal */}
         {showEditProject && project && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-slate-200">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-slate-200 sticky top-0 bg-white">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">Modifier le Projet</h3>
@@ -631,90 +645,214 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               </div>
 
               <div className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">Nom du projet</label>
-                    <input
-                      type="text"
-                      value={editedProject.projet || ''}
-                      onChange={(e) => setEditedProject({ ...editedProject, projet: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">Émetteur</label>
-                    <input
-                      type="text"
-                      value={editedProject.emetteur || ''}
-                      onChange={(e) => setEditedProject({ ...editedProject, emetteur: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">SIREN</label>
-                    <input
-                      type="text"
-                      value={editedProject.siren_emetteur?.toString() || ''}
-                      onChange={(e) => setEditedProject({ ...editedProject, siren_emetteur: parseInt(e.target.value) || null })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-900 mb-2">Prénom représentant</label>
-                      <input
-                        type="text"
-                        value={editedProject.prenom_representant || ''}
-                        onChange={(e) => setEditedProject({ ...editedProject, prenom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-900 mb-2">Nom représentant</label>
-                      <input
-                        type="text"
-                        value={editedProject.nom_representant || ''}
-                        onChange={(e) => setEditedProject({ ...editedProject, nom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+                {/* Avertissement si modifications financières */}
+                {(editedProject.periodicite_coupons !== project.periodicite_coupons ||
+                  editedProject.taux_nominal !== project.taux_nominal ||
+                  editedProject.duree_mois !== project.duree_mois) && 
+                  subscriptions.length > 0 && (
+                  <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3">
+                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-orange-800">
+                      <p className="font-semibold mb-1">⚠️ Modification de paramètres financiers détectée</p>
+                      <p>Les coupons et échéances de toutes les souscriptions seront automatiquement recalculés.</p>
                     </div>
                   </div>
+                )}
 
+                <div className="space-y-6">
+                  {/* Section Informations Générales */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">Email représentant</label>
-                    <input
-                      type="email"
-                      value={editedProject.email_representant || ''}
-                      onChange={(e) => setEditedProject({ ...editedProject, email_representant: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+                      Informations Générales
+                    </h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">Nom du projet</label>
+                        <input
+                          type="text"
+                          value={editedProject.projet || ''}
+                          onChange={(e) => setEditedProject({ ...editedProject, projet: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">Émetteur</label>
+                          <input
+                            type="text"
+                            value={editedProject.emetteur || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, emetteur: e.target.value })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">SIREN</label>
+                          <input
+                            type="text"
+                            value={editedProject.siren_emetteur?.toString() || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, siren_emetteur: parseInt(e.target.value) || null })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">Type d'obligation</label>
+                        <select
+                          value={editedProject.type || ''}
+                          onChange={(e) => setEditedProject({ ...editedProject, type: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="obligations_simples">Obligations simples</option>
+                          <option value="obligations_convertibles">Obligations convertibles</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
+                  {/* Section Paramètres Financiers */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">Représentant de la masse</label>
-                    <input
-                      type="text"
-                      value={editedProject.representant_masse || ''}
-                      onChange={(e) => setEditedProject({ ...editedProject, representant_masse: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+                      Paramètres Financiers
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                            Taux Nominal (%)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editedProject.taux_nominal?.toString() || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, taux_nominal: parseFloat(e.target.value) || null })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                            Périodicité des Coupons
+                          </label>
+                          <select
+                            value={editedProject.periodicite_coupons || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, periodicite_coupons: e.target.value })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Sélectionner...</option>
+                            <option value="mensuelle">Mensuelle</option>
+                            <option value="trimestrielle">Trimestrielle</option>
+                            <option value="semestrielle">Semestrielle</option>
+                            <option value="annuelle">Annuelle</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                            Durée (mois)
+                          </label>
+                          <input
+                            type="number"
+                            value={editedProject.duree_mois?.toString() || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, duree_mois: parseInt(e.target.value) || null })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                            Maturité (mois)
+                          </label>
+                          <input
+                            type="number"
+                            value={editedProject.maturite_mois?.toString() || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, maturite_mois: parseInt(e.target.value) || null })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                            Base de calcul
+                          </label>
+                          <select
+                            value={editedProject.base_interet?.toString() || '360'}
+                            onChange={(e) => setEditedProject({ ...editedProject, base_interet: parseInt(e.target.value) })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="360">360 jours</option>
+                            <option value="365">365 jours</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
+                  {/* Section Représentants */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">Email représentant de la masse</label>
-                    <input
-                      type="email"
-                      value={editedProject.email_rep_masse || ''}
-                      onChange={(e) => setEditedProject({ ...editedProject, email_rep_masse: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+                      Représentants
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">Prénom représentant</label>
+                          <input
+                            type="text"
+                            value={editedProject.prenom_representant || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, prenom_representant: e.target.value })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">Nom représentant</label>
+                          <input
+                            type="text"
+                            value={editedProject.nom_representant || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, nom_representant: e.target.value })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">Email représentant</label>
+                        <input
+                          type="email"
+                          value={editedProject.email_representant || ''}
+                          onChange={(e) => setEditedProject({ ...editedProject, email_representant: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">Représentant de la masse</label>
+                        <input
+                          type="text"
+                          value={editedProject.representant_masse || ''}
+                          onChange={(e) => setEditedProject({ ...editedProject, representant_masse: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">Email représentant de la masse</label>
+                        <input
+                          type="email"
+                          value={editedProject.email_rep_masse || ''}
+                          onChange={(e) => setEditedProject({ ...editedProject, email_rep_masse: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex gap-3 mt-6 pt-6 border-t border-slate-200">
+                <div className="flex gap-3 mt-6 pt-6 border-t border-slate-200 sticky bottom-0 bg-white">
                   <button
                     onClick={() => setShowEditProject(false)}
                     className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
