@@ -268,6 +268,33 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!project) return;
+
+    if (tranches.length > 0) {
+      alert(`Impossible de supprimer ce projet car il contient ${tranches.length} tranche(s). Supprimez d'abord les tranches.`);
+      return;
+    }
+
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le projet "${project.projet}" ?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projets')
+        .delete()
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      navigate('/projets');
+    } catch (error: any) {
+      console.error('Error deleting project:', error);
+      alert('Erreur lors de la suppression du projet: ' + error.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
