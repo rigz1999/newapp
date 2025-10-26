@@ -224,21 +224,21 @@ export function TrancheWizard({
             />
           </div>
 
-          {/* CSV upload */}
+          {/* CSV/Excel upload */}
           <div>
             <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Fichier CSV du registre <span className="text-red-600">*</span>
+              Fichier du registre <span className="text-red-600">*</span>
             </label>
             <FileUpload
-              accept=".csv"
+              accept=".csv,.xlsx,.xls"
               onFileSelect={(files) => {
                 if (files && files.length > 0) {
                   setCsvFile(files[0]);
                   setError("");
                 }
               }}
-              label="Sélectionner le fichier CSV"
-              description="Fichier 'Registre des titres' avec séparateur point-virgule (;)"
+              label="Sélectionner le fichier"
+              description="Formats acceptés: CSV (;), Excel (.xlsx, .xls)"
             />
             {csvFile && (
               <div className="mt-4 text-center">
@@ -249,11 +249,11 @@ export function TrancheWizard({
               </div>
             )}
             <div className="mt-3 text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
-              <p className="font-medium mb-1">📋 Format attendu:</p>
+              <p className="font-medium mb-1">📋 Formats acceptés:</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>Séparateur: point-virgule (;)</li>
-                <li>Sections: Personnes Physiques + Personnes Morales</li>
-                <li>Colonnes: Projet, Quantité, Montant, CGP, etc.</li>
+                <li><strong>Excel (.xlsx, .xls)</strong> - Recommandé ✅</li>
+                <li>CSV avec séparateur point-virgule (;)</li>
+                <li>CSV avec séparateur virgule (,)</li>
               </ul>
             </div>
           </div>
