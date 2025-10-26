@@ -191,9 +191,12 @@ export function Dashboard({ organization }: DashboardProps) {
   const [newProjectData, setNewProjectData] = useState({
     projet: '',
     // Champs financiers (strings for inputs)
+    type: 'obligations_simples',  // NEW
     taux_interet: '',           // % ex "8.50"
     montant_global_eur: '',     // digits only
     periodicite_coupon: '',     // 'annuel' | 'semestriel' | 'trimestriel'
+    maturite_mois: '',          // NEW
+    base_interet: '360',        // NEW
     // Autres champs
     emetteur: '',
     siren_emetteur: '',         // keep as string to preserve leading zeros
@@ -245,12 +248,15 @@ export function Dashboard({ organization }: DashboardProps) {
     });
   };
 
-  const resetNewProjectForm = useCallback(() => {
+ const resetNewProjectForm = useCallback(() => {
     setNewProjectData({
       projet: '',
+      type: 'obligations_simples',
       taux_interet: '',
       montant_global_eur: '',
       periodicite_coupon: '',
+      maturite_mois: '',
+      base_interet: '360',
       emetteur: '',
       siren_emetteur: '',
       nom_representant: '',
@@ -512,9 +518,12 @@ export function Dashboard({ organization }: DashboardProps) {
     const d = newProjectData;
     return (
       !!d.projet &&
+      !!d.type &&
       !!d.taux_interet &&
       !!d.montant_global_eur &&
       !!d.periodicite_coupon &&
+      !!d.maturite_mois &&
+      !!d.base_interet &&
       !!d.emetteur &&
       !!d.siren_emetteur &&
       !!d.prenom_representant &&
@@ -932,10 +941,13 @@ export function Dashboard({ organization }: DashboardProps) {
                   const projectToCreate: any = {
                     projet: newProjectData.projet,
                     emetteur: newProjectData.emetteur,
+                    type: newProjectData.type,
                     taux_interet: parseFloat(newProjectData.taux_interet),
                     montant_global_eur: newProjectData.montant_global_eur ? parseFloat(newProjectData.montant_global_eur) : null,
                     periodicite_coupon: newProjectData.periodicite_coupon,
-                    // keep identifiers as strings to avoid losing leading zeros
+                    maturite_mois: parseInt(newProjectData.maturite_mois),
+                    base_interet: parseInt(newProjectData.base_interet),
+                    // keep identifiers as strings
                     siren_emetteur: newProjectData.siren_emetteur || null,
                     nom_representant: newProjectData.nom_representant || null,
                     prenom_representant: newProjectData.prenom_representant || null,
@@ -980,9 +992,82 @@ export function Dashboard({ organization }: DashboardProps) {
                   </div>
 
                   {/* Champs financiers requis */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="type" className="block text-sm font-medium text-slate-900 mb-2">
+                        Type d'obligations <span className="text-red-600">*</span>
+                      </label>
+                      <select
+                        id="type"
+                        required
+                        value={newProjectData.type}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, type: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="obligations_simples">Obligations Simples</option>
+                        <option value="obligations_convertibles">Obligations Convertibles</option>
+                      </select>
+                    </div>
+
                     <div>
                       <label htmlFor="taux" className="block text-sm font-medium text-slate-900 mb-2">
+                        Taux d'intérêt (%) <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        id="taux"
+                        type="number"
+                        required
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        inputMode="decimal"
+                        value={newProjectData.taux_interet}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: 8.50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="maturite" className="block text-sm font-medium text-slate-900 mb-2">
+                        Maturité (mois) <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        id="maturite"
+                        type="number"
+                        required
+                        min="1"
+                        value={newProjectData.maturite_mois}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: 60 (5 ans)"
+                      />
+                      <p className="mt-1 text-xs text-slate-600">Durée totale en mois</p>
+                    </div>
+
+                    <div>
+                      <label htmlFor="base_interet" className="block text-sm font-medium text-slate-900 mb-2">
+                        Base de calcul <span className="text-red-600">*</span>
+                      </label>
+                      <select
+                        id="base_interet"
+                        required
+                        value={newProjectData.base_interet}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, base_interet: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="360">360 jours (30/360) - Standard</option>
+                        <option value="365">365 jours (Exact/365)</option>
+                      </select>
+                      <p className="mt-1 text-xs text-slate-600">💡 Standard: 360 jours</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="montant" className="block text-sm font-medium text-slate-900 mb-2">
                         Taux d’intérêt (%) <span className="text-red-600">*</span>
                       </label>
                       <input
