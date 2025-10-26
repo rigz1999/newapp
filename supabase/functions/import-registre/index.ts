@@ -122,15 +122,23 @@ Deno.serve(async (req: Request) => {
 
     const form = await req.formData();
     const projetId = String(form.get("projet_id") ?? "");
-    const trancheId = String(form.get("tranche_id") ?? "");
+    const trancheName = String(form.get("tranche_name") ?? "");
     const file = form.get("file") as File | null;
 
-    if (!projetId || !trancheId || !file) {
+    if (!projetId || !trancheName || !file) {
       return new Response(
-        "Missing projet_id, tranche_id or file",
+        JSON.stringify({ 
+          success: false,
+          error: "Missing projet_id, tranche_name or file" 
+        }),
         { status: 400, headers: corsHeaders }
       );
     }
+
+    console.log("=== DÉBUT TRAITEMENT ===");
+    console.log("Projet ID:", projetId);
+    console.log("Nom tranche:", trancheName);
+    console.log("Fichier:", file.name);
 
     // Supabase client (service role)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -139,13 +147,67 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
+    // 1) CREATE TRANCHE FIRST
+    console.log("Création de la tranche...");
+    const { data: trancheData, error: trancheError } = await supabase
+      .from("tranches")
+      .insert({
+        projet_id: projetId,
+        tranche_name: trancheName,
+      })
+      .select()
+      .single();
+
+    if (trancheError) {
+      console.error("Erreur création tranche:", trancheError);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `Erreur création tranche: ${trancheError.message}` 
+        }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    if (!trancheData) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: "Tranche non créée (données manquantes)" 
+        }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    const trancheId = trancheData.id;
+    console.log("Tranche créée avec succès, ID:", trancheId);
+
     // Read CSV text
     const text = await file.text();
+    console.log("Taille fichier:", text.length, "caractères");
+    console.log("Premières 500 caractères:", text.substring(0, 500));
     
     // Parse CSV
     const rows = parseCSV(text);
     
     console.log(`Parsed ${rows.length} rows from CSV`);
+    if (rows.length > 0) {
+      console.log("Colonnes détectées:", Object.keys(rows[0]));
+      console.log("Première ligne:", rows[0]);
+    } else {
+      console.error("⚠️ AUCUNE LIGNE DÉTECTÉE DANS LE CSV!");
+      await supabase.from("tranches").delete().eq("id", trancheId);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Aucune donnée trouvée dans le CSV. Vérifiez le format (séparateur ';')",
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "content-type": "application/json" } 
+        }
+      );
+    }
 
     let total = 0;
     let createdInvestisseurs = 0;
@@ -313,9 +375,37 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    console.log("=== RÉSUMÉ IMPORT ===");
+    console.log("Total lignes:", total);
+    console.log("Investisseurs créés:", createdInvestisseurs);
+    console.log("Investisseurs mis à jour:", updatedInvestisseurs);
+    console.log("Souscriptions créées:", createdSouscriptions);
+    console.log("Erreurs:", errors.length);
+
+    // ROLLBACK: Delete tranche if no subscriptions created
+    if (createdSouscriptions === 0) {
+      console.warn("⚠️ Aucune souscription créée, suppression de la tranche");
+      await supabase.from("tranches").delete().eq("id", trancheId);
+      
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Aucune souscription n'a pu être créée. Vérifiez le format du CSV.",
+          total,
+          errors,
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "content-type": "application/json" } 
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
+        trancheId,
+        trancheName,
         total,
         createdInvestisseurs,
         updatedInvestisseurs,
