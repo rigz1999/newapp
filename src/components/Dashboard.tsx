@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { TrancheWizard } from './TrancheWizard';
@@ -75,6 +75,8 @@ interface MonthlyData {
 
 export function Dashboard({ organization }: DashboardProps) {
   const navigate = useNavigate();
+  const montantRef = useRef<HTMLInputElement>(null);
+
   const [stats, setStats] = useState<Stats>({
     totalInvested: 0,
     couponsPaidThisMonth: 0,
@@ -118,7 +120,7 @@ export function Dashboard({ organization }: DashboardProps) {
     projet: '',
     // Champs financiers
     taux_interet: '',           // % ex "8.50"
-    montant_global_eur: '',     // valeur "raw" (digits only) pour la DB
+    montant_global_eur: '',     // raw digits only
     periodicite_coupon: '',     // 'annuel' | 'semestriel' | 'trimestriel'
     // Autres champs
     emetteur: '',
@@ -190,16 +192,27 @@ export function Dashboard({ organization }: DashboardProps) {
     return `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
   };
 
-  // SIREN & montant helpers
+  // SIREN & Montant helpers
   const validateSiren = (value: string) => /^\d{9}$/.test(value);
   const groupDigitsWithSpaces = (digitsOnly: string) => {
     if (!digitsOnly) return '';
-    // insère un espace entre chaque groupe de 3 en partant de la droite
     return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   };
   const formatMontantDisplay = (digitsOnly: string) => {
     const grouped = groupDigitsWithSpaces(digitsOnly);
     return grouped ? `${grouped} €` : '';
+  };
+
+  // Keep caret before the trailing " €"
+  const moveCaretBeforeEuro = () => {
+    const el = montantRef.current;
+    if (!el) return;
+    const display = el.value;
+    const pos = Math.max(0, display.length - 2); // before " €"
+    // Defer to next tick to let React update value first
+    requestAnimationFrame(() => {
+      el.setSelectionRange(pos, pos);
+    });
   };
 
   // ----- Data fetch -----
@@ -264,7 +277,7 @@ export function Dashboard({ organization }: DashboardProps) {
         const [paymentsRes2, couponsRes] = await Promise.all([
           supabase.from('paiements').select(`
               id, id_paiement, montant, date_paiement, statut,
-              tranche:tranches(tranche_name, projet_id)
+              tranche:tranges(tranche_name, projet_id)
             `).in('tranche_id', trancheIds).in('statut', ['Payé', 'paid']).order('date_paiement', { ascending: false }).limit(5),
           supabase.from('souscriptions').select(`
               id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
@@ -878,13 +891,47 @@ export function Dashboard({ organization }: DashboardProps) {
                       </label>
                       {/* Input texte avec formatage live: "1 234 567 €" */}
                       <input
+                        ref={montantRef}
                         type="text"
                         required
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
                         onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, ''); // ne garde que les chiffres
+                          const digits = e.target.value.replace(/\D/g, '');
                           setNewProjectData({ ...newProjectData, montant_global_eur: digits });
+                          moveCaretBeforeEuro();
+                        }}
+                        onFocus={moveCaretBeforeEuro}
+                        onClick={moveCaretBeforeEuro}
+                        onKeyDown={(e) => {
+                          const el = montantRef.current;
+                          if (!el) return;
+
+                          const isBackspace = e.key === 'Backspace';
+                          const isDelete = e.key === 'Delete';
+
+                          if (isBackspace || isDelete) {
+                            const start = el.selectionStart ?? 0;
+                            const end = el.selectionEnd ?? 0;
+                            const val = el.value;
+
+                            // If caret is at the very end (after the ' €'), make Backspace delete the last digit
+                            if (isBackspace && start === end && start >= val.length - 0) {
+                              if (newProjectData.montant_global_eur.length > 0) {
+                                setNewProjectData(prev => ({
+                                  ...prev,
+                                  montant_global_eur: prev.montant_global_eur.slice(0, -1)
+                                }));
+                              }
+                              e.preventDefault();
+                              moveCaretBeforeEuro();
+                            }
+                            // Prevent deleting the " €" tail with Delete
+                            if (isDelete && start === end && start >= val.length - 2) {
+                              e.preventDefault();
+                              moveCaretBeforeEuro();
+                            }
+                          }
                         }}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Ex: 1 500 000 €"
