@@ -160,7 +160,6 @@ export function Dashboard({ organization }: DashboardProps) {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
     } catch {}
-
   };
 
   const formatCurrency = (amount: number) => {
@@ -213,6 +212,27 @@ export function Dashboard({ organization }: DashboardProps) {
     requestAnimationFrame(() => {
       el.setSelectionRange(pos, pos);
     });
+  };
+
+  // Reset form helper
+  const resetNewProjectForm = () => {
+    setNewProjectData({
+      projet: '',
+      taux_interet: '',
+      montant_global_eur: '',
+      periodicite_coupon: '',
+      emetteur: '',
+      siren_emetteur: '',
+      nom_representant: '',
+      prenom_representant: '',
+      email_representant: '',
+      representant_masse: '',
+      email_rep_masse: '',
+      telephone_rep_masse: ''
+    });
+    setSirenError('');
+    // also clear any selection/caret leftovers
+    requestAnimationFrame(() => moveCaretBeforeEuro());
   };
 
   // ----- Data fetch -----
@@ -451,7 +471,11 @@ export function Dashboard({ organization }: DashboardProps) {
                 <h2 className="text-xl font-bold text-slate-900 mb-4">Actions Rapides</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <button
-                    onClick={() => setShowNewProject(true)}
+                    onClick={() => {
+                      // Optional: reset on open if you want a fresh form every time
+                      // resetNewProjectForm();
+                      setShowNewProject(true);
+                    }}
                     className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
                   >
                     <div className="bg-blue-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -768,7 +792,13 @@ export function Dashboard({ organization }: DashboardProps) {
                   <h3 className="text-xl font-bold text-slate-900">Nouveau Projet</h3>
                   <p className="text-sm text-slate-600 mt-1">Créer un nouveau projet obligataire</p>
                 </div>
-                <button onClick={() => setShowNewProject(false)} className="text-slate-400 hover:text-slate-600">
+                <button
+                  onClick={() => {
+                    resetNewProjectForm();
+                    setShowNewProject(false);
+                  }}
+                  className="text-slate-400 hover:text-slate-600"
+                >
                   <X className="w-6 h-6" />
                 </button>
               </div>
@@ -826,22 +856,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   if (error) throw error;
 
                   setShowNewProject(false);
-                  setNewProjectData({
-                    projet: '',
-                    taux_interet: '',
-                    montant_global_eur: '',
-                    periodicite_coupon: '',
-                    emetteur: '',
-                    siren_emetteur: '',
-                    nom_representant: '',
-                    prenom_representant: '',
-                    email_representant: '',
-                    representant_masse: '',
-                    email_rep_masse: '',
-                    telephone_rep_masse: '' // reste optionnel
-                  });
-                  setSirenError('');
-
+                  resetNewProjectForm();
                   navigate(`/projets/${data.id}`);
                 } catch (err: any) {
                   console.error('Error creating project:', err);
@@ -897,7 +912,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
                         onChange={() => {
-                          // no-op: we fully control input via onBeforeInput / onKeyDown / onPaste
+                          // fully controlled via handlers below
                         }}
                         onFocus={moveCaretBeforeEuro}
                         onClick={moveCaretBeforeEuro}
@@ -905,7 +920,6 @@ export function Dashboard({ organization }: DashboardProps) {
                           const data = e.data as string | null;
                           const inputType = e.inputType as string;
 
-                          // typing a digit
                           if (inputType === 'insertText' && data && /^\d$/.test(data)) {
                             e.preventDefault();
                             setNewProjectData(prev => ({
@@ -915,21 +929,15 @@ export function Dashboard({ organization }: DashboardProps) {
                             requestAnimationFrame(moveCaretBeforeEuro);
                             return;
                           }
-
-                          // block other textual inserts inside the mask
                           if (inputType === 'insertText') {
                             e.preventDefault();
                             return;
                           }
-
-                          // let composition/paste be handled elsewhere
                         }}
                         onKeyDown={(e) => {
-                          // Allow navigation keys & tab
                           const navKeys = ['Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
                           if (navKeys.includes(e.key)) return;
 
-                          // Digits via keydown (fallback for browsers not firing beforeinput as expected)
                           if (/^\d$/.test(e.key)) {
                             e.preventDefault();
                             setNewProjectData(prev => ({
@@ -940,7 +948,7 @@ export function Dashboard({ organization }: DashboardProps) {
                             return;
                           }
 
-                          if (e.key === 'Backspace') {
+                          if (e.key === 'Backspace' || e.key === 'Delete') {
                             e.preventDefault();
                             setNewProjectData(prev => ({
                               ...prev,
@@ -950,18 +958,6 @@ export function Dashboard({ organization }: DashboardProps) {
                             return;
                           }
 
-                          if (e.key === 'Delete') {
-                            e.preventDefault();
-                            // same as backspace for simplicity
-                            setNewProjectData(prev => ({
-                              ...prev,
-                              montant_global_eur: prev.montant_global_eur.slice(0, -1)
-                            }));
-                            requestAnimationFrame(moveCaretBeforeEuro);
-                            return;
-                          }
-
-                          // Block everything else in this masked field
                           e.preventDefault();
                         }}
                         onPaste={(e) => {
@@ -1137,7 +1133,10 @@ export function Dashboard({ organization }: DashboardProps) {
                 <div className="flex gap-3 mt-6">
                   <button
                     type="button"
-                    onClick={() => setShowNewProject(false)}
+                    onClick={() => {
+                      resetNewProjectForm();
+                      setShowNewProject(false);
+                    }}
                     className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
                     disabled={creatingProject}
                   >
