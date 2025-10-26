@@ -2,6 +2,7 @@
 // Deno Edge Function: Parse CSV "Registre des titres" with semicolon separator
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
 
 /* ---------------- CORS ---------------- */
 const corsHeaders = {
@@ -218,45 +219,115 @@ Deno.serve(async (req: Request) => {
     const trancheId = trancheData.id;
     console.log("Tranche créée avec succès, ID:", trancheId);
 
-    // Read CSV text
-    const text = await file.text();
+    // Read file
     console.log("=== ANALYSE DU FICHIER ===");
     console.log("Nom:", file.name);
     console.log("Type:", file.type);
-    console.log("Taille:", text.length, "caractères");
-    console.log("Premières 1000 caractères:");
-    console.log(text.substring(0, 1000));
-    console.log("---");
+    console.log("Taille:", file.size, "bytes");
     
-    // Detect encoding issues
-    if (text.includes("�") || text.includes("Ã©") || text.includes("Ã")) {
-      console.warn("⚠️ PROBLÈME D'ENCODAGE DÉTECTÉ!");
+    let rows: Array<Record<string, string>> = [];
+    
+    // Check if Excel or CSV
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || 
+                    file.type.includes('spreadsheet') || file.type.includes('excel');
+    
+    if (isExcel) {
+      console.log("📊 Format détecté: Excel");
+      
+      // Read as array buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      
+      console.log("Feuilles trouvées:", workbook.SheetNames);
+      
+      // Get first sheet
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      
+      // Convert to JSON (array of objects)
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { 
+        header: 1,
+        raw: false,
+        dateNF: 'yyyy-mm-dd'
+      }) as any[][];
+      
+      console.log("Lignes brutes lues:", jsonData.length);
+      
+      // Parse the rows to find headers and data
+      let headers: string[] = [];
+      let inDataSection = false;
+      
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        if (!row || row.length === 0) continue;
+        
+        const firstCell = String(row[0] || "").trim();
+        
+        // Check if header row
+        if ((firstCell.toLowerCase().includes("projet") || firstCell === "Projet") && 
+            row.some((cell: any) => String(cell || "").toLowerCase().includes("quantit"))) {
+          headers = row.map((cell: any) => String(cell || "").trim());
+          inDataSection = true;
+          console.log("En-têtes trouvés ligne", i + 1, ":", headers);
+          continue;
+        }
+        
+        // Skip section titles
+        if (firstCell.toLowerCase().includes("registre") || 
+            firstCell.toLowerCase().includes("total") ||
+            firstCell.toLowerCase().includes("personnes")) {
+          inDataSection = false;
+          continue;
+        }
+        
+        // Parse data rows
+        if (inDataSection && headers.length > 0 && firstCell && firstCell.length > 0) {
+          const rowObj: Record<string, string> = {};
+          headers.forEach((header, idx) => {
+            rowObj[header] = String(row[idx] || "").trim();
+          });
+          rows.push(rowObj);
+        }
+      }
+      
+      console.log("✅ Lignes de données extraites:", rows.length);
+      
+    } else {
+      console.log("📄 Format détecté: CSV");
+      
+      // Read as text
+      const text = await file.text();
+      console.log("Taille:", text.length, "caractères");
+      console.log("Premières 1000 caractères:");
+      console.log(text.substring(0, 1000));
+      console.log("---");
+      
+      // Detect encoding issues
+      if (text.includes("�") || text.includes("Ã©") || text.includes("Ã")) {
+        console.warn("⚠️ PROBLÈME D'ENCODAGE DÉTECTÉ!");
+      }
+      
+      // Count lines
+      const lineCount = text.split(/\r?\n/).length;
+      console.log("Nombre de lignes:", lineCount);
+      
+      // Parse CSV
+      rows = parseCSV(text);
+      
+      console.log(`✅ Parsed ${rows.length} rows from CSV`);
     }
     
-    // Count lines
-    const lineCount = text.split(/\r?\n/).length;
-    console.log("Nombre de lignes:", lineCount);
-    
-    // Parse CSV
-    const rows = parseCSV(text);
-    
-    console.log(`✅ Parsed ${rows.length} rows from CSV`);
     if (rows.length > 0) {
       console.log("Colonnes détectées:", Object.keys(rows[0]));
       console.log("Première ligne de données:", rows[0]);
-      console.log("Deuxième ligne de données:", rows[1]);
+      if (rows[1]) console.log("Deuxième ligne de données:", rows[1]);
     } else {
-      console.error("❌ AUCUNE LIGNE DÉTECTÉE DANS LE CSV!");
-      console.log("Lignes du fichier (10 premières):");
-      text.split(/\r?\n/).slice(0, 10).forEach((line, i) => {
-        console.log(`Ligne ${i + 1}:`, line);
-      });
+      console.error("❌ AUCUNE LIGNE DÉTECTÉE!");
       
       await supabase.from("tranches").delete().eq("id", trancheId);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Aucune donnée trouvée dans le CSV. Vérifiez le format (séparateur ';' ou ','). Voir les logs pour plus de détails.",
+          error: "Aucune donnée trouvée dans le fichier. Vérifiez le format. Utilisez de préférence un fichier Excel (.xlsx)",
         }),
         { 
           status: 400, 
