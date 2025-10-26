@@ -17,7 +17,8 @@ import {
   Plus,
   DollarSign,
   FileText,
-  Download
+  Download,
+  Info
 } from 'lucide-react';
 
 /* ===========================
@@ -52,14 +53,13 @@ const getRelativeDate = (dateString: string) => {
   return `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
 };
 
-// SIREN validation: exactly 9 digits + Luhn (mod-10)
+// SIREN validation (9 digits + Luhn)
 const isValidSIREN = (value: string) => {
   if (!/^\d{9}$/.test(value)) return false;
-  // Luhn for 9 digits
   let sum = 0;
   for (let i = 0; i < 9; i++) {
     let digit = parseInt(value.charAt(i), 10);
-    if ((i % 2) === 1) { // double every second digit (index starting at 0)
+    if ((i % 2) === 1) {
       digit *= 2;
       if (digit > 9) digit -= 9;
     }
@@ -134,6 +134,82 @@ interface MonthlyData {
 }
 
 /* ===========================
+   Reusable KPI Card
+=========================== */
+type Accent = 'blue' | 'green' | 'amber' | 'indigo';
+
+const accentClasses: Record<Accent, { icon: string; ring: string; text: string }> = {
+  blue:   { icon: 'bg-blue-600',  ring: 'ring-blue-200',  text: 'text-blue-600' },
+  green:  { icon: 'bg-green-600', ring: 'ring-green-200', text: 'text-green-600' },
+  amber:  { icon: 'bg-amber-600', ring: 'ring-amber-200', text: 'text-amber-600' },
+  indigo: { icon: 'bg-indigo-600',ring: 'ring-indigo-200',text: 'text-indigo-600' },
+};
+
+interface KpiCardProps {
+  title: string;
+  value: string;
+  subtitle?: string;
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  accent?: Accent;
+  loading?: boolean;
+  onClick?: () => void;
+  tooltip?: string;
+  'aria-label'?: string;
+}
+
+function KpiCard({
+  title,
+  value,
+  subtitle,
+  Icon,
+  accent = 'blue',
+  loading = false,
+  onClick,
+  tooltip,
+  ...aria
+}: KpiCardProps) {
+  const accentC = accentClasses[accent];
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      className={`group relative w-full text-left bg-white rounded-xl p-6 shadow-sm border border-slate-200 focus:outline-none 
+        ${onClick ? 'hover:shadow-md hover:-translate-y-0.5 transition-all' : ''} 
+        ${loading ? 'opacity-70' : ''}`}
+      aria-label={aria['aria-label'] ?? title}
+      title={tooltip}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-slate-600 text-sm">{title}</span>
+        <div className={`${accentC.icon} p-2 rounded-lg ring-4 ${accentC.ring}`}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+      </div>
+
+      {loading ? (
+        <>
+          <div className="h-7 w-32 rounded bg-slate-200 animate-pulse mb-2" />
+          <div className="h-4 w-24 rounded bg-slate-100 animate-pulse" />
+        </>
+      ) : (
+        <>
+          <p className="text-3xl font-bold text-slate-900 mb-1">{value}</p>
+          {subtitle && <p className={`text-sm ${accentC.text}`}>{subtitle}</p>}
+        </>
+      )}
+
+      {tooltip && (
+        <div className="absolute top-4 right-4 opacity-60 group-hover:opacity-100 transition-opacity">
+          <Info className="w-4 h-4 text-slate-500" aria-hidden="true" />
+        </div>
+      )}
+    </button>
+  );
+}
+
+/* ===========================
    Component
 =========================== */
 
@@ -190,19 +266,17 @@ export function Dashboard({ organization }: DashboardProps) {
 
   const [newProjectData, setNewProjectData] = useState({
     projet: '',
-    // Champs financiers (strings for inputs)
-    taux_interet: '',           // % ex "8.50"
-    montant_global_eur: '',     // digits only
-    periodicite_coupon: '',     // 'annuel' | 'semestriel' | 'trimestriel'
-    // Autres champs
+    taux_interet: '',
+    montant_global_eur: '',
+    periodicite_coupon: '',
     emetteur: '',
-    siren_emetteur: '',         // keep as string to preserve leading zeros
+    siren_emetteur: '',
     nom_representant: '',
     prenom_representant: '',
     email_representant: '',
     representant_masse: '',
     email_rep_masse: '',
-    telephone_rep_masse: ''     // keep as string (leading zeros, +33, etc.)
+    telephone_rep_masse: ''
   });
 
   const [sirenError, setSirenError] = useState<string>('');
@@ -398,7 +472,6 @@ export function Dashboard({ organization }: DashboardProps) {
         }, []);
       }
 
-      // Precompute monthly data locally from cached chartSubscriptions
       setChartSubscriptionsAll(chartSubscriptions);
       const monthlyDataResult = processMonthlyData(chartSubscriptions, selectedYear, startMonth, endMonth);
       setMonthlyData(monthlyDataResult);
@@ -507,7 +580,6 @@ export function Dashboard({ organization }: DashboardProps) {
     );
   }, [monthlyData, viewMode]);
 
-  // Form validity (front)
   const isFormValid = useMemo(() => {
     const d = newProjectData;
     return (
@@ -630,40 +702,53 @@ export function Dashboard({ organization }: DashboardProps) {
             </div>
           </div>
 
+          {/* KPI CARDS (refactored) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-slate-600 text-sm">Montant total investi</span>
-                <TrendingUp className="w-5 h-5 text-blue-600" />
-              </div>
-              <p className="text-3xl font-bold text-slate-900 mb-1">{formatCurrency(stats.totalInvested)}</p>
-            </div>
+            <KpiCard
+              title="Montant total investi"
+              value={formatCurrency(stats.totalInvested)}
+              Icon={TrendingUp}
+              accent="indigo"
+              loading={false}
+              tooltip="Somme des montants investis sur toutes les souscriptions."
+              onClick={() => navigate('/souscriptions')}
+              aria-label="Montant total investi"
+            />
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-slate-600 text-sm">Coupons payés ce mois</span>
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-              </div>
-              <p className="text-3xl font-bold text-slate-900 mb-1">{formatCurrency(stats.couponsPaidThisMonth)}</p>
-              <p className="text-sm text-green-600">{stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}</p>
-            </div>
+            <KpiCard
+              title="Coupons payés ce mois"
+              value={formatCurrency(stats.couponsPaidThisMonth)}
+              subtitle={stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}
+              Icon={CheckCircle2}
+              accent="green"
+              loading={false}
+              tooltip="Total des coupons réglés depuis le 1er du mois en cours."
+              onClick={() => navigate('/paiements')}
+              aria-label="Coupons payés ce mois"
+            />
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-slate-600 text-sm">Projets actifs</span>
-                <Folder className="w-5 h-5 text-blue-600" />
-              </div>
-              <p className="text-3xl font-bold text-slate-900">{stats.activeProjects}</p>
-            </div>
+            <KpiCard
+              title="Projets actifs"
+              value={`${stats.activeProjects}`}
+              Icon={Folder}
+              accent="blue"
+              loading={false}
+              tooltip="Nombre de projets actuellement actifs."
+              onClick={() => navigate('/projets')}
+              aria-label="Projets actifs"
+            />
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-slate-600 text-sm">Coupons à venir</span>
-                <Clock className="w-5 h-5 text-amber-600" />
-              </div>
-              <p className="text-3xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
-              <p className="text-sm text-slate-600">{stats.nextCouponDays} prochains jours</p>
-            </div>
+            <KpiCard
+              title="Coupons à venir"
+              value={`${stats.upcomingCoupons}`}
+              subtitle={`${stats.nextCouponDays} prochains jours`}
+              Icon={Clock}
+              accent="amber"
+              loading={false}
+              tooltip="Nombre de coupons à payer dans les 90 prochains jours."
+              onClick={() => navigate('/coupons')}
+              aria-label="Coupons à venir"
+            />
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
@@ -709,7 +794,6 @@ export function Dashboard({ organization }: DashboardProps) {
                 </select>
               </div>
             </div>
-
             {monthlyData.length === 0 ? (
               <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white rounded-lg">
                 <div className="text-center text-slate-400">
@@ -886,7 +970,6 @@ export function Dashboard({ organization }: DashboardProps) {
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
           onMouseDown={(e) => {
-            // backdrop click to close (but not if clicking inside modal)
             if (e.target === e.currentTarget) {
               resetNewProjectForm();
               setShowNewProject(false);
@@ -935,7 +1018,6 @@ export function Dashboard({ organization }: DashboardProps) {
                     taux_interet: parseFloat(newProjectData.taux_interet),
                     montant_global_eur: newProjectData.montant_global_eur ? parseFloat(newProjectData.montant_global_eur) : null,
                     periodicite_coupon: newProjectData.periodicite_coupon,
-                    // keep identifiers as strings to avoid losing leading zeros
                     siren_emetteur: newProjectData.siren_emetteur || null,
                     nom_representant: newProjectData.nom_representant || null,
                     prenom_representant: newProjectData.prenom_representant || null,
@@ -1004,7 +1086,6 @@ export function Dashboard({ organization }: DashboardProps) {
                       <label htmlFor="montant" className="block text-sm font-medium text-slate-900 mb-2">
                         Montant global à lever (€) <span className="text-red-600">*</span>
                       </label>
-                      {/* Masked input */}
                       <input
                         id="montant"
                         ref={montantRef}
@@ -1075,7 +1156,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     </div>
 
                     <div>
-                      <label htmlFor="periodicite" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label htmlFor="periodicite" className="block text.sm font-medium text-slate-900 mb-2">
                         Périodicité du coupon <span className="text-red-600">*</span>
                       </label>
                       <select
