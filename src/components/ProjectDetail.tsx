@@ -290,7 +290,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => navigate('/projects')}
+            onClick={() => navigate('/projets')}
             className="flex items-center gap-2 text-slate-600 hover:text-slate-900"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -328,13 +328,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 <Edit className="w-5 h-5" />
               </button>
               <button
-                onClick={() => {
-                  if (confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) {
-                    supabase.from('projets').delete().eq('id', project.id).then(() => {
-                      navigate('/projects');
-                    });
-                  }
-                }}
+                onClick={handleDeleteProject}
                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 title="Supprimer le projet"
               >
