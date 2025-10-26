@@ -1,343 +1,673 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
-import { X, CheckCircle, AlertCircle, Loader } from "lucide-react";
-import { FileUpload } from "./FileUpload";
+// supabase/functions/import-registre/index.ts
+// Deno Edge Function: Parse CSV "Registre des titres" with semicolon separator
 
-interface Project {
-  id: string;
-  projet: string;
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
+
+/* ---------------- CORS ---------------- */
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
+};
+
+/* --------------- Helpers --------------- */
+const parseDate = (value: any): string | null => {
+  if (!value) return null;
+  const v = String(value).trim();
+  
+  // Format: dd/mm/yyyy
+  const frMatch = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (frMatch) {
+    const [_, dd, mm, yyyy] = frMatch;
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  
+  // Format: yyyy-mm-dd HH:MM:SS (from Excel/CSV export)
+  const isoMatch = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+  
+  return null;
+};
+
+const toBool = (s?: string | null): boolean | null => {
+  if (!s) return null;
+  const v = s.trim().toLowerCase();
+  return v === "oui" || v === "yes" || v === "true" ? true
+       : v === "non" || v === "no" || v === "false" ? false
+       : null;
+};
+
+const cleanPhone = (s?: string | null): string | null => {
+  if (!s) return null;
+  return s.replace(/[^0-9+]/g, "") || null;
+};
+
+const toNumber = (s?: string | number | null): number | null => {
+  if (s === null || s === undefined || s === "") return null;
+  const str = String(s).replace(/\s/g, "").replace(",", ".");
+  const n = Number(str);
+  return Number.isFinite(n) ? n : null;
+};
+
+const cleanString = (s?: string | null): string | null => {
+  if (!s) return null;
+  const cleaned = String(s).trim().replace(/^'+|'+$/g, ""); // Remove leading/trailing quotes
+  return cleaned || null;
+};
+
+// Parse CSV manually with auto-detection of separator
+function parseCSV(text: string): Array<Record<string, string>> {
+  const lines = text.split(/\r?\n/);
+  const result: Array<Record<string, string>> = [];
+  
+  // Auto-detect separator
+  let separator = ";";
+  const firstDataLine = lines.find(line => 
+    line.includes("Projet") && (line.includes("Quantité") || line.includes("Quantite"))
+  );
+  
+  if (firstDataLine) {
+    // Count separators to detect which one is used
+    const semicolonCount = (firstDataLine.match(/;/g) || []).length;
+    const commaCount = (firstDataLine.match(/,/g) || []).length;
+    const tabCount = (firstDataLine.match(/\t/g) || []).length;
+    
+    if (semicolonCount > Math.max(commaCount, tabCount)) {
+      separator = ";";
+    } else if (commaCount > Math.max(semicolonCount, tabCount)) {
+      separator = ",";
+    } else if (tabCount > 0) {
+      separator = "\t";
+    }
+    
+    console.log("Séparateur détecté:", separator === ";" ? "point-virgule" : separator === "," ? "virgule" : "tabulation");
+    console.log("Ligne d'en-tête:", firstDataLine);
+  }
+  
+  let headers: string[] = [];
+  let inDataSection = false;
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    
+    // Check if this is a header line
+    const isHeaderLine = (trimmed.includes("Projet") || trimmed.toLowerCase().includes("projet")) &&
+                        (trimmed.includes("Quantité") || trimmed.includes("Quantite") || 
+                         trimmed.toLowerCase().includes("quantité") || trimmed.toLowerCase().includes("quantite"));
+    
+    if (isHeaderLine) {
+      headers = trimmed.split(separator).map(h => h.trim());
+      inDataSection = true;
+      console.log("En-têtes trouvés:", headers);
+      continue;
+    }
+    
+    // Skip title lines
+    if (trimmed.toLowerCase().includes("registre des titres") || 
+        trimmed.toLowerCase() === "total" ||
+        trimmed.toLowerCase().includes("personnes physiques") ||
+        trimmed.toLowerCase().includes("personnes morales")) {
+      inDataSection = false;
+      continue;
+    }
+    
+    // Parse data lines
+    if (inDataSection && headers.length > 0) {
+      const values = line.split(separator);
+      
+      // Check if this is a valid data row (has Projet value in first column)
+      const firstValue = values[0] ? values[0].trim() : "";
+      if (firstValue && 
+          !firstValue.toLowerCase().includes("registre") &&
+          !firstValue.toLowerCase().includes("total") &&
+          firstValue.length > 0) {
+        const row: Record<string, string> = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] ? values[index].trim() : "";
+        });
+        result.push(row);
+      }
+    }
+  }
+  
+  return result;
 }
 
-interface TrancheWizardProps {
-  onClose: () => void;
-  onSuccess: () => void;
-  preselectedProjectId?: string;
-}
+Deno.serve(async (req: Request) => {
+  // Preflight CORS
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
 
-export function TrancheWizard({
-  onClose,
-  onSuccess,
-  preselectedProjectId,
-}: TrancheWizardProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
+  try {
+    if (req.method !== "POST") {
+      return new Response("Use POST", { status: 405, headers: corsHeaders });
+    }
 
-  const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [trancheName, setTrancheName] = useState("");
-  const [suggestedName, setSuggestedName] = useState("");
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+    const ctype = req.headers.get("content-type") ?? "";
+    if (!ctype.includes("multipart/form-data")) {
+      return new Response(
+        "Send multipart/form-data with fields: projet_id, tranche_id, file",
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+    const form = await req.formData();
+    const projetId = String(form.get("projet_id") ?? "");
+    const trancheName = String(form.get("tranche_name") ?? "");
+    const file = form.get("file") as File | null;
 
-  useEffect(() => {
-    if (preselectedProjectId) setSelectedProjectId(preselectedProjectId);
-  }, [preselectedProjectId]);
+    if (!projetId || !trancheName || !file) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: "Missing projet_id, tranche_name or file" 
+        }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
-  const fetchProjects = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from("projets")
-      .select("id, projet")
-      .order("created_at", { ascending: false });
-    setProjects(data || []);
-    setLoading(false);
-  };
+    console.log("=== DÉBUT TRAITEMENT ===");
+    console.log("Projet ID:", projetId);
+    console.log("Nom tranche:", trancheName);
+    console.log("Fichier:", file.name);
 
-  const getSuggestedTrancheName = async (projectId: string) => {
-    const { data: project } = await supabase
-      .from("projets")
-      .select("projet")
-      .eq("id", projectId)
+    // Supabase client (service role)
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
+
+    // 1) CREATE TRANCHE FIRST
+    console.log("Création de la tranche...");
+    const { data: trancheData, error: trancheError } = await supabase
+      .from("tranches")
+      .insert({
+        projet_id: projetId,
+        tranche_name: trancheName,
+      })
+      .select()
       .single();
 
-    const { count } = await supabase
-      .from("tranches")
-      .select("id", { count: "exact", head: true })
-      .eq("projet_id", projectId);
-
-    const trancheNumber = (count || 0) + 1;
-    const projectName = project?.projet || "";
-    return `${projectName} - T${trancheNumber}`;
-  };
-
-  const handleProjectSelect = async (projectId: string) => {
-    setSelectedProjectId(projectId);
-    const suggested = await getSuggestedTrancheName(projectId);
-    setSuggestedName(suggested);
-    setTrancheName(suggested);
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedProjectId || !trancheName || !csvFile) {
-      setError("Veuillez remplir tous les champs requis");
-      return;
+    if (trancheError) {
+      console.error("Erreur création tranche:", trancheError);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `Erreur création tranche: ${trancheError.message}` 
+        }),
+        { status: 500, headers: corsHeaders }
+      );
     }
 
-    setProcessing(true);
-    setError("");
-    setSuccessMessage("");
-    setProgress(0);
+    if (!trancheData) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: "Tranche non créée (données manquantes)" 
+        }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
 
-    try {
-      console.log("=== DÉBUT IMPORT ===");
-      console.log("Projet ID:", selectedProjectId);
-      console.log("Nom tranche:", trancheName);
-      console.log("Fichier:", csvFile.name);
+    const trancheId = trancheData.id;
+    console.log("Tranche créée avec succès, ID:", trancheId);
+    
+    // Get tranche emission date for subscriptions
+    const trancheEmissionDate = trancheData.date_emission || null;
+    console.log("Date d'émission de la tranche:", trancheEmissionDate);
 
-      // Create FormData for the Edge Function
-      const form = new FormData();
-      form.append("projet_id", selectedProjectId);
-      form.append("tranche_name", trancheName); // Send tranche name, function will create it
-      form.append("file", csvFile, csvFile.name);
-
-      // Upload CSV to Edge Function
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
-      console.log("URL Edge Function:", url);
-
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", url, true);
-
-      // Progress tracking
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const p = Math.round((event.loaded / event.total) * 100);
-          setProgress(p);
+    // Read file
+    console.log("=== ANALYSE DU FICHIER ===");
+    console.log("Nom:", file.name);
+    console.log("Type:", file.type);
+    console.log("Taille:", file.size, "bytes");
+    
+    let rows: Array<Record<string, string>> = [];
+    
+    // Check if Excel or CSV
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || 
+                    file.type.includes('spreadsheet') || file.type.includes('excel');
+    
+    if (isExcel) {
+      console.log("📊 Format détecté: Excel");
+      
+      // Read as array buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      
+      console.log("Feuilles trouvées:", workbook.SheetNames);
+      
+      // Get first sheet
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      
+      // Convert to JSON (array of objects)
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { 
+        header: 1,
+        raw: false,
+        dateNF: 'yyyy-mm-dd'
+      }) as any[][];
+      
+      console.log("Lignes brutes lues:", jsonData.length);
+      
+      // Parse the rows to find headers and data
+      let headers: string[] = [];
+      let inDataSection = false;
+      
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        if (!row || row.length === 0) continue;
+        
+        const firstCell = String(row[0] || "").trim();
+        
+        // Check if header row
+        if ((firstCell.toLowerCase().includes("projet") || firstCell === "Projet") && 
+            row.some((cell: any) => String(cell || "").toLowerCase().includes("quantit"))) {
+          headers = row.map((cell: any) => String(cell || "").trim());
+          inDataSection = true;
+          console.log("En-têtes trouvés ligne", i + 1, ":", headers);
+          continue;
         }
-      };
+        
+        // Skip section titles
+        if (firstCell.toLowerCase().includes("registre") || 
+            firstCell.toLowerCase().includes("total") ||
+            firstCell.toLowerCase().includes("personnes")) {
+          inDataSection = false;
+          continue;
+        }
+        
+        // Parse data rows
+        if (inDataSection && headers.length > 0 && firstCell && firstCell.length > 0) {
+          const rowObj: Record<string, string> = {};
+          headers.forEach((header, idx) => {
+            rowObj[header] = String(row[idx] || "").trim();
+          });
+          rows.push(rowObj);
+        }
+      }
+      
+      console.log("✅ Lignes de données extraites:", rows.length);
+      
+    } else {
+      console.log("📄 Format détecté: CSV");
+      
+      // Read as text
+      const text = await file.text();
+      console.log("Taille:", text.length, "caractères");
+      console.log("Premières 1000 caractères:");
+      console.log(text.substring(0, 1000));
+      console.log("---");
+      
+      // Detect encoding issues
+      if (text.includes("�") || text.includes("Ã©") || text.includes("Ã")) {
+        console.warn("⚠️ PROBLÈME D'ENCODAGE DÉTECTÉ!");
+      }
+      
+      // Count lines
+      const lineCount = text.split(/\r?\n/).length;
+      console.log("Nombre de lignes:", lineCount);
+      
+      // Parse CSV
+      rows = parseCSV(text);
+      
+      console.log(`✅ Parsed ${rows.length} rows from CSV`);
+    }
+    
+    if (rows.length > 0) {
+      console.log("Colonnes détectées:", Object.keys(rows[0]));
+      console.log("Première ligne de données:", rows[0]);
+      if (rows[1]) console.log("Deuxième ligne de données:", rows[1]);
+    } else {
+      console.error("❌ AUCUNE LIGNE DÉTECTÉE!");
+      
+      await supabase.from("tranches").delete().eq("id", trancheId);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Aucune donnée trouvée dans le fichier. Vérifiez le format. Utilisez de préférence un fichier Excel (.xlsx)",
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "content-type": "application/json" } 
+        }
+      );
+    }
 
-      xhr.onload = () => {
-        setProcessing(false);
-        console.log("=== RÉPONSE SERVEUR ===");
-        console.log("Status:", xhr.status);
-        console.log("Response:", xhr.responseText);
+    let total = 0;
+    let createdInvestisseurs = 0;
+    let updatedInvestisseurs = 0;
+    let createdSouscriptions = 0;
+    const errors: Array<{ line: number; error: string }> = [];
 
-        try {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const result = JSON.parse(xhr.responseText);
-            console.log("Résultat parsé:", result);
-            
-            if (result.success && result.createdSouscriptions > 0) {
-              setSuccessMessage(
-                `✅ Import terminé!\n` +
-                `${result.createdSouscriptions || 0} souscriptions créées\n` +
-                `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
-                `${result.updatedInvestisseurs || 0} investisseurs mis à jour`
-              );
-              
-              if (result.errors && result.errors.length > 0) {
-                console.warn("Erreurs d'import:", result.errors);
-                setError(`${result.errors.length} ligne(s) en erreur (voir console)`);
-              }
-            } else if (result.success && result.createdSouscriptions === 0) {
-              setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
-              console.error("Import terminé mais 0 souscriptions créées:", result);
-            } else {
-              setError(result.error || "Erreur lors de l'import");
+    for (const r of rows) {
+      total++;
+      try {
+        console.log(`\n=== TRAITEMENT LIGNE ${total} ===`);
+        console.log("Données brutes:", r);
+        
+        // Determine investor type based on available fields
+        const isPersonneMorale = r["Raison sociale"] || r["N° SIREN"];
+        const investorType = isPersonneMorale ? "morale" : "physique";
+        console.log("Type investisseur:", investorType);
+
+        let investisseurId: string | null = null;
+        let investorName = "";
+
+        if (investorType === "physique") {
+          // Physical person
+          const prenom = cleanString(r["Prénom(s)"]) || "";
+          const nom = cleanString(r["Nom(s)"]) || "";
+          const nomUsage = cleanString(r["Nom d'usage"]);
+          investorName = [prenom, nomUsage || nom].filter(Boolean).join(" ").trim();
+          
+          console.log("Nom complet:", investorName);
+          
+          const email = cleanString(r["Email"])?.toLowerCase() || null;
+          console.log("Email:", email);
+          
+          const dateNaissance = parseDate(r["Né(e) le"]);
+          
+          // Try to find existing investor by email AND name (stricter matching)
+          let existing = null;
+          if (email) {
+            const { data, error: qErr } = await supabase
+              .from("investisseurs")
+              .select("id")
+              .eq("email", email)
+              .eq("type", "physique")
+              .maybeSingle();
+            if (qErr) {
+              console.error("Erreur recherche investisseur:", qErr);
+              throw qErr;
             }
-          } else {
-            console.error("Erreur HTTP:", xhr.status, xhr.responseText);
-            setError(`Erreur serveur (${xhr.status}): Voir la console pour plus de détails`);
+            existing = data;
+            console.log("Investisseur existant trouvé par email:", existing ? "OUI (ID: " + existing.id + ")" : "NON");
           }
-        } catch (parseErr) {
-          console.error("Erreur de parsing de la réponse:", parseErr);
-          setError("Réponse invalide du serveur");
+          
+          // If no email match, try by name and birthdate (very strict)
+          if (!existing && investorName && dateNaissance) {
+            const { data, error: qErr } = await supabase
+              .from("investisseurs")
+              .select("id")
+              .eq("nom_raison_sociale", investorName)
+              .eq("date_naissance", dateNaissance)
+              .eq("type", "physique")
+              .maybeSingle();
+            if (qErr) {
+              console.error("Erreur recherche par nom+date:", qErr);
+            } else if (data) {
+              existing = data;
+              console.log("Investisseur existant trouvé par nom+date:", "OUI (ID: " + existing.id + ")");
+            }
+          }
+
+          const invPayload: any = {
+            type: "physique",
+            nom_raison_sociale: investorName || nom || "Investisseur",
+            email: email,
+            telephone: cleanPhone(r["Téléphone"]),
+            adresse: cleanString(r["Adresse du domicile"]),
+            residence_fiscale: cleanString(r["Résidence Fiscale 1"]),
+            departement_naissance: cleanString(r["Département de naissance"]),
+            date_naissance: dateNaissance,
+            lieu_naissance: cleanString(r["Lieu de naissance"]),
+            ppe: toBool(r["PPE"]),
+            categorie_mifid: cleanString(r["Catégorisation"]),
+          };
+          
+          console.log("Payload investisseur:", invPayload);
+
+          if (!existing) {
+            console.log("Création nouvel investisseur...");
+            const { data: ins, error: insErr } = await supabase
+              .from("investisseurs")
+              .insert([invPayload])
+              .select("id")
+              .single();
+            if (insErr) {
+              console.error("Erreur création investisseur:", insErr);
+              throw insErr;
+            }
+            if (!ins || !ins.id) {
+              console.error("Investisseur créé mais pas d'ID retourné!");
+              throw new Error("Pas d'ID investisseur retourné");
+            }
+            investisseurId = ins.id;
+            console.log("✅ Investisseur créé avec ID:", investisseurId);
+            createdInvestisseurs++;
+          } else {
+            investisseurId = existing.id;
+            console.log("Mise à jour investisseur existant ID:", investisseurId);
+            const { error: updErr } = await supabase
+              .from("investisseurs")
+              .update(invPayload)
+              .eq("id", investisseurId);
+            if (updErr) {
+              console.error("Erreur update investisseur:", updErr);
+              throw updErr;
+            }
+            console.log("✅ Investisseur mis à jour");
+            updatedInvestisseurs++;
+          }
+        } else {
+          // Moral person (company)
+          const raisonSociale = cleanString(r["Raison sociale"]) || "";
+          investorName = raisonSociale;
+          console.log("Raison sociale:", raisonSociale);
+          
+          const sirenStr = cleanString(r["N° SIREN"]);
+          const siren = sirenStr ? parseInt(sirenStr.replace(/\D/g, "")) : null;
+          console.log("SIREN:", siren);
+          
+          const emailRepLegal = cleanString(r["Email du représentant légal"])?.toLowerCase() || null;
+          console.log("Email rep legal:", emailRepLegal);
+          
+          // Try to find by SIREN or email
+          let existing = null;
+          if (siren) {
+            const { data, error: qErr } = await supabase
+              .from("investisseurs")
+              .select("id")
+              .eq("siren", siren)
+              .eq("type", "morale")
+              .maybeSingle();
+            if (qErr) {
+              console.error("Erreur recherche par SIREN:", qErr);
+              throw qErr;
+            }
+            existing = data;
+            console.log("Société existante trouvée par SIREN:", existing ? "OUI (ID: " + existing.id + ")" : "NON");
+          }
+          
+          // Try by email if no SIREN match
+          if (!existing && emailRepLegal) {
+            const { data, error: qErr } = await supabase
+              .from("investisseurs")
+              .select("id")
+              .eq("email", emailRepLegal)
+              .eq("type", "morale")
+              .maybeSingle();
+            if (qErr) {
+              console.error("Erreur recherche par email:", qErr);
+            } else if (data) {
+              existing = data;
+              console.log("Société existante trouvée par email:", "OUI (ID: " + existing.id + ")");
+            }
+          }
+
+          const prenomRep = cleanString(r["Prénom du représentant légal"]) || "";
+          const nomRep = cleanString(r["Nom du représentant légal"]) || "";
+          const representantLegal = [prenomRep, nomRep].filter(Boolean).join(" ").trim() || null;
+
+          const invPayload: any = {
+            type: "morale",
+            nom_raison_sociale: investorName,
+            siren: siren,
+            representant_legal: representantLegal,
+            email: emailRepLegal,
+            telephone: cleanPhone(r["Téléphone"]),
+            adresse: cleanString(r["Adresse du siège social"]),
+            residence_fiscale: cleanString(r["Résidence Fiscale 1 du représentant légal"]),
+            departement_naissance: cleanString(r["Département de naissance du représentant"]),
+            ppe: toBool(r["PPE"]),
+            categorie_mifid: cleanString(r["Catégorisation"]),
+          };
+          
+          console.log("Payload société:", invPayload);
+
+          if (!existing) {
+            console.log("Création nouvelle société...");
+            const { data: ins, error: insErr } = await supabase
+              .from("investisseurs")
+              .insert([invPayload])
+              .select("id")
+              .single();
+            if (insErr) {
+              console.error("Erreur création société:", insErr);
+              throw insErr;
+            }
+            if (!ins || !ins.id) {
+              console.error("Société créée mais pas d'ID retourné!");
+              throw new Error("Pas d'ID société retourné");
+            }
+            investisseurId = ins.id;
+            console.log("✅ Société créée avec ID:", investisseurId);
+            createdInvestisseurs++;
+          } else {
+            investisseurId = existing.id;
+            console.log("Mise à jour société existante ID:", investisseurId);
+            const { error: updErr } = await supabase
+              .from("investisseurs")
+              .update(invPayload)
+              .eq("id", investisseurId);
+            if (updErr) {
+              console.error("Erreur update société:", updErr);
+              throw updErr;
+            }
+            console.log("✅ Société mise à jour");
+            updatedInvestisseurs++;
+          }
         }
-      };
 
-      xhr.onerror = () => {
-        setProcessing(false);
-        console.error("Erreur réseau XHR");
-        setError("Erreur réseau pendant l'upload");
-      };
+        // Verify we have an investor ID before creating subscription
+        if (!investisseurId) {
+          console.error("❌ PAS D'ID INVESTISSEUR APRÈS CRÉATION/UPDATE!");
+          throw new Error("investisseurId est null");
+        }
 
-      xhr.send(form);
+        // Create subscription
+        const quantite = toNumber(r["Quantité"]);
+        const montant = toNumber(r["Montant"]);
+        
+        // Use tranche emission date if no subscription date in CSV
+        const dateSouscriptionCSV = parseDate(r["Date de souscription"]);
+        const dateSouscription = dateSouscriptionCSV || trancheEmissionDate || null;
+        
+        console.log("Date souscription CSV:", dateSouscriptionCSV);
+        console.log("Date souscription finale:", dateSouscription);
 
-    } catch (err: any) {
-      console.error("=== ERREUR GLOBALE ===", err);
-      setError(err.message || "Erreur lors de l'import");
-      setProcessing(false);
+        const cgp = cleanString(r["CGP"]);
+        const emailCgp = cleanString(r["Email du CGP"]);
+        const codeCgp = cleanString(r["Code du CGP"]);
+        const sirenCgpStr = cleanString(r["Siren du CGP"]);
+        const sirenCgp = sirenCgpStr ? parseInt(sirenCgpStr.replace(/\D/g, "")) : null;
+
+        console.log("Création souscription pour investisseur:", investisseurId);
+        console.log("Quantité:", quantite, "Montant:", montant);
+
+        const { error: subErr } = await supabase
+          .from("souscriptions")
+          .insert([{
+            projet_id: projetId,
+            tranche_id: trancheId,
+            investisseur_id: investisseurId,
+            date_souscription: dateSouscription,
+            nombre_obligations: quantite,
+            montant_investi: montant,
+            date_validation_bs: parseDate(r["Date de Validation BS"]),
+            date_transfert: parseDate(r["Date de Transfert"]),
+            pea: r["PEA / PEA-PME"] ? true : null,
+            pea_compte: cleanString(r["Numéro de Compte PEA / PEA-PME"]),
+            cgp,
+            email_cgp: emailCgp,
+            code_cgp: codeCgp,
+            siren_cgp: sirenCgp,
+          }]);
+
+        if (subErr) {
+          console.error("Erreur création souscription:", subErr);
+          throw subErr;
+        }
+        console.log("✅ Souscription créée");
+        createdSouscriptions++;
+
+      } catch (e: any) {
+        console.error(`❌ Erreur ligne ${total}:`, e);
+        errors.push({ line: total, error: e?.message ?? String(e) });
+      }
     }
-  };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl">
-          <h3 className="text-xl font-bold text-slate-900">Nouvelle Tranche</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" disabled={processing}>
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    console.log("=== RÉSUMÉ IMPORT ===");
+    console.log("Total lignes:", total);
+    console.log("Investisseurs créés:", createdInvestisseurs);
+    console.log("Investisseurs mis à jour:", updatedInvestisseurs);
+    console.log("Souscriptions créées:", createdSouscriptions);
+    console.log("Erreurs:", errors.length);
 
-        {/* Body */}
-        <div className="p-6 space-y-6">
-          {/* Project selection */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Projet <span className="text-red-600">*</span>
-            </label>
-            {loading ? (
-              <div className="text-center py-4">
-                <Loader className="w-6 h-6 animate-spin mx-auto text-slate-400" />
-              </div>
-            ) : (
-              <select
-                value={selectedProjectId}
-                onChange={(e) => handleProjectSelect(e.target.value)}
-                disabled={processing}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
-              >
-                <option value="">Sélectionnez un projet</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.projet}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+    // ROLLBACK: Delete tranche if no subscriptions created
+    if (createdSouscriptions === 0) {
+      console.warn("⚠️ Aucune souscription créée, suppression de la tranche");
+      await supabase.from("tranches").delete().eq("id", trancheId);
+      
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Aucune souscription n'a pu être créée. Vérifiez le format du CSV.",
+          total,
+          errors,
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "content-type": "application/json" } 
+        }
+      );
+    }
 
-          {/* Tranche name */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Nom de la tranche <span className="text-red-600">*</span>
-            </label>
-            {suggestedName && (
-              <p className="text-sm text-slate-600 mb-2">
-                Nom suggéré: <span className="font-medium">{suggestedName}</span>
-              </p>
-            )}
-            <input
-              type="text"
-              value={trancheName}
-              onChange={(e) => setTrancheName(e.target.value)}
-              disabled={processing}
-              placeholder="Ex: T1, Tranche A..."
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            />
-          </div>
+    return new Response(
+      JSON.stringify({
+        success: true,
+        trancheId,
+        trancheName,
+        total,
+        createdInvestisseurs,
+        updatedInvestisseurs,
+        createdSouscriptions,
+        errors,
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, "content-type": "application/json" } 
+      }
+    );
 
-          {/* CSV/Excel upload */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Fichier du registre <span className="text-red-600">*</span>
-            </label>
-            <FileUpload
-              accept=".csv,.xlsx,.xls"
-              onFileSelect={(files) => {
-                if (files && files.length > 0) {
-                  setCsvFile(files[0]);
-                  setError("");
-                }
-              }}
-              label="Sélectionner le fichier"
-              description="Formats acceptés: CSV (;), Excel (.xlsx, .xls)"
-            />
-            {csvFile && (
-              <div className="mt-4 text-center">
-                <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  {csvFile.name}
-                </div>
-              </div>
-            )}
-            <div className="mt-3 text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
-              <p className="font-medium mb-1">📋 Formats acceptés:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li><strong>Excel (.xlsx, .xls)</strong> - Recommandé ✅</li>
-                <li>CSV avec séparateur point-virgule (;)</li>
-                <li>CSV avec séparateur virgule (,)</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          {processing && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-slate-600">
-                <span>Upload en cours...</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div
-                  className="h-2 bg-blue-600 transition-all duration-150"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Success message */}
-          {successMessage && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-green-700 whitespace-pre-line">
-                  {successMessage}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Error message */}
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-white p-6 border-t border-slate-200 flex gap-3 rounded-b-2xl">
-          {successMessage ? (
-            <button
-              onClick={() => {
-                onSuccess();
-                onClose();
-              }}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Terminer
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
-                disabled={processing}
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={processing || !selectedProjectId || !trancheName || !csvFile}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {processing ? (
-                  <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    Import... {progress}%
-                  </>
-                ) : (
-                  "Créer et importer"
-                )}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default TrancheWizard;
+  } catch (err: any) {
+    console.error("Global error:", err);
+    return new Response(
+      JSON.stringify({ 
+        success: false,
+        error: err?.message ?? String(err) 
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, "content-type": "application/json" } 
+      }
+    );
+  }
+});
