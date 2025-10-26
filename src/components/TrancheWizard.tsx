@@ -30,6 +30,8 @@ interface ParsedSubscription {
   quantite: string;
   montant: string;
   departement_naissance?: string;
+  cgp?: string;              // NEW
+  email_cgp?: string;        // NEW
 }
 
 export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: TrancheWizardProps) {
@@ -39,6 +41,8 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
 
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [trancheName, setTrancheName] = useState('');
+  const [dateTransfertFonds, setDateTransfertFonds] = useState('');     // NEW
+  const [dateEcheance, setDateEcheance] = useState('');                 // NEW
   const [suggestedName, setSuggestedName] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<ParsedSubscription[]>([]);
@@ -126,6 +130,10 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
       'montant': 'montant',
       'departement_de_naissance': 'departement_naissance',
       'departement_naissance': 'departement_naissance',
+      'cgp': 'cgp',                              // NEW
+      'conseiller': 'cgp',                       // NEW
+      'email_cgp': 'email_cgp',                  // NEW
+      'email_conseiller': 'email_cgp',           // NEW
     };
 
     return mappings[normalized] || normalized;
@@ -188,6 +196,8 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
           quantite: row['quantite'] || '0',
           montant: row['montant'] || '0',
           departement_naissance: row['departement_naissance'] || '',
+          cgp: row['cgp'] || '',                      // NEW
+          email_cgp: row['email_cgp'] || '',          // NEW
         });
       }
     }
@@ -222,25 +232,25 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
       if (parts.length === 3 && parts[0].length === 4) {
         return dateStr;
       }
-      if (parts.length === 3) {
-        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      if (parts.length === 3 && parts[2].length === 4) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
       }
     }
 
     return new Date().toISOString().split('T')[0];
   };
 
+  // Calculate date_emission preview
+  const getDateEmission = () => {
+    if (!dateTransfertFonds) return '';
+    const date = new Date(dateTransfertFonds);
+    date.setDate(date.getDate() + 1);
+    return date.toISOString().split('T')[0];
+  };
+
   const handleSubmit = async () => {
-    if (!selectedProjectId) {
-      setError('Veuillez sélectionner un projet');
-      return;
-    }
-    if (!trancheName.trim()) {
-      setError('Veuillez entrer un nom de tranche');
-      return;
-    }
-    if (!csvFile || csvData.length === 0) {
-      setError('Veuillez charger un fichier CSV valide');
+    if (!selectedProjectId || !trancheName || !dateTransfertFonds || !dateEcheance || csvData.length === 0) {
+      setError('Veuillez remplir tous les champs requis');
       return;
     }
 
@@ -248,14 +258,16 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
     setError('');
 
     try {
+      // UPDATED: Create tranche with new fields, without redundant fields
       const { data: trancheData, error: trancheError } = await supabase
         .from('tranches')
         .insert({
           projet_id: selectedProjectId,
           tranche_name: trancheName,
-          frequence: '6',
-          taux_interet: '10',
-          maturite_mois: 24,
+          date_transfert_fonds: dateTransfertFonds,          // NEW
+          date_echeance: dateEcheance,                       // NEW
+          // date_emission will be auto-set by trigger
+          // Removed: frequence, taux_interet, maturite_mois (now in projets)
         })
         .select()
         .single();
@@ -311,6 +323,7 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
           const montantValue = parseFloat(row.montant.replace(/[^\d.-]/g, '')) || 0;
           const quantiteValue = parseInt(row.quantite.replace(/\D/g, '')) || 0;
 
+          // UPDATED: Insert subscription with CGP fields
           const { error: subscriptionError } = await supabase
             .from('souscriptions')
             .insert({
@@ -323,6 +336,8 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
               montant_investi: montantValue,
               coupon_brut: 0,
               coupon_net: 0,
+              cgp: row.cgp || null,                       // NEW
+              email_cgp: row.email_cgp || null,           // NEW
             });
 
           if (subscriptionError) throw subscriptionError;
@@ -398,6 +413,46 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
             />
           </div>
 
+          {/* NEW: Date fields */}
+          <div className="space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-slate-900">Dates de la tranche</h4>
+            
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Date de transfert des fonds <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="date"
+                value={dateTransfertFonds}
+                onChange={(e) => setDateTransfertFonds(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {dateTransfertFonds && (
+              <div className="bg-white p-3 rounded border border-blue-300">
+                <p className="text-sm text-blue-900">
+                  <strong>Date d'émission (automatique):</strong> {getDateEmission()}
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  💡 La date d'émission est automatiquement fixée au lendemain du transfert des fonds
+                </p>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Date d'échéance <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="date"
+                value={dateEcheance}
+                onChange={(e) => setDateEcheance(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Fichier CSV des souscriptions
@@ -434,6 +489,8 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
                 <li>Date de souscription</li>
                 <li>Quantité (nombre d'obligations)</li>
                 <li>Montant</li>
+                <li><strong className="text-blue-700">CGP (optionnel)</strong></li>
+                <li><strong className="text-blue-700">Email CGP (optionnel)</strong></li>
               </ul>
             </div>
           </div>
@@ -456,7 +513,7 @@ export function TrancheWizard({ onClose, onSuccess, preselectedProjectId }: Tran
           </button>
           <button
             onClick={handleSubmit}
-            disabled={processing || !selectedProjectId || !trancheName || csvData.length === 0}
+            disabled={processing || !selectedProjectId || !trancheName || !dateTransfertFonds || !dateEcheance || csvData.length === 0}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {processing ? (
