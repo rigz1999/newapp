@@ -35,10 +35,11 @@ interface Project {
 interface Tranche {
   id: string;
   tranche_name: string;
-  frequence: string;
-  taux_interet: string;
-  date_echeance: string | null;
-  maturite_mois: number | null;
+  taux_nominal: number | null;
+  periodicite_coupons: string | null;
+  date_emission: string | null;
+  date_echeance_finale: string | null;
+  duree_mois: number | null;
 }
 
 interface Subscription {
@@ -48,12 +49,17 @@ interface Subscription {
   montant_investi: number;
   nombre_obligations: number;
   coupon_net: number;
-  prochaine_date_coupon: string | null;
   investisseur: {
     nom_raison_sociale: string;
   };
   tranche: {
     tranche_name: string;
+    date_emission: string | null;
+  };
+  prochain_coupon?: {
+    date_prochain_coupon: string;
+    montant_prochain_coupon: number;
+    statut: string;
   };
 }
 
@@ -100,9 +106,10 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
       supabase.from('tranches').select('*').eq('projet_id', projectId).order('created_at', { ascending: false }),
       supabase.from('souscriptions').select(`
         id, id_souscription, date_souscription, nombre_obligations, montant_investi,
-        coupon_brut, coupon_net, prochaine_date_coupon, investisseur_id,
+        coupon_net, investisseur_id,
         investisseur:investisseurs(nom_raison_sociale),
-        tranche:tranches(tranche_name)
+        tranche:tranches(tranche_name, date_emission),
+        prochain_coupon:v_prochains_coupons(date_prochain_coupon, montant_prochain_coupon, statut)
       `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
       supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false })
     ]);
@@ -121,21 +128,24 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
       const totalLeve = subscriptionsData.reduce((sum, sub) => sum + Number(sub.montant_investi || 0), 0);
       const uniqueInvestors = new Set(subscriptionsData.map(s => s.investisseur_id)).size;
 
-      const upcomingCoupons = subscriptionsData.filter(s => s.prochaine_date_coupon);
-      upcomingCoupons.sort((a, b) =>
-        new Date(a.prochaine_date_coupon!).getTime() - new Date(b.prochaine_date_coupon!).getTime()
-      );
+      // Get next coupon from the view
+      const upcomingCoupons = subscriptionsData
+        .filter((s: any) => s.prochain_coupon?.date_prochain_coupon)
+        .sort((a: any, b: any) => 
+          new Date(a.prochain_coupon.date_prochain_coupon).getTime() - 
+          new Date(b.prochain_coupon.date_prochain_coupon).getTime()
+        );
 
       const nextCoupon = upcomingCoupons[0];
       const nextCouponAmount = upcomingCoupons
-        .filter(s => s.prochaine_date_coupon === nextCoupon?.prochaine_date_coupon)
-        .reduce((sum, s) => sum + Number(s.coupon_net || 0), 0);
+        .filter((s: any) => s.prochain_coupon.date_prochain_coupon === nextCoupon?.prochain_coupon?.date_prochain_coupon)
+        .reduce((sum: number, s: any) => sum + Number(s.prochain_coupon.montant_prochain_coupon || 0), 0);
 
       setStats({
         totalLeve,
         investisseursCount: uniqueInvestors,
         tranchesCount: tranchesData.length,
-        nextCouponDate: nextCoupon?.prochaine_date_coupon || null,
+        nextCouponDate: nextCoupon?.prochain_coupon?.date_prochain_coupon || null,
         nextCouponAmount,
       });
     }
@@ -155,6 +165,17 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  const formatFrequence = (freq: string | null) => {
+    if (!freq) return '-';
+    const map: Record<string, string> = {
+      'mensuelle': 'Mensuelle',
+      'trimestrielle': 'Trimestrielle',
+      'semestrielle': 'Semestrielle',
+      'annuelle': 'Annuelle'
+    };
+    return map[freq.toLowerCase()] || freq;
   };
 
   const handleDeleteTranche = async (tranche: Tranche) => {
@@ -198,50 +219,8 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
     }
   };
 
-  const handleDeleteProject = async () => {
-    if (tranches.length > 0) {
-      alert(`Impossible de supprimer ce projet car il contient ${tranches.length} tranche(s). Supprimez d'abord les tranches.`);
-      return;
-    }
-
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer le projet "${project?.projet}" ?`)) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('projets')
-        .delete()
-        .eq('id', projectId);
-
-      if (error) throw error;
-
-      navigate('/projets');
-    } catch (error: any) {
-      console.error('Error deleting project:', error);
-      alert('Erreur lors de la suppression du projet: ' + error.message);
-    }
-  };
-
-  const handleUpdateProject = async () => {
-    try {
-      const { error } = await supabase
-        .from('projets')
-        .update(editedProject)
-        .eq('id', projectId);
-
-      if (error) throw error;
-
-      setShowEditProject(false);
-      fetchProjectData();
-    } catch (error: any) {
-      console.error('Error updating project:', error);
-      alert('Erreur lors de la mise à jour du projet: ' + error.message);
-    }
-  };
-
   const handleDeleteSubscription = async (subscription: Subscription) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer la souscription de ${subscription.investisseur.nom_raison_sociale} ?`)) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer cette souscription ?`)) {
       return;
     }
 
@@ -256,282 +235,338 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
       fetchProjectData();
     } catch (error: any) {
       console.error('Error deleting subscription:', error);
-      alert('Erreur lors de la suppression de la souscription: ' + error.message);
+      alert('Erreur lors de la suppression: ' + error.message);
+    }
+  };
+
+  const handleUpdateProject = async () => {
+    if (!project) return;
+
+    try {
+      const { error } = await supabase
+        .from('projets')
+        .update(editedProject)
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      setShowEditProject(false);
+      fetchProjectData();
+    } catch (error: any) {
+      console.error('Error updating project:', error);
+      alert('Erreur lors de la mise à jour: ' + error.message);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader className="w-8 h-8 animate-spin text-slate-400" />
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-slate-600">Projet non trouvé</p>
-          <button
-            onClick={() => navigate('/projets')}
-            className="mt-4 text-blue-600 hover:text-blue-700"
-          >
-            Retour
-          </button>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <p className="text-center text-slate-600">Projet non trouvé</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="max-w-7xl mx-auto px-8 py-8">
-        <button
-          onClick={() => navigate('/projets')}
-          className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Retour aux projets</span>
-        </button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate('/projects')}
+            className="flex items-center gap-2 text-slate-600 hover:text-slate-900"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Retour aux projets
+          </button>
+        </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900 mb-2">{project.projet}</h1>
-                <div className="space-y-1 text-sm text-slate-600">
-                  <p><span className="font-medium">Émetteur:</span> {project.emetteur}</p>
-                  {project.siren_emetteur && (
-                    <p><span className="font-medium">SIREN:</span> {project.siren_emetteur}</p>
-                  )}
-                  {project.nom_representant && (
-                    <p><span className="font-medium">Représentant:</span> {project.prenom_representant} {project.nom_representant}</p>
-                  )}
-                  {project.email_representant && (
-                    <p><span className="font-medium">Email:</span> {project.email_representant}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setEditedProject(project);
-                    setShowEditProject(true);
-                  }}
-                  className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                  title="Modifier le projet"
-                >
-                  <Edit className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleDeleteProject}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Supprimer le projet"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+        {/* Project Info */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">{project.projet}</h1>
+              <div className="mt-2 space-y-1 text-sm text-slate-600">
+                <p><span className="font-medium">Émetteur:</span> {project.emetteur}</p>
+                {project.siren_emetteur && (
+                  <p><span className="font-medium">SIREN:</span> {project.siren_emetteur}</p>
+                )}
+                {project.nom_representant && project.prenom_representant && (
+                  <p><span className="font-medium">Représentant:</span> {project.prenom_representant} {project.nom_representant}</p>
+                )}
+                {project.email_representant && (
+                  <p><span className="font-medium">Email:</span> {project.email_representant}</p>
+                )}
               </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-slate-600 text-sm font-medium">Montant Total Levé</span>
-                <TrendingUp className="w-5 h-5 text-green-500" />
-              </div>
-              <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalLeve)}</p>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-slate-600 text-sm font-medium">Investisseurs</span>
-                <Users className="w-5 h-5 text-blue-500" />
-              </div>
-              <p className="text-2xl font-bold text-slate-900">{stats.investisseursCount}</p>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-slate-600 text-sm font-medium">Tranches</span>
-                <Layers className="w-5 h-5 text-purple-500" />
-              </div>
-              <p className="text-2xl font-bold text-slate-900">{stats.tranchesCount}</p>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-slate-600 text-sm font-medium">Prochain Coupon</span>
-                <Calendar className="w-5 h-5 text-orange-500" />
-              </div>
-              {stats.nextCouponDate ? (
-                <>
-                  <p className="text-lg font-bold text-slate-900">{formatDate(stats.nextCouponDate)}</p>
-                  <p className="text-sm text-green-600 font-semibold">{formatCurrency(stats.nextCouponAmount)}</p>
-                </>
-              ) : (
-                <p className="text-sm text-slate-400">Aucun à venir</p>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-slate-900">Tranches</h2>
+            <div className="flex gap-2">
               <button
-                onClick={() => setShowTrancheWizard(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                onClick={() => {
+                  setEditedProject(project);
+                  setShowEditProject(true);
+                }}
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Modifier le projet"
               >
-                <Plus className="w-4 h-4" />
-                Nouvelle Tranche
+                <Edit className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) {
+                    supabase.from('projets').delete().eq('id', project.id).then(() => {
+                      navigate('/projects');
+                    });
+                  }
+                }}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Supprimer le projet"
+              >
+                <Trash2 className="w-5 h-5" />
               </button>
             </div>
+          </div>
+        </div>
 
-            {tranches.length === 0 ? (
-              <p className="text-center text-slate-400 py-8">Aucune tranche créée</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Nom</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Fréquence</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Taux</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Échéance</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Souscriptions</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-slate-900">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tranches.map((tranche) => {
-                      const trancheSubscriptions = subscriptions.filter(s => s.tranche.tranche_name === tranche.tranche_name);
-                      return (
-                        <tr key={tranche.id} className="border-b border-slate-100 hover:bg-slate-50">
-                          <td className="px-4 py-3 text-sm font-medium text-slate-900">{tranche.tranche_name}</td>
-                          <td className="px-4 py-3 text-sm text-slate-600">{tranche.frequence} mois</td>
-                          <td className="px-4 py-3 text-sm text-slate-600">{tranche.taux_interet}%</td>
-                          <td className="px-4 py-3 text-sm text-slate-600">{formatDate(tranche.date_echeance)}</td>
-                          <td className="px-4 py-3 text-sm text-slate-600">{trancheSubscriptions.length}</td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => {
-                                  setEditingTranche(tranche);
-                                  setShowTrancheWizard(true);
-                                }}
-                                className="p-1 text-slate-600 hover:bg-slate-100 rounded transition-colors"
-                                title="Modifier la tranche"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTranche(tranche)}
-                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                title="Supprimer la tranche"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-slate-600">Montant Total Levé</p>
+              <TrendingUp className="w-5 h-5 text-green-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalLeve)}</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Souscriptions</h2>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-slate-600">Investisseurs</p>
+              <Users className="w-5 h-5 text-blue-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.investisseursCount}</p>
+          </div>
 
-            {subscriptions.length === 0 ? (
-              <p className="text-center text-slate-400 py-8">Aucune souscription</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Investisseur</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Tranche</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Date</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Montant Investi</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Coupon Net</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Prochain Coupon</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-slate-900">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subscriptions.map((sub) => (
-                      <tr key={sub.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="px-4 py-3 text-sm font-medium text-slate-900">
-                          {sub.investisseur.nom_raison_sociale}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-slate-600">Tranches</p>
+              <Layers className="w-5 h-5 text-purple-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.tranchesCount}</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-slate-600">Prochain Coupon</p>
+              <Calendar className="w-5 h-5 text-orange-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">
+              {stats.nextCouponDate ? formatDate(stats.nextCouponDate) : '-'}
+            </p>
+            <p className="text-sm text-green-600 font-medium mt-1">
+              {stats.nextCouponAmount > 0 ? formatCurrency(stats.nextCouponAmount) : ''}
+            </p>
+          </div>
+        </div>
+
+        {/* Tranches Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-slate-900">Tranches</h2>
+            <button
+              onClick={() => setShowTrancheWizard(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Nouvelle Tranche
+            </button>
+          </div>
+
+          {tranches.length === 0 ? (
+            <p className="text-center text-slate-400 py-8">Aucune tranche créée</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Nom</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Fréquence</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Taux</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Échéance</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Souscriptions</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {tranches.map((tranche) => {
+                    const trancheSubscriptions = subscriptions.filter(
+                      s => s.tranche.tranche_name === tranche.tranche_name
+                    );
+                    
+                    return (
+                      <tr key={tranche.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <span className="text-sm font-medium text-slate-900">
+                            {tranche.tranche_name}
+                          </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{sub.tranche.tranche_name}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{formatDate(sub.date_souscription)}</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-green-600">
-                          {formatCurrency(sub.montant_investi)}
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-slate-600 capitalize">
+                            {formatFrequence(tranche.periodicite_coupons)}
+                          </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{formatCurrency(sub.coupon_net)}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{formatDate(sub.prochaine_date_coupon)}</td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-slate-900 font-medium">
+                            {tranche.taux_nominal ? `${tranche.taux_nominal}%` : '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-slate-600">
+                            {formatDate(tranche.date_echeance_finale)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {trancheSubscriptions.length}
+                          </span>
+                        </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-2">
                             <button
-                              onClick={() => handleDeleteSubscription(sub)}
+                              onClick={() => {
+                                setEditingTranche(tranche);
+                                setShowTrancheWizard(true);
+                              }}
+                              className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="Modifier la tranche"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTranche(tranche)}
                               className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Supprimer la souscription"
+                              title="Supprimer la tranche"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Historique des Paiements</h2>
+        {/* Subscriptions Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Souscriptions</h2>
 
-            {payments.length === 0 ? (
-              <p className="text-center text-slate-400 py-8">Aucun paiement enregistré</p>
-            ) : (
-              <div className="space-y-4">
-                {payments.map((payment) => (
-                  <div
-                    key={payment.id}
-                    className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-2 h-2 rounded-full ${
-                        payment.statut === 'Payé' ? 'bg-green-500' : 'bg-orange-500'
-                      }`} />
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">
-                          {payment.type || 'Paiement'} - {payment.id_paiement}
-                        </p>
-                        <p className="text-xs text-slate-600">{formatDate(payment.date_paiement)}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-slate-900">{formatCurrency(payment.montant)}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        payment.statut === 'Payé'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-orange-100 text-orange-700'
-                      }`}>
-                        {payment.statut}
-                      </span>
+          {subscriptions.length === 0 ? (
+            <p className="text-center text-slate-400 py-8">Aucune souscription</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Investisseur</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Tranche</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Date</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Montant Investi</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Coupon Net</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Prochain Coupon</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {subscriptions.map((sub) => (
+                    <tr key={sub.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                        {sub.investisseur?.nom_raison_sociale || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">{sub.tranche?.tranche_name || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {sub.tranche?.date_emission ? formatDate(sub.tranche.date_emission) : formatDate(sub.date_souscription)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-medium text-green-600">
+                        {formatCurrency(sub.montant_investi)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
+                        {sub.coupon_net ? formatCurrency(sub.coupon_net) : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {sub.prochain_coupon?.date_prochain_coupon 
+                          ? formatDate(sub.prochain_coupon.date_prochain_coupon)
+                          : '-'
+                        }
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleDeleteSubscription(sub)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Supprimer la souscription"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Payments Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Historique des Paiements</h2>
+
+          {payments.length === 0 ? (
+            <p className="text-center text-slate-400 py-8">Aucun paiement enregistré</p>
+          ) : (
+            <div className="space-y-4">
+              {payments.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-2 h-2 rounded-full ${
+                      payment.statut === 'Payé' ? 'bg-green-500' : 'bg-orange-500'
+                    }`} />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {payment.type || 'Paiement'} - {payment.id_paiement}
+                      </p>
+                      <p className="text-xs text-slate-600">{formatDate(payment.date_paiement)}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-slate-900">{formatCurrency(payment.montant)}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      payment.statut === 'Payé'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-orange-100 text-orange-700'
+                    }`}>
+                      {payment.statut}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
+        {/* TrancheWizard Modal */}
         {showTrancheWizard && (
           <TrancheWizard
             onClose={() => {
@@ -548,6 +583,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           />
         )}
 
+        {/* Edit Project Modal */}
         {showEditProject && project && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
