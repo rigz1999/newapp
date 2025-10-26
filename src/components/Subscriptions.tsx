@@ -12,7 +12,6 @@ interface Subscription {
   prochaine_date_coupon: string | null;
   tranches: {
     tranche_name: string;
-    frequence: string;
     projets: {
       projet: string;
       emetteur: string;
@@ -67,7 +66,6 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         *,
         tranches (
           tranche_name,
-          frequence,
           projets (
             projet,
             emetteur
