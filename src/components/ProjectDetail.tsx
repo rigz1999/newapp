@@ -34,7 +34,6 @@ interface Project {
   // Champs financiers
   taux_nominal: number | null;
   periodicite_coupons: string | null;
-  duree_mois: number | null;
   maturite_mois: number | null;
   base_interet: number | null;
   type: string | null;
@@ -230,7 +229,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
     const hasFinancialChanges = 
       editedProject.periodicite_coupons !== undefined && editedProject.periodicite_coupons !== project.periodicite_coupons ||
       editedProject.taux_nominal !== undefined && editedProject.taux_nominal !== project.taux_nominal ||
-      editedProject.duree_mois !== undefined && editedProject.duree_mois !== project.duree_mois;
+      editedProject.maturite_mois !== undefined && editedProject.maturite_mois !== project.maturite_mois;
 
     if (hasFinancialChanges && subscriptions.length > 0) {
       const confirmMsg = `⚠️ ATTENTION : Vous modifiez des paramètres financiers critiques.\n\n` +
@@ -252,9 +251,12 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
       if (error) throw error;
 
-      alert('✅ Projet mis à jour avec succès' + (hasFinancialChanges ? '\n\nLes coupons et échéances ont été recalculés automatiquement.' : ''));
       setShowEditProject(false);
-      fetchProjectData();
+      
+      // Recharger toutes les données
+      await fetchProjectData();
+      
+      alert('✅ Projet mis à jour avec succès' + (hasFinancialChanges ? '\n\nLes coupons et échéances ont été recalculés automatiquement.' : ''));
     } catch (err: any) {
       console.error('Error updating project:', err);
       alert('❌ Erreur lors de la mise à jour : ' + err.message);
@@ -279,7 +281,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-6 px-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -309,48 +311,56 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm">Total Levé</p>
-                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalLeve)}</p>
+                <p className="text-slate-600 text-sm">Total Levé</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(stats.totalLeve)}</p>
               </div>
-              <TrendingUp className="w-8 h-8 text-blue-200" />
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-slate-600" />
+              </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-100 text-sm">Investisseurs</p>
-                <p className="text-2xl font-bold mt-1">{stats.investisseursCount}</p>
+                <p className="text-slate-600 text-sm">Investisseurs</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{stats.investisseursCount}</p>
               </div>
-              <Users className="w-8 h-8 text-purple-200" />
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <Users className="w-6 h-6 text-slate-600" />
+              </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-100 text-sm">Tranches</p>
-                <p className="text-2xl font-bold mt-1">{stats.tranchesCount}</p>
+                <p className="text-slate-600 text-sm">Tranches</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{stats.tranchesCount}</p>
               </div>
-              <Layers className="w-8 h-8 text-orange-200" />
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <Layers className="w-6 h-6 text-slate-600" />
+              </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">Prochain Coupon</p>
-                <p className="text-lg font-bold mt-1">
+                <p className="text-slate-600 text-sm">Prochain Coupon</p>
+                <p className="text-base font-bold text-slate-900 mt-1">
                   {stats.nextCouponDate ? formatDate(stats.nextCouponDate) : '-'}
                 </p>
-                <p className="text-sm text-green-100 mt-1">
+                <p className="text-sm text-slate-600 mt-1">
                   {stats.nextCouponAmount > 0 ? formatCurrency(stats.nextCouponAmount) : '-'}
                 </p>
               </div>
-              <Calendar className="w-8 h-8 text-green-200" />
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <Calendar className="w-6 h-6 text-slate-600" />
+              </div>
             </div>
           </div>
         </div>
@@ -395,13 +405,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               </p>
             </div>
             <div>
-              <p className="text-sm text-slate-600">Durée (mois)</p>
-              <p className="text-base font-medium text-slate-900">
-                {project.duree_mois ? `${project.duree_mois} mois` : '-'}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Maturité (mois)</p>
+              <p className="text-sm text-slate-600">Maturité</p>
               <p className="text-base font-medium text-slate-900">
                 {project.maturite_mois ? `${project.maturite_mois} mois` : '-'}
               </p>
@@ -648,7 +652,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 {/* Avertissement si modifications financières */}
                 {(editedProject.periodicite_coupons !== project.periodicite_coupons ||
                   editedProject.taux_nominal !== project.taux_nominal ||
-                  editedProject.duree_mois !== project.duree_mois) && 
+                  editedProject.maturite_mois !== project.maturite_mois) && 
                   subscriptions.length > 0 && (
                   <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3">
                     <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
@@ -750,19 +754,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-900 mb-2">
-                            Durée (mois)
-                          </label>
-                          <input
-                            type="number"
-                            value={editedProject.duree_mois?.toString() || ''}
-                            onChange={(e) => setEditedProject({ ...editedProject, duree_mois: parseInt(e.target.value) || null })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-slate-900 mb-2">
                             Maturité (mois)
@@ -772,6 +764,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                             value={editedProject.maturite_mois?.toString() || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, maturite_mois: parseInt(e.target.value) || null })}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ex: 24"
                           />
                         </div>
 
