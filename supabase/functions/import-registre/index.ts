@@ -58,10 +58,34 @@ const cleanString = (s?: string | null): string | null => {
   return cleaned || null;
 };
 
-// Parse CSV manually (semicolon separator)
+// Parse CSV manually with auto-detection of separator
 function parseCSV(text: string): Array<Record<string, string>> {
   const lines = text.split(/\r?\n/);
   const result: Array<Record<string, string>> = [];
+  
+  // Auto-detect separator
+  let separator = ";";
+  const firstDataLine = lines.find(line => 
+    line.includes("Projet") && (line.includes("Quantité") || line.includes("Quantite"))
+  );
+  
+  if (firstDataLine) {
+    // Count separators to detect which one is used
+    const semicolonCount = (firstDataLine.match(/;/g) || []).length;
+    const commaCount = (firstDataLine.match(/,/g) || []).length;
+    const tabCount = (firstDataLine.match(/\t/g) || []).length;
+    
+    if (semicolonCount > Math.max(commaCount, tabCount)) {
+      separator = ";";
+    } else if (commaCount > Math.max(semicolonCount, tabCount)) {
+      separator = ",";
+    } else if (tabCount > 0) {
+      separator = "\t";
+    }
+    
+    console.log("Séparateur détecté:", separator === ";" ? "point-virgule" : separator === "," ? "virgule" : "tabulation");
+    console.log("Ligne d'en-tête:", firstDataLine);
+  }
   
   let headers: string[] = [];
   let inDataSection = false;
@@ -70,25 +94,37 @@ function parseCSV(text: string): Array<Record<string, string>> {
     const trimmed = line.trim();
     if (!trimmed) continue;
     
-    // Check if this is a header line (contains "Projet" and "Quantité")
-    if (trimmed.includes("Projet;") && trimmed.includes("Quantité")) {
-      headers = trimmed.split(";").map(h => h.trim());
+    // Check if this is a header line
+    const isHeaderLine = (trimmed.includes("Projet") || trimmed.toLowerCase().includes("projet")) &&
+                        (trimmed.includes("Quantité") || trimmed.includes("Quantite") || 
+                         trimmed.toLowerCase().includes("quantité") || trimmed.toLowerCase().includes("quantite"));
+    
+    if (isHeaderLine) {
+      headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
+      console.log("En-têtes trouvés:", headers);
       continue;
     }
     
     // Skip title lines
-    if (trimmed.startsWith("Registre des titres") || trimmed === "Total") {
+    if (trimmed.toLowerCase().includes("registre des titres") || 
+        trimmed.toLowerCase() === "total" ||
+        trimmed.toLowerCase().includes("personnes physiques") ||
+        trimmed.toLowerCase().includes("personnes morales")) {
       inDataSection = false;
       continue;
     }
     
     // Parse data lines
     if (inDataSection && headers.length > 0) {
-      const values = line.split(";");
+      const values = line.split(separator);
       
-      // Check if this is a valid data row (has Projet value)
-      if (values[0] && values[0].trim() && !values[0].includes("Registre")) {
+      // Check if this is a valid data row (has Projet value in first column)
+      const firstValue = values[0] ? values[0].trim() : "";
+      if (firstValue && 
+          !firstValue.toLowerCase().includes("registre") &&
+          !firstValue.toLowerCase().includes("total") &&
+          firstValue.length > 0) {
         const row: Record<string, string> = {};
         headers.forEach((header, index) => {
           row[header] = values[index] ? values[index].trim() : "";
@@ -184,23 +220,43 @@ Deno.serve(async (req: Request) => {
 
     // Read CSV text
     const text = await file.text();
-    console.log("Taille fichier:", text.length, "caractères");
-    console.log("Premières 500 caractères:", text.substring(0, 500));
+    console.log("=== ANALYSE DU FICHIER ===");
+    console.log("Nom:", file.name);
+    console.log("Type:", file.type);
+    console.log("Taille:", text.length, "caractères");
+    console.log("Premières 1000 caractères:");
+    console.log(text.substring(0, 1000));
+    console.log("---");
+    
+    // Detect encoding issues
+    if (text.includes("�") || text.includes("Ã©") || text.includes("Ã")) {
+      console.warn("⚠️ PROBLÈME D'ENCODAGE DÉTECTÉ!");
+    }
+    
+    // Count lines
+    const lineCount = text.split(/\r?\n/).length;
+    console.log("Nombre de lignes:", lineCount);
     
     // Parse CSV
     const rows = parseCSV(text);
     
-    console.log(`Parsed ${rows.length} rows from CSV`);
+    console.log(`✅ Parsed ${rows.length} rows from CSV`);
     if (rows.length > 0) {
       console.log("Colonnes détectées:", Object.keys(rows[0]));
-      console.log("Première ligne:", rows[0]);
+      console.log("Première ligne de données:", rows[0]);
+      console.log("Deuxième ligne de données:", rows[1]);
     } else {
-      console.error("⚠️ AUCUNE LIGNE DÉTECTÉE DANS LE CSV!");
+      console.error("❌ AUCUNE LIGNE DÉTECTÉE DANS LE CSV!");
+      console.log("Lignes du fichier (10 premières):");
+      text.split(/\r?\n/).slice(0, 10).forEach((line, i) => {
+        console.log(`Ligne ${i + 1}:`, line);
+      });
+      
       await supabase.from("tranches").delete().eq("id", trancheId);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Aucune donnée trouvée dans le CSV. Vérifiez le format (séparateur ';')",
+          error: "Aucune donnée trouvée dans le CSV. Vérifiez le format (séparateur ';' ou ','). Voir les logs pour plus de détails.",
         }),
         { 
           status: 400, 
