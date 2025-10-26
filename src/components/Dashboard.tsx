@@ -231,7 +231,6 @@ export function Dashboard({ organization }: DashboardProps) {
       telephone_rep_masse: ''
     });
     setSirenError('');
-    // also clear any selection/caret leftovers
     requestAnimationFrame(() => moveCaretBeforeEuro());
   };
 
@@ -469,11 +468,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8 mt-8">
                 <h2 className="text-xl font-bold text-slate-900 mb-4">Actions Rapides</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg-grid-cols-4 lg:grid-cols-4 gap-4">
                   <button
                     onClick={() => {
-                      // Optional: reset on open if you want a fresh form every time
-                      // resetNewProjectForm();
                       setShowNewProject(true);
                     }}
                     className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
@@ -500,6 +497,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     </div>
                   </button>
 
+                  {/* Updated button label + subtitle */}
                   <button
                     onClick={() => setShowQuickPayment(true)}
                     className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all group border border-purple-200"
@@ -508,8 +506,8 @@ export function Dashboard({ organization }: DashboardProps) {
                       <DollarSign className="w-5 h-5 text-white" />
                     </div>
                     <div className="text-left">
-                      <p className="font-semibold text-slate-900 text-sm">Enregistrer Paiement</p>
-                      <p className="text-xs text-slate-600">Télécharger justificatif</p>
+                      <p className="font-semibold text-slate-900 text-sm">Nouveau paiement</p>
+                      <p className="text-xs text-slate-600">Téléverser le justificatif</p>
                     </div>
                   </button>
 
@@ -809,7 +807,6 @@ export function Dashboard({ organization }: DashboardProps) {
                 e.preventDefault();
                 setCreatingProject(true);
 
-                // validation front de sécurité
                 if (!validateSiren(newProjectData.siren_emetteur)) {
                   setSirenError('Le SIREN doit comporter exactement 9 chiffres.');
                   setCreatingProject(false);
@@ -911,9 +908,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
-                        onChange={() => {
-                          // fully controlled via handlers below
-                        }}
+                        onChange={() => {}}
                         onFocus={moveCaretBeforeEuro}
                         onClick={moveCaretBeforeEuro}
                         onBeforeInput={(e: any) => {
