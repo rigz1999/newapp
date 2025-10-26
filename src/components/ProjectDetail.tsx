@@ -96,6 +96,8 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [deletingTranche, setDeletingTranche] = useState<Tranche | null>(null);
   const [showEditProject, setShowEditProject] = useState(false);
   const [editedProject, setEditedProject] = useState<Partial<Project>>({});
+  const [showEditSubscription, setShowEditSubscription] = useState(false);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
 
   const [stats, setStats] = useState({
     totalLeve: 0,
@@ -263,6 +265,31 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
       alert('✅ Projet mis à jour avec succès' + (hasFinancialChanges ? '\n\nLes coupons et échéances ont été recalculés automatiquement.' : ''));
     } catch (err: any) {
       console.error('Error updating project:', err);
+      alert('❌ Erreur lors de la mise à jour : ' + err.message);
+    }
+  };
+
+  const handleUpdateSubscription = async () => {
+    if (!editingSubscription) return;
+
+    try {
+      const { error } = await supabase
+        .from('souscriptions')
+        .update({
+          montant_investi: editingSubscription.montant_investi,
+          nombre_obligations: editingSubscription.nombre_obligations,
+          date_souscription: editingSubscription.date_souscription,
+        })
+        .eq('id', editingSubscription.id);
+
+      if (error) throw error;
+
+      setShowEditSubscription(false);
+      setEditingSubscription(null);
+      await fetchProjectData();
+      alert('✅ Souscription mise à jour avec succès');
+    } catch (err: any) {
+      console.error('Error updating subscription:', err);
       alert('❌ Erreur lors de la mise à jour : ' + err.message);
     }
   };
@@ -555,20 +582,36 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                       <td className="px-4 py-3">
                         <div className="flex justify-center gap-2">
                           <button
-                            onClick={() => navigate(`/subscriptions/${sub.id}`)}
+                            onClick={() => {
+                              setEditingSubscription(sub);
+                              setShowEditSubscription(true);
+                            }}
                             className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Voir la souscription"
+                            title="Modifier la souscription"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               if (
                                 window.confirm(
                                   `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur.nom_raison_sociale} ?`
                                 )
                               ) {
-                                // Handle delete
+                                try {
+                                  const { error } = await supabase
+                                    .from('souscriptions')
+                                    .delete()
+                                    .eq('id', sub.id);
+
+                                  if (error) throw error;
+
+                                  alert('✅ Souscription supprimée avec succès');
+                                  fetchProjectData();
+                                } catch (err: any) {
+                                  console.error('Error deleting subscription:', err);
+                                  alert('❌ Erreur lors de la suppression : ' + err.message);
+                                }
                               }
                             }}
                             className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
@@ -865,6 +908,122 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                   </button>
                   <button
                     onClick={handleUpdateProject}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Enregistrer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Subscription Modal */}
+        {showEditSubscription && editingSubscription && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+              <div className="p-6 border-b border-slate-200">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">Modifier la Souscription</h3>
+                    <p className="text-sm text-slate-600 mt-1">
+                      {editingSubscription.investisseur.nom_raison_sociale}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowEditSubscription(false);
+                      setEditingSubscription(null);
+                    }}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Date de souscription
+                    </label>
+                    <input
+                      type="date"
+                      value={editingSubscription.date_souscription || ''}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          date_souscription: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Montant investi (€)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editingSubscription.montant_investi || ''}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          montant_investi: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Nombre d'obligations
+                    </label>
+                    <input
+                      type="number"
+                      value={editingSubscription.nombre_obligations || ''}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          nombre_obligations: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="p-4 bg-slate-50 rounded-lg">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">Tranche :</span>
+                      <span className="font-medium text-slate-900">
+                        {editingSubscription.tranche.tranche_name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-2">
+                      <span className="text-slate-600">Coupon net :</span>
+                      <span className="font-medium text-slate-900">
+                        {formatCurrency(editingSubscription.coupon_net)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowEditSubscription(false);
+                      setEditingSubscription(null);
+                    }}
+                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleUpdateSubscription}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     Enregistrer
