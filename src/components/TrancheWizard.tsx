@@ -8,16 +8,27 @@ interface Project {
   projet: string;
 }
 
+interface Tranche {
+  id: string;
+  tranche_name: string;
+  frequence: string;
+  taux_interet: string;
+  date_echeance: string | null;
+  maturite_mois: number | null;
+}
+
 interface TrancheWizardProps {
   onClose: () => void;
   onSuccess: () => void;
   preselectedProjectId?: string;
+  editingTranche?: Tranche | null;
 }
 
 export function TrancheWizard({
   onClose,
   onSuccess,
   preselectedProjectId,
+  editingTranche,
 }: TrancheWizardProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +49,12 @@ export function TrancheWizard({
   useEffect(() => {
     if (preselectedProjectId) setSelectedProjectId(preselectedProjectId);
   }, [preselectedProjectId]);
+
+  useEffect(() => {
+    if (editingTranche) {
+      setTrancheName(editingTranche.tranche_name);
+    }
+  }, [editingTranche]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -74,6 +91,39 @@ export function TrancheWizard({
   };
 
   const handleSubmit = async () => {
+    // Edit mode: only update name
+    if (editingTranche) {
+      if (!trancheName) {
+        setError("Veuillez saisir un nom de tranche");
+        return;
+      }
+
+      setProcessing(true);
+      setError("");
+
+      try {
+        const { error: updateError } = await supabase
+          .from("tranches")
+          .update({ tranche_name: trancheName })
+          .eq("id", editingTranche.id);
+
+        if (updateError) throw updateError;
+
+        setSuccessMessage("✅ Tranche modifiée avec succès!");
+        setTimeout(() => {
+          onSuccess();
+          onClose();
+        }, 1000);
+      } catch (err: any) {
+        console.error("Erreur:", err);
+        setError(err.message || "Erreur lors de la modification");
+      } finally {
+        setProcessing(false);
+      }
+      return;
+    }
+
+    // Create mode: require CSV
     if (!selectedProjectId || !trancheName || !csvFile) {
       setError("Veuillez remplir tous les champs requis");
       return;
@@ -176,7 +226,9 @@ export function TrancheWizard({
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl">
-          <h3 className="text-xl font-bold text-slate-900">Nouvelle Tranche</h3>
+          <h3 className="text-xl font-bold text-slate-900">
+            {editingTranche ? 'Modifier la Tranche' : 'Nouvelle Tranche'}
+          </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600" disabled={processing}>
             <X className="w-6 h-6" />
           </button>
@@ -184,38 +236,40 @@ export function TrancheWizard({
 
         {/* Body */}
         <div className="p-6 space-y-6">
-          {/* Project selection */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Projet <span className="text-red-600">*</span>
-            </label>
-            {loading ? (
-              <div className="text-center py-4">
-                <Loader className="w-6 h-6 animate-spin mx-auto text-slate-400" />
-              </div>
-            ) : (
-              <select
-                value={selectedProjectId}
-                onChange={(e) => handleProjectSelect(e.target.value)}
-                disabled={processing}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
-              >
-                <option value="">Sélectionnez un projet</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.projet}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+          {/* Project selection - only show in create mode */}
+          {!editingTranche && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Projet <span className="text-red-600">*</span>
+              </label>
+              {loading ? (
+                <div className="text-center py-4">
+                  <Loader className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+                </div>
+              ) : (
+                <select
+                  value={selectedProjectId}
+                  onChange={(e) => handleProjectSelect(e.target.value)}
+                  disabled={processing}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
+                >
+                  <option value="">Sélectionnez un projet</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.projet}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
 
           {/* Tranche name */}
           <div>
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Nom de la tranche <span className="text-red-600">*</span>
             </label>
-            {suggestedName && (
+            {suggestedName && !editingTranche && (
               <p className="text-sm text-slate-600 mb-2">
                 Nom suggéré: <span className="font-medium">{suggestedName}</span>
               </p>
@@ -230,39 +284,41 @@ export function TrancheWizard({
             />
           </div>
 
-          {/* CSV upload */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Fichier CSV du registre <span className="text-red-600">*</span>
-            </label>
-            <FileUpload
-              accept=".csv"
-              onFileSelect={(files) => {
-                if (files && files.length > 0) {
-                  setCsvFile(files[0]);
-                  setError("");
-                }
-              }}
-              label="Sélectionner le fichier CSV"
-              description="Fichier 'Registre des titres' avec séparateur point-virgule (;)"
-            />
-            {csvFile && (
-              <div className="mt-4 text-center">
-                <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  {csvFile.name}
+          {/* CSV upload - only show in create mode */}
+          {!editingTranche && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Fichier CSV du registre <span className="text-red-600">*</span>
+              </label>
+              <FileUpload
+                accept=".csv"
+                onFileSelect={(files) => {
+                  if (files && files.length > 0) {
+                    setCsvFile(files[0]);
+                    setError("");
+                  }
+                }}
+                label="Sélectionner le fichier CSV"
+                description="Fichier 'Registre des titres' avec séparateur point-virgule (;)"
+              />
+              {csvFile && (
+                <div className="mt-4 text-center">
+                  <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    {csvFile.name}
+                  </div>
                 </div>
+              )}
+              <div className="mt-3 text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
+                <p className="font-medium mb-1">📋 Format attendu:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Séparateur: point-virgule (;)</li>
+                  <li>Sections: Personnes Physiques + Personnes Morales</li>
+                  <li>Colonnes: Projet, Quantité, Montant, CGP, etc.</li>
+                </ul>
               </div>
-            )}
-            <div className="mt-3 text-xs text-slate-500 bg-slate-50 p-3 rounded-lg">
-              <p className="font-medium mb-1">📋 Format attendu:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Séparateur: point-virgule (;)</li>
-                <li>Sections: Personnes Physiques + Personnes Morales</li>
-                <li>Colonnes: Projet, Quantité, Montant, CGP, etc.</li>
-              </ul>
             </div>
-          </div>
+          )}
 
           {/* Progress bar */}
           {processing && (
@@ -314,16 +370,20 @@ export function TrancheWizard({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={processing || !selectedProjectId || !trancheName || !csvFile}
+            disabled={
+              processing ||
+              !trancheName ||
+              (!editingTranche && (!selectedProjectId || !csvFile))
+            }
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {processing ? (
               <>
                 <Loader className="w-5 h-5 animate-spin" />
-                Import... {progress}%
+                {editingTranche ? 'Modification...' : `Import... ${progress}%`}
               </>
             ) : (
-              "Créer et importer"
+              editingTranche ? "Modifier" : "Créer et importer"
             )}
           </button>
         </div>

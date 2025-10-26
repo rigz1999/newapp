@@ -74,6 +74,8 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
+  const [editingTranche, setEditingTranche] = useState<Tranche | null>(null);
+  const [deletingTranche, setDeletingTranche] = useState<Tranche | null>(null);
 
   const [stats, setStats] = useState({
     totalLeve: 0,
@@ -150,6 +152,34 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  const handleDeleteTranche = async (tranche: Tranche) => {
+    const trancheSubscriptions = subscriptions.filter(s => s.tranche.tranche_name === tranche.tranche_name);
+
+    if (trancheSubscriptions.length > 0) {
+      alert(`Impossible de supprimer cette tranche car elle contient ${trancheSubscriptions.length} souscription(s).`);
+      return;
+    }
+
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer la tranche "${tranche.tranche_name}" ?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('tranches')
+        .delete()
+        .eq('id', tranche.id);
+
+      if (error) throw error;
+
+      setDeletingTranche(null);
+      fetchProjectData();
+    } catch (error: any) {
+      console.error('Error deleting tranche:', error);
+      alert('Erreur lors de la suppression de la tranche: ' + error.message);
+    }
   };
 
   if (loading) {
@@ -295,10 +325,21 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                           <td className="px-4 py-3 text-sm text-slate-600">{trancheSubscriptions.length}</td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
-                              <button className="p-1 text-slate-600 hover:bg-slate-100 rounded">
+                              <button
+                                onClick={() => {
+                                  setEditingTranche(tranche);
+                                  setShowTrancheWizard(true);
+                                }}
+                                className="p-1 text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                                title="Modifier la tranche"
+                              >
                                 <Edit className="w-4 h-4" />
                               </button>
-                              <button className="p-1 text-red-600 hover:bg-red-50 rounded">
+                              <button
+                                onClick={() => handleDeleteTranche(tranche)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Supprimer la tranche"
+                              >
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
@@ -403,12 +444,17 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
         {showTrancheWizard && (
           <TrancheWizard
-            onClose={() => setShowTrancheWizard(false)}
+            onClose={() => {
+              setShowTrancheWizard(false);
+              setEditingTranche(null);
+            }}
             onSuccess={() => {
               setShowTrancheWizard(false);
+              setEditingTranche(null);
               fetchProjectData();
             }}
             preselectedProjectId={projectId}
+            editingTranche={editingTranche}
           />
         )}
       </div>
