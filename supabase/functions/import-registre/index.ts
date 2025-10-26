@@ -1,8 +1,7 @@
 // supabase/functions/import-registre/index.ts
-// Deno Edge Function (public): parse "Registre des titres" CSV (';'), upsert investors, insert subscriptions.
+// Deno Edge Function: Parse CSV "Registre des titres" with semicolon separator
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { parse } from "https://deno.land/std@0.224.0/csv/parse.ts";
 
 /* ---------------- CORS ---------------- */
 const corsHeaders = {
@@ -13,37 +12,94 @@ const corsHeaders = {
 };
 
 /* --------------- Helpers --------------- */
-const parseFrDate = (s?: string | null) => {
-  if (!s) return null;
-  const v = s.trim();
-  // dd/mm/yyyy
-  const m = v.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
-  if (m) {
-    const [_, dd, mm, yyyy] = m;
+const parseDate = (value: any): string | null => {
+  if (!value) return null;
+  const v = String(value).trim();
+  
+  // Format: dd/mm/yyyy
+  const frMatch = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (frMatch) {
+    const [_, dd, mm, yyyy] = frMatch;
     return `${yyyy}-${mm}-${dd}`;
   }
-  // yyyy-mm-dd
-  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  
+  // Format: yyyy-mm-dd HH:MM:SS (from Excel/CSV export)
+  const isoMatch = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+  
   return null;
 };
 
-const toBool = (s?: string | null) => {
+const toBool = (s?: string | null): boolean | null => {
   if (!s) return null;
   const v = s.trim().toLowerCase();
-  return v === "oui" || v === "yes" ? true
-       : v === "non" || v === "no" ? false
+  return v === "oui" || v === "yes" || v === "true" ? true
+       : v === "non" || v === "no" || v === "false" ? false
        : null;
 };
 
-const cleanPhone = (s?: string | null) =>
-  (s || "").replace(/[^0-9+]/g, "") || null;
+const cleanPhone = (s?: string | null): string | null => {
+  if (!s) return null;
+  return s.replace(/[^0-9+]/g, "") || null;
+};
 
-const toNumber = (s?: string | number | null) => {
-  if (s === null || s === undefined) return null;
+const toNumber = (s?: string | number | null): number | null => {
+  if (s === null || s === undefined || s === "") return null;
   const str = String(s).replace(/\s/g, "").replace(",", ".");
   const n = Number(str);
   return Number.isFinite(n) ? n : null;
 };
+
+const cleanString = (s?: string | null): string | null => {
+  if (!s) return null;
+  const cleaned = String(s).trim().replace(/^'+|'+$/g, ""); // Remove leading/trailing quotes
+  return cleaned || null;
+};
+
+// Parse CSV manually (semicolon separator)
+function parseCSV(text: string): Array<Record<string, string>> {
+  const lines = text.split(/\r?\n/);
+  const result: Array<Record<string, string>> = [];
+  
+  let headers: string[] = [];
+  let inDataSection = false;
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    
+    // Check if this is a header line (contains "Projet" and "Quantité")
+    if (trimmed.includes("Projet;") && trimmed.includes("Quantité")) {
+      headers = trimmed.split(";").map(h => h.trim());
+      inDataSection = true;
+      continue;
+    }
+    
+    // Skip title lines
+    if (trimmed.startsWith("Registre des titres") || trimmed === "Total") {
+      inDataSection = false;
+      continue;
+    }
+    
+    // Parse data lines
+    if (inDataSection && headers.length > 0) {
+      const values = line.split(";");
+      
+      // Check if this is a valid data row (has Projet value)
+      if (values[0] && values[0].trim() && !values[0].includes("Registre")) {
+        const row: Record<string, string> = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] ? values[index].trim() : "";
+        });
+        result.push(row);
+      }
+    }
+  }
+  
+  return result;
+}
 
 Deno.serve(async (req: Request) => {
   // Preflight CORS
@@ -59,8 +115,8 @@ Deno.serve(async (req: Request) => {
     const ctype = req.headers.get("content-type") ?? "";
     if (!ctype.includes("multipart/form-data")) {
       return new Response(
-        'Send multipart/form-data with fields: projet_id, tranche_id, file',
-        { status: 400, headers: corsHeaders },
+        "Send multipart/form-data with fields: projet_id, tranche_id, file",
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -72,42 +128,24 @@ Deno.serve(async (req: Request) => {
     if (!projetId || !trancheId || !file) {
       return new Response(
         "Missing projet_id, tranche_id or file",
-        { status: 400, headers: corsHeaders },
+        { status: 400, headers: corsHeaders }
       );
     }
 
-    // Supabase (service role) - PUBLIC FUNCTION (no JWT required)
+    // Supabase client (service role)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
 
-    // Read CSV text (UTF-8 by default)
+    // Read CSV text
     const text = await file.text();
-
-    // Try to find the section header used in your "Registre des titres"
-    // Adapt this selector to your header if needed
-    // Example header: "Projet;Quantité;Montant;Nom(s);Prénom(s);Email;Téléphone;..."
-    const lines = text.split(/\r?\n/);
-    let headerIdx = lines.findIndex((l) =>
-      l.toLowerCase().includes("projet;") && l.toLowerCase().includes("quantité")
-    );
-    if (headerIdx === -1) headerIdx = 0; // fallback: parse whole file
-
-    // Extract contiguous non-empty lines after header
-    let endIdx = headerIdx + 1;
-    while (endIdx < lines.length && lines[endIdx].trim() !== "") endIdx++;
-    const section = lines.slice(headerIdx, endIdx).join("\n");
-
-    // Parse CSV with ';' and header row
-    const rows = await parse(section, {
-      separator: ";",
-      skipFirstRow: false,
-      columns: true,
-      trimLeadingSpace: true,
-      trimTrailingSpace: true,
-    }) as Record<string, string>[];
+    
+    // Parse CSV
+    const rows = parseCSV(text);
+    
+    console.log(`Parsed ${rows.length} rows from CSV`);
 
     let total = 0;
     let createdInvestisseurs = 0;
@@ -118,41 +156,46 @@ Deno.serve(async (req: Request) => {
     for (const r of rows) {
       total++;
       try {
-        // Map minimal columns (adapt to your CSV headers)
-        const email =
-          (r["Email"] ||
-            r["email"] ||
-            r["Email du représentant légal"] ||
-            r["email_rep_legal"] ||
-            "").trim().toLowerCase();
+        // Determine investor type based on available fields
+        const isPersonneMorale = r["Raison sociale"] || r["N° SIREN"];
+        const investorType = isPersonneMorale ? "morale" : "physique";
 
-        const prenom = (r["Prénom(s)"] || r["Prénom"] || r["prenom"] || "").trim();
-        const nom = (r["Nom(s)"] || r["Nom"] || r["nom"] || "").trim();
-        const fullName = [prenom, nom].filter(Boolean).join(" ").trim();
-
-        // Upsert investisseur by email (fallback to name if email missing)
         let investisseurId: string | null = null;
+        let investorName = "";
 
-        if (email) {
-          const { data: existing, error: qErr } = await supabase
-            .from("investisseurs")
-            .select("id")
-            .eq("email", email)
-            .maybeSingle();
-          if (qErr) throw qErr;
+        if (investorType === "physique") {
+          // Physical person
+          const prenom = cleanString(r["Prénom(s)"]) || "";
+          const nom = cleanString(r["Nom(s)"]) || "";
+          const nomUsage = cleanString(r["Nom d'usage"]);
+          investorName = [prenom, nomUsage || nom].filter(Boolean).join(" ").trim();
+          
+          const email = cleanString(r["Email"])?.toLowerCase() || null;
+          const dateNaissance = parseDate(r["Né(e) le"]);
+          
+          // Try to find existing investor by email or name+birthdate
+          let existing = null;
+          if (email) {
+            const { data } = await supabase
+              .from("investisseurs")
+              .select("id")
+              .eq("email", email)
+              .maybeSingle();
+            existing = data;
+          }
 
           const invPayload: any = {
-            type: "Physique",
-            nom_raison_sociale: fullName || nom || null,
-            email: email || null,
-            telephone: cleanPhone(r["Téléphone"] || r["telephone"]),
-            adresse: r["Adresse du domicile"] || r["Adresse du siège"] || null,
-            residence_fiscale: r["Résidence Fiscale 1"] || r["Residence fiscale"] || null,
-            departement_naissance: (r["Département de naissance"] ?? "").toString() || null,
-            date_naissance: parseFrDate(r["Né(e) le"] || r["Date de naissance"]),
-            lieu_naissance: r["Lieu de naissance"] || null,
+            type: "physique",
+            nom_raison_sociale: investorName || nom || "Investisseur",
+            email: email,
+            telephone: cleanPhone(r["Téléphone"]),
+            adresse: cleanString(r["Adresse du domicile"]),
+            residence_fiscale: cleanString(r["Résidence Fiscale 1"]),
+            departement_naissance: cleanString(r["Département de naissance"]),
+            date_naissance: dateNaissance,
+            lieu_naissance: cleanString(r["Lieu de naissance"]),
             ppe: toBool(r["PPE"]),
-            categorie_mifid: r["Catégorisation"] || null,
+            categorie_mifid: cleanString(r["Catégorisation"]),
           };
 
           if (!existing) {
@@ -174,32 +217,73 @@ Deno.serve(async (req: Request) => {
             updatedInvestisseurs++;
           }
         } else {
-          // No email -> create a minimal investor row to attach subscription
-          const { data: ins, error: insErr } = await supabase
-            .from("investisseurs")
-            .insert([{
-              type: "Physique",
-              nom_raison_sociale: fullName || "Investisseur",
-            }])
-            .select("id")
-            .single();
-          if (insErr) throw insErr;
-          investisseurId = ins.id;
-          createdInvestisseurs++;
+          // Moral person (company)
+          const raisonSociale = cleanString(r["Raison sociale"]) || "";
+          investorName = raisonSociale;
+          
+          const sirenStr = cleanString(r["N° SIREN"]);
+          const siren = sirenStr ? parseInt(sirenStr.replace(/\D/g, "")) : null;
+          const emailRepLegal = cleanString(r["Email du représentant légal"])?.toLowerCase() || null;
+          
+          // Try to find by SIREN or email
+          let existing = null;
+          if (siren) {
+            const { data } = await supabase
+              .from("investisseurs")
+              .select("id")
+              .eq("siren", siren)
+              .maybeSingle();
+            existing = data;
+          }
+
+          const prenomRep = cleanString(r["Prénom du représentant légal"]) || "";
+          const nomRep = cleanString(r["Nom du représentant légal"]) || "";
+          const representantLegal = [prenomRep, nomRep].filter(Boolean).join(" ").trim() || null;
+
+          const invPayload: any = {
+            type: "morale",
+            nom_raison_sociale: investorName,
+            siren: siren,
+            representant_legal: representantLegal,
+            email: emailRepLegal,
+            telephone: cleanPhone(r["Téléphone"]),
+            adresse: cleanString(r["Adresse du siège social"]),
+            residence_fiscale: cleanString(r["Résidence Fiscale 1 du représentant légal"]),
+            departement_naissance: cleanString(r["Département de naissance du représentant"]),
+            ppe: toBool(r["PPE"]),
+            categorie_mifid: cleanString(r["Catégorisation"]),
+          };
+
+          if (!existing) {
+            const { data: ins, error: insErr } = await supabase
+              .from("investisseurs")
+              .insert([invPayload])
+              .select("id")
+              .single();
+            if (insErr) throw insErr;
+            investisseurId = ins.id;
+            createdInvestisseurs++;
+          } else {
+            investisseurId = existing.id;
+            const { error: updErr } = await supabase
+              .from("investisseurs")
+              .update(invPayload)
+              .eq("id", investisseurId);
+            if (updErr) throw updErr;
+            updatedInvestisseurs++;
+          }
         }
 
-        // Subscription fields
-        const quantite =
-          toNumber(r["Quantité"] || r["quantite"] || r["Nombre d'obligations"]);
-        const montant =
-          toNumber(r["Montant"] || r["montant"] || r["Montant investi"]);
-        const dateSouscription =
-          parseFrDate(r["Date de souscription"] || r["date_souscription"]) || null;
+        // Create subscription
+        const quantite = toNumber(r["Quantité"]);
+        const montant = toNumber(r["Montant"]);
+        const dateSouscription = parseDate(r["Date de souscription"]);
 
-        const cgp = r["CGP"] || r["cgp"] || r["Conseiller"] || null;
-        const email_cgp = r["Email du CGP"] || r["email_cgp"] || null;
-        const code_cgp = r["Code du CGP"] || r["code_cgp"] || null;
-        const siren_cgp = r["Siren du CGP"] ? String(r["Siren du CGP"]) : null;
+        const cgp = cleanString(r["CGP"]);
+        const emailCgp = cleanString(r["Email du CGP"]);
+        const codeCgp = cleanString(r["Code du CGP"]);
+        const sirenCgpStr = cleanString(r["Siren du CGP"]);
+        const sirenCgp = sirenCgpStr ? parseInt(sirenCgpStr.replace(/\D/g, "")) : null;
 
         const { error: subErr } = await supabase
           .from("souscriptions")
@@ -210,38 +294,51 @@ Deno.serve(async (req: Request) => {
             date_souscription: dateSouscription,
             nombre_obligations: quantite,
             montant_investi: montant,
-            // facultatif selon ton schéma
-            date_validation_bs: parseFrDate(r["Date de Validation BS"]),
-            date_transfert: parseFrDate(r["Date de Transfert"]),
+            date_validation_bs: parseDate(r["Date de Validation BS"]),
+            date_transfert: parseDate(r["Date de Transfert"]),
             pea: r["PEA / PEA-PME"] ? true : null,
-            pea_compte: r["Numéro de Compte PEA / PEA-PME"] || null,
+            pea_compte: cleanString(r["Numéro de Compte PEA / PEA-PME"]),
             cgp,
-            email_cgp,
-            code_cgp,
-            siren_cgp,
+            email_cgp: emailCgp,
+            code_cgp: codeCgp,
+            siren_cgp: sirenCgp,
           }]);
-        if (subErr) throw subErr;
 
+        if (subErr) throw subErr;
         createdSouscriptions++;
+
       } catch (e: any) {
+        console.error(`Error processing row ${total}:`, e);
         errors.push({ line: total, error: e?.message ?? String(e) });
       }
     }
 
     return new Response(
       JSON.stringify({
+        success: true,
         total,
         createdInvestisseurs,
         updatedInvestisseurs,
         createdSouscriptions,
         errors,
       }),
-      { status: 200, headers: { ...corsHeaders, "content-type": "application/json" } },
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, "content-type": "application/json" } 
+      }
     );
+
   } catch (err: any) {
+    console.error("Global error:", err);
     return new Response(
-      JSON.stringify({ error: err?.message ?? String(err) }),
-      { status: 500, headers: { ...corsHeaders, "content-type": "application/json" } },
+      JSON.stringify({ 
+        success: false,
+        error: err?.message ?? String(err) 
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, "content-type": "application/json" } 
+      }
     );
   }
 });
