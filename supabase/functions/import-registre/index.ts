@@ -218,6 +218,10 @@ Deno.serve(async (req: Request) => {
 
     const trancheId = trancheData.id;
     console.log("Tranche créée avec succès, ID:", trancheId);
+    
+    // Get tranche emission date for subscriptions
+    const trancheEmissionDate = trancheData.date_emission || null;
+    console.log("Date d'émission de la tranche:", trancheEmissionDate);
 
     // Read file
     console.log("=== ANALYSE DU FICHIER ===");
@@ -345,9 +349,13 @@ Deno.serve(async (req: Request) => {
     for (const r of rows) {
       total++;
       try {
+        console.log(`\n=== TRAITEMENT LIGNE ${total} ===`);
+        console.log("Données brutes:", r);
+        
         // Determine investor type based on available fields
         const isPersonneMorale = r["Raison sociale"] || r["N° SIREN"];
         const investorType = isPersonneMorale ? "morale" : "physique";
+        console.log("Type investisseur:", investorType);
 
         let investisseurId: string | null = null;
         let investorName = "";
@@ -359,18 +367,45 @@ Deno.serve(async (req: Request) => {
           const nomUsage = cleanString(r["Nom d'usage"]);
           investorName = [prenom, nomUsage || nom].filter(Boolean).join(" ").trim();
           
+          console.log("Nom complet:", investorName);
+          
           const email = cleanString(r["Email"])?.toLowerCase() || null;
+          console.log("Email:", email);
+          
           const dateNaissance = parseDate(r["Né(e) le"]);
           
-          // Try to find existing investor by email or name+birthdate
+          // Try to find existing investor by email AND name (stricter matching)
           let existing = null;
           if (email) {
-            const { data } = await supabase
+            const { data, error: qErr } = await supabase
               .from("investisseurs")
               .select("id")
               .eq("email", email)
+              .eq("type", "physique")
               .maybeSingle();
+            if (qErr) {
+              console.error("Erreur recherche investisseur:", qErr);
+              throw qErr;
+            }
             existing = data;
+            console.log("Investisseur existant trouvé par email:", existing ? "OUI (ID: " + existing.id + ")" : "NON");
+          }
+          
+          // If no email match, try by name and birthdate (very strict)
+          if (!existing && investorName && dateNaissance) {
+            const { data, error: qErr } = await supabase
+              .from("investisseurs")
+              .select("id")
+              .eq("nom_raison_sociale", investorName)
+              .eq("date_naissance", dateNaissance)
+              .eq("type", "physique")
+              .maybeSingle();
+            if (qErr) {
+              console.error("Erreur recherche par nom+date:", qErr);
+            } else if (data) {
+              existing = data;
+              console.log("Investisseur existant trouvé par nom+date:", "OUI (ID: " + existing.id + ")");
+            }
           }
 
           const invPayload: any = {
@@ -386,43 +421,85 @@ Deno.serve(async (req: Request) => {
             ppe: toBool(r["PPE"]),
             categorie_mifid: cleanString(r["Catégorisation"]),
           };
+          
+          console.log("Payload investisseur:", invPayload);
 
           if (!existing) {
+            console.log("Création nouvel investisseur...");
             const { data: ins, error: insErr } = await supabase
               .from("investisseurs")
               .insert([invPayload])
               .select("id")
               .single();
-            if (insErr) throw insErr;
+            if (insErr) {
+              console.error("Erreur création investisseur:", insErr);
+              throw insErr;
+            }
+            if (!ins || !ins.id) {
+              console.error("Investisseur créé mais pas d'ID retourné!");
+              throw new Error("Pas d'ID investisseur retourné");
+            }
             investisseurId = ins.id;
+            console.log("✅ Investisseur créé avec ID:", investisseurId);
             createdInvestisseurs++;
           } else {
             investisseurId = existing.id;
+            console.log("Mise à jour investisseur existant ID:", investisseurId);
             const { error: updErr } = await supabase
               .from("investisseurs")
               .update(invPayload)
               .eq("id", investisseurId);
-            if (updErr) throw updErr;
+            if (updErr) {
+              console.error("Erreur update investisseur:", updErr);
+              throw updErr;
+            }
+            console.log("✅ Investisseur mis à jour");
             updatedInvestisseurs++;
           }
         } else {
           // Moral person (company)
           const raisonSociale = cleanString(r["Raison sociale"]) || "";
           investorName = raisonSociale;
+          console.log("Raison sociale:", raisonSociale);
           
           const sirenStr = cleanString(r["N° SIREN"]);
           const siren = sirenStr ? parseInt(sirenStr.replace(/\D/g, "")) : null;
+          console.log("SIREN:", siren);
+          
           const emailRepLegal = cleanString(r["Email du représentant légal"])?.toLowerCase() || null;
+          console.log("Email rep legal:", emailRepLegal);
           
           // Try to find by SIREN or email
           let existing = null;
           if (siren) {
-            const { data } = await supabase
+            const { data, error: qErr } = await supabase
               .from("investisseurs")
               .select("id")
               .eq("siren", siren)
+              .eq("type", "morale")
               .maybeSingle();
+            if (qErr) {
+              console.error("Erreur recherche par SIREN:", qErr);
+              throw qErr;
+            }
             existing = data;
+            console.log("Société existante trouvée par SIREN:", existing ? "OUI (ID: " + existing.id + ")" : "NON");
+          }
+          
+          // Try by email if no SIREN match
+          if (!existing && emailRepLegal) {
+            const { data, error: qErr } = await supabase
+              .from("investisseurs")
+              .select("id")
+              .eq("email", emailRepLegal)
+              .eq("type", "morale")
+              .maybeSingle();
+            if (qErr) {
+              console.error("Erreur recherche par email:", qErr);
+            } else if (data) {
+              existing = data;
+              console.log("Société existante trouvée par email:", "OUI (ID: " + existing.id + ")");
+            }
           }
 
           const prenomRep = cleanString(r["Prénom du représentant légal"]) || "";
@@ -442,37 +519,68 @@ Deno.serve(async (req: Request) => {
             ppe: toBool(r["PPE"]),
             categorie_mifid: cleanString(r["Catégorisation"]),
           };
+          
+          console.log("Payload société:", invPayload);
 
           if (!existing) {
+            console.log("Création nouvelle société...");
             const { data: ins, error: insErr } = await supabase
               .from("investisseurs")
               .insert([invPayload])
               .select("id")
               .single();
-            if (insErr) throw insErr;
+            if (insErr) {
+              console.error("Erreur création société:", insErr);
+              throw insErr;
+            }
+            if (!ins || !ins.id) {
+              console.error("Société créée mais pas d'ID retourné!");
+              throw new Error("Pas d'ID société retourné");
+            }
             investisseurId = ins.id;
+            console.log("✅ Société créée avec ID:", investisseurId);
             createdInvestisseurs++;
           } else {
             investisseurId = existing.id;
+            console.log("Mise à jour société existante ID:", investisseurId);
             const { error: updErr } = await supabase
               .from("investisseurs")
               .update(invPayload)
               .eq("id", investisseurId);
-            if (updErr) throw updErr;
+            if (updErr) {
+              console.error("Erreur update société:", updErr);
+              throw updErr;
+            }
+            console.log("✅ Société mise à jour");
             updatedInvestisseurs++;
           }
+        }
+
+        // Verify we have an investor ID before creating subscription
+        if (!investisseurId) {
+          console.error("❌ PAS D'ID INVESTISSEUR APRÈS CRÉATION/UPDATE!");
+          throw new Error("investisseurId est null");
         }
 
         // Create subscription
         const quantite = toNumber(r["Quantité"]);
         const montant = toNumber(r["Montant"]);
-        const dateSouscription = parseDate(r["Date de souscription"]);
+        
+        // Use tranche emission date if no subscription date in CSV
+        const dateSouscriptionCSV = parseDate(r["Date de souscription"]);
+        const dateSouscription = dateSouscriptionCSV || trancheEmissionDate || null;
+        
+        console.log("Date souscription CSV:", dateSouscriptionCSV);
+        console.log("Date souscription finale:", dateSouscription);
 
         const cgp = cleanString(r["CGP"]);
         const emailCgp = cleanString(r["Email du CGP"]);
         const codeCgp = cleanString(r["Code du CGP"]);
         const sirenCgpStr = cleanString(r["Siren du CGP"]);
         const sirenCgp = sirenCgpStr ? parseInt(sirenCgpStr.replace(/\D/g, "")) : null;
+
+        console.log("Création souscription pour investisseur:", investisseurId);
+        console.log("Quantité:", quantite, "Montant:", montant);
 
         const { error: subErr } = await supabase
           .from("souscriptions")
@@ -493,11 +601,15 @@ Deno.serve(async (req: Request) => {
             siren_cgp: sirenCgp,
           }]);
 
-        if (subErr) throw subErr;
+        if (subErr) {
+          console.error("Erreur création souscription:", subErr);
+          throw subErr;
+        }
+        console.log("✅ Souscription créée");
         createdSouscriptions++;
 
       } catch (e: any) {
-        console.error(`Error processing row ${total}:`, e);
+        console.error(`❌ Erreur ligne ${total}:`, e);
         errors.push({ line: total, error: e?.message ?? String(e) });
       }
     }
