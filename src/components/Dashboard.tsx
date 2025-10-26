@@ -160,6 +160,7 @@ export function Dashboard({ organization }: DashboardProps) {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
     } catch {}
+
   };
 
   const formatCurrency = (amount: number) => {
@@ -209,7 +210,6 @@ export function Dashboard({ organization }: DashboardProps) {
     if (!el) return;
     const display = el.value;
     const pos = Math.max(0, display.length - 2); // before " €"
-    // Defer to next tick to let React update value first
     requestAnimationFrame(() => {
       el.setSelectionRange(pos, pos);
     });
@@ -277,7 +277,7 @@ export function Dashboard({ organization }: DashboardProps) {
         const [paymentsRes2, couponsRes] = await Promise.all([
           supabase.from('paiements').select(`
               id, id_paiement, montant, date_paiement, statut,
-              tranche:tranges(tranche_name, projet_id)
+              tranche:tranches(tranche_name, projet_id)
             `).in('tranche_id', trancheIds).in('statut', ['Payé', 'paid']).order('date_paiement', { ascending: false }).limit(5),
           supabase.from('souscriptions').select(`
               id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
@@ -889,49 +889,90 @@ export function Dashboard({ organization }: DashboardProps) {
                       <label className="block text-sm font-medium text-slate-900 mb-2">
                         Montant global à lever (€) <span className="text-red-600">*</span>
                       </label>
-                      {/* Input texte avec formatage live: "1 234 567 €" */}
+                      {/* Masked input: only digits, backspace/delete handled, paste sanitized */}
                       <input
                         ref={montantRef}
                         type="text"
                         required
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, '');
-                          setNewProjectData({ ...newProjectData, montant_global_eur: digits });
-                          moveCaretBeforeEuro();
+                        onChange={() => {
+                          // no-op: we fully control input via onBeforeInput / onKeyDown / onPaste
                         }}
                         onFocus={moveCaretBeforeEuro}
                         onClick={moveCaretBeforeEuro}
-                        onKeyDown={(e) => {
-                          const el = montantRef.current;
-                          if (!el) return;
+                        onBeforeInput={(e: any) => {
+                          const data = e.data as string | null;
+                          const inputType = e.inputType as string;
 
-                          const isBackspace = e.key === 'Backspace';
-                          const isDelete = e.key === 'Delete';
-
-                          if (isBackspace || isDelete) {
-                            const start = el.selectionStart ?? 0;
-                            const end = el.selectionEnd ?? 0;
-                            const val = el.value;
-
-                            // If caret is at the very end (after the ' €'), make Backspace delete the last digit
-                            if (isBackspace && start === end && start >= val.length - 0) {
-                              if (newProjectData.montant_global_eur.length > 0) {
-                                setNewProjectData(prev => ({
-                                  ...prev,
-                                  montant_global_eur: prev.montant_global_eur.slice(0, -1)
-                                }));
-                              }
-                              e.preventDefault();
-                              moveCaretBeforeEuro();
-                            }
-                            // Prevent deleting the " €" tail with Delete
-                            if (isDelete && start === end && start >= val.length - 2) {
-                              e.preventDefault();
-                              moveCaretBeforeEuro();
-                            }
+                          // typing a digit
+                          if (inputType === 'insertText' && data && /^\d$/.test(data)) {
+                            e.preventDefault();
+                            setNewProjectData(prev => ({
+                              ...prev,
+                              montant_global_eur: (prev.montant_global_eur || '') + data
+                            }));
+                            requestAnimationFrame(moveCaretBeforeEuro);
+                            return;
                           }
+
+                          // block other textual inserts inside the mask
+                          if (inputType === 'insertText') {
+                            e.preventDefault();
+                            return;
+                          }
+
+                          // let composition/paste be handled elsewhere
+                        }}
+                        onKeyDown={(e) => {
+                          // Allow navigation keys & tab
+                          const navKeys = ['Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+                          if (navKeys.includes(e.key)) return;
+
+                          // Digits via keydown (fallback for browsers not firing beforeinput as expected)
+                          if (/^\d$/.test(e.key)) {
+                            e.preventDefault();
+                            setNewProjectData(prev => ({
+                              ...prev,
+                              montant_global_eur: (prev.montant_global_eur || '') + e.key
+                            }));
+                            requestAnimationFrame(moveCaretBeforeEuro);
+                            return;
+                          }
+
+                          if (e.key === 'Backspace') {
+                            e.preventDefault();
+                            setNewProjectData(prev => ({
+                              ...prev,
+                              montant_global_eur: prev.montant_global_eur.slice(0, -1)
+                            }));
+                            requestAnimationFrame(moveCaretBeforeEuro);
+                            return;
+                          }
+
+                          if (e.key === 'Delete') {
+                            e.preventDefault();
+                            // same as backspace for simplicity
+                            setNewProjectData(prev => ({
+                              ...prev,
+                              montant_global_eur: prev.montant_global_eur.slice(0, -1)
+                            }));
+                            requestAnimationFrame(moveCaretBeforeEuro);
+                            return;
+                          }
+
+                          // Block everything else in this masked field
+                          e.preventDefault();
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const text = (e.clipboardData || (window as any).clipboardData).getData('text');
+                          const digits = (text || '').replace(/\D/g, '');
+                          setNewProjectData(prev => ({
+                            ...prev,
+                            montant_global_eur: digits
+                          }));
+                          requestAnimationFrame(moveCaretBeforeEuro);
                         }}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Ex: 1 500 000 €"
