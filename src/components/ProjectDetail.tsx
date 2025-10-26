@@ -160,16 +160,29 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const handleDeleteTranche = async (tranche: Tranche) => {
     const trancheSubscriptions = subscriptions.filter(s => s.tranche.tranche_name === tranche.tranche_name);
 
+    let confirmMessage = `Êtes-vous sûr de vouloir supprimer la tranche "${tranche.tranche_name}" ?`;
+
     if (trancheSubscriptions.length > 0) {
-      alert(`Impossible de supprimer cette tranche car elle contient ${trancheSubscriptions.length} souscription(s).`);
-      return;
+      confirmMessage = `⚠️ ATTENTION: Cette tranche contient ${trancheSubscriptions.length} souscription(s).\n\nSupprimer la tranche supprimera également toutes les souscriptions associées.\n\nÊtes-vous sûr de vouloir continuer ?`;
     }
 
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer la tranche "${tranche.tranche_name}" ?`)) {
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
+      // Delete all subscriptions first
+      if (trancheSubscriptions.length > 0) {
+        const subscriptionIds = trancheSubscriptions.map(s => s.id);
+        const { error: subsError } = await supabase
+          .from('souscriptions')
+          .delete()
+          .in('id', subscriptionIds);
+
+        if (subsError) throw subsError;
+      }
+
+      // Then delete the tranche
       const { error } = await supabase
         .from('tranches')
         .delete()
@@ -224,6 +237,26 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
     } catch (error: any) {
       console.error('Error updating project:', error);
       alert('Erreur lors de la mise à jour du projet: ' + error.message);
+    }
+  };
+
+  const handleDeleteSubscription = async (subscription: Subscription) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer la souscription de ${subscription.investisseur.nom_raison_sociale} ?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('souscriptions')
+        .delete()
+        .eq('id', subscription.id);
+
+      if (error) throw error;
+
+      fetchProjectData();
+    } catch (error: any) {
+      console.error('Error deleting subscription:', error);
+      alert('Erreur lors de la suppression de la souscription: ' + error.message);
     }
   };
 
@@ -443,10 +476,11 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                         <td className="px-4 py-3 text-sm text-slate-600">{formatDate(sub.prochaine_date_coupon)}</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-2">
-                            <button className="p-1 text-slate-600 hover:bg-slate-100 rounded">
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button className="p-1 text-red-600 hover:bg-red-50 rounded">
+                            <button
+                              onClick={() => handleDeleteSubscription(sub)}
+                              className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                              title="Supprimer la souscription"
+                            >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
