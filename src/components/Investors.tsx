@@ -565,23 +565,33 @@ export function Investors({ organization }: InvestorsProps) {
                       {investor.nb_souscriptions}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-1">
                         {hasRib ? (
-                          <button
-                            onClick={() => handleDownloadRib(investor)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Télécharger le RIB"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleDownloadRib(investor)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors text-xs font-medium"
+                              title="Télécharger le RIB"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Télécharger
+                            </button>
+                            <button
+                              onClick={() => handleRibUpload(investor)}
+                              className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-lg transition-colors"
+                              title="Remplacer le RIB"
+                            >
+                              <Upload className="w-4 h-4" />
+                            </button>
+                          </>
                         ) : (
                           <button
                             onClick={() => handleRibUpload(investor)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors text-xs font-medium"
-                            title="Uploader un RIB"
+                            title="Mettre en ligne un RIB"
                           >
                             <Upload className="w-3.5 h-3.5" />
-                            Upload RIB
+                            Mettre en ligne
                           </button>
                         )}
                       </div>
