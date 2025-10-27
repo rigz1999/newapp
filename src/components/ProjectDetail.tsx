@@ -549,7 +549,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             <h2 className="text-xl font-bold text-slate-900">Souscriptions</h2>
             <button
               onClick={() => setShowSubscriptionsModal(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
             >
               Voir tout ({subscriptions.length})
             </button>
