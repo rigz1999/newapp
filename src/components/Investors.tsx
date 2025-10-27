@@ -597,13 +597,6 @@ export function Investors({ organization }: InvestorsProps) {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleEditClick(investor)}
-                          className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
                           onClick={() => handleDeleteClick(investor)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Supprimer"
@@ -640,12 +633,24 @@ export function Investors({ organization }: InvestorsProps) {
                   <p className="text-sm text-slate-600">{selectedInvestor.id_investisseur}</p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    handleEditClick(selectedInvestor);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Modifier
+                </button>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             <div className="p-6 space-y-6">
