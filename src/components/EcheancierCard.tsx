@@ -137,70 +137,76 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick }: Echeanci
             return (
               <div
                 key={tranche.id}
-                className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                className="group border border-slate-200 rounded-lg p-4 hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
                 onClick={() => onPaymentClick(tranche.id)}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="font-semibold text-slate-900">{tranche.tranche_name}</p>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-900 mb-3">{tranche.tranche_name}</p>
                     
-                    <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
+                    <div className="flex flex-wrap items-center gap-4 mb-3">
                       {/* Statut principal */}
                       {hasRetard ? (
-                        <span className="flex items-center gap-1.5 text-red-600 font-medium">
-                          <AlertCircle className="w-4 h-4" />
-                          {stats.enRetard} coupon{stats.enRetard > 1 ? 's' : ''} en retard
-                        </span>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+                          <AlertCircle className="w-4 h-4 text-red-600" />
+                          <span className="text-sm font-medium text-red-700">
+                            {stats.enRetard} coupon{stats.enRetard > 1 ? 's' : ''} en retard
+                          </span>
+                        </div>
                       ) : prochainCoupon ? (
-                        <span className="flex items-center gap-1.5 text-orange-600 font-medium">
-                          <Clock className="w-4 h-4" />
-                          Prochain: {formatDate(prochainCoupon.date)}
-                        </span>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg">
+                          <Clock className="w-4 h-4 text-orange-600" />
+                          <span className="text-sm font-medium text-orange-700">
+                            {formatDate(prochainCoupon.date)}
+                          </span>
+                        </div>
                       ) : (
-                        <span className="flex items-center gap-1.5 text-green-600 font-medium">
-                          <CheckCircle className="w-4 h-4" />
-                          Tous les coupons payés
-                        </span>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-700">
+                            Tous les coupons payés
+                          </span>
+                        </div>
                       )}
 
                       {/* Montant du prochain */}
                       {prochainCoupon && (
-                        <span className="flex items-center gap-1.5 text-slate-700">
-                          <DollarSign className="w-4 h-4" />
-                          {formatCurrency(prochainCoupon.montant)}
-                        </span>
+                        <div className="flex items-center gap-1.5 text-slate-700">
+                          <DollarSign className="w-4 h-4 text-slate-500" />
+                          <span className="text-sm font-semibold">{formatCurrency(prochainCoupon.montant)}</span>
+                        </div>
                       )}
 
                       {/* Nombre d'investisseurs */}
                       {prochainCoupon && (
-                        <span className="text-slate-600">
+                        <span className="text-sm text-slate-600">
                           {prochainCoupon.nb_investisseurs} investisseur{prochainCoupon.nb_investisseurs > 1 ? 's' : ''}
                         </span>
                       )}
                     </div>
 
-                    {/* Ligne de statut */}
-                    <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" />
-                        {stats.payes} payé{stats.payes > 1 ? 's' : ''}
-                      </span>
-                      <span>•</span>
-                      <span>{stats.totalEcheances - stats.payes} restant{stats.totalEcheances - stats.payes > 1 ? 's' : ''}</span>
-                    </div>
+                    {/* Ligne de statut et badge délai */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          {stats.payes} payé{stats.payes > 1 ? 's' : ''}
+                        </span>
+                        <span>•</span>
+                        <span>{stats.totalEcheances - stats.payes} restant{stats.totalEcheances - stats.payes > 1 ? 's' : ''}</span>
+                      </div>
 
-                    {/* Badge "dans X jours" si proche */}
-                    {prochainCoupon && (
-                      <div className="mt-2">
-                        <span className={`inline-block text-xs px-2 py-1 rounded-full ${
+                      {/* Badge "dans X jours" */}
+                      {prochainCoupon && (
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                           hasRetard 
                             ? 'bg-red-100 text-red-700' 
-                            : 'bg-blue-100 text-blue-700'
+                            : 'bg-blue-50 text-blue-600'
                         }`}>
                           {getRelativeDate(prochainCoupon.date)}
                         </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
                   <button
@@ -208,7 +214,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick }: Echeanci
                       e.stopPropagation();
                       onPaymentClick(tranche.id);
                     }}
-                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex-shrink-0 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
                   >
                     Enregistrer paiement
                   </button>
