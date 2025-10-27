@@ -106,7 +106,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [showAllTranches, setShowAllTranches] = useState(false);
   const [showAllSubscriptions, setShowAllSubscriptions] = useState(false);
 
-  const TRANCHES_LIMIT = 3;
+  const TRANCHES_LIMIT = 5;
   const SUBSCRIPTIONS_LIMIT = 10;
 
   const [stats, setStats] = useState({
@@ -487,39 +487,37 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 return (
                   <div
                     key={tranche.id}
-                    className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50"
+                    className="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all"
                   >
-                    <div className="flex-1">
-                      <p className="text-base font-semibold text-slate-900">{tranche.tranche_name}</p>
-                      <div className="flex flex-wrap gap-4 mt-2 text-sm text-slate-600">
-                        <span className="flex items-center gap-1.5">
-                          <CalendarDays className="w-4 h-4" />
-                          {formatDate(tranche.date_emission)}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Coins className="w-4 h-4" />
-                          {formatCurrency(totalInvested)}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <UserCircle className="w-4 h-4" />
-                          {trancheSubscriptions.length} souscripteur(s)
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-6 flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 min-w-[150px]">{tranche.tranche_name}</p>
+                      <span className="flex items-center gap-1.5 text-xs text-slate-600">
+                        <CalendarDays className="w-3.5 h-3.5" />
+                        {formatDate(tranche.date_emission)}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs text-slate-600">
+                        <Coins className="w-3.5 h-3.5" />
+                        {formatCurrency(totalInvested)}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs text-slate-600">
+                        <UserCircle className="w-3.5 h-3.5" />
+                        {trancheSubscriptions.length} souscripteur(s)
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={() => {
                           setEditingTranche(tranche);
                           setShowTrancheWizard(true);
                         }}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                         title="Modifier la tranche"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteTranche(tranche)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                         title="Supprimer la tranche"
                       >
                         <Trash2 className="w-4 h-4" />
