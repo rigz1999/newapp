@@ -485,7 +485,6 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 const totalInvested = trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0);
 
                 return (
-                return (
                   <div
                     key={tranche.id}
                     className="flex items-center justify-between px-4 py-2 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all"
