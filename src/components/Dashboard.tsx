@@ -150,7 +150,21 @@ const generateAlerts = (
       });
     });
   }
-// Si aucune alerte, ajouter un message positif
+// 4. RIB MANQUANTS
+const { data: ribManquants } = await supabase
+  .from('investisseurs')
+  .select('id')
+  .or('rib_file_path.is.null,rib_status.eq.manquant');
+
+if (ribManquants && ribManquants.length > 0) {
+  alerts.push({
+    id: 'missing-ribs',
+    type: 'deadline',
+    message: `${ribManquants.length} investisseur${ribManquants.length > 1 ? 's n\'ont' : ' n\'a'} pas de RIB enregistré`,
+    count: ribManquants.length,
+  });
+}
+  // Si aucune alerte, ajouter un message positif
 if (alerts.length === 0) {
   alerts.push({
     id: 'no-alerts',
