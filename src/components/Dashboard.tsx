@@ -232,25 +232,7 @@ export function Dashboard({ organization }: DashboardProps) {
 
   const [recentPayments, setRecentPayments] = useState<Payment[]>([]);
   const [upcomingCoupons, setUpcomingCoupons] = useState<UpcomingCoupon[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([
-    {
-      id: 'example-deadline',
-      type: 'deadline',
-      message: 'Échéance proche : Tranche A dans 15 jours (27 oct. 2025)',
-    },
-    {
-      id: 'example-late',
-      type: 'late_payment',
-      message: '3 paiements en retard',
-      count: 3,
-    },
-    {
-      id: 'example-coupons',
-      type: 'upcoming_coupons',
-      message: '5 coupons à payer cette semaine (Total: 12 500 €)',
-      count: 5,
-    },
-  ]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
