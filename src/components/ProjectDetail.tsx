@@ -328,8 +328,9 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/projects')}
+              onClick={() => navigate('/projets')}
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              title="Retour aux projets"
             >
               <ArrowLeft className="w-5 h-5 text-slate-600" />
             </button>
