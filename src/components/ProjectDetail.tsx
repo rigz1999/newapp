@@ -477,72 +477,32 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             <p className="text-center text-slate-400 py-8">Aucune tranche créée</p>
           ) : (
             <>
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {(showAllTranches ? tranches : tranches.slice(0, TRANCHES_LIMIT)).map((tranche) => {
                 const trancheSubscriptions = subscriptions.filter(
                   (s) => s.tranche.tranche_name === tranche.tranche_name
                 );
                 const totalInvested = trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0);
 
-              return (
-  <div
-    key={tranche.id}
-    className="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all"
-  >
-    <div className="flex items-center gap-6 flex-1 min-w-0">
-      <p className="text-sm font-semibold text-slate-900 min-w-[150px]">{tranche.tranche_name}</p>
-      <span className="flex items-center gap-1.5 text-xs text-slate-600">
-        <CalendarDays className="w-3.5 h-3.5" />
-        {formatDate(tranche.date_emission)}
-      </span>
-      <span className="flex items-center gap-1.5 text-xs text-slate-600">
-        <Coins className="w-3.5 h-3.5" />
-        {formatCurrency(totalInvested)}
-      </span>
-      <span className="flex items-center gap-1.5 text-xs text-slate-600">
-        <UserCircle className="w-3.5 h-3.5" />
-        {trancheSubscriptions.length} souscripteur(s)
-      </span>
-    </div>
-    <div className="flex items-center gap-1">
-      <button
-        onClick={() => {
-          setEditingTranche(tranche);
-          setShowTrancheWizard(true);
-        }}
-        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-        title="Modifier la tranche"
-      >
-        <Edit className="w-4 h-4" />
-      </button>
-      <button
-        onClick={() => handleDeleteTranche(tranche)}
-        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-        title="Supprimer la tranche"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
-    </div>
-  </div>
-);
+                return (
                 return (
                   <div
                     key={tranche.id}
-                    className="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all"
+                    className="flex items-center justify-between px-4 py-2 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all"
                   >
-                    <div className="flex items-center gap-6 flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 min-w-[150px]">{tranche.tranche_name}</p>
-                      <span className="flex items-center gap-1.5 text-xs text-slate-600">
+                    <div className="flex items-center gap-4 flex-1">
+                      <span className="text-sm font-semibold text-slate-900 w-40">{tranche.tranche_name}</span>
+                      <span className="flex items-center gap-1 text-xs text-slate-600">
                         <CalendarDays className="w-3.5 h-3.5" />
                         {formatDate(tranche.date_emission)}
                       </span>
-                      <span className="flex items-center gap-1.5 text-xs text-slate-600">
+                      <span className="flex items-center gap-1 text-xs text-slate-600">
                         <Coins className="w-3.5 h-3.5" />
                         {formatCurrency(totalInvested)}
                       </span>
-                      <span className="flex items-center gap-1.5 text-xs text-slate-600">
+                      <span className="flex items-center gap-1 text-xs text-slate-600">
                         <UserCircle className="w-3.5 h-3.5" />
-                        {trancheSubscriptions.length} souscripteur(s)
+                        {trancheSubscriptions.length}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -551,15 +511,15 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                           setEditingTranche(tranche);
                           setShowTrancheWizard(true);
                         }}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Modifier la tranche"
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                        title="Modifier"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteTranche(tranche)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Supprimer la tranche"
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                        title="Supprimer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
