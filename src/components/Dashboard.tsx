@@ -487,6 +487,13 @@ export function Dashboard({ organization }: DashboardProps) {
       const monthlyDataResult = processMonthlyData(chartSubscriptions, selectedYear, startMonth, endMonth);
       setMonthlyData(monthlyDataResult);
 
+      // Récupérer les RIB manquants
+      const { data: ribManquantsData } = await supabase
+        .from('investisseurs')
+        .select('id')
+        .or('rib_file_path.is.null,rib_status.eq.manquant');
+
+      const ribManquantsCount = ribManquantsData?.length || 0;
       const cacheData = {
         stats: {
           totalInvested,
@@ -503,7 +510,7 @@ export function Dashboard({ organization }: DashboardProps) {
       setRecentPayments(recentPaymentsData as any);
       setUpcomingCoupons(groupedCoupons.slice(0, 5));
       // Générer les alertes dynamiques
-      const dynamicAlerts = generateAlerts(groupedCoupons.slice(0, 5), recentPaymentsData as any);
+     const dynamicAlerts = generateAlerts(groupedCoupons.slice(0, 5), recentPaymentsData as any, ribManquantsCount);
       setAlerts(dynamicAlerts);
       setCachedData(cacheData);
 
