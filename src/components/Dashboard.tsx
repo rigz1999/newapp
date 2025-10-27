@@ -241,13 +241,13 @@ export function Dashboard({ organization }: DashboardProps) {
     if (alertId === 'no-alerts') return; // Ne rien faire si message positif
     
     if (alertId === 'late-payments') {
-      navigate('/payments');
+      navigate('/paiements');
     } else if (alertId === 'upcoming-week') {
-      navigate('/payments');
+      navigate('/paiements');
     } else if (alertId === 'missing-ribs') {
-      navigate('/investors');
+      navigate('/investisseurs');
     } else if (alertId.startsWith('deadline-')) {
-      navigate('/payments');
+      navigate('/paiements');
     }
   };
   
