@@ -519,8 +519,10 @@ export function Investors({ organization }: InvestorsProps) {
                     RIB <ArrowUpDown className="w-4 h-4" />
                   </button>
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Actions
+                <th className="px-6 py-3 text-center">
+                  <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Actions
+                  </span>
                 </th>
               </tr>
             </thead>
@@ -541,12 +543,6 @@ export function Investors({ organization }: InvestorsProps) {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-slate-900">{investor.nom_raison_sociale}</p>
-                          <p className="text-xs text-slate-500">{investor.id_investisseur}</p>
-                          {investor.projects && investor.projects.length > 0 && (
-                            <p className="text-xs text-slate-600 mt-1">
-                              {investor.projects.length} projet{investor.projects.length > 1 ? 's' : ''}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </td>
@@ -560,12 +556,7 @@ export function Investors({ organization }: InvestorsProps) {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      <div>
-                        <p>{investor.email || '-'}</p>
-                        {investor.telephone && (
-                          <p className="text-xs text-slate-500">{investor.telephone}</p>
-                        )}
-                      </div>
+                      <p>{investor.email || '-'}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
                       {formatCurrency(investor.total_investi)}
@@ -576,35 +567,27 @@ export function Investors({ organization }: InvestorsProps) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-2">
                         {hasRib ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleDownloadRib(investor)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                              title="Télécharger le RIB"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRibUpload(investor)}
-                              className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-lg transition-colors"
-                              title="Remplacer le RIB"
-                            >
-                              <Upload className="w-4 h-4" />
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleDownloadRib(investor)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                            title="Télécharger le RIB"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
                         ) : (
                           <button
                             onClick={() => handleRibUpload(investor)}
-                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors text-xs font-medium"
                             title="Uploader un RIB"
                           >
-                            <Upload className="w-4 h-4" />
+                            <Upload className="w-3.5 h-3.5" />
+                            Upload RIB
                           </button>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => handleViewDetails(investor)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
