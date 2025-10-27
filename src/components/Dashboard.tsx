@@ -484,6 +484,9 @@ export function Dashboard({ organization }: DashboardProps) {
       };
       setRecentPayments(recentPaymentsData as any);
       setUpcomingCoupons(groupedCoupons.slice(0, 5));
+      // Générer les alertes dynamiques
+      const dynamicAlerts = generateAlerts(groupedCoupons.slice(0, 5), recentPaymentsData as any);
+      setAlerts(dynamicAlerts);
       setCachedData(cacheData);
 
       setLoading(false);
