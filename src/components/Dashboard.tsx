@@ -151,7 +151,15 @@ const generateAlerts = (
       });
     });
   }
-
+// 4. RIB MANQUANTS
+  if (ribManquantsCount > 0) {
+    alerts.push({
+      id: 'missing-ribs',
+      type: 'deadline',
+      message: `${ribManquantsCount} investisseur${ribManquantsCount > 1 ? 's n\'ont' : ' n\'a'} pas de RIB enregistré`,
+      count: ribManquantsCount,
+    });
+  }
   // Si aucune alerte, ajouter un message positif
 if (alerts.length === 0) {
   alerts.push({
