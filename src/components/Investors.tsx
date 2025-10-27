@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download } from 'lucide-react';
+import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, CheckCircle, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface Investor {
@@ -30,6 +30,9 @@ interface Investor {
   capital_social?: number | null;
   numero_rcs?: string | null;
   siege_social?: string | null;
+  rib_file_path?: string | null;
+  rib_uploaded_at?: string | null;
+  rib_status?: string | null;
 }
 
 interface InvestorWithStats extends Investor {
@@ -62,7 +65,12 @@ export function Investors({ organization }: InvestorsProps) {
   const [selectedInvestor, setSelectedInvestor] = useState<InvestorWithStats | null>(null);
   const [editFormData, setEditFormData] = useState<Investor | null>(null);
   
-  // ✅ AJOUT : État pour stocker toutes les tranches
+  // États pour la gestion des RIB
+  const [showRibModal, setShowRibModal] = useState(false);
+  const [ribFile, setRibFile] = useState<File | null>(null);
+  const [ribPreview, setRibPreview] = useState<string | null>(null);
+  const [uploadingRib, setUploadingRib] = useState(false);
+  
   const [allTranches, setAllTranches] = useState<Array<{ 
     id: string; 
     tranche_name: string; 
@@ -116,7 +124,6 @@ export function Investors({ organization }: InvestorsProps) {
     setFilteredInvestors(filtered);
   }, [searchTerm, typeFilter, projectFilter, trancheFilter, investors, sortField, sortDirection]);
 
-  // ✅ MODIFICATION : Récupérer toutes les tranches
   const fetchInvestors = async () => {
     setLoading(true);
 
@@ -126,7 +133,6 @@ export function Investors({ organization }: InvestorsProps) {
         investisseur_id, montant_investi,
         tranche:tranches(tranche_name, projet:projets(projet))
       `),
-      // NOUVEAU : Récupérer toutes les tranches avec leur projet
       supabase.from('tranches').select(`
         id, tranche_name, projet_id,
         projet:projets(projet)
@@ -137,7 +143,6 @@ export function Investors({ organization }: InvestorsProps) {
     const subscriptionsData = subscriptionsRes.data || [];
     const tranchesData = tranchesRes.data || [];
 
-    // Formater les tranches pour faciliter le filtrage
     const formattedTranches = tranchesData.map((t: any) => ({
       id: t.id,
       tranche_name: t.tranche_name,
@@ -198,7 +203,7 @@ export function Investors({ organization }: InvestorsProps) {
     setShowDetailsModal(true);
   };
 
-  const handleEditClick = (investor: InvestorWithStats) => {
+  const handleEdit = (investor: InvestorWithStats) => {
     setSelectedInvestor(investor);
     setEditFormData(investor);
     setShowEditModal(true);
@@ -212,10 +217,14 @@ export function Investors({ organization }: InvestorsProps) {
       .update(editFormData)
       .eq('id', selectedInvestor.id);
 
-    if (!error) {
-      setShowEditModal(false);
-      fetchInvestors();
+    if (error) {
+      console.error('Error updating investor:', error);
+      alert('Erreur lors de la mise à jour');
+      return;
     }
+
+    setShowEditModal(false);
+    fetchInvestors();
   };
 
   const handleDeleteClick = (investor: InvestorWithStats) => {
@@ -231,269 +240,328 @@ export function Investors({ organization }: InvestorsProps) {
       .delete()
       .eq('id', selectedInvestor.id);
 
-    if (!error) {
-      setShowDeleteModal(false);
-      setSelectedInvestor(null);
-      fetchInvestors();
+    if (error) {
+      console.error('Error deleting investor:', error);
+      alert('Erreur lors de la suppression');
+      return;
+    }
+
+    setShowDeleteModal(false);
+    fetchInvestors();
+  };
+
+  // Fonctions pour la gestion des RIB
+  const handleRibUpload = async (investor: InvestorWithStats) => {
+    setSelectedInvestor(investor);
+    setShowRibModal(true);
+    setRibFile(null);
+    setRibPreview(null);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setRibFile(file);
+
+    // Preview pour images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => setRibPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setRibPreview(null);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const handleRibUploadConfirm = async () => {
+    if (!ribFile || !selectedInvestor) return;
+
+    setUploadingRib(true);
+
+    try {
+      // Upload vers Supabase Storage
+      const fileExt = ribFile.name.split('.').pop();
+      const fileName = `${selectedInvestor.id}_${Date.now()}.${fileExt}`;
+      const filePath = `ribs/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, ribFile);
+
+      if (uploadError) throw uploadError;
+
+      // Mettre à jour l'investisseur
+      const { error: updateError } = await supabase
+        .from('investisseurs')
+        .update({
+          rib_file_path: filePath,
+          rib_uploaded_at: new Date().toISOString(),
+          rib_status: 'valide'
+        })
+        .eq('id', selectedInvestor.id);
+
+      if (updateError) throw updateError;
+
+      // Fermer modal et rafraîchir
+      setShowRibModal(false);
+      fetchInvestors();
+      
+      alert('✅ RIB uploadé avec succès !');
+    } catch (error) {
+      console.error('Erreur upload RIB:', error);
+      alert('❌ Erreur lors de l\'upload du RIB');
+    } finally {
+      setUploadingRib(false);
+    }
   };
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('fr-FR');
-  };
-
-  const uniqueProjects = Array.from(new Set(investors.flatMap(inv => inv.projects || [])));
-
-  // ✅ CORRECTION : Filtrer les tranches depuis allTranches selon le projet sélectionné
-  const availableTranches = projectFilter === 'all'
-    ? []
-    : allTranches
-        .filter(t => t.projet_nom === projectFilter)
-        .map(t => t.tranche_name);
-
-  const handleProjectChange = (project: string) => {
-    setProjectFilter(project);
-    setTrancheFilter('all');
-  };
-
-  const exportToExcel = () => {
+  const handleExportExcel = () => {
     const exportData = filteredInvestors.map(inv => ({
       'ID': inv.id_investisseur,
       'Nom / Raison Sociale': inv.nom_raison_sociale,
-      'Type': inv.type === 'Morale' ? 'Personne Morale' : 'Personne Physique',
-      'Email': inv.email || '-',
-      'Téléphone': inv.telephone || '-',
+      'Type': inv.type,
+      'Email': inv.email || '',
+      'Téléphone': inv.telephone || '',
       'Total Investi': inv.total_investi,
-      'Nombre de Souscriptions': inv.nb_souscriptions,
-      'Projets': (inv.projects || []).join(', '),
-      'Tranches': (inv.tranches || []).join(', '),
-      'Résidence Fiscale': inv.residence_fiscale || '-',
+      'Nb Souscriptions': inv.nb_souscriptions,
+      'Projets': inv.projects?.join(', ') || '',
+      'RIB': inv.rib_status === 'valide' ? 'Oui' : 'Non'
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Investisseurs');
-
-    const fileName = projectFilter !== 'all'
-      ? `investisseurs_${projectFilter}_${new Date().toISOString().split('T')[0]}.xlsx`
-      : `investisseurs_${new Date().toISOString().split('T')[0]}.xlsx`;
-
-    XLSX.writeFile(wb, fileName);
+    XLSX.writeFile(wb, `investisseurs_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  const uniqueProjects = Array.from(new Set(investors.flatMap(inv => inv.projects || [])));
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-slate-600">Chargement des investisseurs...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Tous les Investisseurs</h2>
-          <p className="text-slate-600 mt-1">
-            {filteredInvestors.length} investisseur{filteredInvestors.length > 1 ? 's' : ''} 
-            {investors.length !== filteredInvestors.length && ` (sur ${investors.length})`}
-          </p>
+    <div className="p-6 max-w-[1600px] mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-100 rounded-xl">
+            <Users className="w-8 h-8 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Investisseurs</h1>
+            <p className="text-slate-600">{filteredInvestors.length} investisseur{filteredInvestors.length > 1 ? 's' : ''}</p>
+          </div>
         </div>
         <button
-          onClick={exportToExcel}
-          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          onClick={handleExportExcel}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
-          <Download className="w-5 h-5" />
-          <span>Exporter Excel</span>
+          <Download className="w-4 h-4" />
+          Exporter Excel
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
-        <div className="p-6">
-          <div className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Rechercher par nom, ID ou email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value="all">Tous les types</option>
-                <option value="Physique">Personne Physique</option>
-                <option value="Morale">Personne Morale</option>
-              </select>
-
-              <select
-                value={projectFilter}
-                onChange={(e) => handleProjectChange(e.target.value)}
-                className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value="all">Tous les projets</option>
-                {uniqueProjects.map((project) => (
-                  <option key={project} value={project}>
-                    {project}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={trancheFilter}
-                onChange={(e) => setTrancheFilter(e.target.value)}
-                disabled={projectFilter === 'all'}
-                className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="all">Toutes les tranches</option>
-                {availableTranches.map((tranche) => (
-                  <option key={tranche} value={tranche}>
-                    {tranche}
-                  </option>
-                ))}
-              </select>
-            </div>
+      {/* Filtres */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Recherche */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
+
+          {/* Filtre Type */}
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">Tous les types</option>
+            <option value="physique">Personne Physique</option>
+            <option value="morale">Personne Morale</option>
+          </select>
+
+          {/* Filtre Projet */}
+          <select
+            value={projectFilter}
+            onChange={(e) => setProjectFilter(e.target.value)}
+            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">Tous les projets</option>
+            {uniqueProjects.map(project => (
+              <option key={project} value={project}>{project}</option>
+            ))}
+          </select>
+
+          {/* Filtre Tranche */}
+          <select
+            value={trancheFilter}
+            onChange={(e) => setTrancheFilter(e.target.value)}
+            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">Toutes les tranches</option>
+            {allTranches.map(tranche => (
+              <option key={tranche.id} value={tranche.tranche_name}>
+                {tranche.tranche_name} ({tranche.projet_nom})
+              </option>
+            ))}
+          </select>
         </div>
+      </div>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-          </div>
-        ) : filteredInvestors.length === 0 ? (
-          <div className="text-center py-12 px-4">
-            <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun investisseur trouvé</h3>
-            <p className="text-slate-600">
-              {searchTerm || typeFilter !== 'all' || projectFilter !== 'all' || trancheFilter !== 'all'
-                ? 'Essayez de modifier vos filtres'
-                : 'Aucun investisseur enregistré pour le moment'}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-y border-slate-200">
-                <tr>
-                  <th className="px-6 py-3 text-left">
-                    <button
-                      onClick={() => handleSort('id_investisseur')}
-                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
-                    >
-                      ID
-                      <ArrowUpDown className="w-4 h-4" />
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-left">
-                    <button
-                      onClick={() => handleSort('nom_raison_sociale')}
-                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
-                    >
-                      Nom / Raison Sociale
-                      <ArrowUpDown className="w-4 h-4" />
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-left">
-                    <button
-                      onClick={() => handleSort('type')}
-                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
-                    >
-                      Type
-                      <ArrowUpDown className="w-4 h-4" />
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-left">
-                    <button
-                      onClick={() => handleSort('email')}
-                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
-                    >
-                      Contact
-                      <ArrowUpDown className="w-4 h-4" />
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-left">
-                    <button
-                      onClick={() => handleSort('total_investi')}
-                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
-                    >
-                      Total Investi
-                      <ArrowUpDown className="w-4 h-4" />
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-left">
-                    <button
-                      onClick={() => handleSort('nb_souscriptions')}
-                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
-                    >
-                      Souscriptions
-                      <ArrowUpDown className="w-4 h-4" />
-                    </button>
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+      {/* Tableau */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-3 text-left">
+                  <button
+                    onClick={() => handleSort('id_investisseur')}
+                    className="flex items-center gap-2 text-xs font-medium text-slate-700 uppercase tracking-wider hover:text-slate-900"
+                  >
+                    ID
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left">
+                  <button
+                    onClick={() => handleSort('nom_raison_sociale')}
+                    className="flex items-center gap-2 text-xs font-medium text-slate-700 uppercase tracking-wider hover:text-slate-900"
+                  >
+                    Nom / Raison Sociale
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left">
+                  <button
+                    onClick={() => handleSort('type')}
+                    className="flex items-center gap-2 text-xs font-medium text-slate-700 uppercase tracking-wider hover:text-slate-900"
+                  >
+                    Type
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left">
+                  <span className="text-xs font-medium text-slate-700 uppercase tracking-wider">
+                    Contact
+                  </span>
+                </th>
+                <th className="px-6 py-3 text-right">
+                  <button
+                    onClick={() => handleSort('total_investi')}
+                    className="flex items-center gap-2 text-xs font-medium text-slate-700 uppercase tracking-wider hover:text-slate-900 ml-auto"
+                  >
+                    Total Investi
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-center">
+                  <button
+                    onClick={() => handleSort('nb_souscriptions')}
+                    className="flex items-center gap-2 text-xs font-medium text-slate-700 uppercase tracking-wider hover:text-slate-900 mx-auto"
+                  >
+                    Souscriptions
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-center">
+                  <span className="text-xs font-medium text-slate-700 uppercase tracking-wider">
+                    RIB
+                  </span>
+                </th>
+                <th className="px-6 py-3 text-right">
+                  <span className="text-xs font-medium text-slate-700 uppercase tracking-wider">
                     Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {filteredInvestors.map((investor) => (
+                  </span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {filteredInvestors.map((investor) => {
+                const hasRib = investor.rib_file_path && investor.rib_status === 'valide';
+                
+                return (
                   <tr key={investor.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                      {investor.id_investisseur}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-slate-900">{investor.id_investisseur}</div>
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
-                          investor.type.toLowerCase() === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
-                        }`}>
-                          {investor.type.toLowerCase() === 'morale' ? (
-                            <Building2 className="w-5 h-5 text-purple-600" />
-                          ) : (
+                        <div className={`p-2 rounded-lg ${investor.type.toLowerCase() === 'physique' ? 'bg-blue-100' : 'bg-purple-100'}`}>
+                          {investor.type.toLowerCase() === 'physique' ? (
                             <User className="w-5 h-5 text-blue-600" />
+                          ) : (
+                            <Building2 className="w-5 h-5 text-purple-600" />
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-slate-900">{investor.nom_raison_sociale}</p>
+                          <div className="text-sm font-medium text-slate-900">{investor.nom_raison_sociale}</div>
                           {investor.projects && investor.projects.length > 0 && (
-                            <p className="text-xs text-slate-600">
+                            <div className="text-xs text-slate-500 mt-1">
                               {investor.projects.length} projet{investor.projects.length > 1 ? 's' : ''}
-                            </p>
+                            </div>
                           )}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        investor.type.toLowerCase() === 'morale'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-blue-100 text-blue-800'
+                        investor.type.toLowerCase() === 'physique'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-purple-100 text-purple-800'
                       }`}>
-                        {investor.type === 'Morale' ? 'Personne Morale' : 'Personne Physique'}
+                        {investor.type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      <div>
-                        <p>{investor.email || '-'}</p>
-                        {investor.telephone && (
-                          <p className="text-xs text-slate-500">{investor.telephone}</p>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-slate-900">{investor.email || '-'}</div>
+                      <div className="text-xs text-slate-500">{investor.telephone || '-'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="text-sm font-semibold text-slate-900">
+                        {investor.total_investi.toLocaleString('fr-FR')} €
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-sm font-medium text-slate-700">
+                        {investor.nb_souscriptions}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-2">
+                        {hasRib ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-xs font-medium">RIB OK</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleRibUpload(investor)}
+                            className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors"
+                          >
+                            <Upload className="w-4 h-4" />
+                            <span className="text-xs font-medium">Upload RIB</span>
+                          </button>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                      {formatCurrency(investor.total_investi)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                      {investor.nb_souscriptions}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleViewDetails(investor)}
@@ -503,7 +571,7 @@ export function Investors({ organization }: InvestorsProps) {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleEditClick(investor)}
+                          onClick={() => handleEdit(investor)}
                           className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                           title="Modifier"
                         >
@@ -519,59 +587,93 @@ export function Investors({ organization }: InvestorsProps) {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal Détails */}
       {showDetailsModal && selectedInvestor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${
-                  selectedInvestor.type.toLowerCase() === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
-                }`}>
-                  {selectedInvestor.type.toLowerCase() === 'morale' ? (
-                    <Building2 className="w-8 h-8 text-purple-600" />
-                  ) : (
-                    <User className="w-8 h-8 text-blue-600" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-900">{selectedInvestor.nom_raison_sociale}</h3>
-                  <p className="text-sm text-slate-600">{selectedInvestor.id_investisseur}</p>
-                </div>
-              </div>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900">Détails de l'investisseur</h3>
               <button
                 onClick={() => setShowDetailsModal(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-slate-400 hover:text-slate-600"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
             </div>
-
+            
             <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="bg-slate-50 p-4 rounded-lg">
-                  <p className="text-sm text-slate-600 mb-1">Total Investi</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(selectedInvestor.total_investi)}</p>
-                </div>
-                <div className="bg-slate-50 p-4 rounded-lg">
-                  <p className="text-sm text-slate-600 mb-1">Nombre de Souscriptions</p>
-                  <p className="text-2xl font-bold text-slate-900">{selectedInvestor.nb_souscriptions}</p>
+              {/* Informations générales */}
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  {selectedInvestor.type.toLowerCase() === 'physique' ? (
+                    <User className="w-4 h-4" />
+                  ) : (
+                    <Building2 className="w-4 h-4" />
+                  )}
+                  Informations générales
+                </h4>
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-lg p-4">
+                  <div>
+                    <p className="text-xs text-slate-600 mb-1">ID</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.id_investisseur}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 mb-1">Type</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.type}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 mb-1">Nom / Raison sociale</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.nom_raison_sociale}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 mb-1">Email</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.email || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 mb-1">Téléphone</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.telephone || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 mb-1">Résidence fiscale</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.residence_fiscale || '-'}</p>
+                  </div>
                 </div>
               </div>
 
+              {/* Statistiques d'investissement */}
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-3">Statistiques</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-xs text-blue-600 mb-1">Total investi</p>
+                    <p className="text-2xl font-bold text-blue-900">
+                      {selectedInvestor.total_investi.toLocaleString('fr-FR')} €
+                    </p>
+                  </div>
+                  <div className="bg-purple-50 rounded-lg p-4">
+                    <p className="text-xs text-purple-600 mb-1">Souscriptions</p>
+                    <p className="text-2xl font-bold text-purple-900">{selectedInvestor.nb_souscriptions}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Projets */}
               {selectedInvestor.projects && selectedInvestor.projects.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900 mb-2">Projets</h4>
+                  <h4 className="text-sm font-semibold text-slate-900 mb-3">Projets</h4>
                   <div className="flex flex-wrap gap-2">
-                    {selectedInvestor.projects.map((project) => (
-                      <span key={project} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                    {selectedInvestor.projects.map((project, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium"
+                      >
                         {project}
                       </span>
                     ))}
@@ -579,59 +681,79 @@ export function Investors({ organization }: InvestorsProps) {
                 </div>
               )}
 
-              {selectedInvestor.tranches && selectedInvestor.tranches.length > 0 && (
+              {/* Informations spécifiques */}
+              {selectedInvestor.type.toLowerCase() === 'physique' && (
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900 mb-2">Tranches</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedInvestor.tranches.map((tranche) => (
-                      <span key={tranche} className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
-                        {tranche}
-                      </span>
-                    ))}
+                  <h4 className="text-sm font-semibold text-slate-900 mb-3">Personne Physique</h4>
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-lg p-4">
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Nom</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.nom || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Prénom</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.prenom || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Nationalité</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.nationalite || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Date de naissance</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.date_naissance || '-'}</p>
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div className="border-t border-slate-200 pt-6">
-                <h4 className="text-sm font-semibold text-slate-900 mb-4">Informations</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-slate-600">Type</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {selectedInvestor.type === 'Morale' ? 'Personne Morale' : 'Personne Physique'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600">Email</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.email || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600">Téléphone</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.telephone || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600">Résidence Fiscale</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.residence_fiscale || '-'}</p>
-                  </div>
-                  {selectedInvestor.type.toLowerCase() === 'morale' && selectedInvestor.siren && (
+              {selectedInvestor.type.toLowerCase() === 'morale' && (
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-900 mb-3">Personne Morale</h4>
+                  <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-lg p-4">
                     <div>
-                      <p className="text-sm text-slate-600">SIREN</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.siren}</p>
+                      <p className="text-xs text-slate-600 mb-1">SIREN</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.siren || '-'}</p>
                     </div>
-                  )}
-                  {selectedInvestor.adresse && (
-                    <div className="col-span-2">
-                      <p className="text-sm text-slate-600">Adresse</p>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Forme juridique</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.forme_juridique || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Représentant légal</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.representant_legal || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Capital social</p>
                       <p className="text-sm font-medium text-slate-900">
-                        {selectedInvestor.adresse}
-                        {selectedInvestor.code_postal && `, ${selectedInvestor.code_postal}`}
-                        {selectedInvestor.ville && ` ${selectedInvestor.ville}`}
-                        {selectedInvestor.pays && `, ${selectedInvestor.pays}`}
+                        {selectedInvestor.capital_social ? `${selectedInvestor.capital_social.toLocaleString('fr-FR')} €` : '-'}
                       </p>
                     </div>
-                  )}
+                  </div>
+                </div>
+              )}
+
+              {/* Adresse */}
+              <div>
+                <h4 className="text-sm font-semibold text-slate-900 mb-3">Adresse</h4>
+                <div className="bg-slate-50 rounded-lg p-4">
+                  <p className="text-sm text-slate-900">
+                    {selectedInvestor.adresse || selectedInvestor.siege_social || '-'}
+                  </p>
+                  <p className="text-sm text-slate-900 mt-1">
+                    {selectedInvestor.code_postal} {selectedInvestor.ville}
+                  </p>
+                  <p className="text-sm text-slate-900">{selectedInvestor.pays || '-'}</p>
                 </div>
               </div>
+            </div>
+
+            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50">
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="w-full px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                Fermer
+              </button>
             </div>
           </div>
         </div>
@@ -640,54 +762,68 @@ export function Investors({ organization }: InvestorsProps) {
       {/* Modal Édition */}
       {showEditModal && editFormData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-bold text-slate-900">Modifier l'investisseur</h3>
               <button
                 onClick={() => setShowEditModal(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-slate-400 hover:text-slate-600"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Nom / Raison Sociale</label>
-                  <input
-                    type="text"
-                    value={editFormData.nom_raison_sociale}
-                    onChange={(e) => setEditFormData({ ...editFormData, nom_raison_sociale: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={editFormData.email || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
-                  <input
-                    type="tel"
-                    value={editFormData.telephone || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, telephone: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Résidence Fiscale</label>
-                  <input
-                    type="text"
-                    value={editFormData.residence_fiscale || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, residence_fiscale: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+            <div className="p-6 space-y-6">
+              <div className="space-y-4">
+                <h5 className="font-semibold text-slate-900">Informations générales</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Nom / Raison sociale</label>
+                    <input
+                      type="text"
+                      value={editFormData.nom_raison_sociale}
+                      onChange={(e) => setEditFormData({ ...editFormData, nom_raison_sociale: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
+                    <select
+                      value={editFormData.type}
+                      onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Physique">Personne Physique</option>
+                      <option value="Morale">Personne Morale</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                    <input
+                      type="email"
+                      value={editFormData.email || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
+                    <input
+                      type="tel"
+                      value={editFormData.telephone || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, telephone: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Résidence fiscale</label>
+                    <input
+                      type="text"
+                      value={editFormData.residence_fiscale || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, residence_fiscale: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -858,6 +994,103 @@ export function Investors({ organization }: InvestorsProps) {
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
                 Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Upload RIB */}
+      {showRibModal && selectedInvestor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-slate-900">
+                  📄 Upload RIB - {selectedInvestor.nom_raison_sociale}
+                </h3>
+                <button
+                  onClick={() => setShowRibModal(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-blue-800">
+                  💡 Le RIB est nécessaire pour effectuer les virements de coupons à cet investisseur.
+                  Formats acceptés : PDF, JPG, PNG
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Fichier RIB
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-slate-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-lg file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100 cursor-pointer"
+                />
+              </div>
+
+              {ribPreview && (
+                <div className="mb-4 border rounded-lg p-2">
+                  <p className="text-xs text-slate-600 mb-2">Aperçu :</p>
+                  <img 
+                    src={ribPreview} 
+                    alt="Preview RIB" 
+                    className="max-h-48 mx-auto rounded"
+                  />
+                </div>
+              )}
+
+              {ribFile && (
+                <div className="mb-4 bg-slate-50 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-slate-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-900">{ribFile.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {(ribFile.size / 1024).toFixed(2)} KB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end gap-3">
+              <button
+                onClick={() => setShowRibModal(false)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                disabled={uploadingRib}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleRibUploadConfirm}
+                disabled={!ribFile || uploadingRib}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {uploadingRib ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Upload...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    Uploader
+                  </>
+                )}
               </button>
             </div>
           </div>
