@@ -487,21 +487,19 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 return (
                   <div
                     key={tranche.id}
-                    className="flex items-center justify-between px-4 py-2 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all"
+                    className="flex items-center justify-between px-4 py-2 bg-yellow-100 border-2 border-red-500 rounded-lg"
+                    style={{ backgroundColor: 'red', color: 'white', padding: '8px' }}
                   >
                     <div className="flex items-center gap-4 flex-1">
-                      <span className="text-sm font-semibold text-slate-900 w-40">{tranche.tranche_name}</span>
-                      <span className="flex items-center gap-1 text-xs text-slate-600">
-                        <CalendarDays className="w-3.5 h-3.5" />
-                        {formatDate(tranche.date_emission)}
+                      <span className="text-sm font-bold">{tranche.tranche_name}</span>
+                      <span className="text-xs">
+                        📅 {formatDate(tranche.date_emission)}
                       </span>
-                      <span className="flex items-center gap-1 text-xs text-slate-600">
-                        <Coins className="w-3.5 h-3.5" />
-                        {formatCurrency(totalInvested)}
+                      <span className="text-xs">
+                        💰 {formatCurrency(totalInvested)}
                       </span>
-                      <span className="flex items-center gap-1 text-xs text-slate-600">
-                        <UserCircle className="w-3.5 h-3.5" />
-                        {trancheSubscriptions.length}
+                      <span className="text-xs">
+                        👥 {trancheSubscriptions.length}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -510,17 +508,15 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                           setEditingTranche(tranche);
                           setShowTrancheWizard(true);
                         }}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                        title="Modifier"
+                        className="p-1.5 text-white hover:bg-blue-700 rounded bg-blue-600"
                       >
-                        <Edit className="w-4 h-4" />
+                        ✏️
                       </button>
                       <button
                         onClick={() => handleDeleteTranche(tranche)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                        title="Supprimer"
+                        className="p-1.5 text-white hover:bg-red-700 rounded bg-red-600"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        🗑️
                       </button>
                     </div>
                   </div>
