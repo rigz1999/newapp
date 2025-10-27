@@ -18,6 +18,7 @@ interface EcheancierCardProps {
   projectId: string;
   tranches: any[];
   onPaymentClick: (trancheId: string) => void;
+  onViewAll?: () => void;
 }
 
 export function EcheancierCard({ projectId, tranches, onPaymentClick }: EcheancierCardProps) {
@@ -275,13 +276,21 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick }: Echeanci
           <Calendar className="w-5 h-5 text-slate-600" />
           <h2 className="text-xl font-bold text-slate-900">Échéancier des Coupons</h2>
         </div>
-        <button
-          onClick={handleDownloadSynthese}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors shadow-sm"
-        >
-          <Download className="w-4 h-4" />
-          Télécharger synthèse
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onViewAll?.()}
+            className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+          >
+            Voir tout
+          </button>
+          <button
+            onClick={handleDownloadSynthese}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Télécharger synthèse
+          </button>
+        </div>
       </div>
 
       {tranches.length === 0 ? (
