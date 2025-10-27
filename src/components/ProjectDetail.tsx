@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { TrancheWizard } from './TrancheWizard';
+import { PaymentWizard } from './PaymentWizard';
+import { EcheancierCard } from './EcheancierCard';
 import {
   ArrowLeft,
   Edit,
@@ -98,6 +100,9 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [editedProject, setEditedProject] = useState<Partial<Project>>({});
   const [showEditSubscription, setShowEditSubscription] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [showPaymentWizard, setShowPaymentWizard] = useState(false);
+  const [showEcheancierModal, setShowEcheancierModal] = useState(false);
+  const [selectedTrancheForEcheancier, setSelectedTrancheForEcheancier] = useState<Tranche | null>(null);
 
   const [stats, setStats] = useState({
     totalLeve: 0,
@@ -629,6 +634,16 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           )}
         </div>
 
+        {/* Écheancier Section */}
+        <EcheancierCard 
+          projectId={projectId!} 
+          tranches={tranches}
+          onPaymentClick={(trancheId) => {
+            // Ouvrir le PaymentWizard pour cette tranche
+            setShowPaymentWizard(true);
+          }}
+        />
+
         {/* Payments Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <h2 className="text-xl font-bold text-slate-900 mb-4">Historique des Paiements</h2>
@@ -1032,6 +1047,17 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Payment Wizard Modal */}
+        {showPaymentWizard && (
+          <PaymentWizard
+            onClose={() => setShowPaymentWizard(false)}
+            onSuccess={() => {
+              setShowPaymentWizard(false);
+              fetchProjectData();
+            }}
+          />
         )}
       </div>
     </>
