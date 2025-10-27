@@ -467,7 +467,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         {/* Tranches Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-baseline gap-3">
               <h2 className="text-xl font-bold text-slate-900">Tranches</h2>
               <button
                 onClick={() => setShowTranchesModal(true)}
@@ -557,7 +557,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         {/* Subscriptions Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-baseline gap-3">
               <h2 className="text-xl font-bold text-slate-900">Souscriptions</h2>
               <button
                 onClick={() => setShowSubscriptionsModal(true)}
