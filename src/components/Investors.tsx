@@ -61,6 +61,14 @@ export function Investors({ organization }: InvestorsProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedInvestor, setSelectedInvestor] = useState<InvestorWithStats | null>(null);
   const [editFormData, setEditFormData] = useState<Investor | null>(null);
+  
+  // ✅ AJOUT : État pour stocker toutes les tranches
+  const [allTranches, setAllTranches] = useState<Array<{ 
+    id: string; 
+    tranche_name: string; 
+    projet_id: string; 
+    projet_nom: string 
+  }>>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -108,19 +116,36 @@ export function Investors({ organization }: InvestorsProps) {
     setFilteredInvestors(filtered);
   }, [searchTerm, typeFilter, projectFilter, trancheFilter, investors, sortField, sortDirection]);
 
+  // ✅ MODIFICATION : Récupérer toutes les tranches
   const fetchInvestors = async () => {
     setLoading(true);
 
-    const [investorsRes, subscriptionsRes] = await Promise.all([
+    const [investorsRes, subscriptionsRes, tranchesRes] = await Promise.all([
       supabase.from('investisseurs').select('*').order('nom_raison_sociale'),
       supabase.from('souscriptions').select(`
         investisseur_id, montant_investi,
         tranche:tranches(tranche_name, projet:projets(projet))
+      `),
+      // NOUVEAU : Récupérer toutes les tranches avec leur projet
+      supabase.from('tranches').select(`
+        id, tranche_name, projet_id,
+        projet:projets(projet)
       `)
     ]);
 
     const investorsData = investorsRes.data || [];
     const subscriptionsData = subscriptionsRes.data || [];
+    const tranchesData = tranchesRes.data || [];
+
+    // Formater les tranches pour faciliter le filtrage
+    const formattedTranches = tranchesData.map((t: any) => ({
+      id: t.id,
+      tranche_name: t.tranche_name,
+      projet_id: t.projet_id,
+      projet_nom: t.projet?.projet || ''
+    }));
+
+    setAllTranches(formattedTranches);
 
     const investorsWithStats = investorsData.map((investor) => {
       const investorSubs = subscriptionsData.filter((s: any) => s.investisseur_id === investor.id);
@@ -229,13 +254,12 @@ export function Investors({ organization }: InvestorsProps) {
 
   const uniqueProjects = Array.from(new Set(investors.flatMap(inv => inv.projects || [])));
 
+  // ✅ CORRECTION : Filtrer les tranches depuis allTranches selon le projet sélectionné
   const availableTranches = projectFilter === 'all'
     ? []
-    : Array.from(new Set(
-        investors
-          .filter(inv => inv.projects?.includes(projectFilter))
-          .flatMap(inv => inv.tranches || [])
-      ));
+    : allTranches
+        .filter(t => t.projet_nom === projectFilter)
+        .map(t => t.tranche_name);
 
   const handleProjectChange = (project: string) => {
     setProjectFilter(project);
@@ -249,15 +273,11 @@ export function Investors({ organization }: InvestorsProps) {
       'Type': inv.type === 'Morale' ? 'Personne Morale' : 'Personne Physique',
       'Email': inv.email || '-',
       'Téléphone': inv.telephone || '-',
-      'Résidence Fiscale': inv.residence_fiscale || '-',
       'Total Investi': inv.total_investi,
-      'Nb Souscriptions': inv.nb_souscriptions,
-      'Projets': inv.projects?.join(', ') || '-',
-      'Tranches': inv.tranches?.join(', ') || '-',
-      'Adresse': inv.adresse || inv.siege_social || '-',
-      'Code Postal': inv.code_postal || '-',
-      'Ville': inv.ville || '-',
-      'Pays': inv.pays || '-',
+      'Nombre de Souscriptions': inv.nb_souscriptions,
+      'Projets': (inv.projects || []).join(', '),
+      'Tranches': (inv.tranches || []).join(', '),
+      'Résidence Fiscale': inv.residence_fiscale || '-',
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -271,50 +291,40 @@ export function Investors({ organization }: InvestorsProps) {
     XLSX.writeFile(wb, fileName);
   };
 
-  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
-    <th
-      onClick={() => handleSort(field)}
-      className="px-6 py-4 text-left text-sm font-semibold text-slate-900 cursor-pointer hover:bg-slate-100 transition-colors"
-    >
-      <div className="flex items-center gap-2">
-        <span>{children}</span>
-        <ArrowUpDown className={`w-4 h-4 ${
-          sortField === field ? 'text-blue-600' : 'text-slate-400'
-        }`} />
-      </div>
-    </th>
-  );
-
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Tous les Investisseurs</h2>
-              <p className="text-slate-600 mt-1">{filteredInvestors.length} investisseur{filteredInvestors.length > 1 ? 's' : ''}</p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Tous les Investisseurs</h2>
+          <p className="text-slate-600 mt-1">
+            {filteredInvestors.length} investisseur{filteredInvestors.length > 1 ? 's' : ''} 
+            {investors.length !== filteredInvestors.length && ` (sur ${investors.length})`}
+          </p>
+        </div>
+        <button
+          onClick={exportToExcel}
+          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+        >
+          <Download className="w-5 h-5" />
+          <span>Exporter Excel</span>
+        </button>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+        <div className="p-6">
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Rechercher par nom, ID ou email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-            <button
-              onClick={exportToExcel}
-              disabled={filteredInvestors.length === 0}
-              className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download className="w-5 h-5" />
-              <span>Exporter Excel</span>
-            </button>
-          </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Rechercher..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
@@ -353,127 +363,176 @@ export function Investors({ organization }: InvestorsProps) {
               </select>
             </div>
           </div>
+        </div>
 
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-            </div>
-          ) : filteredInvestors.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-              <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 mb-2">
-                {searchTerm || typeFilter !== 'all' ? 'Aucun investisseur trouvé' : 'Aucun investisseur'}
-              </h3>
-              <p className="text-slate-600 mb-4">
-                {searchTerm || typeFilter !== 'all'
-                  ? 'Essayez avec d\'autres critères'
-                  : 'Ajoutez votre premier investisseur'}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <SortableHeader field="id_investisseur">ID</SortableHeader>
-                      <SortableHeader field="nom_raison_sociale">Nom / Raison Sociale</SortableHeader>
-                      <SortableHeader field="type">Type</SortableHeader>
-                      <SortableHeader field="email">Email</SortableHeader>
-                      <SortableHeader field="total_investi">Total Investi</SortableHeader>
-                      <SortableHeader field="nb_souscriptions">Souscriptions</SortableHeader>
-                      <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredInvestors.map((investor) => (
-                      <tr key={investor.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-mono text-slate-600">{investor.id_investisseur}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${
-                              investor.type.toLowerCase() === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
-                            }`}>
-                              {investor.type.toLowerCase() === 'morale' ? (
-                                <Building2 className="w-4 h-4 text-purple-600" />
-                              ) : (
-                                <User className="w-4 h-4 text-blue-600" />
-                              )}
-                            </div>
-                            <span className="text-sm font-medium text-slate-900">{investor.nom_raison_sociale}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                            investor.type.toLowerCase() === 'morale'
-                              ? 'bg-purple-100 text-purple-700'
-                              : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {investor.type.toLowerCase() === 'morale' ? 'Morale' : 'Physique'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-slate-600">{investor.email || '-'}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm font-semibold text-green-600">
-                            {formatCurrency(investor.total_investi)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-slate-900 font-medium">{investor.nb_souscriptions}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => handleViewDetails(investor)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Voir détails"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleEditClick(investor)}
-                              className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                              title="Éditer"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClick(investor)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+          </div>
+        ) : filteredInvestors.length === 0 ? (
+          <div className="text-center py-12 px-4">
+            <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun investisseur trouvé</h3>
+            <p className="text-slate-600">
+              {searchTerm || typeFilter !== 'all' || projectFilter !== 'all' || trancheFilter !== 'all'
+                ? 'Essayez de modifier vos filtres'
+                : 'Aucun investisseur enregistré pour le moment'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-y border-slate-200">
+                <tr>
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('id_investisseur')}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    >
+                      ID
+                      <ArrowUpDown className="w-4 h-4" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('nom_raison_sociale')}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    >
+                      Nom / Raison Sociale
+                      <ArrowUpDown className="w-4 h-4" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('type')}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    >
+                      Type
+                      <ArrowUpDown className="w-4 h-4" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('email')}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    >
+                      Contact
+                      <ArrowUpDown className="w-4 h-4" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('total_investi')}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    >
+                      Total Investi
+                      <ArrowUpDown className="w-4 h-4" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('nb_souscriptions')}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    >
+                      Souscriptions
+                      <ArrowUpDown className="w-4 h-4" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {filteredInvestors.map((investor) => (
+                  <tr key={investor.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                      {investor.id_investisseur}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${
+                          investor.type.toLowerCase() === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
+                        }`}>
+                          {investor.type.toLowerCase() === 'morale' ? (
+                            <Building2 className="w-5 h-5 text-purple-600" />
+                          ) : (
+                            <User className="w-5 h-5 text-blue-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">{investor.nom_raison_sociale}</p>
+                          {investor.projects && investor.projects.length > 0 && (
+                            <p className="text-xs text-slate-600">
+                              {investor.projects.length} projet{investor.projects.length > 1 ? 's' : ''}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        investor.type.toLowerCase() === 'morale'
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {investor.type === 'Morale' ? 'Personne Morale' : 'Personne Physique'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                      <div>
+                        <p>{investor.email || '-'}</p>
+                        {investor.telephone && (
+                          <p className="text-xs text-slate-500">{investor.telephone}</p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                      {formatCurrency(investor.total_investi)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                      {investor.nb_souscriptions}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleViewDetails(investor)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Voir détails"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEditClick(investor)}
+                          className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                          title="Modifier"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(investor)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
+      {/* Modal Détails */}
       {showDetailsModal && selectedInvestor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">Détails de l'investisseur</h3>
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
-                <div className={`p-3 rounded-xl ${
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-lg ${
                   selectedInvestor.type.toLowerCase() === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
                 }`}>
                   {selectedInvestor.type.toLowerCase() === 'morale' ? (
@@ -483,157 +542,106 @@ export function Investors({ organization }: InvestorsProps) {
                   )}
                 </div>
                 <div>
-                  <h4 className="text-lg font-bold text-slate-900">{selectedInvestor.nom_raison_sociale}</h4>
+                  <h3 className="text-2xl font-bold text-slate-900">{selectedInvestor.nom_raison_sociale}</h3>
                   <p className="text-sm text-slate-600">{selectedInvestor.id_investisseur}</p>
                 </div>
               </div>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="bg-slate-50 p-4 rounded-lg">
-                  <p className="text-xs text-slate-600 mb-1">Total Investi</p>
-                  <p className="text-xl font-bold text-green-600">{formatCurrency(selectedInvestor.total_investi)}</p>
+                  <p className="text-sm text-slate-600 mb-1">Total Investi</p>
+                  <p className="text-2xl font-bold text-green-600">{formatCurrency(selectedInvestor.total_investi)}</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-lg">
-                  <p className="text-xs text-slate-600 mb-1">Souscriptions</p>
-                  <p className="text-xl font-bold text-slate-900">{selectedInvestor.nb_souscriptions}</p>
+                  <p className="text-sm text-slate-600 mb-1">Nombre de Souscriptions</p>
+                  <p className="text-2xl font-bold text-slate-900">{selectedInvestor.nb_souscriptions}</p>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h5 className="font-semibold text-slate-900">Informations générales</h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {selectedInvestor.projects && selectedInvestor.projects.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-900 mb-2">Projets</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedInvestor.projects.map((project) => (
+                      <span key={project} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                        {project}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedInvestor.tranches && selectedInvestor.tranches.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-900 mb-2">Tranches</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedInvestor.tranches.map((tranche) => (
+                      <span key={tranche} className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
+                        {tranche}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-slate-200 pt-6">
+                <h4 className="text-sm font-semibold text-slate-900 mb-4">Informations</h4>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-slate-500">Type</p>
+                    <p className="text-sm text-slate-600">Type</p>
                     <p className="text-sm font-medium text-slate-900">
-                      {selectedInvestor.type.toLowerCase() === 'morale' ? 'Personne Morale' : 'Personne Physique'}
+                      {selectedInvestor.type === 'Morale' ? 'Personne Morale' : 'Personne Physique'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Email</p>
+                    <p className="text-sm text-slate-600">Email</p>
                     <p className="text-sm font-medium text-slate-900">{selectedInvestor.email || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Téléphone</p>
+                    <p className="text-sm text-slate-600">Téléphone</p>
                     <p className="text-sm font-medium text-slate-900">{selectedInvestor.telephone || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">Résidence Fiscale</p>
+                    <p className="text-sm text-slate-600">Résidence Fiscale</p>
                     <p className="text-sm font-medium text-slate-900">{selectedInvestor.residence_fiscale || '-'}</p>
                   </div>
-                </div>
-              </div>
-
-              {selectedInvestor.type.toLowerCase() === 'physique' && (
-                <div className="space-y-3">
-                  <h5 className="font-semibold text-slate-900">Personne Physique</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {selectedInvestor.type.toLowerCase() === 'morale' && selectedInvestor.siren && (
                     <div>
-                      <p className="text-xs text-slate-500">Nom</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.nom || '-'}</p>
+                      <p className="text-sm text-slate-600">SIREN</p>
+                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.siren}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Prénom</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.prenom || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Date de Naissance</p>
-                      <p className="text-sm font-medium text-slate-900">{formatDate(selectedInvestor.date_naissance)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Lieu de Naissance</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.lieu_naissance || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Nationalité</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.nationalite || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Pièce d'identité</p>
+                  )}
+                  {selectedInvestor.adresse && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-slate-600">Adresse</p>
                       <p className="text-sm font-medium text-slate-900">
-                        {selectedInvestor.type_piece_identite || '-'} {selectedInvestor.numero_piece_identite || ''}
+                        {selectedInvestor.adresse}
+                        {selectedInvestor.code_postal && `, ${selectedInvestor.code_postal}`}
+                        {selectedInvestor.ville && ` ${selectedInvestor.ville}`}
+                        {selectedInvestor.pays && `, ${selectedInvestor.pays}`}
                       </p>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedInvestor.type.toLowerCase() === 'morale' && (
-                <div className="space-y-3">
-                  <h5 className="font-semibold text-slate-900">Personne Morale</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-slate-500">SIREN</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.siren || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Forme Juridique</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.forme_juridique || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Représentant Légal</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.representant_legal || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Date de Création</p>
-                      <p className="text-sm font-medium text-slate-900">{formatDate(selectedInvestor.date_creation)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Capital Social</p>
-                      <p className="text-sm font-medium text-slate-900">
-                        {selectedInvestor.capital_social ? formatCurrency(selectedInvestor.capital_social) : '-'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Numéro RCS</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.numero_rcs || '-'}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                <h5 className="font-semibold text-slate-900">Adresse</h5>
-                <div className="grid grid-cols-1 gap-3">
-                  <div>
-                    <p className="text-xs text-slate-500">Adresse</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {selectedInvestor.adresse || selectedInvestor.siege_social || '-'}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <p className="text-xs text-slate-500">Code Postal</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.code_postal || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Ville</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.ville || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Pays</p>
-                      <p className="text-sm font-medium text-slate-900">{selectedInvestor.pays || '-'}</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
-            </div>
-
-            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end">
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
-              >
-                Fermer
-              </button>
             </div>
           </div>
         </div>
       )}
 
-      {showEditModal && selectedInvestor && editFormData && (
+      {/* Modal Édition */}
+      {showEditModal && editFormData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-xl font-bold text-slate-900">Modifier l'investisseur</h3>
               <button
                 onClick={() => setShowEditModal(false)}
@@ -643,10 +651,10 @@ export function Investors({ organization }: InvestorsProps) {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Nom / Raison Sociale *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Nom / Raison Sociale</label>
                   <input
                     type="text"
                     value={editFormData.nom_raison_sociale}
@@ -666,7 +674,7 @@ export function Investors({ organization }: InvestorsProps) {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
                   <input
-                    type="text"
+                    type="tel"
                     value={editFormData.telephone || ''}
                     onChange={(e) => setEditFormData({ ...editFormData, telephone: e.target.value })}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -816,6 +824,7 @@ export function Investors({ organization }: InvestorsProps) {
         </div>
       )}
 
+      {/* Modal Suppression */}
       {showDeleteModal && selectedInvestor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
