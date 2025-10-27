@@ -150,7 +150,15 @@ const generateAlerts = (
       });
     });
   }
-
+// Si aucune alerte, ajouter un message positif
+if (alerts.length === 0) {
+  alerts.push({
+    id: 'no-alerts',
+    type: 'deadline',
+    message: 'Aucune action urgente. Tous les paiements sont à jour.',
+    count: 0,
+  });
+}
   return alerts;
 };
 
