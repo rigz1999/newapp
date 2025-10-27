@@ -348,7 +348,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick }: Echeanci
                     }}
                     className="flex-shrink-0 px-4 py-1.5 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors"
                   >
-                    Enregistrer
+                    Enregistrer paiement
                   </button>
                 </div>
 
