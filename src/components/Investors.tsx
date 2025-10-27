@@ -69,6 +69,7 @@ export function Investors({ organization }: InvestorsProps) {
   const [ribFilter, setRibFilter] = useState<string>('all'); // Nouveau filtre RIB
   const [sortField, setSortField] = useState<SortField>('nom_raison_sociale');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [ribSortDirection, setRibSortDirection] = useState<'none' | 'asc' | 'desc'>('none');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -132,9 +133,20 @@ export function Investors({ organization }: InvestorsProps) {
       filtered = filtered.filter(inv => !inv.rib_file_path || inv.rib_status !== 'valide');
     }
 
+    // Appliquer le tri standard
     filtered = sortInvestors(filtered, sortField, sortDirection);
+
+    // Appliquer le tri RIB si activé
+    if (ribSortDirection !== 'none') {
+      filtered = [...filtered].sort((a, b) => {
+        const aHasRib = a.rib_file_path && a.rib_status === 'valide' ? 1 : 0;
+        const bHasRib = b.rib_file_path && b.rib_status === 'valide' ? 1 : 0;
+        return ribSortDirection === 'asc' ? aHasRib - bHasRib : bHasRib - aHasRib;
+      });
+    }
+
     setFilteredInvestors(filtered);
-  }, [searchTerm, typeFilter, projectFilter, trancheFilter, ribFilter, investors, sortField, sortDirection]);
+  }, [searchTerm, typeFilter, projectFilter, trancheFilter, ribFilter, investors, sortField, sortDirection, ribSortDirection]);
 
   const fetchInvestors = async () => {
     setLoading(true);
@@ -206,6 +218,15 @@ export function Investors({ organization }: InvestorsProps) {
     } else {
       setSortField(field);
       setSortDirection('asc');
+    }
+    setRibSortDirection('none'); // Reset RIB sort when sorting other fields
+  };
+
+  const handleSortRib = () => {
+    if (ribSortDirection === 'none' || ribSortDirection === 'desc') {
+      setRibSortDirection('asc');
+    } else {
+      setRibSortDirection('desc');
     }
   };
 
@@ -456,8 +477,8 @@ export function Investors({ organization }: InvestorsProps) {
             className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">Tous les RIB</option>
-            <option value="with-rib">✅ Avec RIB</option>
-            <option value="without-rib">⚠️ Sans RIB</option>
+            <option value="with-rib">Avec RIB</option>
+            <option value="without-rib">Sans RIB</option>
           </select>
         </div>
       </div>
@@ -468,11 +489,6 @@ export function Investors({ organization }: InvestorsProps) {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-6 py-3 text-left">
-                  <button onClick={() => handleSort('id_investisseur')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
-                    ID <ArrowUpDown className="w-4 h-4" />
-                  </button>
-                </th>
                 <th className="px-6 py-3 text-left">
                   <button onClick={() => handleSort('nom_raison_sociale')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
                     Nom / Raison Sociale <ArrowUpDown className="w-4 h-4" />
@@ -498,8 +514,10 @@ export function Investors({ organization }: InvestorsProps) {
                     Souscriptions <ArrowUpDown className="w-4 h-4" />
                   </button>
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  RIB
+                <th className="px-6 py-3 text-center">
+                  <button onClick={handleSortRib} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900 mx-auto">
+                    RIB <ArrowUpDown className="w-4 h-4" />
+                  </button>
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Actions
@@ -512,10 +530,7 @@ export function Investors({ organization }: InvestorsProps) {
                 
                 return (
                   <tr key={investor.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                      {investor.id_investisseur}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${investor.type.toLowerCase() === 'morale' ? 'bg-purple-100' : 'bg-blue-100'}`}>
                           {investor.type.toLowerCase() === 'morale' ? (
@@ -526,8 +541,9 @@ export function Investors({ organization }: InvestorsProps) {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-slate-900">{investor.nom_raison_sociale}</p>
+                          <p className="text-xs text-slate-500">{investor.id_investisseur}</p>
                           {investor.projects && investor.projects.length > 0 && (
-                            <p className="text-xs text-slate-600">
+                            <p className="text-xs text-slate-600 mt-1">
                               {investor.projects.length} projet{investor.projects.length > 1 ? 's' : ''}
                             </p>
                           )}
@@ -560,18 +576,17 @@ export function Investors({ organization }: InvestorsProps) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-2">
                         {hasRib ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleDownloadRib(investor)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                               title="Télécharger le RIB"
                             >
-                              <Eye className="w-4 h-4" />
                               <Download className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleRibUpload(investor)}
-                              className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+                              className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-lg transition-colors"
                               title="Remplacer le RIB"
                             >
                               <Upload className="w-4 h-4" />
@@ -580,10 +595,10 @@ export function Investors({ organization }: InvestorsProps) {
                         ) : (
                           <button
                             onClick={() => handleRibUpload(investor)}
-                            className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors"
+                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                            title="Uploader un RIB"
                           >
                             <Upload className="w-4 h-4" />
-                            <span className="text-xs font-medium">Upload RIB</span>
                           </button>
                         )}
                       </div>
