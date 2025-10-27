@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { TrancheWizard } from './TrancheWizard';
 import { PaymentWizard } from './PaymentWizard';
 import { EcheancierCard } from './EcheancierCard';
+import { SubscriptionsModal } from './SubscriptionsModal';
 import {
   ArrowLeft,
   Edit,
@@ -104,10 +105,10 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [showEcheancierModal, setShowEcheancierModal] = useState(false);
   const [selectedTrancheForEcheancier, setSelectedTrancheForEcheancier] = useState<Tranche | null>(null);
   const [showAllTranches, setShowAllTranches] = useState(false);
-  const [showAllSubscriptions, setShowAllSubscriptions] = useState(false);
+  const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false);
 
   const TRANCHES_LIMIT = 5;
-  const SUBSCRIPTIONS_LIMIT = 10;
+  const SUBSCRIPTIONS_LIMIT = 5;
 
   const [stats, setStats] = useState({
     totalLeve: 0,
@@ -544,7 +545,15 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
         {/* Subscriptions Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-4">Souscriptions</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-slate-900">Souscriptions</h2>
+            <button
+              onClick={() => setShowSubscriptionsModal(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Voir tout ({subscriptions.length})
+            </button>
+          </div>
 
           {subscriptions.length === 0 ? (
             <p className="text-center text-slate-400 py-8">Aucune souscription enregistrée</p>
@@ -558,6 +567,9 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                         Investisseur
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        CGP
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         Tranche
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
@@ -566,19 +578,19 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                       <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         Montant
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        Prochain Coupon
-                      </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {(showAllSubscriptions ? subscriptions : subscriptions.slice(0, SUBSCRIPTIONS_LIMIT)).map((sub) => (
+                    {subscriptions.slice(0, SUBSCRIPTIONS_LIMIT).map((sub) => (
                     <tr key={sub.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 text-sm text-slate-900">
                         {sub.investisseur.nom_raison_sociale}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {sub.investisseur.cgp_nom || '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">{sub.tranche.tranche_name}</td>
                       <td className="px-4 py-3 text-sm text-slate-600">
@@ -586,20 +598,6 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                       </td>
                       <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
                         {formatCurrency(sub.montant_investi)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right">
-                        {sub.prochain_coupon ? (
-                          <div>
-                            <p className="text-slate-900 font-medium">
-                              {formatDate(sub.prochain_coupon.date_prochain_coupon)}
-                            </p>
-                            <p className="text-slate-600 text-xs">
-                              {formatCurrency(sub.prochain_coupon.montant_prochain_coupon)}
-                            </p>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400">-</span>
-                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center gap-2">
@@ -648,17 +646,6 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 </tbody>
               </table>
             </div>
-
-            {subscriptions.length > SUBSCRIPTIONS_LIMIT && !showAllSubscriptions && (
-              <div className="mt-4 text-center">
-                <button
-                  onClick={() => setShowAllSubscriptions(true)}
-                  className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
-                >
-                  Voir toutes les souscriptions ({subscriptions.length})
-                </button>
-              </div>
-            )}
           </>
           )}
         </div>
@@ -1086,6 +1073,42 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               setShowPaymentWizard(false);
               fetchProjectData();
             }}
+          />
+        )}
+
+        {/* Subscriptions Modal */}
+        {showSubscriptionsModal && (
+          <SubscriptionsModal
+            subscriptions={subscriptions}
+            onClose={() => setShowSubscriptionsModal(false)}
+            onEdit={(sub) => {
+              setEditingSubscription(sub);
+              setShowEditSubscription(true);
+            }}
+            onDelete={async (sub) => {
+              if (
+                window.confirm(
+                  `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur.nom_raison_sociale} ?`
+                )
+              ) {
+                try {
+                  const { error } = await supabase
+                    .from('souscriptions')
+                    .delete()
+                    .eq('id', sub.id);
+
+                  if (error) throw error;
+
+                  alert('✅ Souscription supprimée avec succès');
+                  fetchProjectData();
+                } catch (err: any) {
+                  console.error('Error deleting subscription:', err);
+                  alert('❌ Erreur lors de la suppression : ' + err.message);
+                }
+              }
+            }}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
           />
         )}
       </div>
