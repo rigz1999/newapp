@@ -634,7 +634,7 @@ export function Dashboard({ organization }: DashboardProps) {
             <div className="mb-6 mt-6">
               <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg flex items-start justify-between">
                 <div className="flex items-start gap-3 flex-1">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                   <div className="flex-1 space-y-2">
                     {alerts.map((alert, index) => (
                       <p key={alert.id} className="text-sm font-medium text-amber-900">
