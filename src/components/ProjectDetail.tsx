@@ -5,6 +5,7 @@ import { TrancheWizard } from './TrancheWizard';
 import { PaymentWizard } from './PaymentWizard';
 import { EcheancierCard } from './EcheancierCard';
 import { SubscriptionsModal } from './SubscriptionsModal';
+import { TranchesModal } from './TranchesModal';
 import {
   ArrowLeft,
   Edit,
@@ -106,6 +107,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [selectedTrancheForEcheancier, setSelectedTrancheForEcheancier] = useState<Tranche | null>(null);
   const [showAllTranches, setShowAllTranches] = useState(false);
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false);
+  const [showTranchesModal, setShowTranchesModal] = useState(false);
 
   const TRANCHES_LIMIT = 5;
   const SUBSCRIPTIONS_LIMIT = 5;
@@ -466,13 +468,21 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-slate-900">Tranches</h2>
-            <button
-              onClick={() => setShowTrancheWizard(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Nouvelle Tranche
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowTranchesModal(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+              >
+                Voir tout ({tranches.length})
+              </button>
+              <button
+                onClick={() => setShowTrancheWizard(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Nouvelle Tranche
+              </button>
+            </div>
           </div>
 
           {tranches.length === 0 ? (
@@ -658,6 +668,14 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           onPaymentClick={(trancheId) => {
             // Ouvrir le PaymentWizard pour cette tranche
             setShowPaymentWizard(true);
+          }}
+          onViewAll={() => {
+            // Pour l'instant, juste ouvrir le modal de la première tranche
+            // Vous pouvez créer un modal dédié plus tard
+            if (tranches.length > 0) {
+              setSelectedTrancheForEcheancier(tranches[0]);
+              setShowEcheancierModal(true);
+            }
           }}
         />
 
@@ -1108,6 +1126,22 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 }
               }
             }}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+          />
+        )}
+
+        {/* Tranches Modal */}
+        {showTranchesModal && (
+          <TranchesModal
+            tranches={tranches}
+            subscriptions={subscriptions}
+            onClose={() => setShowTranchesModal(false)}
+            onEdit={(tranche) => {
+              setEditingTranche(tranche);
+              setShowTrancheWizard(true);
+            }}
+            onDelete={handleDeleteTranche}
             formatCurrency={formatCurrency}
             formatDate={formatDate}
           />
