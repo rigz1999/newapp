@@ -66,6 +66,7 @@ export function Investors({ organization }: InvestorsProps) {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [trancheFilter, setTrancheFilter] = useState<string>('all');
+  const [ribFilter, setRibFilter] = useState<string>('all'); // Nouveau filtre RIB
   const [sortField, setSortField] = useState<SortField>('nom_raison_sociale');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -125,9 +126,15 @@ export function Investors({ organization }: InvestorsProps) {
       filtered = filtered.filter(inv => inv.tranches?.includes(trancheFilter));
     }
 
+    if (ribFilter === 'with-rib') {
+      filtered = filtered.filter(inv => inv.rib_file_path && inv.rib_status === 'valide');
+    } else if (ribFilter === 'without-rib') {
+      filtered = filtered.filter(inv => !inv.rib_file_path || inv.rib_status !== 'valide');
+    }
+
     filtered = sortInvestors(filtered, sortField, sortDirection);
     setFilteredInvestors(filtered);
-  }, [searchTerm, typeFilter, projectFilter, trancheFilter, investors, sortField, sortDirection]);
+  }, [searchTerm, typeFilter, projectFilter, trancheFilter, ribFilter, investors, sortField, sortDirection]);
 
   const fetchInvestors = async () => {
     setLoading(true);
@@ -316,6 +323,31 @@ export function Investors({ organization }: InvestorsProps) {
     }
   };
 
+  const handleDownloadRib = async (investor: InvestorWithStats) => {
+    if (!investor.rib_file_path) return;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .download(investor.rib_file_path);
+
+      if (error) throw error;
+
+      // Créer un lien de téléchargement
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `RIB_${investor.nom_raison_sociale}.${investor.rib_file_path.split('.').pop()}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Erreur téléchargement RIB:', error);
+      alert('❌ Erreur lors du téléchargement du RIB');
+    }
+  };
+
   const handleExportExcel = () => {
     const exportData = filteredInvestors.map(inv => ({
       'ID': inv.id_investisseur,
@@ -372,7 +404,7 @@ export function Investors({ organization }: InvestorsProps) {
 
       {/* Filtres */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
@@ -416,6 +448,16 @@ export function Investors({ organization }: InvestorsProps) {
                 {tranche.tranche_name} ({tranche.projet_nom})
               </option>
             ))}
+          </select>
+
+          <select
+            value={ribFilter}
+            onChange={(e) => setRibFilter(e.target.value)}
+            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">Tous les RIB</option>
+            <option value="with-rib">✅ Avec RIB</option>
+            <option value="without-rib">⚠️ Sans RIB</option>
           </select>
         </div>
       </div>
@@ -518,9 +560,22 @@ export function Investors({ organization }: InvestorsProps) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-2">
                         {hasRib ? (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <CheckCircle className="w-4 h-4" />
-                            <span className="text-xs font-medium">RIB OK</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleDownloadRib(investor)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                              title="Télécharger le RIB"
+                            >
+                              <Eye className="w-4 h-4" />
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleRibUpload(investor)}
+                              className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors"
+                              title="Remplacer le RIB"
+                            >
+                              <Upload className="w-4 h-4" />
+                            </button>
                           </div>
                         ) : (
                           <button
