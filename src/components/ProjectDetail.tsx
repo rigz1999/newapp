@@ -103,6 +103,11 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [showEcheancierModal, setShowEcheancierModal] = useState(false);
   const [selectedTrancheForEcheancier, setSelectedTrancheForEcheancier] = useState<Tranche | null>(null);
+  const [showAllTranches, setShowAllTranches] = useState(false);
+  const [showAllSubscriptions, setShowAllSubscriptions] = useState(false);
+
+  const TRANCHES_LIMIT = 3;
+  const SUBSCRIPTIONS_LIMIT = 10;
 
   const [stats, setStats] = useState({
     totalLeve: 0,
@@ -121,7 +126,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
     const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
       supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
-      supabase.from('tranches').select('*').eq('projet_id', projectId).order('created_at', { ascending: false }),
+      supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }), // ← Ordre chronologique
       supabase.from('souscriptions').select(`
         id, id_souscription, date_souscription, nombre_obligations, montant_investi,
         coupon_net, investisseur_id,
@@ -338,7 +343,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               setEditedProject(project);
               setShowEditProject(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
           >
             <Edit className="w-4 h-4" />
             Modifier
@@ -461,7 +466,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             <h2 className="text-xl font-bold text-slate-900">Tranches</h2>
             <button
               onClick={() => setShowTrancheWizard(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
               Nouvelle Tranche
@@ -471,8 +476,9 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           {tranches.length === 0 ? (
             <p className="text-center text-slate-400 py-8">Aucune tranche créée</p>
           ) : (
-            <div className="space-y-4">
-              {tranches.map((tranche) => {
+            <>
+              <div className="space-y-4">
+                {(showAllTranches ? tranches : tranches.slice(0, TRANCHES_LIMIT)).map((tranche) => {
                 const trancheSubscriptions = subscriptions.filter(
                   (s) => s.tranche.tranche_name === tranche.tranche_name
                 );
@@ -522,7 +528,19 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                   </div>
                 );
               })}
-            </div>
+              </div>
+
+              {tranches.length > TRANCHES_LIMIT && !showAllTranches && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => setShowAllTranches(true)}
+                    className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
+                  >
+                    Voir toutes les tranches ({tranches.length})
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -533,32 +551,33 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           {subscriptions.length === 0 ? (
             <p className="text-center text-slate-400 py-8">Aucune souscription enregistrée</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                      Investisseur
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                      Tranche
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                      Montant
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                      Prochain Coupon
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {subscriptions.map((sub) => (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Investisseur
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Tranche
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Montant
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Prochain Coupon
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {(showAllSubscriptions ? subscriptions : subscriptions.slice(0, SUBSCRIPTIONS_LIMIT)).map((sub) => (
                     <tr key={sub.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 text-sm text-slate-900">
                         {sub.investisseur.nom_raison_sociale}
@@ -631,6 +650,18 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 </tbody>
               </table>
             </div>
+
+            {subscriptions.length > SUBSCRIPTIONS_LIMIT && !showAllSubscriptions && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => setShowAllSubscriptions(true)}
+                  className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
+                >
+                  Voir toutes les souscriptions ({subscriptions.length})
+                </button>
+              </div>
+            )}
+          </>
           )}
         </div>
 
@@ -917,13 +948,13 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 <div className="flex gap-3 mt-6 pt-6 border-t border-slate-200 sticky bottom-0 bg-white">
                   <button
                     onClick={() => setShowEditProject(false)}
-                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                    className="flex-1 px-4 py-2 text-sm font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={handleUpdateProject}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex-1 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
                   >
                     Enregistrer
                   </button>
@@ -1033,13 +1064,13 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                       setShowEditSubscription(false);
                       setEditingSubscription(null);
                     }}
-                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50"
+                    className="flex-1 px-4 py-2 text-sm font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={handleUpdateSubscription}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex-1 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
                   >
                     Enregistrer
                   </button>
