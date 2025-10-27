@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Calendar, X, CheckCircle, Clock, AlertCircle, DollarSign } from 'lucide-react';
+import { Calendar, X, CheckCircle, Clock, AlertCircle, DollarSign, Download } from 'lucide-react';
 import { EcheancierModal } from './EcheancierModal';
 
 interface Echeance {
@@ -107,6 +107,157 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick }: Echeanci
     return `Dans ${Math.ceil(diffDays / 30)} mois`;
   };
 
+  const handleDownloadSynthese = async () => {
+    // Récupérer toutes les échéances pour toutes les tranches
+    const allEcheances: any[] = [];
+    
+    for (const tranche of tranches) {
+      const { data } = await supabase
+        .from('coupons_echeances')
+        .select(`
+          date_echeance,
+          montant_coupon,
+          statut,
+          date_paiement,
+          souscriptions!inner(
+            tranche_id,
+            investisseur:investisseurs(nom_raison_sociale)
+          )
+        `)
+        .eq('souscriptions.tranche_id', tranche.id)
+        .order('date_echeance', { ascending: true });
+
+      if (data) {
+        allEcheances.push(...data.map((e: any) => ({
+          ...e,
+          tranche_name: tranche.tranche_name
+        })));
+      }
+    }
+
+    // Calculer les statistiques
+    const totalEcheances = allEcheances.length;
+    const totalPayes = allEcheances.filter(e => e.statut === 'paye').length;
+    const totalEnRetard = allEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date()).length;
+    const totalAVenir = allEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date()).length;
+    
+    const montantTotal = allEcheances.reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+    const montantPaye = allEcheances.filter(e => e.statut === 'paye').reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+    const montantEnRetard = allEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date()).reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+    const montantAVenir = allEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date()).reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+
+    // Importer XLSX dynamiquement
+    const XLSX = await import('xlsx');
+
+    // Créer le workbook
+    const wb = XLSX.utils.book_new();
+
+    // === FEUILLE 1: SYNTHÈSE ===
+    const synthese = [
+      ['SYNTHÈSE DE L\'ÉCHÉANCIER'],
+      [''],
+      ['Date d\'export', new Date().toLocaleDateString('fr-FR')],
+      [''],
+      ['STATISTIQUES GÉNÉRALES'],
+      ['Total des coupons', totalEcheances],
+      ['Coupons payés', totalPayes],
+      ['Coupons en retard', totalEnRetard],
+      ['Coupons à venir', totalAVenir],
+      [''],
+      ['MONTANTS (EUR)'],
+      ['Montant total', montantTotal],
+      ['Montant payé', montantPaye],
+      ['Montant en retard', montantEnRetard],
+      ['Montant à venir', montantAVenir],
+      [''],
+      ['PROGRESSION'],
+      ['Taux de paiement', `${Math.round((totalPayes / totalEcheances) * 100)}%`],
+    ];
+
+    const wsSynthese = XLSX.utils.aoa_to_sheet(synthese);
+    
+    // Largeurs de colonnes
+    wsSynthese['!cols'] = [
+      { wch: 25 },
+      { wch: 15 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, wsSynthese, 'Synthèse');
+
+    // === FEUILLE 2: DÉTAIL DES ÉCHÉANCES ===
+    const detailData = [
+      ['Tranche', 'Investisseur', 'Date échéance', 'Montant (€)', 'Statut', 'Date paiement']
+    ];
+
+    allEcheances.forEach(e => {
+      const statut = e.statut === 'paye' ? 'Payé' : (new Date(e.date_echeance) < new Date() ? 'En retard' : 'À venir');
+      detailData.push([
+        e.tranche_name,
+        e.souscriptions.investisseur.nom_raison_sociale,
+        new Date(e.date_echeance).toLocaleDateString('fr-FR'),
+        Number(e.montant_coupon),
+        statut,
+        e.date_paiement ? new Date(e.date_paiement).toLocaleDateString('fr-FR') : '-'
+      ]);
+    });
+
+    const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
+    
+    // Largeurs de colonnes
+    wsDetail['!cols'] = [
+      { wch: 20 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 15 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, wsDetail, 'Détail des coupons');
+
+    // === FEUILLE 3: PAR TRANCHE ===
+    const parTrancheData: any[] = [
+      ['Tranche', 'Total coupons', 'Payés', 'En retard', 'À venir', 'Montant total (€)', 'Montant payé (€)']
+    ];
+
+    tranches.forEach(tranche => {
+      const trancheEcheances = allEcheances.filter(e => e.tranche_name === tranche.tranche_name);
+      const payes = trancheEcheances.filter(e => e.statut === 'paye').length;
+      const enRetard = trancheEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date()).length;
+      const aVenir = trancheEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date()).length;
+      const montantTotal = trancheEcheances.reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+      const montantPaye = trancheEcheances.filter(e => e.statut === 'paye').reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+
+      parTrancheData.push([
+        tranche.tranche_name,
+        trancheEcheances.length,
+        payes,
+        enRetard,
+        aVenir,
+        montantTotal,
+        montantPaye
+      ]);
+    });
+
+    const wsParTranche = XLSX.utils.aoa_to_sheet(parTrancheData);
+    
+    // Largeurs de colonnes
+    wsParTranche['!cols'] = [
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 10 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 18 },
+      { wch: 18 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, wsParTranche, 'Par tranche');
+
+    // Télécharger le fichier
+    XLSX.writeFile(wb, `Echeancier_Projet_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -124,6 +275,13 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick }: Echeanci
           <Calendar className="w-5 h-5 text-slate-600" />
           <h2 className="text-xl font-bold text-slate-900">Échéancier des Coupons</h2>
         </div>
+        <button
+          onClick={handleDownloadSynthese}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors shadow-sm"
+        >
+          <Download className="w-4 h-4" />
+          Télécharger synthèse
+        </button>
       </div>
 
       {tranches.length === 0 ? (
