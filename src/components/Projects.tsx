@@ -19,7 +19,7 @@ interface ProjectsProps {
   organization: { id: string; name: string; role: string };
 }
 
-// Helpers
+// Helpers (identiques au Dashboard)
 const isValidSIREN = (value: string) => {
   if (!/^\d{9}$/.test(value)) return false;
   let sum = 0;
@@ -53,6 +53,7 @@ export function Projects({ organization }: ProjectsProps) {
   const [showCreateModal, setShowCreateModal] = useState(searchParams.get('create') === 'true');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // États identiques au Dashboard
   const [newProjectData, setNewProjectData] = useState({
     projet: '',
     type: 'obligations_simples',
@@ -76,15 +77,10 @@ export function Projects({ organization }: ProjectsProps) {
 
   useEffect(() => {
     let isMounted = true;
-
     const loadData = async () => {
-      if (isMounted) {
-        await fetchProjects();
-      }
+      if (isMounted) await fetchProjects();
     };
-
     loadData();
-
     return () => {
       isMounted = false;
       setProjects([]);
@@ -108,9 +104,7 @@ export function Projects({ organization }: ProjectsProps) {
 
   const fetchProjects = async () => {
     setLoading(true);
-
     try {
-      console.log('Projects: Fetching data...');
       const [projectsRes, tranchesRes, subscriptionsRes] = await Promise.all([
         supabase.from('projets').select('*').order('created_at', { ascending: false }),
         supabase.from('tranches').select('id, projet_id'),
@@ -121,12 +115,9 @@ export function Projects({ organization }: ProjectsProps) {
       const tranchesData = tranchesRes.data || [];
       const subscriptionsData = subscriptionsRes.data || [];
 
-      console.log('Projects: Data fetched', { projects: projectsData.length, tranches: tranchesData.length });
-
       const projectsWithStats = projectsData.map((project) => {
         const projectTranches = tranchesData.filter(t => t.projet_id === project.id);
         const projectSubscriptions = subscriptionsData.filter((s: any) => s.tranche?.projet_id === project.id);
-
         const totalLeve = projectSubscriptions.reduce((sum, sub) => sum + (Number(sub.montant_investi) || 0), 0);
         const uniqueInvestors = new Set(projectSubscriptions.map(s => s.investisseur_id)).size;
 
@@ -140,7 +131,6 @@ export function Projects({ organization }: ProjectsProps) {
 
       setProjects(projectsWithStats);
       setFilteredProjects(projectsWithStats);
-      console.log('Projects: Complete');
     } catch (error) {
       console.error('Projects: Error', error);
     } finally {
@@ -148,10 +138,10 @@ export function Projects({ organization }: ProjectsProps) {
     }
   };
 
+  // Fonction identique au Dashboard
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation SIREN
     if (newProjectData.siren_emetteur && !isValidSIREN(newProjectData.siren_emetteur)) {
       setSirenError('SIREN invalide (9 chiffres + clé Luhn).');
       return;
@@ -160,14 +150,9 @@ export function Projects({ organization }: ProjectsProps) {
     setCreatingProject(true);
 
     try {
-      const { data, error } = await supabase.from('projets').insert({
+      const projectToCreate: any = {
         projet: newProjectData.projet,
-        type: newProjectData.type,
-        taux_nominal: newProjectData.taux_interet ? parseFloat(newProjectData.taux_interet) : null,
-        montant_global: newProjectData.montant_global_eur ? parseInt(newProjectData.montant_global_eur.replace(/\s/g, '')) : null,
-        periodicite_coupons: newProjectData.periodicite_coupon || null,
-        maturite_mois: newProjectData.maturite_mois ? parseInt(newProjectData.maturite_mois) : null,
-        base_interet: newProjectData.base_interet ? parseInt(newProjectData.base_interet) : null,
+        type: newProjectData.type || null,
         emetteur: newProjectData.emetteur,
         siren_emetteur: newProjectData.siren_emetteur ? parseInt(newProjectData.siren_emetteur) : null,
         nom_representant: newProjectData.nom_representant || null,
@@ -176,17 +161,39 @@ export function Projects({ organization }: ProjectsProps) {
         representant_masse: newProjectData.representant_masse || null,
         email_rep_masse: newProjectData.email_rep_masse || null,
         telephone_rep_masse: newProjectData.telephone_rep_masse || null,
-      }).select();
+      };
+
+      // Champs optionnels
+      if (newProjectData.taux_interet) {
+        projectToCreate.taux_nominal = parseFloat(newProjectData.taux_interet);
+      }
+      if (newProjectData.montant_global_eur) {
+        projectToCreate.montant_global = parseInt(newProjectData.montant_global_eur.replace(/\s/g, ''));
+      }
+      if (newProjectData.periodicite_coupon) {
+        projectToCreate.periodicite_coupons = newProjectData.periodicite_coupon;
+      }
+      if (newProjectData.maturite_mois) {
+        projectToCreate.maturite_mois = parseInt(newProjectData.maturite_mois);
+      }
+      if (newProjectData.base_interet) {
+        projectToCreate.base_interet = parseInt(newProjectData.base_interet);
+      }
+
+      const { data, error } = await supabase
+        .from('projets')
+        .insert([projectToCreate])
+        .select()
+        .single();
 
       if (error) throw error;
 
-      alert('✅ Projet créé avec succès !');
       setShowCreateModal(false);
       resetNewProjectForm();
-      fetchProjects();
-    } catch (error: any) {
-      console.error('Error creating project:', error);
-      alert('❌ Erreur lors de la création : ' + error.message);
+      fetchProjects(); // Refresh la liste
+    } catch (err: any) {
+      console.error('Error creating project:', err);
+      alert('Erreur lors de la création du projet: ' + err.message);
     } finally {
       setCreatingProject(false);
     }
@@ -308,9 +315,7 @@ export function Projects({ organization }: ProjectsProps) {
                     <Layers className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-slate-900 mb-1 truncate">
-                      {project.projet}
-                    </h3>
+                    <h3 className="text-lg font-bold text-slate-900 mb-1 truncate">{project.projet}</h3>
                     <p className="text-sm text-slate-600 truncate">{project.emetteur}</p>
                   </div>
                 </div>
@@ -348,12 +353,15 @@ export function Projects({ organization }: ProjectsProps) {
         </div>
       )}
 
-      {/* Modal Nouveau Projet - Version complète du Dashboard */}
+      {/* MODAL EXACT DU DASHBOARD */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-2xl font-bold text-slate-900">Créer un nouveau projet</h3>
+              <div>
+                <h3 className="text-2xl font-bold text-slate-900">Nouveau Projet</h3>
+                <p className="text-sm text-slate-600 mt-1">Créer un nouveau projet obligataire</p>
+              </div>
               <button
                 onClick={() => {
                   resetNewProjectForm();
@@ -367,7 +375,7 @@ export function Projects({ organization }: ProjectsProps) {
 
             <div className="flex-1 overflow-y-auto">
               <form onSubmit={handleCreateProject} className="p-6">
-                <div className="space-y-5">
+                <div className="space-y-4">
                   <div>
                     <label htmlFor="projet" className="block text-sm font-medium text-slate-900 mb-2">
                       Nom du projet <span className="text-red-600">*</span>
@@ -383,10 +391,11 @@ export function Projects({ organization }: ProjectsProps) {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Champs financiers */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="type" className="block text-sm font-medium text-slate-900 mb-2">
-                        Type d'instrument <span className="text-red-600">*</span>
+                        Type d'obligations <span className="text-red-600">*</span>
                       </label>
                       <select
                         id="type"
@@ -395,45 +404,153 @@ export function Projects({ organization }: ProjectsProps) {
                         onChange={(e) => setNewProjectData({ ...newProjectData, type: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="obligations_simples">Obligations simples</option>
-                        <option value="obligations_convertibles">Obligations convertibles</option>
-                        <option value="bsa">BSA (Bons de Souscription d'Actions)</option>
+                        <option value="obligations_simples">Obligations Simples</option>
+                        <option value="obligations_convertibles">Obligations Convertibles</option>
                       </select>
                     </div>
 
                     <div>
                       <label htmlFor="taux" className="block text-sm font-medium text-slate-900 mb-2">
-                        Taux d'intérêt nominal (%)
+                        Taux d'intérêt (%) <span className="text-red-600">*</span>
                       </label>
                       <input
                         id="taux"
                         type="number"
+                        required
                         step="0.01"
+                        min="0"
+                        max="100"
+                        inputMode="decimal"
                         value={newProjectData.taux_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Ex: 8.5"
+                        placeholder="Ex: 8.50"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="maturite" className="block text-sm font-medium text-slate-900 mb-2">
+                        Maturité (mois) <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        id="maturite"
+                        type="number"
+                        required
+                        min="1"
+                        value={newProjectData.maturite_mois}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: 60 (5 ans)"
+                      />
+                      <p className="mt-1 text-xs text-slate-600">Durée totale en mois</p>
+                    </div>
+
+                    <div>
+                      <label htmlFor="base_interet" className="block text-sm font-medium text-slate-900 mb-2">
+                        Base de calcul <span className="text-red-600">*</span>
+                      </label>
+                      <select
+                        id="base_interet"
+                        required
+                        value={newProjectData.base_interet}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, base_interet: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="360">360 jours (30/360) - Standard</option>
+                        <option value="365">365 jours (Exact/365)</option>
+                      </select>
+                      <p className="mt-1 text-xs text-slate-600">💡 Standard: 360 jours</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="taux2" className="block text-sm font-medium text-slate-900 mb-2">
+                        Taux d'intérêt (%) <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        id="taux2"
+                        type="number"
+                        required
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        inputMode="decimal"
+                        value={newProjectData.taux_interet}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: 8.50"
+                      />
+                    </div>
+
                     <div>
                       <label htmlFor="montant" className="block text-sm font-medium text-slate-900 mb-2">
-                        Montant global de l'émission
+                        Montant global à lever (€) <span className="text-red-600">*</span>
                       </label>
                       <input
                         id="montant"
                         ref={montantRef}
                         type="text"
+                        required
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/\D/g, '');
-                          setNewProjectData({
-                            ...newProjectData,
+                        onChange={() => {}}
+                        onFocus={moveCaretBeforeEuro}
+                        onClick={moveCaretBeforeEuro}
+                        onBeforeInput={(e: any) => {
+                          const data = e.data as string | null;
+                          const inputType = e.inputType as string;
+
+                          if (inputType === 'insertText' && data && /^\d$/.test(data)) {
+                            e.preventDefault();
+                            setNewProjectData(prev => ({
+                              ...prev,
+                              montant_global_eur: (prev.montant_global_eur || '') + data
+                            }));
+                            requestAnimationFrame(moveCaretBeforeEuro);
+                            return;
+                          }
+                          if (inputType === 'insertText') {
+                            e.preventDefault();
+                            return;
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          const navKeys = ['Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+                          if (navKeys.includes(e.key)) return;
+
+                          if (/^\d$/.test(e.key)) {
+                            e.preventDefault();
+                            setNewProjectData(prev => ({
+                              ...prev,
+                              montant_global_eur: (prev.montant_global_eur || '') + e.key
+                            }));
+                            requestAnimationFrame(moveCaretBeforeEuro);
+                            return;
+                          }
+
+                          if (e.key === 'Backspace' || e.key === 'Delete') {
+                            e.preventDefault();
+                            setNewProjectData(prev => ({
+                              ...prev,
+                              montant_global_eur: prev.montant_global_eur.slice(0, -1)
+                            }));
+                            requestAnimationFrame(moveCaretBeforeEuro);
+                            return;
+                          }
+
+                          e.preventDefault();
+                        }}
+                        onPaste={(e) => {
+                          e.preventDefault();
+                          const text = (e.clipboardData || (window as any).clipboardData).getData('text');
+                          const digits = (text || '').replace(/\D/g, '');
+                          setNewProjectData(prev => ({
+                            ...prev,
                             montant_global_eur: digits
-                          });
+                          }));
                           requestAnimationFrame(moveCaretBeforeEuro);
                         }}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -443,15 +560,16 @@ export function Projects({ organization }: ProjectsProps) {
 
                     <div>
                       <label htmlFor="periodicite" className="block text-sm font-medium text-slate-900 mb-2">
-                        Périodicité du coupon
+                        Périodicité du coupon <span className="text-red-600">*</span>
                       </label>
                       <select
                         id="periodicite"
+                        required
                         value={newProjectData.periodicite_coupon}
                         onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Choisir…</option>
+                        <option value="" disabled>Choisir…</option>
                         <option value="annuel">Annuel</option>
                         <option value="semestriel">Semestriel</option>
                         <option value="trimestriel">Trimestriel</option>
