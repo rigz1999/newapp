@@ -427,7 +427,7 @@ export function Dashboard({ organization }: DashboardProps) {
         supabase.from('projets').select('id'),
         supabase.from('tranches').select('id, projet_id'),
         supabase.from('souscriptions').select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
-        supabase.from('paiements').select('montant').eq('statut', 'paid').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
+        supabase.from('paiements').select('montant, statut').eq('statut', 'payé').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
         supabase.from('souscriptions').select('montant_investi, date_souscription')
       ]);
 
@@ -469,7 +469,7 @@ export function Dashboard({ organization }: DashboardProps) {
           supabase.from('paiements').select(`
               id, id_paiement, montant, date_paiement, statut,
               tranche:tranches(tranche_name, projet_id)
-            `).in('tranche_id', trancheIds).in('statut', ['Payé', 'paid']).order('date_paiement', { ascending: false }).limit(5),
+            `).in('tranche_id', trancheIds).eq('statut', 'payé').order('date_paiement', { ascending: false }).limit(5),
           supabase.from('souscriptions').select(`
               id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
               tranche:tranches(
