@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, ArrowLeft } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, ArrowLeft, Trash2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
@@ -159,6 +159,10 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       setFiles(validFiles);
       setError('');
     }
+  };
+
+  const handleRemoveFile = (indexToRemove: number) => {
+    setFiles(files.filter((_, idx) => idx !== indexToRemove));
   };
 
   // ========================================
@@ -659,12 +663,22 @@ Résultat : Même interface, 5x plus rapide !
                   <h4 className="font-medium text-slate-900 mb-2">Fichiers sélectionnés ({files.length}):</h4>
                   <ul className="space-y-2">
                     {files.map((file, idx) => (
-                      <li key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
+                      <li key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg group hover:bg-slate-100 transition-colors">
                         <div className="flex items-center gap-2">
                           <FileText className="w-4 h-4 text-slate-400" />
                           <span className="text-sm text-slate-700">{file.name}</span>
                         </div>
-                        <span className="text-xs text-slate-500">{(file.size / 1024).toFixed(0)} KB</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-slate-500">{(file.size / 1024).toFixed(0)} KB</span>
+                          <button
+                            onClick={() => handleRemoveFile(idx)}
+                            disabled={analyzing}
+                            className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Supprimer ce fichier"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
