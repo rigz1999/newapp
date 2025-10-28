@@ -369,6 +369,43 @@ export function Investors({ organization }: InvestorsProps) {
     }
   };
 
+  const handleDeleteRib = async (investor: InvestorWithStats) => {
+    if (!investor.rib_file_path) return;
+
+    const confirmDelete = window.confirm(
+      `Êtes-vous sûr de vouloir supprimer le RIB de ${investor.nom_raison_sociale} ?\n\nCette action est irréversible.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      // Supprimer le fichier du storage
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove([investor.rib_file_path]);
+
+      if (storageError) throw storageError;
+
+      // Mettre à jour la base de données
+      const { error: updateError } = await supabase
+        .from('investisseurs')
+        .update({
+          rib_file_path: null,
+          rib_uploaded_at: null,
+          rib_status: 'manquant'
+        })
+        .eq('id', investor.id);
+
+      if (updateError) throw updateError;
+
+      alert('✅ RIB supprimé avec succès !');
+      fetchInvestors();
+    } catch (error) {
+      console.error('Erreur suppression RIB:', error);
+      alert('❌ Erreur lors de la suppression du RIB');
+    }
+  };
+
   const handleExportExcel = () => {
     const exportData = filteredInvestors.map(inv => ({
       'ID': inv.id_investisseur,
@@ -567,14 +604,23 @@ export function Investors({ organization }: InvestorsProps) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1">
                         {hasRib ? (
-                          <button
-                            onClick={() => handleDownloadRib(investor)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors text-xs font-medium"
-                            title="Télécharger le RIB"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            Télécharger
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleDownloadRib(investor)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors text-xs font-medium"
+                              title="Télécharger le RIB"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Télécharger
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRib(investor)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Supprimer le RIB"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
                         ) : (
                           <button
                             onClick={() => handleRibUpload(investor)}
