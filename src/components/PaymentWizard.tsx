@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, ArrowLeft } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, ArrowLeft, Trash2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
@@ -161,281 +161,295 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
     }
   };
 
-  // ========================================
-// 🎯 REMPLACEZ UNIQUEMENT LA FONCTION handleAnalyze
-// (lignes 164-271 de votre fichier actuel)
-// ========================================
-
-// ⚡ HELPER : Compresser une image (AJOUTER AVANT handleAnalyze, ligne 163)
-const compressImage = (imageDataUrl: string, quality: number = 0.7): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX_SIZE = 1200;
-      
-      let width = img.width;
-      let height = img.height;
-      
-      if (width > MAX_SIZE || height > MAX_SIZE) {
-        if (width > height) {
-          height = (height / width) * MAX_SIZE;
-          width = MAX_SIZE;
-        } else {
-          width = (width / height) * MAX_SIZE;
-          height = MAX_SIZE;
-        }
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      const compressed = canvas.toDataURL('image/jpeg', quality);
-      resolve(compressed.split(',')[1]);
-    };
-    img.onerror = reject;
-    img.src = imageDataUrl;
-  });
-};
-
-// ========================================
-// ⚡ NOUVELLE FONCTION handleAnalyze OPTIMISÉE
-// ========================================
-const handleAnalyze = async () => {
-  if (files.length === 0) return;
-
-  console.time('⏱️ TOTAL');
-  setAnalyzing(true);
-  setError('');
-
-  try {
-    const base64Images: string[] = [];
-    
-    console.time('🖼️ Conversion Base64');
-
-    // Convertir tous les fichiers en Base64 compressé
-    for (const file of files) {
-      if (file.type === 'application/pdf') {
-        // PDF → PNG → Base64
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({ scale: 1.5 }); // ⚡ 1.5 au lieu de 2.0
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d')!;
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-
-          await page.render({ canvasContext: context, viewport: viewport }).promise;
-          
-          // Compresser avant d'envoyer
-          const imageDataUrl = canvas.toDataURL('image/png');
-          const compressed = await compressImage(imageDataUrl, 0.7);
-          base64Images.push(compressed);
-        }
-      } else {
-        // Image directe → Base64 compressé
-        const reader = new FileReader();
-        const base64 = await new Promise<string>((resolve, reject) => {
-          reader.onload = async (e) => {
-            const dataUrl = e.target?.result as string;
-            try {
-              const compressed = await compressImage(dataUrl, 0.7);
-              resolve(compressed);
-            } catch (err) {
-              reject(err);
-            }
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        base64Images.push(base64);
-      }
-    }
-
-    console.timeEnd('🖼️ Conversion Base64');
-    console.log(`📦 ${base64Images.length} image(s) converties`);
-
-    // Vérifier la taille totale
-    const totalSize = base64Images.reduce((sum, img) => sum + img.length, 0);
-    const totalSizeMB = (totalSize * 0.75 / 1024 / 1024).toFixed(2);
-    console.log(`📊 Taille totale: ${totalSizeMB} MB`);
-
-    if (totalSize > 5 * 1024 * 1024) {
-      throw new Error(`Les images sont trop volumineuses (${totalSizeMB} MB). Limite: 5 MB. Réduisez le nombre de fichiers.`);
-    }
-
-    const expectedPayments = subscriptions.map(sub => ({
-      investorName: sub.investisseur.nom_raison_sociale,
-      expectedAmount: sub.coupon_net,
-      subscriptionId: sub.id,
-      investisseurId: sub.investisseur_id
-    }));
-
-    console.time('🤖 Analyse IA');
-
-    // ⚡ APPEL OPTIMISÉ avec Base64
-    const { data, error: funcError } = await supabase.functions.invoke('analyze-payment-batch', {
-      body: { 
-        base64Images: base64Images, // ⚡ Base64 au lieu d'URLs
-        expectedPayments: expectedPayments 
-      }
-    });
-
-    console.timeEnd('🤖 Analyse IA');
-
-    if (funcError) throw funcError;
-    if (!data.succes) throw new Error(data.erreur);
-
-    const enrichedMatches = data.correspondances.map((match: any) => {
-      const subscription = subscriptions.find(
-        s => s.investisseur.nom_raison_sociale.toLowerCase() === match.paiement.beneficiaire.toLowerCase()
-      );
-      return { ...match, matchedSubscription: subscription };
-    });
-
-    setMatches(enrichedMatches);
-    
-    // Auto-select valid matches
-    const autoSelected = new Set<number>();
-    enrichedMatches.forEach((match: PaymentMatch, idx: number) => {
-      if (match.statut === 'correspondance') {
-        autoSelected.add(idx);
-      }
-    });
-    setSelectedMatches(autoSelected);
-    
-    // Plus besoin de stocker les fichiers temporaires
-    setUploadedFileUrls([]);
-    setTempFileNames([]);
-    
-    setStep('results');
-
-    console.timeEnd('⏱️ TOTAL');
-
-  } catch (err: any) {
-    console.error('Erreur analyse:', err);
-    setError(err.message || 'Erreur lors de l\'analyse');
-  } finally {
-    setAnalyzing(false);
-  }
-};
-
-// ========================================
-// 📝 INSTRUCTIONS
-// ========================================
-/*
-1. Trouvez la ligne 163 dans votre PaymentWizard.tsx
-2. AJOUTEZ la fonction compressImage (lignes 7-34 ci-dessus)
-3. REMPLACEZ la fonction handleAnalyze (lignes 164-271) par la nouvelle (lignes 38-157 ci-dessus)
-4. NE TOUCHEZ À RIEN D'AUTRE
-5. Sauvegardez
-
-Résultat : Même interface, 5x plus rapide !
-*/
-
-  const toggleSelectMatch = (idx: number) => {
-    const newSelected = new Set(selectedMatches);
-    if (newSelected.has(idx)) {
-      newSelected.delete(idx);
-    } else {
-      newSelected.add(idx);
-    }
-    setSelectedMatches(newSelected);
+  // 🗑️ NOUVELLE FONCTION: Supprimer un fichier
+  const handleDeleteFile = (indexToDelete: number) => {
+    setFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToDelete));
   };
 
-  const toggleSelectAll = () => {
-    if (selectedMatches.size === matches.length) {
-      setSelectedMatches(new Set());
-    } else {
-      const allIndexes = new Set<number>();
-      matches.forEach((match, idx) => {
-        allIndexes.add(idx);
+  // ⚡ HELPER : Compresser une image
+  const compressImage = (imageDataUrl: string, quality: number = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 1200;
+        
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = (height / width) * MAX_SIZE;
+            width = MAX_SIZE;
+          } else {
+            width = (width / height) * MAX_SIZE;
+            height = MAX_SIZE;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressed.split(',')[1]);
+      };
+      img.onerror = reject;
+      img.src = imageDataUrl;
+    });
+  };
+
+  // ========================================
+  // ⚡ NOUVELLE FONCTION handleAnalyze OPTIMISÉE
+  // ========================================
+  const handleAnalyze = async () => {
+    if (files.length === 0) return;
+
+    console.time('⏱️ TOTAL');
+    setAnalyzing(true);
+    setError('');
+
+    try {
+      const extractedTexts: string[] = [];
+      const tmpFileNames: string[] = [];
+
+      // ✅ Phase 1: Upload & Extract (Parallélisé)
+      console.time('⏱️ Upload & Extract');
+      
+      const filePromises = files.map(async (file, index) => {
+        const tempFileName = `temp_${Date.now()}_${index}_${file.name}`;
+        tmpFileNames.push(tempFileName);
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('factures')
+          .upload(tempFileName, file);
+
+        if (uploadError) throw uploadError;
+
+        if (file.type === 'application/pdf') {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          let fullText = '';
+
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const pageText = content.items.map((item: any) => item.str).join(' ');
+            fullText += pageText + '\n';
+          }
+
+          return fullText;
+        } else {
+          const imageDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+          });
+
+          const base64Image = await compressImage(imageDataUrl, 0.7);
+          
+          const prompt = `Analyze this bank transfer receipt and extract EXACTLY:
+1. Beneficiary name (Bénéficiaire)
+2. Amount (Montant) in EUR
+3. Date (Date du virement)
+4. Reference number
+
+Return ONLY raw data, one per line. No explanation.`;
+
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({
+              model: 'claude-3-5-sonnet-20241022',
+              max_tokens: 500,
+              messages: [{
+                role: 'user',
+                content: [
+                  { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64Image } },
+                  { type: 'text', text: prompt }
+                ]
+              }]
+            })
+          });
+
+          if (!response.ok) throw new Error('API Error');
+          
+          const result = await response.json();
+          return result.content[0].text;
+        }
       });
-      setSelectedMatches(allIndexes);
+
+      const texts = await Promise.all(filePromises);
+      extractedTexts.push(...texts);
+      setTempFileNames(tmpFileNames);
+
+      console.timeEnd('⏱️ Upload & Extract');
+
+      // ✅ Phase 2: Matching
+      console.time('⏱️ Matching');
+      
+      const matchPrompt = `You are a payment matching expert. Match each payment to a subscription based on beneficiary name and amount.
+
+SUBSCRIPTIONS DATABASE:
+${JSON.stringify(subscriptions.map(s => ({
+        id: s.id,
+        investor: s.investisseur.nom_raison_sociale,
+        amount: s.coupon_net
+      })), null, 2)}
+
+PAYMENTS TO MATCH:
+${extractedTexts.map((text, i) => `PAYMENT ${i + 1}:\n${text}\n`).join('\n---\n')}
+
+RESPOND WITH VALID JSON ONLY (no markdown, no explanation):
+{
+  "matches": [
+    {
+      "paymentIndex": 0,
+      "payment": {
+        "beneficiaire": "Exact Name",
+        "montant": 183.75,
+        "date": "2024-01-15",
+        "reference": "REF123"
+      },
+      "subscriptionId": "uuid-or-null",
+      "confidence": 95,
+      "status": "correspondance"
+    }
+  ]
+}
+
+Rules:
+- confidence 85-100 = "correspondance"
+- confidence 60-84 = "partielle"  
+- confidence <60 = "pas-de-correspondance"
+- If no match, subscriptionId = null, confidence = 0`;
+
+      const matchResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 4000,
+          messages: [{ role: 'user', content: matchPrompt }]
+        })
+      });
+
+      if (!matchResponse.ok) throw new Error('Matching failed');
+
+      const matchResult = await matchResponse.json();
+      let rawText = matchResult.content[0].text;
+
+      rawText = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+      const parsed = JSON.parse(rawText);
+
+      console.timeEnd('⏱️ Matching');
+
+      // ✅ Phase 3: Build Results
+      const finalMatches: PaymentMatch[] = parsed.matches.map((m: any) => {
+        const sub = m.subscriptionId 
+          ? subscriptions.find(s => s.id === m.subscriptionId)
+          : undefined;
+
+        const ecartMontant = sub 
+          ? Math.abs(m.payment.montant - sub.coupon_net).toFixed(2)
+          : '0';
+        
+        const ecartPourcent = sub && sub.coupon_net > 0
+          ? ((Math.abs(m.payment.montant - sub.coupon_net) / sub.coupon_net) * 100).toFixed(1)
+          : '0';
+
+        return {
+          paiement: m.payment,
+          matchedSubscription: sub,
+          statut: m.status,
+          confiance: m.confidence,
+          details: {
+            ecartMontant,
+            ecartMontantPourcent: ecartPourcent
+          }
+        };
+      });
+
+      setMatches(finalMatches);
+      setStep('results');
+
+      console.timeEnd('⏱️ TOTAL');
+
+    } catch (err: any) {
+      console.error('❌ Error:', err);
+      setError(err.message || 'Erreur lors de l\'analyse');
+      
+      if (tempFileNames.length > 0) {
+        await Promise.all(
+          tempFileNames.map(fn => 
+            supabase.storage.from('factures').remove([fn]).catch(() => {})
+          )
+        );
+      }
+    } finally {
+      setAnalyzing(false);
     }
   };
 
   const handleValidateSelected = async () => {
+    if (selectedMatches.size === 0) return;
+
     setProcessing(true);
     setError('');
 
     try {
       const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
-      const validMatches = selectedMatchesList.filter(m => m.matchedSubscription);
 
-      // Create payment records and save proofs
-      for (const match of validMatches) {
-        // Create payment record
-        const { data: paymentData, error: paymentError } = await supabase
-          .from('paiements')
-          .insert({
-            id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: 'Coupon',
-            projet_id: selectedProjectId,
-            tranche_id: selectedTrancheId,
-            investisseur_id: match.matchedSubscription!.investisseur_id,
-            souscription_id: match.matchedSubscription!.id,
-            montant: match.paiement.montant,
-            date_paiement: match.paiement.date || new Date().toISOString().split('T')[0]
-          })
-          .select()
-          .single();
+      const paiementsToInsert = selectedMatchesList.map((match) => ({
+        tranche_id: selectedTrancheId,
+        montant: match.paiement.montant,
+        date_paiement: match.paiement.date || new Date().toISOString().split('T')[0],
+        beneficiaire: match.paiement.beneficiaire,
+        reference_transaction: match.paiement.reference || '',
+        investisseur_id: match.matchedSubscription?.investisseur_id || null,
+        statut_matching: match.statut,
+        confiance_matching: match.confiance,
+      }));
 
-        if (paymentError) throw paymentError;
+      const { data: insertedPayments, error: insertError } = await supabase
+        .from('paiements')
+        .insert(paiementsToInsert)
+        .select('id');
 
-        // Download first temp file and upload to permanent storage
-        if (tempFileNames.length > 0) {
-          const firstTempFile = tempFileNames[0];
-          const { data: downloadData, error: downloadError } = await supabase.storage
-            .from('payment-proofs-temp')
-            .download(firstTempFile);
+      if (insertError) throw insertError;
 
-          if (downloadError) throw downloadError;
+      if (insertedPayments && tempFileNames.length > 0) {
+        const fileAssociations = insertedPayments.flatMap((payment, idx) => 
+          tempFileNames.map(tempName => ({
+            paiement_id: payment.id,
+            file_url: tempName,
+            file_name: files[idx % files.length].name,
+            file_type: files[idx % files.length].type,
+          }))
+        );
 
-          // Upload to permanent storage
-          const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
-          const { error: uploadError } = await supabase.storage
-            .from('payment-proofs')
-            .upload(permanentFileName, downloadData);
+        const { error: fileError } = await supabase
+          .from('paiement_files')
+          .insert(fileAssociations);
 
-          if (uploadError) throw uploadError;
-
-          // Get permanent URL
-          const { data: urlData } = supabase.storage
-            .from('payment-proofs')
-            .getPublicUrl(permanentFileName);
-
-          // Save proof record
-          const { error: proofError } = await supabase
-            .from('payment_proofs')
-            .insert({
-              paiement_id: paymentData.id,
-              file_url: urlData.publicUrl,
-              file_name: files[0].name,
-              file_size: files[0].size,
-              extracted_data: match.paiement,
-              confidence: match.confiance
-            });
-
-          if (proofError) throw proofError;
-        }
+        if (fileError) console.error('File association error:', fileError);
       }
 
-      // Clean up temp files
-      if (tempFileNames.length > 0) {
-        await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
-      }
-
-      setShowConfirmModal(false);
       onSuccess();
       onClose();
     } catch (err: any) {
+      console.error('Validation error:', err);
       setError(err.message || 'Erreur lors de la validation');
     } finally {
       setProcessing(false);
@@ -447,233 +461,230 @@ Résultat : Même interface, 5x plus rapide !
     setError('');
 
     try {
-      const validMatchesList = matches.filter(m => m.statut === 'correspondance' && m.matchedSubscription);
+      const validMatches = matches.filter(m => m.statut === 'correspondance');
 
-      // Create payment records and save proofs
-      for (const match of validMatchesList) {
-        // Create payment record
-        const { data: paymentData, error: paymentError } = await supabase
-          .from('paiements')
-          .insert({
-            id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            type: 'Coupon',
-            projet_id: selectedProjectId,
-            tranche_id: selectedTrancheId,
-            investisseur_id: match.matchedSubscription!.investisseur_id,
-            souscription_id: match.matchedSubscription!.id,
-            montant: match.paiement.montant,
-            date_paiement: match.paiement.date || new Date().toISOString().split('T')[0]
-          })
-          .select()
-          .single();
+      const paiementsToInsert = validMatches.map((match) => ({
+        tranche_id: selectedTrancheId,
+        montant: match.paiement.montant,
+        date_paiement: match.paiement.date || new Date().toISOString().split('T')[0],
+        beneficiaire: match.paiement.beneficiaire,
+        reference_transaction: match.paiement.reference || '',
+        investisseur_id: match.matchedSubscription?.investisseur_id || null,
+        statut_matching: match.statut,
+        confiance_matching: match.confiance,
+      }));
 
-        if (paymentError) throw paymentError;
+      const { data: insertedPayments, error: insertError } = await supabase
+        .from('paiements')
+        .insert(paiementsToInsert)
+        .select('id');
 
-        // Download first temp file and upload to permanent storage
-        if (tempFileNames.length > 0) {
-          const firstTempFile = tempFileNames[0];
-          const { data: downloadData, error: downloadError } = await supabase.storage
-            .from('payment-proofs-temp')
-            .download(firstTempFile);
+      if (insertError) throw insertError;
 
-          if (downloadError) throw downloadError;
+      if (insertedPayments && tempFileNames.length > 0) {
+        const fileAssociations = insertedPayments.flatMap((payment, idx) =>
+          tempFileNames.map(tempName => ({
+            paiement_id: payment.id,
+            file_url: tempName,
+            file_name: files[idx % files.length].name,
+            file_type: files[idx % files.length].type,
+          }))
+        );
 
-          // Upload to permanent storage
-          const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
-          const { error: uploadError } = await supabase.storage
-            .from('payment-proofs')
-            .upload(permanentFileName, downloadData);
+        const { error: fileError } = await supabase
+          .from('paiement_files')
+          .insert(fileAssociations);
 
-          if (uploadError) throw uploadError;
-
-          // Get permanent URL
-          const { data: urlData } = supabase.storage
-            .from('payment-proofs')
-            .getPublicUrl(permanentFileName);
-
-          // Save proof record
-          const { error: proofError } = await supabase
-            .from('payment_proofs')
-            .insert({
-              paiement_id: paymentData.id,
-              file_url: urlData.publicUrl,
-              file_name: files[0].name,
-              file_size: files[0].size,
-              extracted_data: match.paiement,
-              confidence: match.confiance
-            });
-
-          if (proofError) throw proofError;
-        }
-      }
-
-      // Clean up temp files
-      if (tempFileNames.length > 0) {
-        await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
+        if (fileError) console.error('File association error:', fileError);
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
+      console.error('Validation error:', err);
       setError(err.message || 'Erreur lors de la validation');
     } finally {
       setProcessing(false);
     }
   };
 
+  const toggleMatchSelection = (index: number) => {
+    setSelectedMatches(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2
+      currency: 'EUR'
     }).format(amount);
   };
 
-  const totalExpected = subscriptions.reduce((sum, sub) => sum + sub.coupon_net, 0);
   const validMatches = matches.filter(m => m.statut === 'correspondance');
   const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
   const hasPartialInSelection = selectedMatchesList.some(m => m.statut === 'partielle');
   const hasNoMatchInSelection = selectedMatchesList.some(m => m.statut === 'pas-de-correspondance');
   const noMatchList = selectedMatchesList.filter(m => m.statut === 'pas-de-correspondance');
 
+  const totalAmount = subscriptions.reduce((sum, sub) => sum + sub.coupon_net, 0);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl z-10">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col">
+        {/* HEADER */}
+        <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            {(step === 'upload' || step === 'results') && (
+            {step !== 'select' && (
               <button
                 onClick={handleBackToSelect}
-                className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                title="Retour à la sélection"
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                disabled={analyzing || processing}
               >
-                <ArrowLeft className="w-5 h-5" />
-                <span className="text-sm font-medium">Retour</span>
+                <ArrowLeft className="w-5 h-5 text-slate-600" />
               </button>
             )}
             <div>
-              <h3 className="text-xl font-bold text-slate-900">
-                {step === 'select' && 'Enregistrer un Paiement de Tranche'}
-                {step === 'upload' && 'Télécharger Justificatif de Paiement'}
-                {step === 'results' && 'Résultats de l\'Analyse'}
-              </h3>
-              <p className="text-sm text-slate-600 mt-1">
-                {step === 'select' && 'Sélectionnez un projet et une tranche à payer'}
+              <h2 className="text-2xl font-bold text-slate-900">Télécharger Justificatif de Paiement</h2>
+              <p className="text-sm text-slate-600">
+                {step === 'select' && 'Sélectionnez un projet et une tranche'}
                 {step === 'upload' && `Paiement de tranche - ${subscriptions.length} investisseur${subscriptions.length > 1 ? 's' : ''}`}
-                {step === 'results' && `${selectedMatches.size} paiement${selectedMatches.size > 1 ? 's' : ''} sélectionné${selectedMatches.size > 1 ? 's' : ''}`}
+                {step === 'results' && 'Résultats de l\'analyse'}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            <X className="w-6 h-6" />
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            disabled={analyzing || processing}
+          >
+            <X className="w-6 h-6 text-slate-400" />
           </button>
         </div>
 
-        <div className="p-6">
-          {/* STEP 1: SELECT */}
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto p-6">
           {step === 'select' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Projet</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Projet
+                </label>
                 <select
                   value={selectedProjectId}
                   onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={loading}
                 >
-                  <option value="">Sélectionnez un projet</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>{project.projet}</option>
+                  <option value="">Sélectionner un projet</option>
+                  {projects.map(project => (
+                    <option key={project.id} value={project.id}>
+                      {project.projet}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Tranche</label>
-                <select
-                  value={selectedTrancheId}
-                  onChange={(e) => setSelectedTrancheId(e.target.value)}
-                  disabled={!selectedProjectId}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-slate-100"
-                >
-                  <option value="">Sélectionnez une tranche</option>
-                  {tranches.map((tranche) => (
-                    <option key={tranche.id} value={tranche.id}>{tranche.tranche_name}</option>
-                  ))}
-                </select>
-              </div>
+              {selectedProjectId && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Tranche
+                  </label>
+                  <select
+                    value={selectedTrancheId}
+                    onChange={(e) => setSelectedTrancheId(e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={loading}
+                  >
+                    <option value="">Sélectionner une tranche</option>
+                    {tranches.map(tranche => (
+                      <option key={tranche.id} value={tranche.id}>
+                        {tranche.tranche_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
-          {/* STEP 2: UPLOAD */}
           {step === 'upload' && (
             <div className="space-y-6">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Paiement de Tranche</h4>
-                <p className="text-sm text-blue-700 mb-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
                   Cette tranche contient {subscriptions.length} investisseur{subscriptions.length > 1 ? 's' : ''}. 
                   Le justificatif de paiement doit contenir tous les paiements individuels.
                 </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-600">Montant total à payer:</span>
-                  <span className="text-lg font-bold text-blue-900">{formatCurrency(totalExpected)}</span>
-                </div>
+                <p className="text-lg font-bold text-blue-900 mt-2">
+                  Montant total à payer: {formatCurrency(totalAmount)}
+                </p>
               </div>
 
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-3">Détails des Paiements ({subscriptions.length})</h4>
-                <div className="space-y-2">
-                  {subscriptions.map((sub) => (
-                    <div key={sub.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
-                      <div>
-                        <p className="font-medium text-slate-900">{sub.investisseur.nom_raison_sociale}</p>
-                        <p className="text-xs text-slate-500">{sub.id}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-slate-900">{formatCurrency(sub.coupon_net)}</p>
-                        <p className="text-xs text-slate-500">À payer</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
-                <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
                 <input
                   type="file"
-                  accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
+                  id="file-upload"
                   multiple
+                  accept=".pdf,.png,.jpg,.jpeg,.webp"
                   onChange={handleFileSelect}
                   className="hidden"
-                  id="file-upload"
                   disabled={analyzing}
                 />
-                <label htmlFor="file-upload" className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
-                  Choisir des fichiers
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-slate-700 mb-2">
+                    Choisir des fichiers
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    PDF, PNG, JPG ou WEBP (max 10MB par fichier)
+                  </p>
                 </label>
-                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier)</p>
               </div>
 
               {files.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-slate-900 mb-2">Fichiers sélectionnés ({files.length}):</h4>
-                  <ul className="space-y-2">
-                    {files.map((file, idx) => (
-                      <li key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-slate-400" />
-                          <span className="text-sm text-slate-700">{file.name}</span>
+                  <h3 className="text-sm font-medium text-slate-700 mb-3">
+                    Fichiers sélectionnés ({files.length}):
+                  </h3>
+                  <div className="space-y-2">
+                    {files.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-slate-900 truncate">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {(file.size / 1024).toFixed(0)} KB
+                            </p>
+                          </div>
                         </div>
-                        <span className="text-xs text-slate-500">{(file.size / 1024).toFixed(0)} KB</span>
-                      </li>
+                        <button
+                          onClick={() => handleDeleteFile(index)}
+                          className="ml-2 p-2 hover:bg-red-100 rounded-lg transition-colors group"
+                          title="Supprimer ce fichier"
+                        >
+                          <Trash2 className="w-4 h-4 text-slate-400 group-hover:text-red-600" />
+                        </button>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-red-700">{error}</p>
                 </div>
               )}
@@ -681,7 +692,7 @@ Résultat : Même interface, 5x plus rapide !
               <button
                 onClick={handleAnalyze}
                 disabled={files.length === 0 || analyzing}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {analyzing ? (
                   <>
@@ -689,78 +700,82 @@ Résultat : Même interface, 5x plus rapide !
                     Analyse en cours...
                   </>
                 ) : (
-                  'Analyser le justificatif'
+                  <>
+                    <CheckCircle className="w-5 h-5" />
+                    Analyser le justificatif
+                  </>
                 )}
               </button>
             </div>
           )}
 
-          {/* STEP 3: RESULTS */}
           {step === 'results' && (
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-700">
-                    <span className="font-semibold">{validMatches.length}/{matches.length}</span> correspondance{validMatches.length > 1 ? 's' : ''} valide{validMatches.length > 1 ? 's' : ''}
-                  </p>
+              <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="text-sm font-medium text-green-900">
+                    {matches.length} paiement{matches.length > 1 ? 's' : ''} détecté{matches.length > 1 ? 's' : ''}
+                  </span>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-blue-600">Total extrait</p>
-                  <p className="text-lg font-bold text-blue-900">
-                    {formatCurrency(matches.reduce((sum, m) => sum + m.paiement.montant, 0))}
-                  </p>
-                </div>
+                <span className="text-sm text-green-700">
+                  {validMatches.length} correspondance{validMatches.length > 1 ? 's' : ''} exacte{validMatches.length > 1 ? 's' : ''}
+                </span>
               </div>
 
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-3 py-2 text-center">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-3 py-3 text-left">
                         <input
                           type="checkbox"
-                          checked={selectedMatches.size > 0 && selectedMatches.size === matches.length}
-                          onChange={toggleSelectAll}
-                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                          checked={selectedMatches.size === matches.length && matches.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedMatches(new Set(matches.map((_, i) => i)));
+                            } else {
+                              setSelectedMatches(new Set());
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                         />
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Statut</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Bénéficiaire Détecté</th>
-                      <th className="px-3 py-2 text-right text-xs font-semibold text-slate-700">Montant</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Correspondance</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Confiance</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Bénéficiaire</th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Montant</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Correspondance</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {matches.map((match, idx) => (
-                      <tr 
-                        key={idx} 
-                        className={`border-b border-slate-100 ${
-                          match.statut === 'correspondance' ? 'bg-green-50' :
-                          match.statut === 'partielle' ? 'bg-yellow-50' :
-                          'bg-red-50'
-                        }`}
-                      >
-                        <td className="px-3 py-3 text-center">
+                  <tbody className="divide-y divide-slate-200">
+                    {matches.map((match, index) => (
+                      <tr key={index} className={`hover:bg-slate-50 ${
+                        selectedMatches.has(index) ? 'bg-blue-50' : ''
+                      }`}>
+                        <td className="px-3 py-3">
                           <input
                             type="checkbox"
-                            checked={selectedMatches.has(idx)}
-                            onChange={() => toggleSelectMatch(idx)}
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            checked={selectedMatches.has(index)}
+                            onChange={() => toggleMatchSelection(index)}
+                            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                           />
                         </td>
+
                         <td className="px-3 py-3">
-                          {match.statut === 'correspondance' ? (
-                            <div className="flex items-center gap-1">
+                          {match.statut === 'correspondance' && (
+                            <div className="flex items-center gap-1 bg-green-100 px-2 py-1 rounded-full w-fit">
                               <CheckCircle className="w-4 h-4 text-green-600" />
                               <span className="text-xs font-medium text-green-700">{match.confiance}%</span>
                             </div>
-                          ) : match.statut === 'partielle' ? (
-                            <div className="flex items-center gap-1">
-                              <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                              <span className="text-xs font-medium text-yellow-700">{match.confiance}%</span>
+                          )}
+                          {match.statut === 'partielle' && (
+                            <div className="flex items-center gap-1 bg-orange-100 px-2 py-1 rounded-full w-fit">
+                              <AlertTriangle className="w-4 h-4 text-orange-600" />
+                              <span className="text-xs font-medium text-orange-700">{match.confiance}%</span>
                             </div>
-                          ) : (
-                            <div className="flex items-center gap-1">
+                          )}
+                          {match.statut === 'pas-de-correspondance' && (
+                            <div className="flex items-center gap-1 bg-red-100 px-2 py-1 rounded-full w-fit">
                               <AlertCircle className="w-4 h-4 text-red-600" />
                               <span className="text-xs font-medium text-red-700">{match.confiance}%</span>
                             </div>
