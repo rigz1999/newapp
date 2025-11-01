@@ -40,13 +40,15 @@ interface InvestorWithStats extends Investor {
   nb_souscriptions: number;
   projects?: string[];
   tranches?: string[];
+  cgp?: string | null;
+  cgps?: string[];
 }
 
 interface InvestorsProps {
   organization: { id: string; name: string; role: string };
 }
 
-type SortField = 'id_investisseur' | 'nom_raison_sociale' | 'type' | 'email' | 'total_investi' | 'nb_souscriptions';
+type SortField = 'id_investisseur' | 'nom_raison_sociale' | 'type' | 'cgp' | 'total_investi' | 'nb_souscriptions';
 type SortDirection = 'asc' | 'desc';
 
 const formatCurrency = (amount: number) => {
@@ -66,7 +68,8 @@ export function Investors({ organization }: InvestorsProps) {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [trancheFilter, setTrancheFilter] = useState<string>('all');
-  const [ribFilter, setRibFilter] = useState<string>('all'); // Nouveau filtre RIB
+  const [cgpFilter, setCgpFilter] = useState<string>('all');
+  const [ribFilter, setRibFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('nom_raison_sociale');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [ribSortDirection, setRibSortDirection] = useState<'none' | 'asc' | 'desc'>('none');
@@ -88,6 +91,8 @@ export function Investors({ organization }: InvestorsProps) {
     projet_id: string; 
     projet_nom: string 
   }>>([]);
+
+  const [allCgps, setAllCgps] = useState<string[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -111,7 +116,7 @@ export function Investors({ organization }: InvestorsProps) {
       filtered = filtered.filter(inv =>
         inv.nom_raison_sociale.toLowerCase().includes(searchTerm.toLowerCase()) ||
         inv.id_investisseur.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (inv.email && inv.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        (inv.cgp && inv.cgp.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -125,6 +130,10 @@ export function Investors({ organization }: InvestorsProps) {
 
     if (trancheFilter !== 'all') {
       filtered = filtered.filter(inv => inv.tranches?.includes(trancheFilter));
+    }
+
+    if (cgpFilter !== 'all') {
+      filtered = filtered.filter(inv => inv.cgps?.includes(cgpFilter));
     }
 
     if (ribFilter === 'with-rib') {
@@ -146,7 +155,7 @@ export function Investors({ organization }: InvestorsProps) {
     }
 
     setFilteredInvestors(filtered);
-  }, [searchTerm, typeFilter, projectFilter, trancheFilter, ribFilter, investors, sortField, sortDirection, ribSortDirection]);
+  }, [searchTerm, typeFilter, projectFilter, trancheFilter, cgpFilter, ribFilter, investors, sortField, sortDirection, ribSortDirection]);
 
   const fetchInvestors = async () => {
     setLoading(true);
@@ -154,7 +163,7 @@ export function Investors({ organization }: InvestorsProps) {
     const [investorsRes, subscriptionsRes, tranchesRes] = await Promise.all([
       supabase.from('investisseurs').select('*').order('nom_raison_sociale'),
       supabase.from('souscriptions').select(`
-        investisseur_id, montant_investi,
+        investisseur_id, montant_investi, cgp,
         tranche:tranches(tranche_name, projet:projets(projet))
       `),
       supabase.from('tranches').select(`
@@ -176,11 +185,25 @@ export function Investors({ organization }: InvestorsProps) {
 
     setAllTranches(formattedTranches);
 
+    // Extraire tous les CGPs uniques
+    const uniqueCgps = Array.from(
+      new Set(
+        subscriptionsData
+          .map((s: any) => s.cgp)
+          .filter(Boolean)
+      )
+    ).sort();
+    setAllCgps(uniqueCgps as string[]);
+
     const investorsWithStats = investorsData.map((investor) => {
       const investorSubs = subscriptionsData.filter((s: any) => s.investisseur_id === investor.id);
       const totalInvesti = investorSubs.reduce((sum, sub: any) => sum + Number(sub.montant_investi || 0), 0);
       const projects = Array.from(new Set(investorSubs.map((s: any) => s.tranche?.projet?.projet).filter(Boolean)));
       const tranches = Array.from(new Set(investorSubs.map((s: any) => s.tranche?.tranche_name).filter(Boolean)));
+      const cgps = Array.from(new Set(investorSubs.map((s: any) => s.cgp).filter(Boolean)));
+      
+      // Prendre le CGP le plus récent ou le plus fréquent
+      const cgp = cgps.length > 0 ? cgps[0] : null;
 
       return {
         ...investor,
@@ -188,6 +211,8 @@ export function Investors({ organization }: InvestorsProps) {
         nb_souscriptions: investorSubs.length,
         projects,
         tranches,
+        cgp,
+        cgps,
       };
     });
 
@@ -201,7 +226,7 @@ export function Investors({ organization }: InvestorsProps) {
       let aValue: any = a[field];
       let bValue: any = b[field];
 
-      if (field === 'nom_raison_sociale' || field === 'id_investisseur' || field === 'email' || field === 'type') {
+      if (field === 'nom_raison_sociale' || field === 'id_investisseur' || field === 'cgp' || field === 'type') {
         aValue = (aValue || '').toLowerCase();
         bValue = (bValue || '').toLowerCase();
       }
@@ -219,7 +244,7 @@ export function Investors({ organization }: InvestorsProps) {
       setSortField(field);
       setSortDirection('asc');
     }
-    setRibSortDirection('none'); // Reset RIB sort when sorting other fields
+    setRibSortDirection('none');
   };
 
   const handleSortRib = () => {
@@ -282,7 +307,6 @@ export function Investors({ organization }: InvestorsProps) {
     fetchInvestors();
   };
 
-  // Fonctions pour la gestion des RIB
   const handleRibUpload = async (investor: InvestorWithStats) => {
     setSelectedInvestor(investor);
     setShowRibModal(true);
@@ -354,7 +378,6 @@ export function Investors({ organization }: InvestorsProps) {
 
       if (error) throw error;
 
-      // Créer un lien de téléchargement
       const url = window.URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
@@ -379,14 +402,12 @@ export function Investors({ organization }: InvestorsProps) {
     if (!confirmDelete) return;
 
     try {
-      // Supprimer le fichier du storage
       const { error: storageError } = await supabase.storage
         .from('documents')
         .remove([investor.rib_file_path]);
 
       if (storageError) throw storageError;
 
-      // Mettre à jour la base de données
       const { error: updateError } = await supabase
         .from('investisseurs')
         .update({
@@ -411,7 +432,7 @@ export function Investors({ organization }: InvestorsProps) {
       'ID': inv.id_investisseur,
       'Nom / Raison Sociale': inv.nom_raison_sociale,
       'Type': inv.type,
-      'Email': inv.email || '',
+      'CGP': inv.cgp || '',
       'Téléphone': inv.telephone || '',
       'Total Investi': inv.total_investi,
       'Nb Souscriptions': inv.nb_souscriptions,
@@ -462,7 +483,7 @@ export function Investors({ organization }: InvestorsProps) {
 
       {/* Filtres */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
@@ -509,6 +530,17 @@ export function Investors({ organization }: InvestorsProps) {
           </select>
 
           <select
+            value={cgpFilter}
+            onChange={(e) => setCgpFilter(e.target.value)}
+            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">Tous les CGP</option>
+            {allCgps.map(cgp => (
+              <option key={cgp} value={cgp}>{cgp}</option>
+            ))}
+          </select>
+
+          <select
             value={ribFilter}
             onChange={(e) => setRibFilter(e.target.value)}
             className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -537,8 +569,8 @@ export function Investors({ organization }: InvestorsProps) {
                   </button>
                 </th>
                 <th className="px-6 py-3 text-left">
-                  <button onClick={() => handleSort('email')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
-                    Contact <ArrowUpDown className="w-4 h-4" />
+                  <button onClick={() => handleSort('cgp')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
+                    CGP <ArrowUpDown className="w-4 h-4" />
                   </button>
                 </th>
                 <th className="px-6 py-3 text-left">
@@ -593,7 +625,7 @@ export function Investors({ organization }: InvestorsProps) {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      <p>{investor.email || '-'}</p>
+                      <p>{investor.cgp || '-'}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
                       {formatCurrency(investor.total_investi)}
@@ -731,6 +763,19 @@ export function Investors({ organization }: InvestorsProps) {
                     {selectedInvestor.tranches.map((tranche) => (
                       <span key={tranche} className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
                         {tranche}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedInvestor.cgps && selectedInvestor.cgps.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-900 mb-2">CGP</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedInvestor.cgps.map((cgp) => (
+                      <span key={cgp} className="px-3 py-1 bg-amber-100 text-amber-800 text-sm rounded-full">
+                        {cgp}
                       </span>
                     ))}
                   </div>
