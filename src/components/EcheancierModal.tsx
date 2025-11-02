@@ -1,141 +1,93 @@
 import { useState, useEffect } from 'react';
+import { X, Calendar, Coins, TrendingUp, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { X, CheckCircle, Clock, AlertCircle, Calendar } from 'lucide-react';
+
+interface EcheancierModalProps {
+  projectId: string;
+  onClose: () => void;
+  formatCurrency: (amount: number) => string;
+  formatDate: (date: string | null) => string;
+}
 
 interface Echeance {
   id: string;
   date_echeance: string;
   montant_coupon: number;
   statut: string;
-  date_paiement: string | null;
   souscription: {
-    montant_investi: number;
+    id_souscription: string;
     investisseur: {
       nom_raison_sociale: string;
-      type: string;
+    };
+    tranche: {
+      tranche_name: string;
     };
   };
 }
 
-interface EcheancierModalProps {
-  tranche: any;
-  onClose: () => void;
-  onPaymentClick: () => void;
-}
-
-export function EcheancierModal({ tranche, onClose, onPaymentClick }: EcheancierModalProps) {
+export function EcheancierModal({ projectId, onClose, formatCurrency, formatDate }: EcheancierModalProps) {
   const [echeances, setEcheances] = useState<Echeance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [groupedEcheances, setGroupedEcheances] = useState<Map<string, Echeance[]>>(new Map());
+  const [filter, setFilter] = useState<'all' | 'a_venir' | 'paye'>('all');
 
   useEffect(() => {
     fetchEcheances();
-  }, [tranche.id]);
+  }, [projectId]);
 
   const fetchEcheances = async () => {
     setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('echeances_coupons')
+        .select(`
+          id,
+          date_echeance,
+          montant_coupon,
+          statut,
+          souscription:souscriptions(
+            id_souscription,
+            investisseur:investisseurs(nom_raison_sociale),
+            tranche:tranches(tranche_name)
+          )
+        `)
+        .eq('projet_id', projectId)
+        .order('date_echeance', { ascending: true });
 
-    const { data, error } = await supabase
-      .from('coupons_echeances')
-      .select(`
-        id,
-        date_echeance,
-        montant_coupon,
-        statut,
-        date_paiement,
-        souscription:souscriptions!inner(
-          tranche_id,
-          montant_investi,
-          investisseur:investisseurs(nom_raison_sociale, type)
-        )
-      `)
-      .eq('souscription.tranche_id', tranche.id)
-      .order('date_echeance', { ascending: true });
-
-    if (data) {
-      setEcheances(data as any);
-      
-      // Grouper par date
-      const grouped = new Map<string, Echeance[]>();
-      data.forEach((ech: any) => {
-        const date = ech.date_echeance;
-        if (!grouped.has(date)) {
-          grouped.set(date, []);
-        }
-        grouped.get(date)!.push(ech);
-      });
-      setGroupedEcheances(grouped);
+      if (error) throw error;
+      setEcheances(data || []);
+    } catch (err) {
+      console.error('Error fetching echeances:', err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
-
-  const calculateNet = (brut: number, type: string) => {
-    return type.toLowerCase() === 'physique' ? brut * 0.70 : brut;
-  };
-
-  const getStatutBadge = (statut: string, dateEcheance: string) => {
-    const isPast = new Date(dateEcheance) < new Date();
-    
-    if (statut === 'paye') {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-          <CheckCircle className="w-3.5 h-3.5" />
-          Payé
-        </span>
-      );
-    }
-    
-    if (isPast) {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-          <AlertCircle className="w-3.5 h-3.5" />
-          En retard
-        </span>
-      );
-    }
-    
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-        <Clock className="w-3.5 h-3.5" />
-        À venir
-      </span>
-    );
-  };
+  const filteredEcheances = echeances.filter((e) => {
+    if (filter === 'all') return true;
+    if (filter === 'a_venir') return e.statut === 'a_venir';
+    if (filter === 'paye') return e.statut === 'paye';
+    return true;
+  });
 
   const stats = {
     total: echeances.length,
-    payes: echeances.filter(e => e.statut === 'paye').length,
-    enRetard: echeances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date()).length,
-    aVenir: echeances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date()).length,
+    aVenir: echeances.filter((e) => e.statut === 'a_venir').length,
+    paye: echeances.filter((e) => e.statut === 'paye').length,
+    montantTotal: echeances.reduce((sum, e) => sum + e.montant_coupon, 0),
+    montantAVenir: echeances
+      .filter((e) => e.statut === 'a_venir')
+      .reduce((sum, e) => sum + e.montant_coupon, 0),
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">{tranche.tranche_name}</h2>
-              <p className="text-sm text-slate-600 mt-1">Échéancier complet des coupons</p>
+              <h3 className="text-2xl font-bold text-slate-900">Échéancier Complet des Coupons</h3>
+              <p className="text-sm text-slate-600 mt-1">Tous les paiements de coupons du projet</p>
             </div>
             <button
               onClick={onClose}
@@ -145,24 +97,73 @@ export function EcheancierModal({ tranche, onClose, onPaymentClick }: Echeancier
             </button>
           </div>
 
-          {/* Stats summary */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-4 gap-4 mt-6">
-            <div className="bg-slate-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
-              <p className="text-xs text-slate-600 mt-1">Total coupons</p>
+            <div className="bg-blue-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                <p className="text-xs font-medium text-blue-900">Total Échéances</p>
+              </div>
+              <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
             </div>
-            <div className="bg-green-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-green-700">{stats.payes}</p>
-              <p className="text-xs text-green-600 mt-1">Payés</p>
+
+            <div className="bg-orange-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-orange-600" />
+                <p className="text-xs font-medium text-orange-900">À Venir</p>
+              </div>
+              <p className="text-2xl font-bold text-orange-900">{stats.aVenir}</p>
             </div>
-            <div className="bg-red-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-red-700">{stats.enRetard}</p>
-              <p className="text-xs text-red-600 mt-1">En retard</p>
+
+            <div className="bg-green-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Coins className="w-4 h-4 text-green-600" />
+                <p className="text-xs font-medium text-green-900">Payés</p>
+              </div>
+              <p className="text-2xl font-bold text-green-900">{stats.paye}</p>
             </div>
-            <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-blue-700">{stats.aVenir}</p>
-              <p className="text-xs text-blue-600 mt-1">À venir</p>
+
+            <div className="bg-purple-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Coins className="w-4 h-4 text-purple-600" />
+                <p className="text-xs font-medium text-purple-900">Montant Total</p>
+              </div>
+              <p className="text-lg font-bold text-purple-900">{formatCurrency(stats.montantTotal)}</p>
             </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                filter === 'all'
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Tous ({stats.total})
+            </button>
+            <button
+              onClick={() => setFilter('a_venir')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                filter === 'a_venir'
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+              }`}
+            >
+              À venir ({stats.aVenir})
+            </button>
+            <button
+              onClick={() => setFilter('paye')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                filter === 'paye'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-green-50 text-green-600 hover:bg-green-100'
+              }`}
+            >
+              Payés ({stats.paye})
+            </button>
           </div>
         </div>
 
@@ -172,103 +173,88 @@ export function EcheancierModal({ tranche, onClose, onPaymentClick }: Echeancier
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
             </div>
+          ) : filteredEcheances.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-slate-400">Aucune échéance à afficher</p>
+            </div>
           ) : (
-            <div className="space-y-6">
-              {Array.from(groupedEcheances.entries()).map(([date, echeancesGroupe]) => {
-                const totalBrut = echeancesGroupe.reduce((sum, e) => sum + Number(e.montant_coupon), 0);
-                const totalNet = echeancesGroupe.reduce((sum, e) => sum + calculateNet(Number(e.montant_coupon), e.souscription.investisseur.type), 0);
-                const statut = echeancesGroupe[0].statut;
-                const datePaiement = echeancesGroupe[0].date_paiement;
-
-                return (
-                  <div key={date} className="border border-slate-200 rounded-lg overflow-hidden">
-                    {/* Date header */}
-                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-5 h-5 text-slate-600" />
-                          <div>
-                            <p className="font-semibold text-slate-900">{formatDate(date)}</p>
-                            {datePaiement && (
-                              <p className="text-xs text-slate-600">
-                                Payé le {formatDate(datePaiement)}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-green-600">
-                              {formatCurrency(totalNet)}
-                              <span className="text-xs text-slate-500 font-normal ml-1">net</span>
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {formatCurrency(totalBrut)} brut
-                            </p>
-                          </div>
-                          {getStatutBadge(statut, date)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Investisseurs */}
-                    <div className="divide-y divide-slate-100">
-                      {echeancesGroupe.map((ech) => {
-                        const montantNet = calculateNet(ech.montant_coupon, ech.souscription.investisseur.type);
-                        const isPhysique = ech.souscription.investisseur.type.toLowerCase() === 'physique';
-                        
-                        return (
-                          <div key={ech.id} className="px-4 py-3 hover:bg-slate-50 transition-colors">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-slate-900">
-                                  {ech.souscription.investisseur.nom_raison_sociale}
-                                </p>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                  Investi: {formatCurrency(ech.souscription.montant_investi)}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-sm font-semibold text-green-600">
-                                  {formatCurrency(montantNet)}
-                                  <span className="text-xs text-slate-500 font-normal ml-1">net</span>
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                  {formatCurrency(ech.montant_coupon)} brut
-                                  {isPhysique && (
-                                    <span className="ml-1 text-blue-600">(70%)</span>
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Investisseur
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Tranche
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      ID Souscription
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Montant
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Statut
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredEcheances.map((echeance) => (
+                    <tr key={echeance.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                        {formatDate(echeance.date_echeance)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-900">
+                        {echeance.souscription?.investisseur?.nom_raison_sociale}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {echeance.souscription?.tranche?.tranche_name}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {echeance.souscription?.id_souscription}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
+                        {formatCurrency(echeance.montant_coupon)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${
+                            echeance.statut === 'paye'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-orange-100 text-orange-700'
+                          }`}
+                        >
+                          {echeance.statut === 'paye' ? 'Payé' : 'À venir'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
 
         {/* Footer */}
         <div className="p-6 border-t border-slate-200 bg-slate-50">
-          <div className="flex gap-3">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-slate-600">
+              {filteredEcheances.length} échéance(s) affichée(s)
+              {filter === 'a_venir' && (
+                <span className="ml-2 font-medium text-orange-600">
+                  • Montant total à venir: {formatCurrency(stats.montantAVenir)}
+                </span>
+              )}
+            </div>
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-white transition-colors"
+              className="px-6 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
             >
               Fermer
-            </button>
-            <button
-              onClick={() => {
-                onClose();
-                onPaymentClick();
-              }}
-              className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
-            >
-              Enregistrer un paiement
             </button>
           </div>
         </div>
@@ -276,5 +262,3 @@ export function EcheancierModal({ tranche, onClose, onPaymentClick }: Echeancier
     </div>
   );
 }
-
-export default EcheancierModal;
