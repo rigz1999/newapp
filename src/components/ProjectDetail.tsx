@@ -1,26 +1,19 @@
-// Corrections apportées au code ProjectDetail
-
-// PROBLÈMES IDENTIFIÉS ET CORRIGÉS :
-
-// 1. Import manquant de React et hooks
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react'; // Assumant l'utilisation de lucide-react
+import { X } from 'lucide-react';
 
-// 2. Imports des composants manquants (à créer séparément)
+// Imports des composants
 import PaymentWizard from './PaymentWizard';
 import SubscriptionsModal from './SubscriptionsModal';
 import TranchesModal from './TranchesModal';
 import EcheancierModal from './EcheancierModal';
 import AlertModal from './AlertModal';
 
-// 3. Le code commence au milieu du composant - Voici la structure complète suggérée :
-
 function ProjectDetail() {
   const { projectId } = useParams();
   const navigate = useNavigate();
 
-  // États nécessaires
+  // États
   const [project, setProject] = useState(null);
   const [editedProject, setEditedProject] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -62,12 +55,16 @@ function ProjectDetail() {
     return new Date(date).toLocaleDateString('fr-FR');
   };
 
-  // Fonction pour récupérer les données du projet
-  const fetchProjectData = async () => {
+  // ⚠️ FIX: Utilisation de useCallback pour éviter les re-rendus infinis
+  const fetchProjectData = React.useCallback(async () => {
+    if (!projectId) return;
+    
     try {
       setLoading(true);
       // Remplacer par votre appel API réel
       const response = await fetch(`/api/projects/${projectId}`);
+      if (!response.ok) throw new Error('Erreur réseau');
+      
       const data = await response.json();
       
       setProject(data.project);
@@ -86,12 +83,12 @@ function ProjectDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]); // ⚠️ FIX: Dépendance uniquement sur projectId
 
   // Fonction pour mettre à jour le projet
   const handleUpdateProject = async () => {
     try {
-      // Validation des données
+      // Validation
       if (!editedProject.nom_projet?.trim()) {
         setAlertState({
           isOpen: true,
@@ -103,7 +100,6 @@ function ProjectDetail() {
         return;
       }
 
-      // Remplacer par votre appel API réel
       const response = await fetch(`/api/projects/${projectId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -151,7 +147,6 @@ function ProjectDetail() {
         return;
       }
 
-      // Remplacer par votre appel API réel
       const response = await fetch(`/api/subscriptions/${editingSubscription.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -160,7 +155,6 @@ function ProjectDetail() {
 
       if (!response.ok) throw new Error('Erreur lors de la mise à jour');
 
-      // Mettre à jour la liste locale
       setSubscriptions(prev => 
         prev.map(sub => sub.id === editingSubscription.id ? editingSubscription : sub)
       );
@@ -263,12 +257,10 @@ function ProjectDetail() {
     });
   };
 
-  // Charger les données au montage
+  // ⚠️ FIX: useEffect avec la bonne dépendance
   useEffect(() => {
-    if (projectId) {
-      fetchProjectData();
-    }
-  }, [projectId]);
+    fetchProjectData();
+  }, [fetchProjectData]); // Dépend de fetchProjectData qui est mémorisé
 
   if (loading) {
     return (
@@ -289,7 +281,32 @@ function ProjectDetail() {
   return (
     <>
       <div className="max-w-7xl mx-auto p-6">
-        {/* Contenu principal du projet - à ajouter selon vos besoins */}
+        {/* Contenu principal - Ajoutez votre UI ici */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">
+            {project.nom_projet}
+          </h1>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowEditProject(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Modifier le projet
+            </button>
+            <button
+              onClick={() => setShowSubscriptionsModal(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              Voir les souscriptions
+            </button>
+            <button
+              onClick={() => setShowTranchesModal(true)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              Voir les tranches
+            </button>
+          </div>
+        </div>
         
         {/* Edit Project Modal */}
         {showEditProject && (
@@ -306,7 +323,7 @@ function ProjectDetail() {
                   <button
                     onClick={() => {
                       setShowEditProject(false);
-                      setEditedProject(project); // Réinitialiser les modifications
+                      setEditedProject(project);
                     }}
                     className="text-slate-400 hover:text-slate-600 transition-colors"
                   >
@@ -317,7 +334,6 @@ function ProjectDetail() {
 
               <div className="flex-1 overflow-y-auto p-6">
                 <div className="space-y-6">
-                  {/* Informations générales */}
                   <div>
                     <h4 className="text-lg font-semibold text-slate-900 mb-4">
                       Informations générales
@@ -329,12 +345,11 @@ function ProjectDetail() {
                         </label>
                         <input
                           type="text"
-                          value={editedProject.nom_projet || ''}
+                          value={editedProject?.nom_projet || ''}
                           onChange={(e) =>
                             setEditedProject({ ...editedProject, nom_projet: e.target.value })
                           }
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          required
                         />
                       </div>
 
@@ -344,7 +359,7 @@ function ProjectDetail() {
                         </label>
                         <input
                           type="text"
-                          value={editedProject.emetteur || ''}
+                          value={editedProject?.emetteur || ''}
                           onChange={(e) =>
                             setEditedProject({ ...editedProject, emetteur: e.target.value })
                           }
@@ -358,7 +373,7 @@ function ProjectDetail() {
                         </label>
                         <input
                           type="text"
-                          value={editedProject.representant || ''}
+                          value={editedProject?.representant || ''}
                           onChange={(e) =>
                             setEditedProject({ ...editedProject, representant: e.target.value })
                           }
@@ -372,7 +387,7 @@ function ProjectDetail() {
                         </label>
                         <input
                           type="email"
-                          value={editedProject.email_representant || ''}
+                          value={editedProject?.email_representant || ''}
                           onChange={(e) =>
                             setEditedProject({ ...editedProject, email_representant: e.target.value })
                           }
@@ -386,7 +401,7 @@ function ProjectDetail() {
                         </label>
                         <input
                           type="text"
-                          value={editedProject.representant_masse || ''}
+                          value={editedProject?.representant_masse || ''}
                           onChange={(e) =>
                             setEditedProject({ ...editedProject, representant_masse: e.target.value })
                           }
@@ -400,7 +415,7 @@ function ProjectDetail() {
                         </label>
                         <input
                           type="email"
-                          value={editedProject.email_rep_masse || ''}
+                          value={editedProject?.email_rep_masse || ''}
                           onChange={(e) =>
                             setEditedProject({ ...editedProject, email_rep_masse: e.target.value })
                           }
@@ -412,11 +427,11 @@ function ProjectDetail() {
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-6 pt-6 border-t border-slate-200 sticky bottom-0 bg-white p-6">
+              <div className="flex gap-3 p-6 border-t border-slate-200 bg-white">
                 <button
                   onClick={() => {
                     setShowEditProject(false);
-                    setEditedProject(project); // Réinitialiser les modifications
+                    setEditedProject(project);
                   }}
                   className="flex-1 px-4 py-2 text-sm font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
                 >
