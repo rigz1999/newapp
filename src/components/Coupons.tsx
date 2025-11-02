@@ -15,9 +15,11 @@ import {
   Filter,
   ChevronDown,
   ChevronRight,
-  Layers
+  Layers,
+  Upload
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { PaymentWizard } from './PaymentWizard';
 
 interface Coupon {
   id: string;
@@ -73,22 +75,16 @@ export function Coupons({ organization }: CouponsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState('all');
   const [projetFilter, setProjetFilter] = useState('all');
-  const [periodeFilter, setPeriodeFilter] = useState('30'); // Default 30 jours
-  const [kpiPeriode, setKpiPeriode] = useState('30'); // Période pour les KPIs
+  const [periodeFilter, setPeriodeFilter] = useState('30');
+  const [kpiPeriode, setKpiPeriode] = useState('30');
   
   // Expand/Collapse states
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   
   // Modals
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
-  
-  // Payment form
-  const [paymentDate, setPaymentDate] = useState('');
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentNote, setPaymentNote] = useState('');
-  const [processingPayment, setProcessingPayment] = useState(false);
   
   // Lists for filters
   const [allProjets, setAllProjets] = useState<string[]>([]);
@@ -183,7 +179,6 @@ export function Coupons({ organization }: CouponsProps) {
     let filtered = [...coupons];
     const now = new Date();
 
-    // Search
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(c =>
@@ -194,7 +189,6 @@ export function Coupons({ organization }: CouponsProps) {
       );
     }
 
-    // Status
     if (statutFilter !== 'all') {
       filtered = filtered.filter(c => {
         const isOverdue = new Date(c.date_echeance) < now && c.statut !== 'paye';
@@ -203,12 +197,10 @@ export function Coupons({ organization }: CouponsProps) {
       });
     }
 
-    // Project
     if (projetFilter !== 'all') {
       filtered = filtered.filter(c => c.projet_nom === projetFilter);
     }
 
-    // Period
     if (periodeFilter !== 'all') {
       const days = parseInt(periodeFilter);
       const endDate = new Date();
@@ -229,7 +221,6 @@ export function Coupons({ organization }: CouponsProps) {
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + days);
     
-    // Filter coupons by KPI period
     const periodCoupons = coupons.filter(c => {
       const echeance = new Date(c.date_echeance);
       return echeance >= now && echeance <= endDate;
@@ -289,7 +280,6 @@ export function Coupons({ organization }: CouponsProps) {
     return { text: '🔵 Prévu', className: 'bg-blue-100 text-blue-800' };
   };
 
-  // Group by Date, then by Tranche
   const groupByDateAndTranche = (coupons: Coupon[]) => {
     const grouped: { [date: string]: { [trancheId: string]: Coupon[] } } = {};
     
@@ -308,8 +298,10 @@ export function Coupons({ organization }: CouponsProps) {
           trancheId,
           trancheName: coupons[0].tranche_nom,
           projetName: coupons[0].projet_nom,
+          projetId: coupons[0].projet_id,
           coupons,
           total: coupons.reduce((sum, c) => sum + c.montant_net, 0),
+          hasUnpaid: coupons.some(c => c.statut !== 'paye'),
         })),
       }));
   };
@@ -322,61 +314,6 @@ export function Coupons({ organization }: CouponsProps) {
       newExpanded.add(key);
     }
     setExpandedTranches(newExpanded);
-  };
-
-  const handleMarkAsPaid = (coupon: Coupon) => {
-    setSelectedCoupon(coupon);
-    setPaymentDate(new Date().toISOString().split('T')[0]);
-    setPaymentAmount(coupon.montant_net.toString());
-    setPaymentNote('');
-    setShowPaymentModal(true);
-  };
-
-  const confirmPayment = async () => {
-    if (!selectedCoupon || !paymentDate || !paymentAmount) return;
-
-    setProcessingPayment(true);
-    try {
-      const { data: paiementData, error: paiementError } = await supabase
-        .from('paiements')
-        .insert({
-          id_paiement: `PAY-${Date.now()}`,
-          type: 'coupon',
-          souscription_id: selectedCoupon.souscription_id,
-          investisseur_id: selectedCoupon.investisseur_id,
-          montant: parseFloat(paymentAmount),
-          date_paiement: paymentDate,
-          note: paymentNote || null,
-          statut: 'payé',
-        })
-        .select()
-        .single();
-
-      if (paiementError) throw paiementError;
-
-      const { error: updateError } = await supabase
-        .from('coupons_echeances')
-        .update({
-          statut: 'paye',
-          date_paiement: paymentDate,
-          montant_paye: parseFloat(paymentAmount),
-          paiement_id: paiementData.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', selectedCoupon.id);
-
-      if (updateError) throw updateError;
-
-      alert('✅ Paiement enregistré avec succès !');
-      setShowPaymentModal(false);
-      fetchCoupons();
-      
-    } catch (error) {
-      console.error('Error processing payment:', error);
-      alert('❌ Erreur lors de l\'enregistrement du paiement');
-    } finally {
-      setProcessingPayment(false);
-    }
   };
 
   const handleExportExcel = () => {
@@ -433,13 +370,22 @@ export function Coupons({ organization }: CouponsProps) {
             {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total: <span className="font-bold text-green-600">{formatCurrency(totalAmount)}</span>
           </p>
         </div>
-        <button
-          onClick={handleExportExcel}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Exporter Excel
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowPaymentWizard(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            Enregistrer Paiement
+          </button>
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Exporter Excel
+          </button>
+        </div>
       </div>
 
       {/* KPI Period Selector */}
@@ -548,7 +494,7 @@ export function Coupons({ organization }: CouponsProps) {
         </div>
       </div>
 
-      {/* Coupons List Grouped by Date and Tranche */}
+      {/* Coupons List */}
       {filteredCoupons.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
           <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-4" />
@@ -586,7 +532,7 @@ export function Coupons({ organization }: CouponsProps) {
                   </div>
                 </div>
 
-                {/* Tranches for this date */}
+                {/* Tranches */}
                 <div className="divide-y divide-slate-200">
                   {tranches.map((tranche) => {
                     const trancheKey = `${date}-${tranche.trancheId}`;
@@ -594,7 +540,7 @@ export function Coupons({ organization }: CouponsProps) {
                     
                     return (
                       <div key={tranche.trancheId}>
-                        {/* Tranche Header - Collapsible */}
+                        {/* Tranche Header */}
                         <button
                           onClick={() => toggleTranche(trancheKey)}
                           className="w-full px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between"
@@ -612,6 +558,11 @@ export function Coupons({ organization }: CouponsProps) {
                               <p className="text-sm font-bold text-slate-900">{tranche.projetName}</p>
                               <p className="text-xs text-slate-600">{tranche.trancheName}</p>
                             </div>
+                            {tranche.hasUnpaid && (
+                              <span className="ml-3 px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+                                Non payé
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-6">
                             <div className="text-right">
@@ -621,7 +572,7 @@ export function Coupons({ organization }: CouponsProps) {
                           </div>
                         </button>
 
-                        {/* Expanded - Investors list */}
+                        {/* Expanded - Investors */}
                         {isExpanded && (
                           <div className="bg-slate-50 border-t border-slate-200">
                             <div className="divide-y divide-slate-100">
@@ -677,27 +628,16 @@ export function Coupons({ organization }: CouponsProps) {
                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${badge.className} whitespace-nowrap`}>
                                           {badge.text}
                                         </span>
-                                        <div className="flex items-center gap-1">
-                                          <button
-                                            onClick={() => {
-                                              setSelectedCoupon(coupon);
-                                              setShowDetailsModal(true);
-                                            }}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            title="Voir détails"
-                                          >
-                                            <Eye className="w-4 h-4" />
-                                          </button>
-                                          {coupon.statut !== 'paye' && (
-                                            <button
-                                              onClick={() => handleMarkAsPaid(coupon)}
-                                              className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
-                                            >
-                                              <CheckCircle className="w-3.5 h-3.5" />
-                                              Payer
-                                            </button>
-                                          )}
-                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            setSelectedCoupon(coupon);
+                                            setShowDetailsModal(true);
+                                          }}
+                                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                          title="Voir détails"
+                                        >
+                                          <Eye className="w-4 h-4" />
+                                        </button>
                                       </div>
                                     </div>
                                   </div>
@@ -789,104 +729,19 @@ export function Coupons({ organization }: CouponsProps) {
                   )}
                 </div>
               </div>
-
-              {selectedCoupon.statut !== 'paye' && (
-                <button
-                  onClick={() => {
-                    setShowDetailsModal(false);
-                    handleMarkAsPaid(selectedCoupon);
-                  }}
-                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Marquer comme payé
-                </button>
-              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Payment Modal */}
-      {showPaymentModal && selectedCoupon && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div className="p-6 border-b border-slate-200">
-              <h3 className="text-xl font-bold text-slate-900">Marquer comme payé</h3>
-              <p className="text-sm text-slate-600 mt-1">{selectedCoupon.investisseur_nom}</p>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Date de paiement *
-                </label>
-                <input
-                  type="date"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Montant payé (€) *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  Montant net: {formatCurrency(selectedCoupon.montant_net)}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Note (optionnel)
-                </label>
-                <textarea
-                  value={paymentNote}
-                  onChange={(e) => setPaymentNote(e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Ex: Virement effectué"
-                />
-              </div>
-            </div>
-
-            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end gap-3">
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
-                disabled={processingPayment}
-              >
-                Annuler
-              </button>
-              <button
-                onClick={confirmPayment}
-                disabled={processingPayment || !paymentDate || !paymentAmount}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {processingPayment ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Traitement...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    Confirmer
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Payment Wizard */}
+      {showPaymentWizard && (
+        <PaymentWizard
+          onClose={() => setShowPaymentWizard(false)}
+          onSuccess={() => {
+            fetchCoupons(); // Refresh coupons
+          }}
+        />
       )}
     </div>
   );
