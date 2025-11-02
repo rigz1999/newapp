@@ -266,18 +266,18 @@ export function Coupons({ organization }: CouponsProps) {
     const daysUntil = getDaysUntil(coupon.date_echeance);
     
     if (coupon.statut === 'paye') {
-      return { text: '✅ Payé', className: 'bg-green-100 text-green-800' };
+      return { text: 'Payé', className: 'bg-green-100 text-green-800' };
     }
     if (daysUntil < 0) {
-      return { text: '🔴 En retard', className: 'bg-red-100 text-red-800' };
+      return { text: 'En retard', className: 'bg-red-100 text-red-800' };
     }
     if (daysUntil <= 7) {
-      return { text: '🟡 Urgent', className: 'bg-orange-100 text-orange-800' };
+      return { text: 'Urgent', className: 'bg-orange-100 text-orange-800' };
     }
     if (daysUntil <= 30) {
-      return { text: '🟡 À venir', className: 'bg-yellow-100 text-yellow-800' };
+      return { text: 'À venir', className: 'bg-yellow-100 text-yellow-800' };
     }
-    return { text: '🔵 Prévu', className: 'bg-blue-100 text-blue-800' };
+    return { text: 'Prévu', className: 'bg-blue-100 text-blue-800' };
   };
 
   const groupByDateAndTranche = (coupons: Coupon[]) => {
