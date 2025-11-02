@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, CheckCircle, RefreshCw } from 'lucide-react';
+import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface Investor {
@@ -9,6 +9,8 @@ interface Investor {
   type: string;
   nom_raison_sociale: string;
   email: string | null;
+  cgp: string | null;  // Now from investisseurs table
+  email_cgp: string | null;  // Now from investisseurs table
   siren: number | null;
   residence_fiscale: string | null;
   created_at: string;
@@ -40,8 +42,6 @@ interface InvestorWithStats extends Investor {
   nb_souscriptions: number;
   projects?: string[];
   tranches?: string[];
-  cgp?: string | null;
-  cgps?: string[];
 }
 
 interface InvestorsProps {
@@ -133,7 +133,7 @@ export function Investors({ organization }: InvestorsProps) {
     }
 
     if (cgpFilter !== 'all') {
-      filtered = filtered.filter(inv => inv.cgps?.includes(cgpFilter));
+      filtered = filtered.filter(inv => inv.cgp === cgpFilter);
     }
 
     if (ribFilter === 'with-rib') {
@@ -163,7 +163,7 @@ export function Investors({ organization }: InvestorsProps) {
     const [investorsRes, subscriptionsRes, tranchesRes] = await Promise.all([
       supabase.from('investisseurs').select('*').order('nom_raison_sociale'),
       supabase.from('souscriptions').select(`
-        investisseur_id, montant_investi, cgp,
+        investisseur_id, montant_investi,
         tranche:tranches(tranche_name, projet:projets(projet))
       `),
       supabase.from('tranches').select(`
@@ -185,11 +185,11 @@ export function Investors({ organization }: InvestorsProps) {
 
     setAllTranches(formattedTranches);
 
-    // Extraire tous les CGPs uniques
+    // Extract unique CGPs from investisseurs table (NOT from souscriptions)
     const uniqueCgps = Array.from(
       new Set(
-        subscriptionsData
-          .map((s: any) => s.cgp)
+        investorsData
+          .map((inv: any) => inv.cgp)
           .filter(Boolean)
       )
     ).sort();
@@ -200,10 +200,6 @@ export function Investors({ organization }: InvestorsProps) {
       const totalInvesti = investorSubs.reduce((sum, sub: any) => sum + Number(sub.montant_investi || 0), 0);
       const projects = Array.from(new Set(investorSubs.map((s: any) => s.tranche?.projet?.projet).filter(Boolean)));
       const tranches = Array.from(new Set(investorSubs.map((s: any) => s.tranche?.tranche_name).filter(Boolean)));
-      const cgps = Array.from(new Set(investorSubs.map((s: any) => s.cgp).filter(Boolean)));
-      
-      // Prendre le CGP le plus récent ou le plus fréquent
-      const cgp = cgps.length > 0 ? cgps[0] : null;
 
       return {
         ...investor,
@@ -211,8 +207,6 @@ export function Investors({ organization }: InvestorsProps) {
         nb_souscriptions: investorSubs.length,
         projects,
         tranches,
-        cgp,
-        cgps,
       };
     });
 
@@ -433,6 +427,7 @@ export function Investors({ organization }: InvestorsProps) {
       'Nom / Raison Sociale': inv.nom_raison_sociale,
       'Type': inv.type,
       'CGP': inv.cgp || '',
+      'Email CGP': inv.email_cgp || '',
       'Téléphone': inv.telephone || '',
       'Total Investi': inv.total_investi,
       'Nb Souscriptions': inv.nb_souscriptions,
@@ -743,6 +738,51 @@ export function Investors({ organization }: InvestorsProps) {
                 </div>
               </div>
 
+              {/* CGP Section - SINGLE CGP */}
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200">
+                <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <User className="w-5 h-5 text-amber-600" />
+                  Conseiller en Gestion de Patrimoine
+                </h4>
+                
+                {selectedInvestor.cgp ? (
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
+                      <User className="w-6 h-6 text-amber-700" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-lg font-semibold text-slate-900">
+                        {selectedInvestor.cgp}
+                      </p>
+                      {selectedInvestor.email_cgp && (
+                        <a 
+                          href={`mailto:${selectedInvestor.email_cgp}`}
+                          className="text-sm text-amber-700 hover:text-amber-900 flex items-center gap-1 mt-1"
+                        >
+                          <Mail className="w-4 h-4" />
+                          {selectedInvestor.email_cgp}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                    <p className="text-sm text-slate-600">Aucun CGP assigné</p>
+                    <button
+                      onClick={() => {
+                        setEditingInvestor(selectedInvestor);
+                        setEditFormData(selectedInvestor);
+                        setSelectedInvestor(null);
+                      }}
+                      className="mt-2 text-sm text-amber-600 hover:text-amber-800 font-medium"
+                    >
+                      Assigner un CGP
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {selectedInvestor.projects && selectedInvestor.projects.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold text-slate-900 mb-2">Projets</h4>
@@ -763,19 +803,6 @@ export function Investors({ organization }: InvestorsProps) {
                     {selectedInvestor.tranches.map((tranche) => (
                       <span key={tranche} className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
                         {tranche}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedInvestor.cgps && selectedInvestor.cgps.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-900 mb-2">CGP</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedInvestor.cgps.map((cgp) => (
-                      <span key={cgp} className="px-3 py-1 bg-amber-100 text-amber-800 text-sm rounded-full">
-                        {cgp}
                       </span>
                     ))}
                   </div>
@@ -894,6 +921,49 @@ export function Investors({ organization }: InvestorsProps) {
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* CGP SECTION IN EDIT FORM */}
+                <div className="border-t border-slate-200 pt-4">
+                  <h5 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <User className="w-5 h-5 text-amber-600" />
+                    Conseiller en Gestion de Patrimoine
+                  </h5>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Nom du CGP *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editFormData.cgp || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, cgp: e.target.value })}
+                        placeholder="Ex: Jean Dupont"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Email du CGP *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={editFormData.email_cgp || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, email_cgp: e.target.value })}
+                        placeholder="cgp@email.com"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Le CGP sera utilisé pour toutes les souscriptions de cet investisseur
+                  </p>
                 </div>
 
                 {editFormData.type.toLowerCase() === 'physique' && (
@@ -1070,7 +1140,7 @@ export function Investors({ organization }: InvestorsProps) {
         </div>
       )}
 
-      {/* Modal Upload RIB avec Drag & Drop */}
+      {/* Modal Upload RIB */}
       {showRibModal && selectedInvestor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
