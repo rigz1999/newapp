@@ -9,8 +9,10 @@ interface Echeance {
   statut: string;
   date_paiement: string | null;
   souscription: {
+    montant_investi: number;
     investisseur: {
       nom_raison_sociale: string;
+      type: string;
     };
   };
 }
@@ -43,7 +45,8 @@ export function EcheancierModal({ tranche, onClose, onPaymentClick }: Echeancier
         date_paiement,
         souscription:souscriptions!inner(
           tranche_id,
-          investisseur:investisseurs(nom_raison_sociale)
+          montant_investi,
+          investisseur:investisseurs(nom_raison_sociale, type)
         )
       `)
       .eq('souscription.tranche_id', tranche.id)
@@ -82,6 +85,10 @@ export function EcheancierModal({ tranche, onClose, onPaymentClick }: Echeancier
       month: 'long',
       year: 'numeric'
     });
+  };
+
+  const calculateNet = (brut: number, type: string) => {
+    return type.toLowerCase() === 'physique' ? brut * 0.70 : brut;
   };
 
   const getStatutBadge = (statut: string, dateEcheance: string) => {
@@ -168,45 +175,75 @@ export function EcheancierModal({ tranche, onClose, onPaymentClick }: Echeancier
           ) : (
             <div className="space-y-6">
               {Array.from(groupedEcheances.entries()).map(([date, echeancesGroupe]) => {
-                const totalMontant = echeancesGroupe.reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+                const totalBrut = echeancesGroupe.reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+                const totalNet = echeancesGroupe.reduce((sum, e) => sum + calculateNet(Number(e.montant_coupon), e.souscription.investisseur.type), 0);
                 const statut = echeancesGroupe[0].statut;
                 const datePaiement = echeancesGroupe[0].date_paiement;
 
                 return (
                   <div key={date} className="border border-slate-200 rounded-lg overflow-hidden">
                     {/* Date header */}
-                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-slate-600" />
-                        <div>
-                          <p className="font-semibold text-slate-900">{formatDate(date)}</p>
-                          {datePaiement && (
-                            <p className="text-xs text-slate-600">
-                              Payé le {formatDate(datePaiement)}
-                            </p>
-                          )}
+                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Calendar className="w-5 h-5 text-slate-600" />
+                          <div>
+                            <p className="font-semibold text-slate-900">{formatDate(date)}</p>
+                            {datePaiement && (
+                              <p className="text-xs text-slate-600">
+                                Payé le {formatDate(datePaiement)}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-slate-900">
-                          {formatCurrency(totalMontant)}
-                        </span>
-                        {getStatutBadge(statut, date)}
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-green-600">
+                              {formatCurrency(totalNet)}
+                              <span className="text-xs text-slate-500 font-normal ml-1">net</span>
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {formatCurrency(totalBrut)} brut
+                            </p>
+                          </div>
+                          {getStatutBadge(statut, date)}
+                        </div>
                       </div>
                     </div>
 
                     {/* Investisseurs */}
                     <div className="divide-y divide-slate-100">
-                      {echeancesGroupe.map((ech) => (
-                        <div key={ech.id} className="px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                          <p className="text-sm text-slate-700">
-                            {ech.souscription.investisseur.nom_raison_sociale}
-                          </p>
-                          <p className="text-sm font-medium text-slate-900">
-                            {formatCurrency(ech.montant_coupon)}
-                          </p>
-                        </div>
-                      ))}
+                      {echeancesGroupe.map((ech) => {
+                        const montantNet = calculateNet(ech.montant_coupon, ech.souscription.investisseur.type);
+                        const isPhysique = ech.souscription.investisseur.type.toLowerCase() === 'physique';
+                        
+                        return (
+                          <div key={ech.id} className="px-4 py-3 hover:bg-slate-50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-slate-900">
+                                  {ech.souscription.investisseur.nom_raison_sociale}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  Investi: {formatCurrency(ech.souscription.montant_investi)}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-semibold text-green-600">
+                                  {formatCurrency(montantNet)}
+                                  <span className="text-xs text-slate-500 font-normal ml-1">net</span>
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {formatCurrency(ech.montant_coupon)} brut
+                                  {isPhysique && (
+                                    <span className="ml-1 text-blue-600">(70%)</span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
