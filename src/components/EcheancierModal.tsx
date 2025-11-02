@@ -37,26 +37,53 @@ export function EcheancierModal({ projectId, onClose, formatCurrency, formatDate
   const fetchEcheances = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('echeances_coupons')
+      // Récupérer toutes les souscriptions du projet avec leurs échéances
+      const { data: subscriptionsData, error: subsError } = await supabase
+        .from('souscriptions')
         .select(`
           id,
-          date_echeance,
-          montant_coupon,
-          statut,
-          souscription:souscriptions(
-            id_souscription,
-            investisseur:investisseurs(nom_raison_sociale),
-            tranche:tranches(tranche_name)
-          )
+          id_souscription,
+          investisseur:investisseurs(nom_raison_sociale),
+          tranche:tranches(tranche_name)
         `)
-        .eq('projet_id', projectId)
+        .eq('projet_id', projectId);
+
+      if (subsError) throw subsError;
+
+      // Récupérer toutes les échéances pour ces souscriptions
+      const subscriptionIds = subscriptionsData?.map(s => s.id) || [];
+      
+      if (subscriptionIds.length === 0) {
+        setEcheances([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data: echeancesData, error: echError } = await supabase
+        .from('echeances_coupons')
+        .select('*')
+        .in('souscription_id', subscriptionIds)
         .order('date_echeance', { ascending: true });
 
-      if (error) throw error;
-      setEcheances(data || []);
+      if (echError) throw echError;
+
+      // Merger les données
+      const enrichedEcheances = (echeancesData || []).map(ech => {
+        const sub = subscriptionsData?.find(s => s.id === ech.souscription_id);
+        return {
+          ...ech,
+          souscription: {
+            id_souscription: sub?.id_souscription || '',
+            investisseur: sub?.investisseur || { nom_raison_sociale: '' },
+            tranche: sub?.tranche || { tranche_name: '' }
+          }
+        };
+      });
+
+      setEcheances(enrichedEcheances as any);
     } catch (err) {
       console.error('Error fetching echeances:', err);
+      setEcheances([]);
     } finally {
       setLoading(false);
     }
