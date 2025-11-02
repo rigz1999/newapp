@@ -23,8 +23,8 @@ interface TrancheWizardProps {
   onClose: () => void;
   onSuccess: () => void;
   preselectedProjectId?: string;
-  editingTranche?: Tranche;  // Nouvelle prop pour l'édition
-  isEditMode?: boolean;       // Indicateur de mode édition
+  editingTranche?: Tranche;
+  isEditMode?: boolean;
 }
 
 export function TrancheWizard({
@@ -46,7 +46,6 @@ export function TrancheWizard({
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Nouveaux champs pour l'édition
   const [tauxNominal, setTauxNominal] = useState<string>("");
   const [periodiciteCoupons, setPeriodiciteCoupons] = useState("");
   const [dateEmission, setDateEmission] = useState("");
@@ -61,7 +60,6 @@ export function TrancheWizard({
     if (preselectedProjectId) setSelectedProjectId(preselectedProjectId);
   }, [preselectedProjectId]);
 
-  // Pré-remplir les champs en mode édition
   useEffect(() => {
     if (editingTranche && isEditMode) {
       console.log("🎯 Mode édition activé avec:", editingTranche);
@@ -111,7 +109,6 @@ export function TrancheWizard({
     }
   };
 
-  // Nouvelle fonction pour mettre à jour une tranche existante
   const handleUpdateTranche = async () => {
     if (!editingTranche || !trancheName) {
       setError("Veuillez remplir le nom de la tranche");
@@ -151,7 +148,6 @@ export function TrancheWizard({
       setSuccessMessage("Tranche mise à jour avec succès");
       console.log("✅ Tranche mise à jour");
 
-      // Fermer après 1 seconde
       setTimeout(() => {
         onSuccess();
         onClose();
@@ -166,13 +162,11 @@ export function TrancheWizard({
   };
 
   const handleSubmit = async () => {
-    // Si en mode édition, appeler la fonction de mise à jour
     if (isEditMode && editingTranche) {
       await handleUpdateTranche();
       return;
     }
 
-    // Sinon, créer une nouvelle tranche (code existant)
     if (!selectedProjectId || !trancheName || !csvFile) {
       setError("Veuillez remplir tous les champs requis");
       return;
@@ -189,20 +183,17 @@ export function TrancheWizard({
       console.log("Nom tranche:", trancheName);
       console.log("Fichier:", csvFile.name);
 
-      // Create FormData for the Edge Function
       const form = new FormData();
       form.append("projet_id", selectedProjectId);
       form.append("tranche_name", trancheName);
       form.append("file", csvFile, csvFile.name);
 
-      // Upload CSV to Edge Function
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
       console.log("URL Edge Function:", url);
 
       const xhr = new XMLHttpRequest();
       xhr.open("POST", url, true);
 
-      // Progress tracking
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
           const p = Math.round((event.loaded / event.total) * 100);
@@ -265,259 +256,270 @@ export function TrancheWizard({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl">
-          <div className="flex items-center gap-2">
-            {isEditMode && <Edit className="w-5 h-5 text-blue-600" />}
-            <h3 className="text-xl font-bold text-slate-900">
-              {isEditMode ? "Modifier la Tranche" : "Nouvelle Tranche"}
-            </h3>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600" disabled={processing}>
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="p-6 space-y-6">
-          {/* Project selection */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Projet <span className="text-red-600">*</span>
-            </label>
-            {loading ? (
-              <div className="text-center py-4">
-                <Loader className="w-6 h-6 animate-spin mx-auto text-slate-400" />
-              </div>
-            ) : (
-              <select
-                value={selectedProjectId}
-                onChange={(e) => handleProjectSelect(e.target.value)}
-                disabled={processing || isEditMode} // Désactivé en mode édition
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:bg-slate-50"
-              >
-                <option value="">Sélectionnez un projet</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.projet}
-                  </option>
-                ))}
-              </select>
-            )}
+    // ✅ FIX: Structure corrigée avec z-index plus élevé
+    <div className="fixed inset-0 z-[60] overflow-y-auto">
+      {/* Backdrop gris */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        onClick={() => !processing && onClose()}
+      />
+      
+      {/* Conteneur du modal centré */}
+      <div className="flex min-h-full items-center justify-center p-4">
+        {/* Modal content avec position relative pour être au-dessus du backdrop */}
+        <div className="relative bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="flex-shrink-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              {isEditMode && <Edit className="w-5 h-5 text-blue-600" />}
+              <h3 className="text-xl font-bold text-slate-900">
+                {isEditMode ? "Modifier la Tranche" : "Nouvelle Tranche"}
+              </h3>
+            </div>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600" disabled={processing}>
+              <X className="w-6 h-6" />
+            </button>
           </div>
 
-          {/* Tranche name */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Nom de la tranche <span className="text-red-600">*</span>
-            </label>
-            {suggestedName && !isEditMode && (
-              <p className="text-sm text-slate-600 mb-2">
-                Nom suggéré: <span className="font-medium">{suggestedName}</span>
-              </p>
-            )}
-            <input
-              type="text"
-              value={trancheName}
-              onChange={(e) => setTrancheName(e.target.value)}
-              disabled={processing}
-              placeholder="Ex: T1, Tranche A..."
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            />
-          </div>
+          {/* Body - Scrollable */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Project selection */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Projet <span className="text-red-600">*</span>
+              </label>
+              {loading ? (
+                <div className="text-center py-4">
+                  <Loader className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+                </div>
+              ) : (
+                <select
+                  value={selectedProjectId}
+                  onChange={(e) => handleProjectSelect(e.target.value)}
+                  disabled={processing || isEditMode}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:bg-slate-50"
+                >
+                  <option value="">Sélectionnez un projet</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.projet}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
 
-          {/* Champs supplémentaires pour l'édition */}
-          {isEditMode && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
+            {/* Tranche name */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Nom de la tranche <span className="text-red-600">*</span>
+              </label>
+              {suggestedName && !isEditMode && (
+                <p className="text-sm text-slate-600 mb-2">
+                  Nom suggéré: <span className="font-medium">{suggestedName}</span>
+                </p>
+              )}
+              <input
+                type="text"
+                value={trancheName}
+                onChange={(e) => setTrancheName(e.target.value)}
+                disabled={processing}
+                placeholder="Ex: T1, Tranche A..."
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              />
+            </div>
+
+            {/* Champs supplémentaires pour l'édition */}
+            {isEditMode && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Taux Nominal (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={tauxNominal}
+                      onChange={(e) => setTauxNominal(e.target.value)}
+                      disabled={processing}
+                      placeholder="Ex: 5.5"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Périodicité des Coupons
+                    </label>
+                    <select
+                      value={periodiciteCoupons}
+                      onChange={(e) => setPeriodiciteCoupons(e.target.value)}
+                      disabled={processing}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
+                    >
+                      <option value="">Sélectionner...</option>
+                      <option value="mensuelle">Mensuelle</option>
+                      <option value="trimestrielle">Trimestrielle</option>
+                      <option value="semestrielle">Semestrielle</option>
+                      <option value="annuelle">Annuelle</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Date d'émission
+                    </label>
+                    <input
+                      type="date"
+                      value={dateEmission}
+                      onChange={(e) => setDateEmission(e.target.value)}
+                      disabled={processing}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Date d'échéance finale
+                    </label>
+                    <input
+                      type="date"
+                      value={dateEcheanceFinale}
+                      onChange={(e) => setDateEcheanceFinale(e.target.value)}
+                      disabled={processing}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Taux Nominal (%)
+                    Durée (mois)
                   </label>
                   <input
                     type="number"
-                    step="0.01"
-                    value={tauxNominal}
-                    onChange={(e) => setTauxNominal(e.target.value)}
+                    value={dureeMois}
+                    onChange={(e) => setDureeMois(e.target.value)}
                     disabled={processing}
-                    placeholder="Ex: 5.5"
+                    placeholder="Ex: 24"
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   />
                 </div>
+              </>
+            )}
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Périodicité des Coupons
-                  </label>
-                  <select
-                    value={periodiciteCoupons}
-                    onChange={(e) => setPeriodiciteCoupons(e.target.value)}
-                    disabled={processing}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
-                  >
-                    <option value="">Sélectionner...</option>
-                    <option value="mensuelle">Mensuelle</option>
-                    <option value="trimestrielle">Trimestrielle</option>
-                    <option value="semestrielle">Semestrielle</option>
-                    <option value="annuelle">Annuelle</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Date d'émission
-                  </label>
-                  <input
-                    type="date"
-                    value={dateEmission}
-                    onChange={(e) => setDateEmission(e.target.value)}
-                    disabled={processing}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Date d'échéance finale
-                  </label>
-                  <input
-                    type="date"
-                    value={dateEcheanceFinale}
-                    onChange={(e) => setDateEcheanceFinale(e.target.value)}
-                    disabled={processing}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                  />
-                </div>
-              </div>
-
+            {/* CSV/Excel upload */}
+            {!isEditMode && (
               <div>
                 <label className="block text-sm font-semibold text-slate-900 mb-2">
-                  Durée (mois)
+                  Fichier du registre <span className="text-red-600">*</span>
                 </label>
-                <input
-                  type="number"
-                  value={dureeMois}
-                  onChange={(e) => setDureeMois(e.target.value)}
-                  disabled={processing}
-                  placeholder="Ex: 24"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                <FileUpload
+                  accept=".csv,.xlsx,.xls"
+                  onFileSelect={(files) => {
+                    if (files && files.length > 0) {
+                      setCsvFile(files[0]);
+                      setError("");
+                    }
+                  }}
+                  label="Sélectionner le fichier (CSV ou Excel)"
+                  description="Le fichier sera importé automatiquement"
                 />
+                {csvFile && (
+                  <div className="mt-4 text-center">
+                    <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      {csvFile.name}
+                    </div>
+                  </div>
+                )}
               </div>
-            </>
-          )}
+            )}
 
-          {/* CSV/Excel upload - Only in creation mode */}
-          {!isEditMode && (
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Fichier du registre <span className="text-red-600">*</span>
-              </label>
-              <FileUpload
-                accept=".csv,.xlsx,.xls"
-                onFileSelect={(files) => {
-                  if (files && files.length > 0) {
-                    setCsvFile(files[0]);
-                    setError("");
-                  }
-                }}
-                label="Sélectionner le fichier (CSV ou Excel)"
-                description="Le fichier sera importé automatiquement"
-              />
-              {csvFile && (
-                <div className="mt-4 text-center">
-                  <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    {csvFile.name}
+            {/* Progress bar */}
+            {processing && !isEditMode && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-slate-600">
+                  <span>Upload en cours...</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="h-2 bg-blue-600 transition-all duration-150"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Success message */}
+            {successMessage && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-green-700 whitespace-pre-line">
+                    {successMessage}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Progress bar */}
-          {processing && !isEditMode && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-slate-600">
-                <span>Upload en cours...</span>
-                <span>{progress}%</span>
               </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div
-                  className="h-2 bg-blue-600 transition-all duration-150"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
+            )}
 
-          {/* Success message */}
-          {successMessage && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-green-700 whitespace-pre-line">
-                  {successMessage}
+            {/* Error message */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-700">{error}</p>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Error message */}
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-white p-6 border-t border-slate-200 flex gap-3 rounded-b-2xl">
-          {successMessage ? (
-            <button
-              onClick={() => {
-                onSuccess();
-                onClose();
-              }}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Terminer
-            </button>
-          ) : (
-            <>
+          {/* Footer */}
+          <div className="flex-shrink-0 bg-white p-6 border-t border-slate-200 flex gap-3">
+            {successMessage ? (
               <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
-                disabled={processing}
+                onClick={() => {
+                  onSuccess();
+                  onClose();
+                }}
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
-                Annuler
+                Terminer
               </button>
-              <button
-                onClick={handleSubmit}
-                disabled={
-                  processing || 
-                  !trancheName || 
-                  (isEditMode ? false : (!selectedProjectId || !csvFile))
-                }
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {processing ? (
-                  <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    {isEditMode ? "Mise à jour..." : `Import... ${progress}%`}
-                  </>
-                ) : (
-                  isEditMode ? "Mettre à jour" : "Créer et importer"
-                )}
-              </button>
-            </>
-          )}
+            ) : (
+              <>
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  disabled={processing}
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={
+                    processing || 
+                    !trancheName || 
+                    (isEditMode ? false : (!selectedProjectId || !csvFile))
+                  }
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {processing ? (
+                    <>
+                      <Loader className="w-5 h-5 animate-spin" />
+                      {isEditMode ? "Mise à jour..." : `Import... ${progress}%`}
+                    </>
+                  ) : (
+                    isEditMode ? "Mettre à jour" : "Créer et importer"
+                  )}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
