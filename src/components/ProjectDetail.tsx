@@ -1,28 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
-
-// Import nommé pour AlertModal
+import { X, ArrowLeft } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { AlertModal } from './AlertModal';
-
-// Imports des autres composants
-import PaymentWizard from './PaymentWizard';
-import SubscriptionsModal from './SubscriptionsModal';
-import TranchesModal from './TranchesModal';
-import EcheancierModal from './EcheancierModal';
+import { PaymentWizard } from './PaymentWizard';
+import { SubscriptionsModal } from './SubscriptionsModal';
+import { TranchesModal } from './TranchesModal';
+import { EcheancierModal } from './EcheancierModal';
 
 function ProjectDetail() {
   const { projectId } = useParams();
   const navigate = useNavigate();
 
-  // États
-  const [project, setProject] = useState(null);
-  const [editedProject, setEditedProject] = useState(null);
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [tranches, setTranches] = useState([]);
+  const [project, setProject] = useState<any>(null);
+  const [editedProject, setEditedProject] = useState<any>(null);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [tranches, setTranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // États des modales
+
   const [showEditProject, setShowEditProject] = useState(false);
   const [showEditSubscription, setShowEditSubscription] = useState(false);
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
@@ -30,89 +25,88 @@ function ProjectDetail() {
   const [showTranchesModal, setShowTranchesModal] = useState(false);
   const [showEcheancierModal, setShowEcheancierModal] = useState(false);
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
-  
-  // États d'édition
-  const [editingSubscription, setEditingSubscription] = useState(null);
-  const [editingTranche, setEditingTranche] = useState(null);
-  
-  // État des alertes
+
+  const [editingSubscription, setEditingSubscription] = useState<any>(null);
+  const [editingTranche, setEditingTranche] = useState<any>(null);
+
   const [alertState, setAlertState] = useState({
     isOpen: false,
     title: '',
     message: '',
-    type: 'info',
+    type: 'info' as 'info' | 'success' | 'error' | 'warning',
     onConfirm: () => {}
   });
 
-  // Fonctions utilitaires
-  const formatCurrency = (amount) => {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR'
     }).format(amount || 0);
   };
 
-  const formatDate = (date) => {
+  const formatDate = (date: string) => {
     if (!date) return '-';
     return new Date(date).toLocaleDateString('fr-FR');
   };
 
-  // ⚠️ FIX: useEffect simplifié - se déclenche uniquement quand projectId change
   useEffect(() => {
-    const fetchData = async () => {
-      if (!projectId) return;
-      
-      try {
-        setLoading(true);
-        const response = await fetch(`/api/projects/${projectId}`);
-        if (!response.ok) throw new Error('Erreur réseau');
-        
-        const data = await response.json();
-        
-        setProject(data.project);
-        setEditedProject(data.project);
-        setSubscriptions(data.subscriptions || []);
-        setTranches(data.tranches || []);
-      } catch (error) {
-        console.error('Erreur lors du chargement du projet:', error);
-        setAlertState({
-          isOpen: true,
-          title: 'Erreur',
-          message: 'Impossible de charger les données du projet',
-          type: 'error',
-          onConfirm: () => setAlertState(prev => ({ ...prev, isOpen: false }))
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchProjectData();
+  }, [projectId]);
 
-    fetchData();
-  }, [projectId]); // ✅ Dépendance uniquement sur projectId
-
-  // Fonction pour recharger les données (appelée manuellement)
-  const refetchProjectData = async () => {
+  const fetchProjectData = async () => {
     if (!projectId) return;
-    
+
     try {
-      const response = await fetch(`/api/projects/${projectId}`);
-      if (!response.ok) throw new Error('Erreur réseau');
-      
-      const data = await response.json();
-      
-      setProject(data.project);
-      setEditedProject(data.project);
-      setSubscriptions(data.subscriptions || []);
-      setTranches(data.tranches || []);
+      setLoading(true);
+
+      const [projectRes, tranchesRes, subscriptionsRes] = await Promise.all([
+        supabase.from('projets').select('*').eq('id', projectId).single(),
+        supabase.from('tranches').select('*').eq('projet_id', projectId),
+        supabase.from('souscriptions').select(`
+          *,
+          investisseurs (
+            nom_raison_sociale,
+            email,
+            type
+          ),
+          tranches (
+            tranche_name
+          )
+        `).in('tranche_id',
+          (await supabase.from('tranches').select('id').eq('projet_id', projectId)).data?.map(t => t.id) || []
+        )
+      ]);
+
+      if (projectRes.error) throw projectRes.error;
+
+      setProject(projectRes.data);
+      setEditedProject(projectRes.data);
+      setTranches(tranchesRes.data || []);
+      setSubscriptions(subscriptionsRes.data || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error fetching project:', error);
+      setAlertState({
+        isOpen: true,
+        title: 'Erreur',
+        message: 'Impossible de charger les données du projet',
+        type: 'error',
+        onConfirm: () => {
+          setAlertState(prev => ({ ...prev, isOpen: false }));
+          navigate('/projets');
+        }
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Fonction pour mettre à jour le projet
+  const refetchProjectData = async () => {
+    await fetchProjectData();
+  };
+
   const handleUpdateProject = async () => {
     try {
-      if (!editedProject?.nom_projet?.trim()) {
+      if (!editedProject?.projet?.trim()) {
         setAlertState({
           isOpen: true,
           title: 'Erreur de validation',
@@ -123,17 +117,24 @@ function ProjectDetail() {
         return;
       }
 
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editedProject)
-      });
+      const { error } = await supabase
+        .from('projets')
+        .update({
+          projet: editedProject.projet,
+          emetteur: editedProject.emetteur,
+          nom_representant: editedProject.nom_representant,
+          prenom_representant: editedProject.prenom_representant,
+          email_representant: editedProject.email_representant,
+          representant_masse: editedProject.representant_masse,
+          email_rep_masse: editedProject.email_rep_masse,
+        })
+        .eq('id', projectId);
 
-      if (!response.ok) throw new Error('Erreur lors de la mise à jour');
+      if (error) throw error;
 
       setProject(editedProject);
       setShowEditProject(false);
-      
+
       setAlertState({
         isOpen: true,
         title: 'Succès',
@@ -142,7 +143,7 @@ function ProjectDetail() {
         onConfirm: () => setAlertState(prev => ({ ...prev, isOpen: false }))
       });
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error updating project:', error);
       setAlertState({
         isOpen: true,
         title: 'Erreur',
@@ -153,7 +154,6 @@ function ProjectDetail() {
     }
   };
 
-  // Fonction pour mettre à jour une souscription
   const handleUpdateSubscription = async () => {
     if (!editingSubscription) return;
 
@@ -169,21 +169,24 @@ function ProjectDetail() {
         return;
       }
 
-      const response = await fetch(`/api/subscriptions/${editingSubscription.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingSubscription)
-      });
+      const { error } = await supabase
+        .from('souscriptions')
+        .update({
+          date_souscription: editingSubscription.date_souscription,
+          montant_investi: editingSubscription.montant_investi,
+          nombre_obligations: editingSubscription.nombre_obligations,
+        })
+        .eq('id', editingSubscription.id);
 
-      if (!response.ok) throw new Error('Erreur lors de la mise à jour');
+      if (error) throw error;
 
-      setSubscriptions(prev => 
+      setSubscriptions(prev =>
         prev.map(sub => sub.id === editingSubscription.id ? editingSubscription : sub)
       );
-      
+
       setShowEditSubscription(false);
       setEditingSubscription(null);
-      
+
       setAlertState({
         isOpen: true,
         title: 'Succès',
@@ -191,8 +194,10 @@ function ProjectDetail() {
         type: 'success',
         onConfirm: () => setAlertState(prev => ({ ...prev, isOpen: false }))
       });
+
+      refetchProjectData();
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Error updating subscription:', error);
       setAlertState({
         isOpen: true,
         title: 'Erreur',
@@ -203,8 +208,7 @@ function ProjectDetail() {
     }
   };
 
-  // Fonction pour supprimer une souscription
-  const handleDeleteSubscription = async (subscriptionId) => {
+  const handleDeleteSubscription = async (subscriptionId: string) => {
     setAlertState({
       isOpen: true,
       title: 'Confirmer la suppression',
@@ -212,14 +216,15 @@ function ProjectDetail() {
       type: 'warning',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/subscriptions/${subscriptionId}`, {
-            method: 'DELETE'
-          });
+          const { error } = await supabase
+            .from('souscriptions')
+            .delete()
+            .eq('id', subscriptionId);
 
-          if (!response.ok) throw new Error('Erreur lors de la suppression');
+          if (error) throw error;
 
           setSubscriptions(prev => prev.filter(sub => sub.id !== subscriptionId));
-          
+
           setAlertState({
             isOpen: true,
             title: 'Succès',
@@ -227,8 +232,10 @@ function ProjectDetail() {
             type: 'success',
             onConfirm: () => setAlertState(prev => ({ ...prev, isOpen: false }))
           });
+
+          refetchProjectData();
         } catch (error) {
-          console.error('Erreur:', error);
+          console.error('Error deleting subscription:', error);
           setAlertState({
             isOpen: true,
             title: 'Erreur',
@@ -241,8 +248,7 @@ function ProjectDetail() {
     });
   };
 
-  // Fonction pour supprimer une tranche
-  const handleDeleteTranche = async (trancheId) => {
+  const handleDeleteTranche = async (trancheId: string) => {
     setAlertState({
       isOpen: true,
       title: 'Confirmer la suppression',
@@ -250,14 +256,15 @@ function ProjectDetail() {
       type: 'warning',
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/tranches/${trancheId}`, {
-            method: 'DELETE'
-          });
+          const { error } = await supabase
+            .from('tranches')
+            .delete()
+            .eq('id', trancheId);
 
-          if (!response.ok) throw new Error('Erreur lors de la suppression');
+          if (error) throw error;
 
           setTranches(prev => prev.filter(t => t.id !== trancheId));
-          
+
           setAlertState({
             isOpen: true,
             title: 'Succès',
@@ -265,8 +272,10 @@ function ProjectDetail() {
             type: 'success',
             onConfirm: () => setAlertState(prev => ({ ...prev, isOpen: false }))
           });
+
+          refetchProjectData();
         } catch (error) {
-          console.error('Erreur:', error);
+          console.error('Error deleting tranche:', error);
           setAlertState({
             isOpen: true,
             title: 'Erreur',
@@ -290,42 +299,89 @@ function ProjectDetail() {
   if (!project) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-slate-600">Projet non trouvé</div>
+        <div className="text-center">
+          <div className="text-slate-600 mb-4">Projet non trouvé</div>
+          <button
+            onClick={() => navigate('/projets')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retour aux projets
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Contenu principal */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold text-slate-900 mb-4">
-            {project.nom_projet}
-          </h1>
-          <div className="flex gap-4">
+      <div className="max-w-7xl mx-auto px-8 py-8">
+        <button
+          onClick={() => navigate('/projets')}
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Retour aux projets
+        </button>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              {project.projet}
+            </h1>
+            <p className="text-slate-600">{project.emetteur}</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-slate-50 rounded-lg p-4">
+              <p className="text-sm text-slate-600 mb-1">Tranches</p>
+              <p className="text-2xl font-bold text-slate-900">{tranches.length}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <p className="text-sm text-slate-600 mb-1">Souscriptions</p>
+              <p className="text-2xl font-bold text-slate-900">{subscriptions.length}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <p className="text-sm text-slate-600 mb-1">Total levé</p>
+              <p className="text-2xl font-bold text-green-600">
+                {formatCurrency(subscriptions.reduce((sum, sub) => sum + (sub.montant_investi || 0), 0))}
+              </p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <p className="text-sm text-slate-600 mb-1">Investisseurs</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {new Set(subscriptions.map(s => s.investisseur_id)).size}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setShowEditProject(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Modifier le projet
             </button>
             <button
               onClick={() => setShowSubscriptionsModal(true)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               Voir les souscriptions
             </button>
             <button
               onClick={() => setShowTranchesModal(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
               Voir les tranches
             </button>
+            <button
+              onClick={() => setShowEcheancierModal(true)}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Échéancier
+            </button>
           </div>
         </div>
-        
-        {/* Edit Project Modal */}
+
         {showEditProject && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -362,9 +418,9 @@ function ProjectDetail() {
                         </label>
                         <input
                           type="text"
-                          value={editedProject?.nom_projet || ''}
+                          value={editedProject?.projet || ''}
                           onChange={(e) =>
-                            setEditedProject({ ...editedProject, nom_projet: e.target.value })
+                            setEditedProject({ ...editedProject, projet: e.target.value })
                           }
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
@@ -386,13 +442,27 @@ function ProjectDetail() {
 
                       <div>
                         <label className="block text-sm font-medium text-slate-900 mb-2">
-                          Représentant
+                          Prénom représentant
                         </label>
                         <input
                           type="text"
-                          value={editedProject?.representant || ''}
+                          value={editedProject?.prenom_representant || ''}
                           onChange={(e) =>
-                            setEditedProject({ ...editedProject, representant: e.target.value })
+                            setEditedProject({ ...editedProject, prenom_representant: e.target.value })
+                          }
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">
+                          Nom représentant
+                        </label>
+                        <input
+                          type="text"
+                          value={editedProject?.nom_representant || ''}
+                          onChange={(e) =>
+                            setEditedProject({ ...editedProject, nom_representant: e.target.value })
                           }
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
@@ -456,7 +526,7 @@ function ProjectDetail() {
                 </button>
                 <button
                   onClick={handleUpdateProject}
-                  className="flex-1 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+                  className="flex-1 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
                 >
                   Enregistrer
                 </button>
@@ -465,7 +535,6 @@ function ProjectDetail() {
           </div>
         )}
 
-        {/* Edit Subscription Modal */}
         {showEditSubscription && editingSubscription && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
@@ -474,7 +543,7 @@ function ProjectDetail() {
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">Modifier la Souscription</h3>
                     <p className="text-sm text-slate-600 mt-1">
-                      {editingSubscription.investisseur?.nom_raison_sociale || 'Investisseur'}
+                      {editingSubscription.investisseurs?.nom_raison_sociale || 'Investisseur'}
                     </p>
                   </div>
                   <button
@@ -542,23 +611,6 @@ function ProjectDetail() {
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-
-                  {editingSubscription.tranche && (
-                    <div className="p-4 bg-slate-50 rounded-lg">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Tranche :</span>
-                        <span className="font-medium text-slate-900">
-                          {editingSubscription.tranche.tranche_name || '-'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm mt-2">
-                        <span className="text-slate-600">Coupon net :</span>
-                        <span className="font-medium text-slate-900">
-                          {formatCurrency(editingSubscription.coupon_net)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex gap-3 mt-6">
@@ -573,7 +625,7 @@ function ProjectDetail() {
                   </button>
                   <button
                     onClick={handleUpdateSubscription}
-                    className="flex-1 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+                    className="flex-1 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
                   >
                     Enregistrer
                   </button>
@@ -583,7 +635,6 @@ function ProjectDetail() {
           </div>
         )}
 
-        {/* Payment Wizard Modal */}
         {showPaymentWizard && (
           <PaymentWizard
             onClose={() => setShowPaymentWizard(false)}
@@ -594,7 +645,6 @@ function ProjectDetail() {
           />
         )}
 
-        {/* Subscriptions Modal */}
         {showSubscriptionsModal && (
           <SubscriptionsModal
             subscriptions={subscriptions}
@@ -609,7 +659,6 @@ function ProjectDetail() {
           />
         )}
 
-        {/* Tranches Modal */}
         {showTranchesModal && (
           <TranchesModal
             tranches={tranches}
@@ -625,7 +674,6 @@ function ProjectDetail() {
           />
         )}
 
-        {/* Echeancier Modal */}
         {showEcheancierModal && (
           <EcheancierModal
             projectId={projectId}
@@ -636,7 +684,6 @@ function ProjectDetail() {
         )}
       </div>
 
-      {/* Alert Modal */}
       <AlertModal
         isOpen={alertState.isOpen}
         onClose={() => setAlertState({ ...alertState, isOpen: false })}
