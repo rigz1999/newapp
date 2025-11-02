@@ -23,7 +23,7 @@ interface TrancheWizardProps {
   onClose: () => void;
   onSuccess: () => void;
   preselectedProjectId?: string;
-  editingTranche?: Tranche;
+  editingTranche?: Tranche | null;
   isEditMode?: boolean;
 }
 
@@ -256,17 +256,16 @@ export function TrancheWizard({
   };
 
   return (
-    // ✅ FIX: Structure corrigée avec z-index plus élevé
     <div className="fixed inset-0 z-[60] overflow-y-auto">
-      {/* Backdrop gris */}
+      {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
         onClick={() => !processing && onClose()}
       />
       
-      {/* Conteneur du modal centré */}
+      {/* Conteneur centré */}
       <div className="flex min-h-full items-center justify-center p-4">
-        {/* Modal content avec position relative pour être au-dessus du backdrop */}
+        {/* Modal content */}
         <div className="relative bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="flex-shrink-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center">
@@ -276,7 +275,11 @@ export function TrancheWizard({
                 {isEditMode ? "Modifier la Tranche" : "Nouvelle Tranche"}
               </h3>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600" disabled={processing}>
+            <button 
+              onClick={onClose} 
+              className="text-slate-400 hover:text-slate-600" 
+              disabled={processing}
+            >
               <X className="w-6 h-6" />
             </button>
           </div>
