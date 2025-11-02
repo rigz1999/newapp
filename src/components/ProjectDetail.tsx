@@ -607,8 +607,8 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">{sub.tranche.tranche_name}</td>
                       <td className="px-4 py-3 text-sm text-slate-600">
-  {formatDate(sub.tranche.date_emission)}
-</td>
+                      {formatDate(sub.tranche.date_emission)}
+                    </td>
                       <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
                         {formatCurrency(sub.montant_investi)}
                       </td>
