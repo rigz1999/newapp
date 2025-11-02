@@ -134,7 +134,7 @@ export function Coupons({ organization }: CouponsProps) {
         const tranche = c.souscription.tranche;
         const projet = tranche.projet;
         
-        const montant_net = investisseur.type === 'Physique' 
+        const montant_net = investisseur.type.toLowerCase() === 'physique' 
           ? c.montant_coupon * 0.70 
           : c.montant_coupon;
 
