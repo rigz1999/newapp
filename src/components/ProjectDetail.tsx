@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 
-// Imports des composants
+// ⚠️ FIX: Import nommé au lieu de default pour AlertModal
+import { AlertModal } from './AlertModal';
+
+// Imports des autres composants
 import PaymentWizard from './PaymentWizard';
 import SubscriptionsModal from './SubscriptionsModal';
 import TranchesModal from './TranchesModal';
 import EcheancierModal from './EcheancierModal';
-import AlertModal from './AlertModal';
 
 function ProjectDetail() {
   const { projectId } = useParams();
@@ -55,13 +57,12 @@ function ProjectDetail() {
     return new Date(date).toLocaleDateString('fr-FR');
   };
 
-  // ⚠️ FIX: Utilisation de useCallback pour éviter les re-rendus infinis
-  const fetchProjectData = React.useCallback(async () => {
+  // Fonction pour récupérer les données du projet
+  const fetchProjectData = useCallback(async () => {
     if (!projectId) return;
     
     try {
       setLoading(true);
-      // Remplacer par votre appel API réel
       const response = await fetch(`/api/projects/${projectId}`);
       if (!response.ok) throw new Error('Erreur réseau');
       
@@ -83,12 +84,11 @@ function ProjectDetail() {
     } finally {
       setLoading(false);
     }
-  }, [projectId]); // ⚠️ FIX: Dépendance uniquement sur projectId
+  }, [projectId]);
 
   // Fonction pour mettre à jour le projet
   const handleUpdateProject = async () => {
     try {
-      // Validation
       if (!editedProject.nom_projet?.trim()) {
         setAlertState({
           isOpen: true,
@@ -135,7 +135,6 @@ function ProjectDetail() {
     if (!editingSubscription) return;
 
     try {
-      // Validation
       if (!editingSubscription.montant_investi || editingSubscription.montant_investi <= 0) {
         setAlertState({
           isOpen: true,
@@ -257,10 +256,10 @@ function ProjectDetail() {
     });
   };
 
-  // ⚠️ FIX: useEffect avec la bonne dépendance
+  // Charger les données au montage
   useEffect(() => {
     fetchProjectData();
-  }, [fetchProjectData]); // Dépend de fetchProjectData qui est mémorisé
+  }, [fetchProjectData]);
 
   if (loading) {
     return (
@@ -281,7 +280,7 @@ function ProjectDetail() {
   return (
     <>
       <div className="max-w-7xl mx-auto p-6">
-        {/* Contenu principal - Ajoutez votre UI ici */}
+        {/* Contenu principal */}
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold text-slate-900 mb-4">
             {project.nom_projet}
@@ -619,7 +618,7 @@ function ProjectDetail() {
         )}
       </div>
 
-      {/* Alert Modal */}
+      {/* Alert Modal - Import nommé */}
       <AlertModal
         isOpen={alertState.isOpen}
         onClose={() => setAlertState({ ...alertState, isOpen: false })}
