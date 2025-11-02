@@ -6,8 +6,6 @@ import { PaymentWizard } from './PaymentWizard';
 import { EcheancierCard } from './EcheancierCard';
 import { SubscriptionsModal } from './SubscriptionsModal';
 import { TranchesModal } from './TranchesModal';
-import { AlertModal } from './AlertModal';
-import { EcheancierModal } from './EcheancierModal';
 import {
   ArrowLeft,
   Edit,
@@ -41,6 +39,7 @@ interface Project {
   representant_masse: string | null;
   email_rep_masse: string | null;
   created_at: string;
+  // Champs financiers
   taux_nominal: number | null;
   periodicite_coupons: string | null;
   maturite_mois: number | null;
@@ -67,7 +66,6 @@ interface Subscription {
   coupon_net: number;
   investisseur: {
     nom_raison_sociale: string;
-    cgp_nom?: string;
   };
   tranche: {
     tranche_name: string;
@@ -87,14 +85,6 @@ interface Payment {
   montant: number;
   date_paiement: string;
   statut: string;
-}
-
-interface AlertState {
-  isOpen: boolean;
-  title: string;
-  message: string;
-  type: 'success' | 'warning' | 'error' | 'info' | 'confirm';
-  onConfirm?: () => void;
 }
 
 export function ProjectDetail({ organization }: ProjectDetailProps) {
@@ -119,13 +109,6 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false);
   const [showTranchesModal, setShowTranchesModal] = useState(false);
 
-  const [alertState, setAlertState] = useState<AlertState>({
-    isOpen: false,
-    title: '',
-    message: '',
-    type: 'info',
-  });
-
   const TRANCHES_LIMIT = 5;
   const SUBSCRIPTIONS_LIMIT = 5;
 
@@ -137,179 +120,74 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
     nextCouponAmount: 0,
   });
 
-  // Fonction pour charger les données (utilisée dans useEffect et après modifications)
-  const fetchData = async () => {
-    if (!projectId) return;
+  useEffect(() => {
+    fetchProjectData();
+  }, [projectId]);
 
-    try {
-      // 1. Requête du projet
-      const { data: projectData, error: projectError } = await supabase
-        .from('projets')
-        .select('*')
-        .eq('id', projectId)
-        .maybeSingle();
+  const fetchProjectData = async () => {
+    setLoading(true);
 
-      if (projectError) {
-        console.error('Error fetching project:', projectError);
-        throw projectError;
-      }
+    const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
+      supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
+      supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }), // ← Ordre chronologique
+      supabase.from('souscriptions').select(`
+        id, id_souscription, date_souscription, nombre_obligations, montant_investi,
+        coupon_net, investisseur_id,
+        investisseur:investisseurs(nom_raison_sociale),
+        tranche:tranches(tranche_name, date_emission)
+      `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
+      supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }),
+      supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut')
+    ]);
 
-      // 2. Requête des tranches
-      const { data: tranchesData, error: tranchesError } = await supabase
-        .from('tranches')
-        .select('*')
-        .eq('projet_id', projectId)
-        .order('date_emission', { ascending: true });
+    const projectData = projectRes.data;
+    const tranchesData = tranchesRes.data || [];
+    const subscriptionsData = subscriptionsRes.data || [];
+    const paymentsData = paymentsRes.data || [];
+    const prochainsCouponsData = prochainsCouponsRes.data || [];
 
-      if (tranchesError) {
-        console.error('Error fetching tranches:', tranchesError);
-      }
+    // Merge prochain_coupon data into subscriptions
+    const subscriptionsWithCoupons = subscriptionsData.map((sub: any) => {
+      const prochainCoupon = prochainsCouponsData.find((pc: any) => pc.souscription_id === sub.id);
+      return {
+        ...sub,
+        prochain_coupon: prochainCoupon || null
+      };
+    });
 
-      // 3. Requête des souscriptions SANS les jointures
-      const { data: subscriptionsData, error: subscriptionsError } = await supabase
-        .from('souscriptions')
-        .select('*')
-        .eq('projet_id', projectId)
-        .order('date_souscription', { ascending: false });
+    setProject(projectData);
+    setTranches(tranchesData);
+    setSubscriptions(subscriptionsWithCoupons as any);
+    setPayments(paymentsData);
 
-      if (subscriptionsError) {
-        console.error('Error fetching subscriptions:', subscriptionsError);
-        throw subscriptionsError;
-      }
+    if (subscriptionsWithCoupons.length > 0) {
+      const totalLeve = subscriptionsWithCoupons.reduce((sum: number, sub: any) => sum + Number(sub.montant_investi || 0), 0);
+      const uniqueInvestors = new Set(subscriptionsWithCoupons.map((s: any) => s.investisseur_id)).size;
 
-      // 4. Récupérer les investisseurs séparément
-      let investisseursMap = new Map();
-      if (subscriptionsData && subscriptionsData.length > 0) {
-        const investisseurIds = [...new Set(subscriptionsData.map((s: any) => s.investisseur_id))];
-        const { data: investisseursData } = await supabase
-          .from('investisseurs')
-          .select('id, nom_raison_sociale, cgp_nom')
-          .in('id', investisseurIds);
-        
-        if (investisseursData) {
-          investisseursData.forEach((inv: any) => {
-            investisseursMap.set(inv.id, inv);
-          });
-        }
-      }
-
-      // 5. Récupérer les tranches pour les souscriptions séparément
-      let tranchesMap = new Map();
-      if (subscriptionsData && subscriptionsData.length > 0) {
-        const trancheIds = [...new Set(subscriptionsData.map((s: any) => s.tranche_id))];
-        const { data: tranchesForSubsData } = await supabase
-          .from('tranches')
-          .select('id, tranche_name, date_emission')
-          .in('id', trancheIds);
-        
-        if (tranchesForSubsData) {
-          tranchesForSubsData.forEach((tr: any) => {
-            tranchesMap.set(tr.id, tr);
-          });
-        }
-      }
-
-      // 6. Requête des paiements
-      const { data: paymentsData } = await supabase
-        .from('paiements')
-        .select('id, id_paiement, type, montant, date_paiement, statut')
-        .eq('projet_id', projectId)
-        .order('date_paiement', { ascending: false });
-
-      // 7. Requête des prochains coupons
-      const { data: prochainsCouponsData } = await supabase
-        .from('v_prochains_coupons')
-        .select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut');
-
-      // Construire les souscriptions avec les données jointes
-      const subscriptionsWithRelations = (subscriptionsData || []).map((sub: any) => {
-        const investisseur = investisseursMap.get(sub.investisseur_id) || {
-          nom_raison_sociale: 'Inconnu',
-          cgp_nom: null
-        };
-        
-        const tranche = tranchesMap.get(sub.tranche_id) || {
-          tranche_name: 'Inconnue',
-          date_emission: null
-        };
-        
-        const prochainCoupon = (prochainsCouponsData || []).find(
-          (pc: any) => pc.souscription_id === sub.id
+      // Get next coupon from the merged data
+      const upcomingCoupons = subscriptionsWithCoupons
+        .filter((s: any) => s.prochain_coupon?.date_prochain_coupon)
+        .sort((a: any, b: any) => 
+          new Date(a.prochain_coupon.date_prochain_coupon).getTime() - 
+          new Date(b.prochain_coupon.date_prochain_coupon).getTime()
         );
 
-        return {
-          ...sub,
-          investisseur,
-          tranche,
-          prochain_coupon: prochainCoupon || null
-        };
-      });
+      const nextCoupon = upcomingCoupons[0];
+      const nextCouponAmount = upcomingCoupons
+        .filter((s: any) => s.prochain_coupon.date_prochain_coupon === nextCoupon?.prochain_coupon?.date_prochain_coupon)
+        .reduce((sum: number, s: any) => sum + Number(s.prochain_coupon.montant_prochain_coupon || 0), 0);
 
-      // Mettre à jour les états
-      setProject(projectData);
-      setTranches(tranchesData || []);
-      setSubscriptions(subscriptionsWithRelations as any);
-      setPayments(paymentsData || []);
-
-      // Calcul des statistiques
-      if (subscriptionsWithRelations.length > 0) {
-        const totalLeve = subscriptionsWithRelations.reduce(
-          (sum: number, sub: any) => sum + Number(sub.montant_investi || 0), 
-          0
-        );
-        const uniqueInvestors = new Set(
-          subscriptionsWithRelations.map((s: any) => s.investisseur_id)
-        ).size;
-
-        // Prochain coupon
-        const upcomingCoupons = subscriptionsWithRelations
-          .filter((s: any) => s.prochain_coupon?.date_prochain_coupon)
-          .sort((a: any, b: any) => 
-            new Date(a.prochain_coupon.date_prochain_coupon).getTime() - 
-            new Date(b.prochain_coupon.date_prochain_coupon).getTime()
-          );
-
-        const nextCoupon = upcomingCoupons[0];
-        const nextCouponAmount = upcomingCoupons
-          .filter((s: any) => s.prochain_coupon?.date_prochain_coupon === nextCoupon?.prochain_coupon?.date_prochain_coupon)
-          .reduce((sum: number, s: any) => sum + Number(s.prochain_coupon.montant_prochain_coupon || 0), 0);
-
-        setStats({
-          totalLeve,
-          investisseursCount: uniqueInvestors,
-          tranchesCount: (tranchesData || []).length,
-          nextCouponDate: nextCoupon?.prochain_coupon?.date_prochain_coupon || null,
-          nextCouponAmount,
-        });
-      } else {
-        setStats({
-          totalLeve: 0,
-          investisseursCount: 0,
-          tranchesCount: (tranchesData || []).length,
-          nextCouponDate: null,
-          nextCouponAmount: 0,
-        });
-      }
-
-    } catch (error: any) {
-      console.error('Error in fetchData:', error);
-      setAlertState({
-        isOpen: true,
-        title: 'Erreur',
-        message: 'Impossible de charger les données du projet: ' + (error.message || 'Erreur inconnue'),
-        type: 'error',
+      setStats({
+        totalLeve,
+        investisseursCount: uniqueInvestors,
+        tranchesCount: tranchesData.length,
+        nextCouponDate: nextCoupon?.prochain_coupon?.date_prochain_coupon || null,
+        nextCouponAmount,
       });
     }
-  };
 
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await fetchData();
-      setLoading(false);
-    };
-    loadData();
-  }, [projectId]);
+    setLoading(false);
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -342,53 +220,38 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
     let confirmMessage = `Êtes-vous sûr de vouloir supprimer la tranche "${tranche.tranche_name}" ?`;
 
     if (trancheSubscriptions.length > 0) {
-      confirmMessage += `\n\nATTENTION : Cette tranche contient ${trancheSubscriptions.length} souscription(s) pour un montant total de ${formatCurrency(
+      confirmMessage += `\n\n⚠️ ATTENTION : Cette tranche contient ${trancheSubscriptions.length} souscription(s) pour un montant total de ${formatCurrency(
         trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0)
       )}.`;
       confirmMessage += '\n\nToutes les souscriptions et échéances associées seront également supprimées.';
     }
 
-    setAlertState({
-      isOpen: true,
-      title: 'Confirmer la suppression',
-      message: confirmMessage,
-      type: 'confirm',
-      onConfirm: async () => {
-        try {
-          const { error } = await supabase.from('tranches').delete().eq('id', tranche.id);
+    if (!window.confirm(confirmMessage)) return;
 
-          if (error) throw error;
+    try {
+      const { error } = await supabase.from('tranches').delete().eq('id', tranche.id);
 
-          setAlertState({
-            isOpen: true,
-            title: 'Succès',
-            message: 'Tranche supprimée avec succès',
-            type: 'success',
-          });
-          await fetchData();
-        } catch (err: any) {
-          console.error('Error deleting tranche:', err);
-          setAlertState({
-            isOpen: true,
-            title: 'Erreur',
-            message: 'Erreur lors de la suppression de la tranche : ' + err.message,
-            type: 'error',
-          });
-        }
-      },
-    });
+      if (error) throw error;
+
+      alert('✅ Tranche supprimée avec succès');
+      fetchProjectData();
+    } catch (err: any) {
+      console.error('Error deleting tranche:', err);
+      alert('❌ Erreur lors de la suppression de la tranche : ' + err.message);
+    }
   };
 
   const handleUpdateProject = async () => {
     if (!project) return;
 
+    // Vérification si des champs financiers critiques changent
     const hasFinancialChanges = 
       editedProject.periodicite_coupons !== undefined && editedProject.periodicite_coupons !== project.periodicite_coupons ||
       editedProject.taux_nominal !== undefined && editedProject.taux_nominal !== project.taux_nominal ||
       editedProject.maturite_mois !== undefined && editedProject.maturite_mois !== project.maturite_mois;
 
     if (hasFinancialChanges && subscriptions.length > 0) {
-      const confirmMsg = `ATTENTION : Vous modifiez des paramètres financiers critiques.\n\n` +
+      const confirmMsg = `⚠️ ATTENTION : Vous modifiez des paramètres financiers critiques.\n\n` +
         `Cela va automatiquement :\n` +
         `• Mettre à jour toutes les tranches du projet\n` +
         `• Recalculer tous les coupons nets\n` +
@@ -396,47 +259,26 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         `${subscriptions.length} souscription(s) seront impactées.\n\n` +
         `Voulez-vous continuer ?`;
 
-      setAlertState({
-        isOpen: true,
-        title: 'Modification de paramètres financiers',
-        message: confirmMsg,
-        type: 'confirm',
-        onConfirm: async () => {
-          await performProjectUpdate(hasFinancialChanges);
-        },
-      });
-    } else {
-      await performProjectUpdate(hasFinancialChanges);
+      if (!window.confirm(confirmMsg)) return;
     }
-  };
 
-  const performProjectUpdate = async (hasFinancialChanges: boolean) => {
     try {
       const { error } = await supabase
         .from('projets')
         .update(editedProject)
-        .eq('id', project!.id);
+        .eq('id', project.id);
 
       if (error) throw error;
 
       setShowEditProject(false);
       
-      await fetchData();
+      // Recharger toutes les données
+      await fetchProjectData();
       
-      setAlertState({
-        isOpen: true,
-        title: 'Succès',
-        message: 'Projet mis à jour avec succès' + (hasFinancialChanges ? '\n\nLes coupons et échéances ont été recalculés automatiquement.' : ''),
-        type: 'success',
-      });
+      alert('✅ Projet mis à jour avec succès' + (hasFinancialChanges ? '\n\nLes coupons et échéances ont été recalculés automatiquement.' : ''));
     } catch (err: any) {
       console.error('Error updating project:', err);
-      setAlertState({
-        isOpen: true,
-        title: 'Erreur',
-        message: 'Erreur lors de la mise à jour : ' + err.message,
-        type: 'error',
-      });
+      alert('❌ Erreur lors de la mise à jour : ' + err.message);
     }
   };
 
@@ -457,57 +299,12 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
       setShowEditSubscription(false);
       setEditingSubscription(null);
-      await fetchData();
-      setAlertState({
-        isOpen: true,
-        title: 'Succès',
-        message: 'Souscription mise à jour avec succès',
-        type: 'success',
-      });
+      await fetchProjectData();
+      alert('✅ Souscription mise à jour avec succès');
     } catch (err: any) {
       console.error('Error updating subscription:', err);
-      setAlertState({
-        isOpen: true,
-        title: 'Erreur',
-        message: 'Erreur lors de la mise à jour : ' + err.message,
-        type: 'error',
-      });
+      alert('❌ Erreur lors de la mise à jour : ' + err.message);
     }
-  };
-
-  const handleDeleteSubscription = (sub: Subscription) => {
-    setAlertState({
-      isOpen: true,
-      title: 'Confirmer la suppression',
-      message: `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur.nom_raison_sociale} ?`,
-      type: 'confirm',
-      onConfirm: async () => {
-        try {
-          const { error } = await supabase
-            .from('souscriptions')
-            .delete()
-            .eq('id', sub.id);
-
-          if (error) throw error;
-
-          setAlertState({
-            isOpen: true,
-            title: 'Succès',
-            message: 'Souscription supprimée avec succès',
-            type: 'success',
-          });
-          await fetchData();
-        } catch (err: any) {
-          console.error('Error deleting subscription:', err);
-          setAlertState({
-            isOpen: true,
-            title: 'Erreur',
-            message: 'Erreur lors de la suppression : ' + err.message,
-            type: 'error',
-          });
-        }
-      },
-    });
   };
 
   if (loading) {
@@ -680,10 +477,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               </button>
             </div>
             <button
-              onClick={() => {
-                setEditingTranche(null);
-                setShowTrancheWizard(true);
-              }}
+              onClick={() => setShowTrancheWizard(true)}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -831,7 +625,28 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteSubscription(sub)}
+                            onClick={async () => {
+                              if (
+                                window.confirm(
+                                  `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur.nom_raison_sociale} ?`
+                                )
+                              ) {
+                                try {
+                                  const { error } = await supabase
+                                    .from('souscriptions')
+                                    .delete()
+                                    .eq('id', sub.id);
+
+                                  if (error) throw error;
+
+                                  alert('✅ Souscription supprimée avec succès');
+                                  fetchProjectData();
+                                } catch (err: any) {
+                                  console.error('Error deleting subscription:', err);
+                                  alert('❌ Erreur lors de la suppression : ' + err.message);
+                                }
+                              }
+                            }}
                             className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
                             title="Supprimer la souscription"
                           >
@@ -853,10 +668,16 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           projectId={projectId!} 
           tranches={tranches}
           onPaymentClick={(trancheId) => {
+            // Ouvrir le PaymentWizard pour cette tranche
             setShowPaymentWizard(true);
           }}
           onViewAll={() => {
-            setShowEcheancierModal(true);
+            // Pour l'instant, juste ouvrir le modal de la première tranche
+            // Vous pouvez créer un modal dédié plus tard
+            if (tranches.length > 0) {
+              setSelectedTrancheForEcheancier(tranches[0]);
+              setShowEcheancierModal(true);
+            }
           }}
         />
 
@@ -910,11 +731,10 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             onSuccess={() => {
               setShowTrancheWizard(false);
               setEditingTranche(null);
-              fetchData();
+              fetchProjectData();
             }}
             preselectedProjectId={projectId}
-            editingTranche={editingTranche || undefined}
-            isEditMode={editingTranche !== null}
+            editingTranche={editingTranche}
           />
         )}
 
@@ -1272,7 +1092,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             onClose={() => setShowPaymentWizard(false)}
             onSuccess={() => {
               setShowPaymentWizard(false);
-              fetchData();
+              fetchProjectData();
             }}
           />
         )}
@@ -1286,7 +1106,28 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               setEditingSubscription(sub);
               setShowEditSubscription(true);
             }}
-            onDelete={handleDeleteSubscription}
+            onDelete={async (sub) => {
+              if (
+                window.confirm(
+                  `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur.nom_raison_sociale} ?`
+                )
+              ) {
+                try {
+                  const { error } = await supabase
+                    .from('souscriptions')
+                    .delete()
+                    .eq('id', sub.id);
+
+                  if (error) throw error;
+
+                  alert('✅ Souscription supprimée avec succès');
+                  fetchProjectData();
+                } catch (err: any) {
+                  console.error('Error deleting subscription:', err);
+                  alert('❌ Erreur lors de la suppression : ' + err.message);
+                }
+              }
+            }}
             formatCurrency={formatCurrency}
             formatDate={formatDate}
           />
@@ -1307,27 +1148,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             formatDate={formatDate}
           />
         )}
-
-        {/* Echeancier Modal */}
-        {showEcheancierModal && (
-          <EcheancierModal
-            projectId={projectId!}
-            onClose={() => setShowEcheancierModal(false)}
-            formatCurrency={formatCurrency}
-            formatDate={formatDate}
-          />
-        )}
       </div>
-
-      {/* Alert Modal */}
-      <AlertModal
-        isOpen={alertState.isOpen}
-        onClose={() => setAlertState({ ...alertState, isOpen: false })}
-        onConfirm={alertState.onConfirm}
-        title={alertState.title}
-        message={alertState.message}
-        type={alertState.type}
-      />
     </>
   );
 }
