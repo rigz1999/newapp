@@ -12,7 +12,10 @@ import {
   User,
   Building2,
   RefreshCw,
-  Filter
+  Filter,
+  ChevronDown,
+  ChevronRight,
+  Layers
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -33,7 +36,9 @@ interface Coupon {
   investisseur_cgp: string | null;
   has_rib: boolean;
   
+  projet_id: string;
   projet_nom: string;
+  tranche_id: string;
   tranche_nom: string;
   montant_net: number;
 }
@@ -68,7 +73,11 @@ export function Coupons({ organization }: CouponsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statutFilter, setStatutFilter] = useState('all');
   const [projetFilter, setProjetFilter] = useState('all');
-  const [periodeFilter, setPeriodeFilter] = useState('all');
+  const [periodeFilter, setPeriodeFilter] = useState('30'); // Default 30 jours
+  const [kpiPeriode, setKpiPeriode] = useState('30'); // Période pour les KPIs
+  
+  // Expand/Collapse states
+  const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   
   // Modals
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -111,8 +120,10 @@ export function Coupons({ organization }: CouponsProps) {
               rib_file_path
             ),
             tranche:tranches!inner(
+              id,
               tranche_name,
               projet:projets!inner(
+                id,
                 projet
               )
             )
@@ -148,7 +159,9 @@ export function Coupons({ organization }: CouponsProps) {
           investisseur_cgp: investisseur.cgp,
           has_rib: !!investisseur.rib_file_path,
           
+          projet_id: projet.id,
           projet_nom: projet.projet,
+          tranche_id: tranche.id,
           tranche_nom: tranche.tranche_name,
           montant_net,
         };
@@ -176,6 +189,7 @@ export function Coupons({ organization }: CouponsProps) {
       filtered = filtered.filter(c =>
         c.investisseur_nom.toLowerCase().includes(term) ||
         c.projet_nom.toLowerCase().includes(term) ||
+        c.tranche_nom.toLowerCase().includes(term) ||
         c.investisseur_id_display.toLowerCase().includes(term)
       );
     }
@@ -211,15 +225,24 @@ export function Coupons({ organization }: CouponsProps) {
 
   const calculateStats = () => {
     const now = new Date();
+    const days = parseInt(kpiPeriode);
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + days);
     
-    const enAttente = coupons.filter(c => {
+    // Filter coupons by KPI period
+    const periodCoupons = coupons.filter(c => {
+      const echeance = new Date(c.date_echeance);
+      return echeance >= now && echeance <= endDate;
+    });
+    
+    const enAttente = periodCoupons.filter(c => {
       const isOverdue = new Date(c.date_echeance) < now && c.statut !== 'paye';
       return c.statut === 'en_attente' && !isOverdue;
     });
     
-    const payes = coupons.filter(c => c.statut === 'paye');
+    const payes = periodCoupons.filter(c => c.statut === 'paye');
     
-    const enRetard = coupons.filter(c => {
+    const enRetard = periodCoupons.filter(c => {
       return new Date(c.date_echeance) < now && c.statut !== 'paye';
     });
 
@@ -266,14 +289,39 @@ export function Coupons({ organization }: CouponsProps) {
     return { text: '🔵 Prévu', className: 'bg-blue-100 text-blue-800' };
   };
 
-  const groupByDate = (coupons: Coupon[]) => {
-    const grouped: { [key: string]: Coupon[] } = {};
+  // Group by Date, then by Tranche
+  const groupByDateAndTranche = (coupons: Coupon[]) => {
+    const grouped: { [date: string]: { [trancheId: string]: Coupon[] } } = {};
+    
     coupons.forEach((coupon) => {
       const date = coupon.date_echeance;
-      if (!grouped[date]) grouped[date] = [];
-      grouped[date].push(coupon);
+      if (!grouped[date]) grouped[date] = {};
+      if (!grouped[date][coupon.tranche_id]) grouped[date][coupon.tranche_id] = [];
+      grouped[date][coupon.tranche_id].push(coupon);
     });
-    return Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0]));
+    
+    return Object.entries(grouped)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, tranches]) => ({
+        date,
+        tranches: Object.entries(tranches).map(([trancheId, coupons]) => ({
+          trancheId,
+          trancheName: coupons[0].tranche_nom,
+          projetName: coupons[0].projet_nom,
+          coupons,
+          total: coupons.reduce((sum, c) => sum + c.montant_net, 0),
+        })),
+      }));
+  };
+
+  const toggleTranche = (key: string) => {
+    const newExpanded = new Set(expandedTranches);
+    if (newExpanded.has(key)) {
+      newExpanded.delete(key);
+    } else {
+      newExpanded.add(key);
+    }
+    setExpandedTranches(newExpanded);
   };
 
   const handleMarkAsPaid = (coupon: Coupon) => {
@@ -334,10 +382,10 @@ export function Coupons({ organization }: CouponsProps) {
   const handleExportExcel = () => {
     const exportData = filteredCoupons.map(c => ({
       'Date Échéance': formatDate(c.date_echeance),
-      'Investisseur': c.investisseur_nom,
-      'CGP': c.investisseur_cgp || '',
       'Projet': c.projet_nom,
       'Tranche': c.tranche_nom,
+      'Investisseur': c.investisseur_nom,
+      'CGP': c.investisseur_cgp || '',
       'Montant Brut': c.montant_coupon,
       'Montant Net': c.montant_net,
       'Statut': c.statut,
@@ -351,8 +399,18 @@ export function Coupons({ organization }: CouponsProps) {
   };
 
   const stats = calculateStats();
-  const groupedCoupons = groupByDate(filteredCoupons);
+  const groupedData = groupByDateAndTranche(filteredCoupons);
   const totalAmount = filteredCoupons.reduce((sum, c) => sum + c.montant_net, 0);
+
+  const getPeriodeLabel = (days: string) => {
+    switch(days) {
+      case '7': return '7 prochains jours';
+      case '30': return '30 prochains jours';
+      case '90': return '90 prochains jours';
+      case 'all': return 'Toutes périodes';
+      default: return `${days} jours`;
+    }
+  };
 
   if (loading) {
     return (
@@ -384,6 +442,20 @@ export function Coupons({ organization }: CouponsProps) {
         </button>
       </div>
 
+      {/* KPI Period Selector */}
+      <div className="mb-4 flex items-center gap-3">
+        <span className="text-sm font-medium text-slate-700">Statistiques pour:</span>
+        <select
+          value={kpiPeriode}
+          onChange={(e) => setKpiPeriode(e.target.value)}
+          className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="7">7 prochains jours</option>
+          <option value="30">30 prochains jours</option>
+          <option value="90">90 prochains jours</option>
+        </select>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -395,6 +467,7 @@ export function Coupons({ organization }: CouponsProps) {
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enAttente.total)}</h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enAttente.count} coupons</p>
+          <p className="text-xs text-slate-500 mt-2">Sur les {getPeriodeLabel(kpiPeriode)}</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -406,6 +479,7 @@ export function Coupons({ organization }: CouponsProps) {
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.payes.total)}</h3>
           <p className="text-sm text-slate-600 mt-1">{stats.payes.count} coupons</p>
+          <p className="text-xs text-slate-500 mt-2">Sur les {getPeriodeLabel(kpiPeriode)}</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -417,6 +491,7 @@ export function Coupons({ organization }: CouponsProps) {
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enRetard.total)}</h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enRetard.count} coupons</p>
+          <p className="text-xs text-slate-500 mt-2">Sur les {getPeriodeLabel(kpiPeriode)}</p>
         </div>
       </div>
 
@@ -473,7 +548,7 @@ export function Coupons({ organization }: CouponsProps) {
         </div>
       </div>
 
-      {/* Coupons List Grouped by Date */}
+      {/* Coupons List Grouped by Date and Tranche */}
       {filteredCoupons.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
           <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-4" />
@@ -486,112 +561,151 @@ export function Coupons({ organization }: CouponsProps) {
         </div>
       ) : (
         <div className="space-y-6">
-          {groupedCoupons.map(([date, dateCoupons]) => {
+          {groupedData.map(({ date, tranches }) => {
             const daysUntil = getDaysUntil(date);
-            const dateTotal = dateCoupons.reduce((sum, c) => sum + c.montant_net, 0);
+            const dateTotal = tranches.reduce((sum, t) => sum + t.total, 0);
 
             return (
               <div key={date} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {/* Date Header */}
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">{formatDate(date)}</h3>
-                      <p className="text-sm text-slate-600">
-                        {daysUntil < 0 
-                          ? `En retard de ${Math.abs(daysUntil)} jour${Math.abs(daysUntil) > 1 ? 's' : ''}` 
-                          : daysUntil === 0 
-                            ? 'Aujourd\'hui' 
-                            : `Dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''}`}
-                      </p>
-                    </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{formatDate(date)}</h3>
+                    <p className="text-sm text-slate-600">
+                      {daysUntil < 0 
+                        ? `En retard de ${Math.abs(daysUntil)} jour${Math.abs(daysUntil) > 1 ? 's' : ''}` 
+                        : daysUntil === 0 
+                          ? 'Aujourd\'hui' 
+                          : `Dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''}`}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-slate-600">Total du jour</p>
                     <p className="text-lg font-bold text-green-600">{formatCurrency(dateTotal)}</p>
+                    <p className="text-xs text-slate-500">{tranches.length} tranche{tranches.length > 1 ? 's' : ''}</p>
                   </div>
                 </div>
 
-                {/* Coupons for this date */}
-                <div className="divide-y divide-slate-100">
-                  {dateCoupons.map((coupon) => {
-                    const badge = getStatusBadge(coupon);
+                {/* Tranches for this date */}
+                <div className="divide-y divide-slate-200">
+                  {tranches.map((tranche) => {
+                    const trancheKey = `${date}-${tranche.trancheId}`;
+                    const isExpanded = expandedTranches.has(trancheKey);
                     
                     return (
-                      <div key={coupon.id} className="p-6 hover:bg-slate-50 transition-colors">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className={`p-2 rounded-lg ${
-                                coupon.investisseur_type === 'Morale' 
-                                  ? 'bg-purple-100' 
-                                  : 'bg-blue-100'
-                              }`}>
-                                {coupon.investisseur_type === 'Morale' ? (
-                                  <Building2 className="w-4 h-4 text-purple-600" />
-                                ) : (
-                                  <User className="w-4 h-4 text-blue-600" />
-                                )}
-                              </div>
-                              <div>
-                                <p className="text-sm font-bold text-slate-900">
-                                  {coupon.investisseur_nom}
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                  {coupon.investisseur_id_display}
-                                </p>
-                              </div>
+                      <div key={tranche.trancheId}>
+                        {/* Tranche Header - Collapsible */}
+                        <button
+                          onClick={() => toggleTranche(trancheKey)}
+                          className="w-full px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3">
+                            {isExpanded ? (
+                              <ChevronDown className="w-5 h-5 text-slate-400" />
+                            ) : (
+                              <ChevronRight className="w-5 h-5 text-slate-400" />
+                            )}
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                              <Layers className="w-5 h-5 text-blue-600" />
                             </div>
-
-                            <div className="flex items-center gap-2 ml-11 text-sm text-slate-600">
-                              <span className="font-medium">{coupon.projet_nom}</span>
-                              <span className="text-slate-400">•</span>
-                              <span>{coupon.tranche_nom}</span>
-                              {coupon.investisseur_cgp && (
-                                <>
-                                  <span className="text-slate-400">•</span>
-                                  <span className="text-amber-700">CGP: {coupon.investisseur_cgp}</span>
-                                </>
-                              )}
-                            </div>
-
-                            <div className="ml-11 mt-2">
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${badge.className}`}>
-                                {badge.text}
-                              </span>
+                            <div className="text-left">
+                              <p className="text-sm font-bold text-slate-900">{tranche.projetName}</p>
+                              <p className="text-xs text-slate-600">{tranche.trancheName}</p>
                             </div>
                           </div>
-
-                          <div className="text-right ml-4">
-                            <p className="text-xl font-bold text-green-600">
-                              {formatCurrency(coupon.montant_net)}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-1">
-                              Brut: {formatCurrency(coupon.montant_coupon)}
-                            </p>
-                            <div className="flex items-center gap-2 mt-3 justify-end">
-                              <button
-                                onClick={() => {
-                                  setSelectedCoupon(coupon);
-                                  setShowDetailsModal(true);
-                                }}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Voir détails"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              {coupon.statut !== 'paye' && (
-                                <button
-                                  onClick={() => handleMarkAsPaid(coupon)}
-                                  className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
-                                >
-                                  <CheckCircle className="w-4 h-4" />
-                                  Payer
-                                </button>
-                              )}
+                          <div className="flex items-center gap-6">
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-green-600">{formatCurrency(tranche.total)}</p>
+                              <p className="text-xs text-slate-500">{tranche.coupons.length} investisseur{tranche.coupons.length > 1 ? 's' : ''}</p>
                             </div>
                           </div>
-                        </div>
+                        </button>
+
+                        {/* Expanded - Investors list */}
+                        {isExpanded && (
+                          <div className="bg-slate-50 border-t border-slate-200">
+                            <div className="divide-y divide-slate-100">
+                              {tranche.coupons.map((coupon) => {
+                                const badge = getStatusBadge(coupon);
+                                
+                                return (
+                                  <div key={coupon.id} className="px-6 py-4 pl-20 hover:bg-slate-100 transition-colors">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3 flex-1">
+                                        <div className={`p-2 rounded-lg ${
+                                          coupon.investisseur_type === 'Morale' 
+                                            ? 'bg-purple-100' 
+                                            : 'bg-blue-100'
+                                        }`}>
+                                          {coupon.investisseur_type === 'Morale' ? (
+                                            <Building2 className="w-4 h-4 text-purple-600" />
+                                          ) : (
+                                            <User className="w-4 h-4 text-blue-600" />
+                                          )}
+                                        </div>
+                                        <div className="flex-1">
+                                          <p className="text-sm font-medium text-slate-900">
+                                            {coupon.investisseur_nom}
+                                          </p>
+                                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                            <span>{coupon.investisseur_id_display}</span>
+                                            {coupon.investisseur_cgp && (
+                                              <>
+                                                <span>•</span>
+                                                <span className="text-amber-700">CGP: {coupon.investisseur_cgp}</span>
+                                              </>
+                                            )}
+                                            {!coupon.has_rib && (
+                                              <>
+                                                <span>•</span>
+                                                <span className="text-red-600">⚠️ RIB manquant</span>
+                                              </>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-4 ml-4">
+                                        <div className="text-right">
+                                          <p className="text-lg font-bold text-green-600">
+                                            {formatCurrency(coupon.montant_net)}
+                                          </p>
+                                          <p className="text-xs text-slate-500">
+                                            Brut: {formatCurrency(coupon.montant_coupon)}
+                                          </p>
+                                        </div>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${badge.className} whitespace-nowrap`}>
+                                          {badge.text}
+                                        </span>
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            onClick={() => {
+                                              setSelectedCoupon(coupon);
+                                              setShowDetailsModal(true);
+                                            }}
+                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="Voir détails"
+                                          >
+                                            <Eye className="w-4 h-4" />
+                                          </button>
+                                          {coupon.statut !== 'paye' && (
+                                            <button
+                                              onClick={() => handleMarkAsPaid(coupon)}
+                                              className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
+                                            >
+                                              <CheckCircle className="w-3.5 h-3.5" />
+                                              Payer
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
