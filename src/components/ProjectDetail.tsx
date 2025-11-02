@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 
-// ⚠️ FIX: Import nommé au lieu de default pour AlertModal
+// Import nommé pour AlertModal
 import { AlertModal } from './AlertModal';
 
 // Imports des autres composants
@@ -57,12 +57,44 @@ function ProjectDetail() {
     return new Date(date).toLocaleDateString('fr-FR');
   };
 
-  // Fonction pour récupérer les données du projet
-  const fetchProjectData = useCallback(async () => {
+  // ⚠️ FIX: useEffect simplifié - se déclenche uniquement quand projectId change
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!projectId) return;
+      
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/projects/${projectId}`);
+        if (!response.ok) throw new Error('Erreur réseau');
+        
+        const data = await response.json();
+        
+        setProject(data.project);
+        setEditedProject(data.project);
+        setSubscriptions(data.subscriptions || []);
+        setTranches(data.tranches || []);
+      } catch (error) {
+        console.error('Erreur lors du chargement du projet:', error);
+        setAlertState({
+          isOpen: true,
+          title: 'Erreur',
+          message: 'Impossible de charger les données du projet',
+          type: 'error',
+          onConfirm: () => setAlertState(prev => ({ ...prev, isOpen: false }))
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [projectId]); // ✅ Dépendance uniquement sur projectId
+
+  // Fonction pour recharger les données (appelée manuellement)
+  const refetchProjectData = async () => {
     if (!projectId) return;
     
     try {
-      setLoading(true);
       const response = await fetch(`/api/projects/${projectId}`);
       if (!response.ok) throw new Error('Erreur réseau');
       
@@ -73,23 +105,14 @@ function ProjectDetail() {
       setSubscriptions(data.subscriptions || []);
       setTranches(data.tranches || []);
     } catch (error) {
-      console.error('Erreur lors du chargement du projet:', error);
-      setAlertState({
-        isOpen: true,
-        title: 'Erreur',
-        message: 'Impossible de charger les données du projet',
-        type: 'error',
-        onConfirm: () => setAlertState(prev => ({ ...prev, isOpen: false }))
-      });
-    } finally {
-      setLoading(false);
+      console.error('Erreur:', error);
     }
-  }, [projectId]);
+  };
 
   // Fonction pour mettre à jour le projet
   const handleUpdateProject = async () => {
     try {
-      if (!editedProject.nom_projet?.trim()) {
+      if (!editedProject?.nom_projet?.trim()) {
         setAlertState({
           isOpen: true,
           title: 'Erreur de validation',
@@ -255,11 +278,6 @@ function ProjectDetail() {
       }
     });
   };
-
-  // Charger les données au montage
-  useEffect(() => {
-    fetchProjectData();
-  }, [fetchProjectData]);
 
   if (loading) {
     return (
@@ -571,7 +589,7 @@ function ProjectDetail() {
             onClose={() => setShowPaymentWizard(false)}
             onSuccess={() => {
               setShowPaymentWizard(false);
-              fetchProjectData();
+              refetchProjectData();
             }}
           />
         )}
@@ -618,7 +636,7 @@ function ProjectDetail() {
         )}
       </div>
 
-      {/* Alert Modal - Import nommé */}
+      {/* Alert Modal */}
       <AlertModal
         isOpen={alertState.isOpen}
         onClose={() => setAlertState({ ...alertState, isOpen: false })}
