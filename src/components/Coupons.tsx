@@ -541,11 +541,11 @@ export function Coupons({ organization }: CouponsProps) {
                     return (
                       <div key={tranche.trancheId}>
                         {/* Tranche Header */}
-                        <button
-                          onClick={() => toggleTranche(trancheKey)}
-                          className="w-full px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-3">
+                        <div className="w-full px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
+                          <button
+                            onClick={() => toggleTranche(trancheKey)}
+                            className="flex items-center gap-3 flex-1"
+                          >
                             {isExpanded ? (
                               <ChevronDown className="w-5 h-5 text-slate-400" />
                             ) : (
@@ -563,14 +563,26 @@ export function Coupons({ organization }: CouponsProps) {
                                 Non payé
                               </span>
                             )}
-                          </div>
-                          <div className="flex items-center gap-6">
+                          </button>
+                          <div className="flex items-center gap-3">
                             <div className="text-right">
                               <p className="text-sm font-bold text-green-600">{formatCurrency(tranche.total)}</p>
                               <p className="text-xs text-slate-500">{tranche.coupons.length} investisseur{tranche.coupons.length > 1 ? 's' : ''}</p>
                             </div>
+                            {tranche.hasUnpaid && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowPaymentWizard(true);
+                                }}
+                                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-xs font-medium"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                Enregistrer Paiement
+                              </button>
+                            )}
                           </div>
-                        </button>
+                        </div>
 
                         {/* Expanded - Investors */}
                         {isExpanded && (
