@@ -137,172 +137,132 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
     nextCouponAmount: 0,
   });
 
-  // ✅ FIX: useEffect avec fonction async à l'intérieur
-  useEffect(() => {
-    if (!projectId) return;
-
-    const fetchProjectData = async () => {
-      setLoading(true);
-
-      try {
-        // ✅ FIX: Correction de la syntaxe des requêtes Supabase
-        const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
-          supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
-          supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }),
-          // ✅ FIX: Ajout de ! pour spécifier les foreign keys
-          supabase.from('souscriptions').select(`
-            id, 
-            id_souscription, 
-            date_souscription, 
-            nombre_obligations, 
-            montant_investi,
-            coupon_net, 
-            investisseur_id,
-            investisseur:investisseurs!investisseur_id(nom_raison_sociale, cgp_nom),
-            tranche:tranches!tranche_id(tranche_name, date_emission)
-          `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
-          supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }),
-          supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut')
-        ]);
-
-        // Gestion des erreurs
-        if (projectRes.error) {
-          console.error('Error fetching project:', projectRes.error);
-          throw projectRes.error;
-        }
-        if (tranchesRes.error) {
-          console.error('Error fetching tranches:', tranchesRes.error);
-          throw tranchesRes.error;
-        }
-        if (subscriptionsRes.error) {
-          console.error('Error fetching subscriptions:', subscriptionsRes.error);
-          throw subscriptionsRes.error;
-        }
-        if (paymentsRes.error) {
-          console.error('Error fetching payments:', paymentsRes.error);
-        }
-        if (prochainsCouponsRes.error) {
-          console.error('Error fetching prochains coupons:', prochainsCouponsRes.error);
-        }
-
-        const projectData = projectRes.data;
-        const tranchesData = tranchesRes.data || [];
-        const subscriptionsData = subscriptionsRes.data || [];
-        const paymentsData = paymentsRes.data || [];
-        const prochainsCouponsData = prochainsCouponsRes.data || [];
-
-        // Merge prochain_coupon data into subscriptions
-        const subscriptionsWithCoupons = subscriptionsData.map((sub: any) => {
-          const prochainCoupon = prochainsCouponsData.find((pc: any) => pc.souscription_id === sub.id);
-          return {
-            ...sub,
-            prochain_coupon: prochainCoupon || null
-          };
-        });
-
-        setProject(projectData);
-        setTranches(tranchesData);
-        setSubscriptions(subscriptionsWithCoupons as any);
-        setPayments(paymentsData);
-
-        // Calcul des statistiques
-        if (subscriptionsWithCoupons.length > 0) {
-          const totalLeve = subscriptionsWithCoupons.reduce((sum: number, sub: any) => sum + Number(sub.montant_investi || 0), 0);
-          const uniqueInvestors = new Set(subscriptionsWithCoupons.map((s: any) => s.investisseur_id)).size;
-
-          // Get next coupon from the merged data
-          const upcomingCoupons = subscriptionsWithCoupons
-            .filter((s: any) => s.prochain_coupon?.date_prochain_coupon)
-            .sort((a: any, b: any) => 
-              new Date(a.prochain_coupon.date_prochain_coupon).getTime() - 
-              new Date(b.prochain_coupon.date_prochain_coupon).getTime()
-            );
-
-          const nextCoupon = upcomingCoupons[0];
-          const nextCouponAmount = upcomingCoupons
-            .filter((s: any) => s.prochain_coupon?.date_prochain_coupon === nextCoupon?.prochain_coupon?.date_prochain_coupon)
-            .reduce((sum: number, s: any) => sum + Number(s.prochain_coupon.montant_prochain_coupon || 0), 0);
-
-          setStats({
-            totalLeve,
-            investisseursCount: uniqueInvestors,
-            tranchesCount: tranchesData.length,
-            nextCouponDate: nextCoupon?.prochain_coupon?.date_prochain_coupon || null,
-            nextCouponAmount,
-          });
-        } else {
-          // Réinitialiser les stats si aucune souscription
-          setStats({
-            totalLeve: 0,
-            investisseursCount: 0,
-            tranchesCount: tranchesData.length,
-            nextCouponDate: null,
-            nextCouponAmount: 0,
-          });
-        }
-      } catch (error) {
-        console.error('Error in fetchProjectData:', error);
-        setAlertState({
-          isOpen: true,
-          title: 'Erreur',
-          message: 'Impossible de charger les données du projet',
-          type: 'error',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProjectData();
-  }, [projectId]); // ✅ Dépendance uniquement sur projectId
-
-  // Fonction pour recharger les données (utilisée après modifications)
-  const refetchProjectData = async () => {
+  // Fonction pour charger les données (utilisée dans useEffect et après modifications)
+  const fetchData = async () => {
     if (!projectId) return;
 
     try {
-      const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
-        supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
-        supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }),
-        supabase.from('souscriptions').select(`
-          id, 
-          id_souscription, 
-          date_souscription, 
-          nombre_obligations, 
-          montant_investi,
-          coupon_net, 
-          investisseur_id,
-          investisseur:investisseurs!investisseur_id(nom_raison_sociale, cgp_nom),
-          tranche:tranches!tranche_id(tranche_name, date_emission)
-        `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
-        supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }),
-        supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut')
-      ]);
+      // 1. Requête du projet
+      const { data: projectData, error: projectError } = await supabase
+        .from('projets')
+        .select('*')
+        .eq('id', projectId)
+        .maybeSingle();
 
-      const projectData = projectRes.data;
-      const tranchesData = tranchesRes.data || [];
-      const subscriptionsData = subscriptionsRes.data || [];
-      const paymentsData = paymentsRes.data || [];
-      const prochainsCouponsData = prochainsCouponsRes.data || [];
+      if (projectError) {
+        console.error('Error fetching project:', projectError);
+        throw projectError;
+      }
 
-      const subscriptionsWithCoupons = subscriptionsData.map((sub: any) => {
-        const prochainCoupon = prochainsCouponsData.find((pc: any) => pc.souscription_id === sub.id);
+      // 2. Requête des tranches
+      const { data: tranchesData, error: tranchesError } = await supabase
+        .from('tranches')
+        .select('*')
+        .eq('projet_id', projectId)
+        .order('date_emission', { ascending: true });
+
+      if (tranchesError) {
+        console.error('Error fetching tranches:', tranchesError);
+      }
+
+      // 3. Requête des souscriptions SANS les jointures
+      const { data: subscriptionsData, error: subscriptionsError } = await supabase
+        .from('souscriptions')
+        .select('*')
+        .eq('projet_id', projectId)
+        .order('date_souscription', { ascending: false });
+
+      if (subscriptionsError) {
+        console.error('Error fetching subscriptions:', subscriptionsError);
+        throw subscriptionsError;
+      }
+
+      // 4. Récupérer les investisseurs séparément
+      let investisseursMap = new Map();
+      if (subscriptionsData && subscriptionsData.length > 0) {
+        const investisseurIds = [...new Set(subscriptionsData.map((s: any) => s.investisseur_id))];
+        const { data: investisseursData } = await supabase
+          .from('investisseurs')
+          .select('id, nom_raison_sociale, cgp_nom')
+          .in('id', investisseurIds);
+        
+        if (investisseursData) {
+          investisseursData.forEach((inv: any) => {
+            investisseursMap.set(inv.id, inv);
+          });
+        }
+      }
+
+      // 5. Récupérer les tranches pour les souscriptions séparément
+      let tranchesMap = new Map();
+      if (subscriptionsData && subscriptionsData.length > 0) {
+        const trancheIds = [...new Set(subscriptionsData.map((s: any) => s.tranche_id))];
+        const { data: tranchesForSubsData } = await supabase
+          .from('tranches')
+          .select('id, tranche_name, date_emission')
+          .in('id', trancheIds);
+        
+        if (tranchesForSubsData) {
+          tranchesForSubsData.forEach((tr: any) => {
+            tranchesMap.set(tr.id, tr);
+          });
+        }
+      }
+
+      // 6. Requête des paiements
+      const { data: paymentsData } = await supabase
+        .from('paiements')
+        .select('id, id_paiement, type, montant, date_paiement, statut')
+        .eq('projet_id', projectId)
+        .order('date_paiement', { ascending: false });
+
+      // 7. Requête des prochains coupons
+      const { data: prochainsCouponsData } = await supabase
+        .from('v_prochains_coupons')
+        .select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut');
+
+      // Construire les souscriptions avec les données jointes
+      const subscriptionsWithRelations = (subscriptionsData || []).map((sub: any) => {
+        const investisseur = investisseursMap.get(sub.investisseur_id) || {
+          nom_raison_sociale: 'Inconnu',
+          cgp_nom: null
+        };
+        
+        const tranche = tranchesMap.get(sub.tranche_id) || {
+          tranche_name: 'Inconnue',
+          date_emission: null
+        };
+        
+        const prochainCoupon = (prochainsCouponsData || []).find(
+          (pc: any) => pc.souscription_id === sub.id
+        );
+
         return {
           ...sub,
+          investisseur,
+          tranche,
           prochain_coupon: prochainCoupon || null
         };
       });
 
+      // Mettre à jour les états
       setProject(projectData);
-      setTranches(tranchesData);
-      setSubscriptions(subscriptionsWithCoupons as any);
-      setPayments(paymentsData);
+      setTranches(tranchesData || []);
+      setSubscriptions(subscriptionsWithRelations as any);
+      setPayments(paymentsData || []);
 
-      if (subscriptionsWithCoupons.length > 0) {
-        const totalLeve = subscriptionsWithCoupons.reduce((sum: number, sub: any) => sum + Number(sub.montant_investi || 0), 0);
-        const uniqueInvestors = new Set(subscriptionsWithCoupons.map((s: any) => s.investisseur_id)).size;
+      // Calcul des statistiques
+      if (subscriptionsWithRelations.length > 0) {
+        const totalLeve = subscriptionsWithRelations.reduce(
+          (sum: number, sub: any) => sum + Number(sub.montant_investi || 0), 
+          0
+        );
+        const uniqueInvestors = new Set(
+          subscriptionsWithRelations.map((s: any) => s.investisseur_id)
+        ).size;
 
-        const upcomingCoupons = subscriptionsWithCoupons
+        // Prochain coupon
+        const upcomingCoupons = subscriptionsWithRelations
           .filter((s: any) => s.prochain_coupon?.date_prochain_coupon)
           .sort((a: any, b: any) => 
             new Date(a.prochain_coupon.date_prochain_coupon).getTime() - 
@@ -317,15 +277,39 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         setStats({
           totalLeve,
           investisseursCount: uniqueInvestors,
-          tranchesCount: tranchesData.length,
+          tranchesCount: (tranchesData || []).length,
           nextCouponDate: nextCoupon?.prochain_coupon?.date_prochain_coupon || null,
           nextCouponAmount,
         });
+      } else {
+        setStats({
+          totalLeve: 0,
+          investisseursCount: 0,
+          tranchesCount: (tranchesData || []).length,
+          nextCouponDate: null,
+          nextCouponAmount: 0,
+        });
       }
-    } catch (error) {
-      console.error('Error refetching data:', error);
+
+    } catch (error: any) {
+      console.error('Error in fetchData:', error);
+      setAlertState({
+        isOpen: true,
+        title: 'Erreur',
+        message: 'Impossible de charger les données du projet: ' + (error.message || 'Erreur inconnue'),
+        type: 'error',
+      });
     }
   };
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await fetchData();
+      setLoading(false);
+    };
+    loadData();
+  }, [projectId]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -381,7 +365,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             message: 'Tranche supprimée avec succès',
             type: 'success',
           });
-          refetchProjectData(); // ✅ Utilisation de refetchProjectData
+          await fetchData();
         } catch (err: any) {
           console.error('Error deleting tranche:', err);
           setAlertState({
@@ -437,7 +421,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
       setShowEditProject(false);
       
-      await refetchProjectData(); // ✅ Utilisation de refetchProjectData
+      await fetchData();
       
       setAlertState({
         isOpen: true,
@@ -473,7 +457,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
       setShowEditSubscription(false);
       setEditingSubscription(null);
-      await refetchProjectData(); // ✅ Utilisation de refetchProjectData
+      await fetchData();
       setAlertState({
         isOpen: true,
         title: 'Succès',
@@ -512,7 +496,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             message: 'Souscription supprimée avec succès',
             type: 'success',
           });
-          refetchProjectData(); // ✅ Utilisation de refetchProjectData
+          await fetchData();
         } catch (err: any) {
           console.error('Error deleting subscription:', err);
           setAlertState({
@@ -545,10 +529,805 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   return (
     <>
       <div className="space-y-6 px-6 py-6">
-        {/* Le reste du JSX reste identique... */}
-        {/* Je ne répète pas tout le JSX pour économiser de l'espace */}
-        {/* Copiez le reste de votre composant ici */}
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/projets')}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              title="Retour aux projets"
+            >
+              <ArrowLeft className="w-5 h-5 text-slate-600" />
+            </button>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">{project.projet}</h1>
+              <p className="text-slate-600 mt-1">{project.emetteur}</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              setEditedProject(project);
+              setShowEditProject(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
+          >
+            <Edit className="w-4 h-4" />
+            Modifier
+          </button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-slate-600 text-sm">Montant Total Levé</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(stats.totalLeve)}</p>
+              </div>
+              <div className="p-2 bg-green-50 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-slate-600 text-sm">Investisseurs</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{stats.investisseursCount}</p>
+              </div>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-slate-600 text-sm">Tranches</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{stats.tranchesCount}</p>
+              </div>
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Layers className="w-5 h-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-slate-600 text-sm">Prochain Coupon</p>
+                <p className="text-base font-bold text-slate-900 mt-1">
+                  {stats.nextCouponDate ? formatDate(stats.nextCouponDate) : '-'}
+                </p>
+                <p className="text-sm font-semibold text-green-600 mt-1">
+                  {stats.nextCouponAmount > 0 ? formatCurrency(stats.nextCouponAmount) : '-'}
+                </p>
+              </div>
+              <div className="p-2 bg-orange-50 rounded-lg">
+                <Calendar className="w-5 h-5 text-orange-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Details Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Détails du Projet</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-slate-600">SIREN</p>
+              <p className="text-base font-medium text-slate-900">{project.siren_emetteur || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Représentant</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.prenom_representant && project.nom_representant
+                  ? `${project.prenom_representant} ${project.nom_representant}`
+                  : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Email Représentant</p>
+              <p className="text-base font-medium text-slate-900">{project.email_representant || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Type d'obligation</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.type === 'obligations_simples' ? 'Obligations simples' : 
+                 project.type === 'obligations_convertibles' ? 'Obligations convertibles' : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Taux Nominal</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.taux_nominal ? `${project.taux_nominal}%` : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Périodicité des Coupons</p>
+              <p className="text-base font-medium text-slate-900">
+                {formatFrequence(project.periodicite_coupons)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Maturité</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.maturite_mois ? `${project.maturite_mois} mois` : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Base de calcul</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.base_interet ? `${project.base_interet} jours` : '-'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tranches Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-xl font-bold text-slate-900">Tranches</h2>
+              <button
+                onClick={() => setShowTranchesModal(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+              >
+                Voir tout ({tranches.length})
+              </button>
+            </div>
+            <button
+              onClick={() => {
+                setEditingTranche(null);
+                setShowTrancheWizard(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Nouvelle Tranche
+            </button>
+          </div>
+
+          {tranches.length === 0 ? (
+            <p className="text-center text-slate-400 py-8">Aucune tranche créée</p>
+          ) : (
+            <>
+              <div className="space-y-2">
+                {(showAllTranches ? tranches : tranches.slice(0, TRANCHES_LIMIT)).map((tranche) => {
+                const trancheSubscriptions = subscriptions.filter(
+                  (s) => s.tranche.tranche_name === tranche.tranche_name
+                );
+                const totalInvested = trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0);
+
+                return (
+                  <div
+                    key={tranche.id}
+                    className="flex items-center justify-between px-4 py-2 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <span className="text-sm font-semibold text-slate-900 w-40">{tranche.tranche_name}</span>
+                      <span className="flex items-center gap-1 text-xs text-slate-600">
+                        <CalendarDays className="w-3.5 h-3.5" />
+                        {formatDate(tranche.date_emission)}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-slate-600">
+                        <Coins className="w-3.5 h-3.5" />
+                        {formatCurrency(totalInvested)}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-slate-600">
+                        <UserCircle className="w-3.5 h-3.5" />
+                        {trancheSubscriptions.length}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setEditingTranche(tranche);
+                          setShowTrancheWizard(true);
+                        }}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                        title="Modifier"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTranche(tranche)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              </div>
+
+              {tranches.length > TRANCHES_LIMIT && !showAllTranches && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => setShowAllTranches(true)}
+                    className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
+                  >
+                    Voir toutes les tranches ({tranches.length})
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Subscriptions Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-xl font-bold text-slate-900">Souscriptions</h2>
+              <button
+                onClick={() => setShowSubscriptionsModal(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+              >
+                Voir tout ({subscriptions.length})
+              </button>
+            </div>
+          </div>
+
+          {subscriptions.length === 0 ? (
+            <p className="text-center text-slate-400 py-8">Aucune souscription enregistrée</p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Investisseur
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        CGP
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Tranche
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Montant
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {subscriptions.slice(0, SUBSCRIPTIONS_LIMIT).map((sub) => (
+                    <tr key={sub.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 text-sm text-slate-900">
+                        {sub.investisseur.nom_raison_sociale}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                        {sub.investisseur.cgp_nom || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600">{sub.tranche.tranche_name}</td>
+                      <td className="px-4 py-3 text-sm text-slate-600">
+                      {formatDate(sub.tranche.date_emission)}
+                    </td>
+                      <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
+                        {formatCurrency(sub.montant_investi)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingSubscription(sub);
+                              setShowEditSubscription(true);
+                            }}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Modifier la souscription"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSubscription(sub)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Supprimer la souscription"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+          )}
+        </div>
+
+        {/* Écheancier Section */}
+        <EcheancierCard 
+          projectId={projectId!} 
+          tranches={tranches}
+          onPaymentClick={(trancheId) => {
+            setShowPaymentWizard(true);
+          }}
+          onViewAll={() => {
+            setShowEcheancierModal(true);
+          }}
+        />
+
+        {/* Payments Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Historique des Paiements</h2>
+
+          {payments.length === 0 ? (
+            <p className="text-center text-slate-400 py-8">Aucun paiement enregistré</p>
+          ) : (
+            <div className="space-y-4">
+              {payments.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-2 h-2 rounded-full ${
+                      payment.statut === 'Payé' ? 'bg-green-500' : 'bg-orange-500'
+                    }`} />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {payment.type || 'Paiement'} - {payment.id_paiement}
+                      </p>
+                      <p className="text-xs text-slate-600">{formatDate(payment.date_paiement)}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-slate-900">{formatCurrency(payment.montant)}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      payment.statut === 'Payé'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-orange-100 text-orange-700'
+                    }`}>
+                      {payment.statut}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* TrancheWizard Modal */}
+        {showTrancheWizard && (
+          <TrancheWizard
+            onClose={() => {
+              setShowTrancheWizard(false);
+              setEditingTranche(null);
+            }}
+            onSuccess={() => {
+              setShowTrancheWizard(false);
+              setEditingTranche(null);
+              fetchData();
+            }}
+            preselectedProjectId={projectId}
+            editingTranche={editingTranche || undefined}
+            isEditMode={editingTranche !== null}
+          />
+        )}
+
+        {/* Edit Project Modal */}
+        {showEditProject && project && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-slate-200 sticky top-0 bg-white">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">Modifier le Projet</h3>
+                    <p className="text-sm text-slate-600 mt-1">Mettre à jour les informations du projet</p>
+                  </div>
+                  <button onClick={() => setShowEditProject(false)} className="text-slate-400 hover:text-slate-600">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                {/* Avertissement si modifications financières */}
+                {(editedProject.periodicite_coupons !== project.periodicite_coupons ||
+                  editedProject.taux_nominal !== project.taux_nominal ||
+                  editedProject.maturite_mois !== project.maturite_mois) && 
+                  subscriptions.length > 0 && (
+                  <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3">
+                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-orange-800">
+                      <p className="font-semibold mb-1">Modification de paramètres financiers détectée</p>
+                      <p>Les coupons et échéances de toutes les souscriptions seront automatiquement recalculés.</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  {/* Section Informations Générales */}
+                  <div>
+                    <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+                      Informations Générales
+                    </h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">Nom du projet</label>
+                        <input
+                          type="text"
+                          value={editedProject.projet || ''}
+                          onChange={(e) => setEditedProject({ ...editedProject, projet: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">Émetteur</label>
+                          <input
+                            type="text"
+                            value={editedProject.emetteur || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, emetteur: e.target.value })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">SIREN</label>
+                          <input
+                            type="text"
+                            value={editedProject.siren_emetteur?.toString() || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, siren_emetteur: parseInt(e.target.value) || null })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">Type d'obligation</label>
+                        <select
+                          value={editedProject.type || ''}
+                          onChange={(e) => setEditedProject({ ...editedProject, type: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="obligations_simples">Obligations simples</option>
+                          <option value="obligations_convertibles">Obligations convertibles</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section Paramètres Financiers */}
+                  <div>
+                    <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+                      Paramètres Financiers
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                            Taux Nominal (%)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editedProject.taux_nominal?.toString() || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, taux_nominal: parseFloat(e.target.value) || null })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                            Périodicité des Coupons
+                          </label>
+                          <select
+                            value={editedProject.periodicite_coupons || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, periodicite_coupons: e.target.value })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Sélectionner...</option>
+                            <option value="mensuelle">Mensuelle</option>
+                            <option value="trimestrielle">Trimestrielle</option>
+                            <option value="semestrielle">Semestrielle</option>
+                            <option value="annuelle">Annuelle</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                            Maturité (mois)
+                          </label>
+                          <input
+                            type="number"
+                            value={editedProject.maturite_mois?.toString() || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, maturite_mois: parseInt(e.target.value) || null })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ex: 24"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                            Base de calcul
+                          </label>
+                          <select
+                            value={editedProject.base_interet?.toString() || '360'}
+                            onChange={(e) => setEditedProject({ ...editedProject, base_interet: parseInt(e.target.value) })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="360">360 jours</option>
+                            <option value="365">365 jours</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section Représentants */}
+                  <div>
+                    <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+                      Représentants
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">Prénom représentant</label>
+                          <input
+                            type="text"
+                            value={editedProject.prenom_representant || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, prenom_representant: e.target.value })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">Nom représentant</label>
+                          <input
+                            type="text"
+                            value={editedProject.nom_representant || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, nom_representant: e.target.value })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">Email représentant</label>
+                        <input
+                          type="email"
+                          value={editedProject.email_representant || ''}
+                          onChange={(e) => setEditedProject({ ...editedProject, email_representant: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">Représentant de la masse</label>
+                        <input
+                          type="text"
+                          value={editedProject.representant_masse || ''}
+                          onChange={(e) => setEditedProject({ ...editedProject, representant_masse: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-2">Email représentant de la masse</label>
+                        <input
+                          type="email"
+                          value={editedProject.email_rep_masse || ''}
+                          onChange={(e) => setEditedProject({ ...editedProject, email_rep_masse: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6 pt-6 border-t border-slate-200 sticky bottom-0 bg-white">
+                  <button
+                    onClick={() => setShowEditProject(false)}
+                    className="flex-1 px-4 py-2 text-sm font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleUpdateProject}
+                    className="flex-1 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+                  >
+                    Enregistrer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Subscription Modal */}
+        {showEditSubscription && editingSubscription && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+              <div className="p-6 border-b border-slate-200">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">Modifier la Souscription</h3>
+                    <p className="text-sm text-slate-600 mt-1">
+                      {editingSubscription.investisseur.nom_raison_sociale}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowEditSubscription(false);
+                      setEditingSubscription(null);
+                    }}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Date de souscription
+                    </label>
+                    <input
+                      type="date"
+                      value={editingSubscription.date_souscription || ''}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          date_souscription: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Montant investi (€)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editingSubscription.montant_investi || ''}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          montant_investi: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Nombre d'obligations
+                    </label>
+                    <input
+                      type="number"
+                      value={editingSubscription.nombre_obligations || ''}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          nombre_obligations: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="p-4 bg-slate-50 rounded-lg">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">Tranche :</span>
+                      <span className="font-medium text-slate-900">
+                        {editingSubscription.tranche.tranche_name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-2">
+                      <span className="text-slate-600">Coupon net :</span>
+                      <span className="font-medium text-slate-900">
+                        {formatCurrency(editingSubscription.coupon_net)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setShowEditSubscription(false);
+                      setEditingSubscription(null);
+                    }}
+                    className="flex-1 px-4 py-2 text-sm font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleUpdateSubscription}
+                    className="flex-1 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+                  >
+                    Enregistrer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Wizard Modal */}
+        {showPaymentWizard && (
+          <PaymentWizard
+            onClose={() => setShowPaymentWizard(false)}
+            onSuccess={() => {
+              setShowPaymentWizard(false);
+              fetchData();
+            }}
+          />
+        )}
+
+        {/* Subscriptions Modal */}
+        {showSubscriptionsModal && (
+          <SubscriptionsModal
+            subscriptions={subscriptions}
+            onClose={() => setShowSubscriptionsModal(false)}
+            onEdit={(sub) => {
+              setEditingSubscription(sub);
+              setShowEditSubscription(true);
+            }}
+            onDelete={handleDeleteSubscription}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+          />
+        )}
+
+        {/* Tranches Modal */}
+        {showTranchesModal && (
+          <TranchesModal
+            tranches={tranches}
+            subscriptions={subscriptions}
+            onClose={() => setShowTranchesModal(false)}
+            onEdit={(tranche) => {
+              setEditingTranche(tranche);
+              setShowTrancheWizard(true);
+            }}
+            onDelete={handleDeleteTranche}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+          />
+        )}
+
+        {/* Echeancier Modal */}
+        {showEcheancierModal && (
+          <EcheancierModal
+            projectId={projectId!}
+            onClose={() => setShowEcheancierModal(false)}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+          />
+        )}
       </div>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertState.isOpen}
+        onClose={() => setAlertState({ ...alertState, isOpen: false })}
+        onConfirm={alertState.onConfirm}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+      />
     </>
   );
 }
