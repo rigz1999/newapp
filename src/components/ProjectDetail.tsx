@@ -813,7 +813,8 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               fetchProjectData();
             }}
             preselectedProjectId={projectId}
-            editingTranche={editingTranche}
+            editingTranche={editingTranche || undefined}
+            isEditMode={editingTranche !== null}
           />
         )}
 
