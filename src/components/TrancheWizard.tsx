@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { X, CheckCircle, AlertCircle, Loader } from "lucide-react";
+import { X, CheckCircle, AlertCircle, Loader, Edit } from "lucide-react";
 import { FileUpload } from "./FileUpload";
 
 interface Project {
@@ -8,16 +8,31 @@ interface Project {
   projet: string;
 }
 
+interface Tranche {
+  id: string;
+  tranche_name: string;
+  taux_nominal: number | null;
+  periodicite_coupons: string | null;
+  date_emission: string | null;
+  date_echeance_finale: string | null;
+  duree_mois: number | null;
+  projet_id: string;
+}
+
 interface TrancheWizardProps {
   onClose: () => void;
   onSuccess: () => void;
   preselectedProjectId?: string;
+  editingTranche?: Tranche;  // Nouvelle prop pour l'édition
+  isEditMode?: boolean;       // Indicateur de mode édition
 }
 
 export function TrancheWizard({
   onClose,
   onSuccess,
   preselectedProjectId,
+  editingTranche,
+  isEditMode = false,
 }: TrancheWizardProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
@@ -31,6 +46,13 @@ export function TrancheWizard({
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Nouveaux champs pour l'édition
+  const [tauxNominal, setTauxNominal] = useState<string>("");
+  const [periodiciteCoupons, setPeriodiciteCoupons] = useState("");
+  const [dateEmission, setDateEmission] = useState("");
+  const [dateEcheanceFinale, setDateEcheanceFinale] = useState("");
+  const [dureeMois, setDureeMois] = useState<string>("");
+
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -38,6 +60,20 @@ export function TrancheWizard({
   useEffect(() => {
     if (preselectedProjectId) setSelectedProjectId(preselectedProjectId);
   }, [preselectedProjectId]);
+
+  // Pré-remplir les champs en mode édition
+  useEffect(() => {
+    if (editingTranche && isEditMode) {
+      console.log("🎯 Mode édition activé avec:", editingTranche);
+      setSelectedProjectId(editingTranche.projet_id);
+      setTrancheName(editingTranche.tranche_name);
+      setTauxNominal(editingTranche.taux_nominal?.toString() || "");
+      setPeriodiciteCoupons(editingTranche.periodicite_coupons || "");
+      setDateEmission(editingTranche.date_emission || "");
+      setDateEcheanceFinale(editingTranche.date_echeance_finale || "");
+      setDureeMois(editingTranche.duree_mois?.toString() || "");
+    }
+  }, [editingTranche, isEditMode]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -68,12 +104,75 @@ export function TrancheWizard({
 
   const handleProjectSelect = async (projectId: string) => {
     setSelectedProjectId(projectId);
-    const suggested = await getSuggestedTrancheName(projectId);
-    setSuggestedName(suggested);
-    setTrancheName(suggested);
+    if (!isEditMode) {
+      const suggested = await getSuggestedTrancheName(projectId);
+      setSuggestedName(suggested);
+      setTrancheName(suggested);
+    }
+  };
+
+  // Nouvelle fonction pour mettre à jour une tranche existante
+  const handleUpdateTranche = async () => {
+    if (!editingTranche || !trancheName) {
+      setError("Veuillez remplir le nom de la tranche");
+      return;
+    }
+
+    setProcessing(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      console.log("=== MISE À JOUR TRANCHE ===");
+      console.log("Tranche ID:", editingTranche.id);
+      console.log("Nouvelles données:", {
+        tranche_name: trancheName,
+        taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
+        periodicite_coupons: periodiciteCoupons || null,
+        date_emission: dateEmission || null,
+        date_echeance_finale: dateEcheanceFinale || null,
+        duree_mois: dureeMois ? parseInt(dureeMois) : null,
+      });
+
+      const { error: updateError } = await supabase
+        .from("tranches")
+        .update({
+          tranche_name: trancheName,
+          taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
+          periodicite_coupons: periodiciteCoupons || null,
+          date_emission: dateEmission || null,
+          date_echeance_finale: dateEcheanceFinale || null,
+          duree_mois: dureeMois ? parseInt(dureeMois) : null,
+        })
+        .eq("id", editingTranche.id);
+
+      if (updateError) throw updateError;
+
+      setSuccessMessage("Tranche mise à jour avec succès");
+      console.log("✅ Tranche mise à jour");
+
+      // Fermer après 1 seconde
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1000);
+
+    } catch (err: any) {
+      console.error("=== ERREUR MISE À JOUR ===", err);
+      setError(err.message || "Erreur lors de la mise à jour");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleSubmit = async () => {
+    // Si en mode édition, appeler la fonction de mise à jour
+    if (isEditMode && editingTranche) {
+      await handleUpdateTranche();
+      return;
+    }
+
+    // Sinon, créer une nouvelle tranche (code existant)
     if (!selectedProjectId || !trancheName || !csvFile) {
       setError("Veuillez remplir tous les champs requis");
       return;
@@ -93,7 +192,7 @@ export function TrancheWizard({
       // Create FormData for the Edge Function
       const form = new FormData();
       form.append("projet_id", selectedProjectId);
-      form.append("tranche_name", trancheName); // Send tranche name, function will create it
+      form.append("tranche_name", trancheName);
       form.append("file", csvFile, csvFile.name);
 
       // Upload CSV to Edge Function
@@ -124,7 +223,7 @@ export function TrancheWizard({
             
             if (result.success && result.createdSouscriptions > 0) {
               setSuccessMessage(
-                `✅ Import terminé!\n` +
+                `Import terminé!\n` +
                 `${result.createdSouscriptions || 0} souscriptions créées\n` +
                 `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
                 `${result.updatedInvestisseurs || 0} investisseurs mis à jour`
@@ -170,7 +269,12 @@ export function TrancheWizard({
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl">
-          <h3 className="text-xl font-bold text-slate-900">Nouvelle Tranche</h3>
+          <div className="flex items-center gap-2">
+            {isEditMode && <Edit className="w-5 h-5 text-blue-600" />}
+            <h3 className="text-xl font-bold text-slate-900">
+              {isEditMode ? "Modifier la Tranche" : "Nouvelle Tranche"}
+            </h3>
+          </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600" disabled={processing}>
             <X className="w-6 h-6" />
           </button>
@@ -191,8 +295,8 @@ export function TrancheWizard({
               <select
                 value={selectedProjectId}
                 onChange={(e) => handleProjectSelect(e.target.value)}
-                disabled={processing}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
+                disabled={processing || isEditMode} // Désactivé en mode édition
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50 disabled:bg-slate-50"
               >
                 <option value="">Sélectionnez un projet</option>
                 {projects.map((project) => (
@@ -209,7 +313,7 @@ export function TrancheWizard({
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Nom de la tranche <span className="text-red-600">*</span>
             </label>
-            {suggestedName && (
+            {suggestedName && !isEditMode && (
               <p className="text-sm text-slate-600 mb-2">
                 Nom suggéré: <span className="font-medium">{suggestedName}</span>
               </p>
@@ -224,34 +328,118 @@ export function TrancheWizard({
             />
           </div>
 
-          {/* CSV/Excel upload */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Fichier du registre <span className="text-red-600">*</span>
-            </label>
-            <FileUpload
-              accept=".csv,.xlsx,.xls"
-              onFileSelect={(files) => {
-                if (files && files.length > 0) {
-                  setCsvFile(files[0]);
-                  setError("");
-                }
-              }}
-              label="Sélectionner le fichier (CSV ou Excel)"
-              description="Le fichier sera importé automatiquement"
-            />
-            {csvFile && (
-              <div className="mt-4 text-center">
-                <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  {csvFile.name}
+          {/* Champs supplémentaires pour l'édition */}
+          {isEditMode && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Taux Nominal (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={tauxNominal}
+                    onChange={(e) => setTauxNominal(e.target.value)}
+                    disabled={processing}
+                    placeholder="Ex: 5.5"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Périodicité des Coupons
+                  </label>
+                  <select
+                    value={periodiciteCoupons}
+                    onChange={(e) => setPeriodiciteCoupons(e.target.value)}
+                    disabled={processing}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
+                  >
+                    <option value="">Sélectionner...</option>
+                    <option value="mensuelle">Mensuelle</option>
+                    <option value="trimestrielle">Trimestrielle</option>
+                    <option value="semestrielle">Semestrielle</option>
+                    <option value="annuelle">Annuelle</option>
+                  </select>
                 </div>
               </div>
-            )}
-          </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Date d'émission
+                  </label>
+                  <input
+                    type="date"
+                    value={dateEmission}
+                    onChange={(e) => setDateEmission(e.target.value)}
+                    disabled={processing}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Date d'échéance finale
+                  </label>
+                  <input
+                    type="date"
+                    value={dateEcheanceFinale}
+                    onChange={(e) => setDateEcheanceFinale(e.target.value)}
+                    disabled={processing}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                  Durée (mois)
+                </label>
+                <input
+                  type="number"
+                  value={dureeMois}
+                  onChange={(e) => setDureeMois(e.target.value)}
+                  disabled={processing}
+                  placeholder="Ex: 24"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                />
+              </div>
+            </>
+          )}
+
+          {/* CSV/Excel upload - Only in creation mode */}
+          {!isEditMode && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
+                Fichier du registre <span className="text-red-600">*</span>
+              </label>
+              <FileUpload
+                accept=".csv,.xlsx,.xls"
+                onFileSelect={(files) => {
+                  if (files && files.length > 0) {
+                    setCsvFile(files[0]);
+                    setError("");
+                  }
+                }}
+                label="Sélectionner le fichier (CSV ou Excel)"
+                description="Le fichier sera importé automatiquement"
+              />
+              {csvFile && (
+                <div className="mt-4 text-center">
+                  <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    {csvFile.name}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Progress bar */}
-          {processing && (
+          {processing && !isEditMode && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-slate-600">
                 <span>Upload en cours...</span>
@@ -312,16 +500,20 @@ export function TrancheWizard({
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={processing || !selectedProjectId || !trancheName || !csvFile}
+                disabled={
+                  processing || 
+                  !trancheName || 
+                  (isEditMode ? false : (!selectedProjectId || !csvFile))
+                }
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {processing ? (
                   <>
                     <Loader className="w-5 h-5 animate-spin" />
-                    Import... {progress}%
+                    {isEditMode ? "Mise à jour..." : `Import... ${progress}%`}
                   </>
                 ) : (
-                  "Créer et importer"
+                  isEditMode ? "Mettre à jour" : "Créer et importer"
                 )}
               </button>
             </>
