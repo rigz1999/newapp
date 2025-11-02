@@ -6,6 +6,8 @@ import { PaymentWizard } from './PaymentWizard';
 import { EcheancierCard } from './EcheancierCard';
 import { SubscriptionsModal } from './SubscriptionsModal';
 import { TranchesModal } from './TranchesModal';
+import { AlertModal } from './AlertModal';
+import { EcheancierModal } from './EcheancierModal';
 import {
   ArrowLeft,
   Edit,
@@ -66,6 +68,7 @@ interface Subscription {
   coupon_net: number;
   investisseur: {
     nom_raison_sociale: string;
+    cgp_nom?: string;
   };
   tranche: {
     tranche_name: string;
@@ -85,6 +88,15 @@ interface Payment {
   montant: number;
   date_paiement: string;
   statut: string;
+}
+
+// Interface pour les modals d'alerte
+interface AlertState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  type: 'success' | 'warning' | 'error' | 'info' | 'confirm';
+  onConfirm?: () => void;
 }
 
 export function ProjectDetail({ organization }: ProjectDetailProps) {
@@ -109,6 +121,14 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false);
   const [showTranchesModal, setShowTranchesModal] = useState(false);
 
+  // État pour le modal d'alerte
+  const [alertState, setAlertState] = useState<AlertState>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
   const TRANCHES_LIMIT = 5;
   const SUBSCRIPTIONS_LIMIT = 5;
 
@@ -129,11 +149,11 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
     const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
       supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
-      supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }), // ← Ordre chronologique
+      supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }),
       supabase.from('souscriptions').select(`
         id, id_souscription, date_souscription, nombre_obligations, montant_investi,
         coupon_net, investisseur_id,
-        investisseur:investisseurs(nom_raison_sociale),
+        investisseur:investisseurs(nom_raison_sociale, cgp_nom),
         tranche:tranches(tranche_name, date_emission)
       `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
       supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }),
@@ -220,25 +240,41 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
     let confirmMessage = `Êtes-vous sûr de vouloir supprimer la tranche "${tranche.tranche_name}" ?`;
 
     if (trancheSubscriptions.length > 0) {
-      confirmMessage += `\n\n⚠️ ATTENTION : Cette tranche contient ${trancheSubscriptions.length} souscription(s) pour un montant total de ${formatCurrency(
+      confirmMessage += `\n\nATTENTION : Cette tranche contient ${trancheSubscriptions.length} souscription(s) pour un montant total de ${formatCurrency(
         trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0)
       )}.`;
       confirmMessage += '\n\nToutes les souscriptions et échéances associées seront également supprimées.';
     }
 
-    if (!window.confirm(confirmMessage)) return;
+    setAlertState({
+      isOpen: true,
+      title: 'Confirmer la suppression',
+      message: confirmMessage,
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from('tranches').delete().eq('id', tranche.id);
 
-    try {
-      const { error } = await supabase.from('tranches').delete().eq('id', tranche.id);
+          if (error) throw error;
 
-      if (error) throw error;
-
-      alert('✅ Tranche supprimée avec succès');
-      fetchProjectData();
-    } catch (err: any) {
-      console.error('Error deleting tranche:', err);
-      alert('❌ Erreur lors de la suppression de la tranche : ' + err.message);
-    }
+          setAlertState({
+            isOpen: true,
+            title: 'Succès',
+            message: 'Tranche supprimée avec succès',
+            type: 'success',
+          });
+          fetchProjectData();
+        } catch (err: any) {
+          console.error('Error deleting tranche:', err);
+          setAlertState({
+            isOpen: true,
+            title: 'Erreur',
+            message: 'Erreur lors de la suppression de la tranche : ' + err.message,
+            type: 'error',
+          });
+        }
+      },
+    });
   };
 
   const handleUpdateProject = async () => {
@@ -251,7 +287,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
       editedProject.maturite_mois !== undefined && editedProject.maturite_mois !== project.maturite_mois;
 
     if (hasFinancialChanges && subscriptions.length > 0) {
-      const confirmMsg = `⚠️ ATTENTION : Vous modifiez des paramètres financiers critiques.\n\n` +
+      const confirmMsg = `ATTENTION : Vous modifiez des paramètres financiers critiques.\n\n` +
         `Cela va automatiquement :\n` +
         `• Mettre à jour toutes les tranches du projet\n` +
         `• Recalculer tous les coupons nets\n` +
@@ -259,14 +295,26 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         `${subscriptions.length} souscription(s) seront impactées.\n\n` +
         `Voulez-vous continuer ?`;
 
-      if (!window.confirm(confirmMsg)) return;
+      setAlertState({
+        isOpen: true,
+        title: 'Modification de paramètres financiers',
+        message: confirmMsg,
+        type: 'confirm',
+        onConfirm: async () => {
+          await performProjectUpdate(hasFinancialChanges);
+        },
+      });
+    } else {
+      await performProjectUpdate(hasFinancialChanges);
     }
+  };
 
+  const performProjectUpdate = async (hasFinancialChanges: boolean) => {
     try {
       const { error } = await supabase
         .from('projets')
         .update(editedProject)
-        .eq('id', project.id);
+        .eq('id', project!.id);
 
       if (error) throw error;
 
@@ -275,10 +323,20 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
       // Recharger toutes les données
       await fetchProjectData();
       
-      alert('✅ Projet mis à jour avec succès' + (hasFinancialChanges ? '\n\nLes coupons et échéances ont été recalculés automatiquement.' : ''));
+      setAlertState({
+        isOpen: true,
+        title: 'Succès',
+        message: 'Projet mis à jour avec succès' + (hasFinancialChanges ? '\n\nLes coupons et échéances ont été recalculés automatiquement.' : ''),
+        type: 'success',
+      });
     } catch (err: any) {
       console.error('Error updating project:', err);
-      alert('❌ Erreur lors de la mise à jour : ' + err.message);
+      setAlertState({
+        isOpen: true,
+        title: 'Erreur',
+        message: 'Erreur lors de la mise à jour : ' + err.message,
+        type: 'error',
+      });
     }
   };
 
@@ -300,11 +358,56 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
       setShowEditSubscription(false);
       setEditingSubscription(null);
       await fetchProjectData();
-      alert('✅ Souscription mise à jour avec succès');
+      setAlertState({
+        isOpen: true,
+        title: 'Succès',
+        message: 'Souscription mise à jour avec succès',
+        type: 'success',
+      });
     } catch (err: any) {
       console.error('Error updating subscription:', err);
-      alert('❌ Erreur lors de la mise à jour : ' + err.message);
+      setAlertState({
+        isOpen: true,
+        title: 'Erreur',
+        message: 'Erreur lors de la mise à jour : ' + err.message,
+        type: 'error',
+      });
     }
+  };
+
+  const handleDeleteSubscription = (sub: Subscription) => {
+    setAlertState({
+      isOpen: true,
+      title: 'Confirmer la suppression',
+      message: `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur.nom_raison_sociale} ?`,
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase
+            .from('souscriptions')
+            .delete()
+            .eq('id', sub.id);
+
+          if (error) throw error;
+
+          setAlertState({
+            isOpen: true,
+            title: 'Succès',
+            message: 'Souscription supprimée avec succès',
+            type: 'success',
+          });
+          fetchProjectData();
+        } catch (err: any) {
+          console.error('Error deleting subscription:', err);
+          setAlertState({
+            isOpen: true,
+            title: 'Erreur',
+            message: 'Erreur lors de la suppression : ' + err.message,
+            type: 'error',
+          });
+        }
+      },
+    });
   };
 
   if (loading) {
@@ -477,7 +580,10 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               </button>
             </div>
             <button
-              onClick={() => setShowTrancheWizard(true)}
+              onClick={() => {
+                setEditingTranche(null);
+                setShowTrancheWizard(true);
+              }}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -625,28 +731,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={async () => {
-                              if (
-                                window.confirm(
-                                  `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur.nom_raison_sociale} ?`
-                                )
-                              ) {
-                                try {
-                                  const { error } = await supabase
-                                    .from('souscriptions')
-                                    .delete()
-                                    .eq('id', sub.id);
-
-                                  if (error) throw error;
-
-                                  alert('✅ Souscription supprimée avec succès');
-                                  fetchProjectData();
-                                } catch (err: any) {
-                                  console.error('Error deleting subscription:', err);
-                                  alert('❌ Erreur lors de la suppression : ' + err.message);
-                                }
-                              }
-                            }}
+                            onClick={() => handleDeleteSubscription(sub)}
                             className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
                             title="Supprimer la souscription"
                           >
@@ -668,16 +753,10 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           projectId={projectId!} 
           tranches={tranches}
           onPaymentClick={(trancheId) => {
-            // Ouvrir le PaymentWizard pour cette tranche
             setShowPaymentWizard(true);
           }}
           onViewAll={() => {
-            // Pour l'instant, juste ouvrir le modal de la première tranche
-            // Vous pouvez créer un modal dédié plus tard
-            if (tranches.length > 0) {
-              setSelectedTrancheForEcheancier(tranches[0]);
-              setShowEcheancierModal(true);
-            }
+            setShowEcheancierModal(true);
           }}
         />
 
@@ -1106,28 +1185,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               setEditingSubscription(sub);
               setShowEditSubscription(true);
             }}
-            onDelete={async (sub) => {
-              if (
-                window.confirm(
-                  `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur.nom_raison_sociale} ?`
-                )
-              ) {
-                try {
-                  const { error } = await supabase
-                    .from('souscriptions')
-                    .delete()
-                    .eq('id', sub.id);
-
-                  if (error) throw error;
-
-                  alert('✅ Souscription supprimée avec succès');
-                  fetchProjectData();
-                } catch (err: any) {
-                  console.error('Error deleting subscription:', err);
-                  alert('❌ Erreur lors de la suppression : ' + err.message);
-                }
-              }
-            }}
+            onDelete={handleDeleteSubscription}
             formatCurrency={formatCurrency}
             formatDate={formatDate}
           />
@@ -1148,7 +1206,27 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             formatDate={formatDate}
           />
         )}
+
+        {/* Echeancier Modal */}
+        {showEcheancierModal && (
+          <EcheancierModal
+            projectId={projectId!}
+            onClose={() => setShowEcheancierModal(false)}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+          />
+        )}
       </div>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertState.isOpen}
+        onClose={() => setAlertState({ ...alertState, isOpen: false })}
+        onConfirm={alertState.onConfirm}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+      />
     </>
   );
 }
