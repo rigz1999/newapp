@@ -50,7 +50,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
 
           // Récupérer les échéances pour ces souscriptions
           const { data: echeances } = await supabase
-            .from('echeances_coupons')
+            .from('coupons_echeances')
             .select('date_echeance, montant_coupon, statut, date_paiement, souscription_id')
             .in('souscription_id', subscriptionIds)
             .order('date_echeance', { ascending: true });
@@ -145,7 +145,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
 
         // Récupérer les échéances
         const { data: echeances } = await supabase
-          .from('echeances_coupons')
+          .from('coupons_echeances')
           .select('*')
           .in('souscription_id', subscriptionIds)
           .order('date_echeance', { ascending: true });
