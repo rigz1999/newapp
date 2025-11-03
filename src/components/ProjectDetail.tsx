@@ -64,9 +64,10 @@ interface Subscription {
   montant_investi: number;
   nombre_obligations: number;
   coupon_net: number;
+  cgp?: string;
   investisseur: {
     nom_raison_sociale: string;
-    cgp_nom?: string;
+    cgp?: string;
   };
   tranche: {
     tranche_name: string;
@@ -147,8 +148,8 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }),
         supabase.from('souscriptions').select(`
           id, id_souscription, date_souscription, nombre_obligations, montant_investi,
-          coupon_net, investisseur_id,
-          investisseur:investisseurs(nom_raison_sociale, cgp_nom),
+          coupon_net, investisseur_id, cgp,
+          investisseur:investisseurs(nom_raison_sociale, cgp),
           tranche:tranches(tranche_name, date_emission)
         `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
         supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }),
@@ -733,7 +734,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                         {sub.investisseur.nom_raison_sociale}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
-                        {sub.investisseur.cgp_nom || '-'}
+                        {sub.cgp || sub.investisseur.cgp || '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">{sub.tranche.tranche_name}</td>
                       <td className="px-4 py-3 text-sm text-slate-600">
@@ -797,7 +798,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-2 h-2 rounded-full ${
-                      payment.statut === 'Payé' ? 'bg-green-500' : 'bg-orange-500'
+                      payment.statut === 'Payé' || payment.statut === 'payé' ? 'bg-green-500' : 'bg-orange-500'
                     }`} />
                     <div>
                       <p className="text-sm font-medium text-slate-900">
@@ -809,7 +810,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
                   <div className="text-right">
                     <p className="text-sm font-semibold text-slate-900">{formatCurrency(payment.montant)}</p>
                     <span className={`text-xs px-2 py-1 rounded-full ${
-                      payment.statut === 'Payé'
+                      payment.statut === 'Payé' || payment.statut === 'payé'
                         ? 'bg-green-100 text-green-700'
                         : 'bg-orange-100 text-orange-700'
                     }`}>
@@ -834,7 +835,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
               fetchProjectData();
             }}
             preselectedProjectId={projectId}
-            editingTranche={editingTranche || undefined}
+            editingTranche={editingTranche}
             isEditMode={editingTranche !== null}
           />
         )}
@@ -842,7 +843,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         {showEditProject && project && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-slate-200 sticky top-0 bg-white">
+              <div className="p-6 border-b border-slate-200 sticky top-0 bg-white z-10">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">Modifier le Projet</h3>
