@@ -1,21 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Calendar, X, CheckCircle, Clock, AlertCircle, DollarSign, Download, ChevronRight, ChevronDown, User, Building2 } from 'lucide-react';
-import { EcheancierModal } from './EcheancierModal';
-
-interface Echeance {
-  id: string;
-  date_echeance: string;
-  montant_coupon: number;
-  statut: string;
-  date_paiement: string | null;
-  souscription_id: string;
-  investisseur: {
-    id: string;
-    nom_raison_sociale: string;
-    type: string;
-  };
-}
+import { Calendar, AlertCircle, Download } from 'lucide-react';
 
 interface EcheancierCardProps {
   projectId: string;
@@ -26,22 +11,7 @@ interface EcheancierCardProps {
 
 export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll }: EcheancierCardProps) {
   const [tranchesStats, setTranchesStats] = useState<Map<string, any>>(new Map());
-  const [tranchesEcheances, setTranchesEcheances] = useState<Map<string, Echeance[]>>(new Map());
   const [loading, setLoading] = useState(true);
-  
-  // ✅ AJOUT : État pour les tranches expandées
-  const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
-
-  // ✅ AJOUT : Fonction toggle
-  const toggleTranche = (trancheId: string) => {
-    const newExpanded = new Set(expandedTranches);
-    if (newExpanded.has(trancheId)) {
-      newExpanded.delete(trancheId);
-    } else {
-      newExpanded.add(trancheId);
-    }
-    setExpandedTranches(newExpanded);
-  };
 
   useEffect(() => {
     if (!projectId || tranches.length === 0) {
@@ -52,46 +22,25 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
     const fetchTranchesEcheanciers = async () => {
       setLoading(true);
       const statsMap = new Map();
-      const echeancesMap = new Map();
 
       for (const tranche of tranches) {
         try {
-          // Récupérer les souscriptions de cette tranche avec investisseurs
           const { data: souscriptions } = await supabase
             .from('souscriptions')
-            .select(`
-              id,
-              investisseur:investisseurs!inner(
-                id,
-                nom_raison_sociale,
-                type
-              )
-            `)
+            .select('id')
             .eq('tranche_id', tranche.id);
 
           if (!souscriptions || souscriptions.length === 0) continue;
 
           const subscriptionIds = souscriptions.map(s => s.id);
 
-          // Récupérer les échéances pour ces souscriptions
           const { data: echeances } = await supabase
             .from('coupons_echeances')
-            .select('id, date_echeance, montant_coupon, statut, date_paiement, souscription_id')
+            .select('date_echeance, montant_coupon, statut, date_paiement, souscription_id')
             .in('souscription_id', subscriptionIds)
             .order('date_echeance', { ascending: true });
 
           if (echeances) {
-            // Enrichir les échéances avec les infos investisseur
-            const enrichedEcheances = echeances.map(e => {
-              const sub = souscriptions.find(s => s.id === e.souscription_id);
-              return {
-                ...e,
-                investisseur: sub?.investisseur || { id: '', nom_raison_sociale: 'Inconnu', type: 'Physique' }
-              };
-            });
-
-            echeancesMap.set(tranche.id, enrichedEcheances);
-
             const now = new Date();
             const payes = echeances.filter(e => e.statut === 'paye').length;
             const enRetard = echeances.filter(e => e.statut === 'en_attente' && new Date(e.date_echeance) < now).length;
@@ -119,7 +68,6 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
       }
 
       setTranchesStats(statsMap);
-      setTranchesEcheances(echeancesMap);
       setLoading(false);
     };
 
@@ -339,27 +287,20 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
 
             const hasRetard = stats.enRetard > 0;
             const prochainCoupon = stats.prochainCoupon;
-            const isExpanded = expandedTranches.has(tranche.id);
-            const echeances = tranchesEcheances.get(tranche.id) || [];
 
             return (
               <div
                 key={tranche.id}
-                className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-all"
+                className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 hover:shadow-sm transition-all"
               >
-                {/* ✅ HEADER CLIQUABLE */}
+                {/* ✅ LIGNE CLIQUABLE qui ouvre le modal */}
                 <button
-                  onClick={() => toggleTranche(tranche.id)}
+                  onClick={() => onViewAll?.()}
                   className="w-full px-4 py-3 hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center justify-between gap-4">
-                    {/* Flèche + Nom de tranche + Alerte */}
+                    {/* Nom de tranche + Alerte si retard */}
                     <div className="flex items-center gap-3 min-w-[200px]">
-                      {isExpanded ? (
-                        <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                      )}
                       <h3 className="text-sm font-semibold text-slate-900">{tranche.tranche_name}</h3>
                       {hasRetard && (
                         <span className="flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
@@ -404,80 +345,6 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
                     </button>
                   </div>
                 </button>
-
-                {/* ✅ DROPDOWN : Liste des échéances */}
-                {isExpanded && (
-                  <div className="border-t border-slate-200 bg-slate-50 px-4 py-4">
-                    {echeances.length === 0 ? (
-                      <p className="text-sm text-slate-500 text-center py-4">
-                        Aucune échéance pour cette tranche
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {/* Header */}
-                        <div className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase tracking-wider pb-2 px-3">
-                          <span className="flex-1">Investisseur</span>
-                          <span className="w-24 text-center">Type</span>
-                          <span className="w-32 text-right">Date échéance</span>
-                          <span className="w-32 text-right">Montant</span>
-                          <span className="w-24 text-center">Statut</span>
-                        </div>
-
-                        {/* Lignes échéances */}
-                        {echeances.map((echeance) => (
-                          <div
-                            key={echeance.id}
-                            className="flex items-center justify-between py-2.5 px-3 bg-white rounded-lg border border-slate-100 hover:border-slate-300 transition-all"
-                          >
-                            <div className="flex items-center gap-2 flex-1">
-                              {echeance.investisseur.type === 'Morale' ? (
-                                <Building2 className="w-4 h-4 text-purple-600" />
-                              ) : (
-                                <User className="w-4 h-4 text-blue-600" />
-                              )}
-                              <span className="text-sm font-medium text-slate-900">
-                                {echeance.investisseur.nom_raison_sociale}
-                              </span>
-                            </div>
-                            <span className="w-24 text-center text-xs text-slate-600">
-                              {echeance.investisseur.type}
-                            </span>
-                            <span className="w-32 text-right text-sm text-slate-600">
-                              {formatDate(echeance.date_echeance)}
-                            </span>
-                            <span className="w-32 text-right text-sm font-semibold text-green-600">
-                              {formatCurrency(echeance.montant_coupon)}
-                            </span>
-                            <span className="w-24 text-center">
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                echeance.statut === 'paye' 
-                                  ? 'bg-green-100 text-green-700' 
-                                  : new Date(echeance.date_echeance) < new Date()
-                                    ? 'bg-red-100 text-red-700'
-                                    : 'bg-yellow-100 text-yellow-700'
-                              }`}>
-                                {echeance.statut === 'paye' ? 'Payé' : new Date(echeance.date_echeance) < new Date() ? 'En retard' : 'À venir'}
-                              </span>
-                            </span>
-                          </div>
-                        ))}
-
-                        {/* Total */}
-                        <div className="flex items-center justify-between pt-3 mt-2 border-t border-slate-300 px-3">
-                          <span className="flex-1 text-sm font-bold text-slate-900">
-                            TOTAL ({echeances.length} échéance{echeances.length > 1 ? 's' : ''})
-                          </span>
-                          <span className="w-24"></span>
-                          <span className="w-32"></span>
-                          <span className="w-32 text-right text-base font-bold text-green-700">
-                            {formatCurrency(echeances.reduce((sum, e) => sum + e.montant_coupon, 0))}
-                          </span>
-                          <span className="w-24"></span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
