@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Calendar, 
@@ -76,7 +76,6 @@ export function Coupons({ organization }: CouponsProps) {
   const [statutFilter, setStatutFilter] = useState('all');
   const [projetFilter, setProjetFilter] = useState('all');
   const [periodeFilter, setPeriodeFilter] = useState('30');
-  const [kpiPeriode, setKpiPeriode] = useState('30');
   
   // Expand/Collapse states
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
@@ -215,25 +214,19 @@ export function Coupons({ organization }: CouponsProps) {
     setFilteredCoupons(filtered);
   };
 
+  // ✅ MODIFICATION : KPI sans filtre de période
   const calculateStats = () => {
     const now = new Date();
-    const days = parseInt(kpiPeriode);
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + days);
     
-    const periodCoupons = coupons.filter(c => {
-      const echeance = new Date(c.date_echeance);
-      return echeance >= now && echeance <= endDate;
-    });
-    
-    const enAttente = periodCoupons.filter(c => {
+    // Calculer sur TOUS les coupons (pas de filtre période)
+    const enAttente = coupons.filter(c => {
       const isOverdue = new Date(c.date_echeance) < now && c.statut !== 'paye';
       return c.statut === 'en_attente' && !isOverdue;
     });
     
-    const payes = periodCoupons.filter(c => c.statut === 'paye');
+    const payes = coupons.filter(c => c.statut === 'paye');
     
-    const enRetard = periodCoupons.filter(c => {
+    const enRetard = coupons.filter(c => {
       return new Date(c.date_echeance) < now && c.statut !== 'paye';
     });
 
@@ -339,16 +332,6 @@ export function Coupons({ organization }: CouponsProps) {
   const groupedData = groupByDateAndTranche(filteredCoupons);
   const totalAmount = filteredCoupons.reduce((sum, c) => sum + c.montant_net, 0);
 
-  const getPeriodeLabel = (days: string) => {
-    switch(days) {
-      case '7': return '7 prochains jours';
-      case '30': return '30 prochains jours';
-      case '90': return '90 prochains jours';
-      case 'all': return 'Toutes périodes';
-      default: return `${days} jours`;
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -388,21 +371,9 @@ export function Coupons({ organization }: CouponsProps) {
         </div>
       </div>
 
-      {/* KPI Period Selector */}
-      <div className="mb-4 flex items-center gap-3">
-        <span className="text-sm font-medium text-slate-700">Statistiques pour:</span>
-        <select
-          value={kpiPeriode}
-          onChange={(e) => setKpiPeriode(e.target.value)}
-          className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="7">7 prochains jours</option>
-          <option value="30">30 prochains jours</option>
-          <option value="90">90 prochains jours</option>
-        </select>
-      </div>
+      {/* ✅ SUPPRIMÉ : Sélecteur de période KPI (plus nécessaire) */}
 
-      {/* Stats Cards */}
+      {/* Stats Cards - ✅ MODIFIÉ : Affiche TOUS les coupons */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-2">
@@ -413,7 +384,7 @@ export function Coupons({ organization }: CouponsProps) {
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enAttente.total)}</h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enAttente.count} coupons</p>
-          <p className="text-xs text-slate-500 mt-2">Sur les {getPeriodeLabel(kpiPeriode)}</p>
+          <p className="text-xs text-slate-500 mt-2">Tous les coupons à venir</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -425,7 +396,7 @@ export function Coupons({ organization }: CouponsProps) {
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.payes.total)}</h3>
           <p className="text-sm text-slate-600 mt-1">{stats.payes.count} coupons</p>
-          <p className="text-xs text-slate-500 mt-2">Sur les {getPeriodeLabel(kpiPeriode)}</p>
+          <p className="text-xs text-slate-500 mt-2">Total historique</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -437,7 +408,19 @@ export function Coupons({ organization }: CouponsProps) {
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enRetard.total)}</h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enRetard.count} coupons</p>
-          <p className="text-xs text-slate-500 mt-2">Sur les {getPeriodeLabel(kpiPeriode)}</p>
+          
+          {/* ✅ AJOUT : Bouton pour afficher les retards */}
+          {stats.enRetard.count > 0 && (
+            <button
+              onClick={() => {
+                setStatutFilter('en_retard');
+                setPeriodeFilter('all');
+              }}
+              className="mt-2 text-xs text-red-600 hover:text-red-700 font-medium underline"
+            >
+              Voir les {stats.enRetard.count} retard{stats.enRetard.count > 1 ? 's' : ''} →
+            </button>
+          )}
         </div>
       </div>
 
