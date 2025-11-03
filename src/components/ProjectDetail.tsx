@@ -24,6 +24,8 @@ import {
   CalendarDays,
   Coins,
   UserCircle,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 
 interface ProjectDetailProps {
@@ -118,6 +120,9 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false);
   const [showTranchesModal, setShowTranchesModal] = useState(false);
   const [showPaymentsModal, setShowPaymentsModal] = useState(false);  // ✅ AJOUT
+
+  // 1) AJOUTÉ : état pour tranches développées
+  const [expandedTrancheIds, setExpandedTrancheIds] = useState<Set<string>>(new Set());
 
   const [alertState, setAlertState] = useState<AlertState>({
     isOpen: false,
@@ -311,6 +316,17 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         }
       },
     });
+  };
+
+  // 2) AJOUTÉ : toggle pour développer / réduire une tranche
+  const toggleTrancheExpand = (trancheId: string) => {
+    const newExpanded = new Set(expandedTrancheIds);
+    if (newExpanded.has(trancheId)) {
+      newExpanded.delete(trancheId);
+    } else {
+      newExpanded.add(trancheId);
+    }
+    setExpandedTrancheIds(newExpanded);
   };
 
   const handleUpdateProject = async () => {
@@ -597,6 +613,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           </div>
         </div>
 
+        {/* 3) REMPLACEMENT COMPLET DE LA SECTION "Tranches" */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-baseline gap-3">
@@ -626,53 +643,128 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
             <>
               <div className="space-y-2">
                 {(showAllTranches ? tranches : tranches.slice(0, TRANCHES_LIMIT)).map((tranche) => {
-                const trancheSubscriptions = subscriptions.filter(
-                  (s) => s.tranche.tranche_name === tranche.tranche_name
-                );
-                const totalInvested = trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0);
+                  const trancheSubscriptions = subscriptions.filter(
+                    (s) => s.tranche.tranche_name === tranche.tranche_name
+                  );
+                  const totalInvested = trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0);
+                  const totalCoupons = trancheSubscriptions.reduce((sum, s) => sum + s.coupon_net, 0);
+                  const isExpanded = expandedTrancheIds.has(tranche.id);
 
-                return (
-                  <div
-                    key={tranche.id}
-                    className="flex items-center justify-between px-4 py-2 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <span className="text-sm font-semibold text-slate-900 w-40">{tranche.tranche_name}</span>
-                      <span className="flex items-center gap-1 text-xs text-slate-600">
-                        <CalendarDays className="w-3.5 h-3.5" />
-                        {formatDate(tranche.date_emission)}
-                      </span>
-                      <span className="flex items-center gap-1 text-xs text-slate-600">
-                        <Coins className="w-3.5 h-3.5" />
-                        {formatCurrency(totalInvested)}
-                      </span>
-                      <span className="flex items-center gap-1 text-xs text-slate-600">
-                        <UserCircle className="w-3.5 h-3.5" />
-                        {trancheSubscriptions.length}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
+                  return (
+                    <div key={tranche.id} className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-all">
+                      {/* Header cliquable */}
                       <button
-                        onClick={() => {
-                          setEditingTranche(tranche);
-                          setShowTrancheWizard(true);
-                        }}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                        title="Modifier"
+                        onClick={() => toggleTrancheExpand(tranche.id)}
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
                       >
-                        <Edit className="w-4 h-4" />
+                        <div className="flex items-center gap-4 flex-1">
+                          {isExpanded ? (
+                            <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                          ) : (
+                            <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                          )}
+                          <span className="text-sm font-semibold text-slate-900 min-w-[160px]">{tranche.tranche_name}</span>
+                          <span className="flex items-center gap-1 text-xs text-slate-600">
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            {formatDate(tranche.date_emission)}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-slate-600">
+                            <Coins className="w-3.5 h-3.5" />
+                            {formatCurrency(totalInvested)}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-slate-600">
+                            <UserCircle className="w-3.5 h-3.5" />
+                            {trancheSubscriptions.length} souscription{trancheSubscriptions.length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingTranche(tranche);
+                              setShowTrancheWizard(true);
+                            }}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                            title="Modifier"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTranche(tranche);
+                            }}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </button>
-                      <button
-                        onClick={() => handleDeleteTranche(tranche)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+
+                      {/* Dropdown des souscriptions */}
+                      {isExpanded && (
+                        <div className="border-t border-slate-200 bg-slate-50 px-4 py-4">
+                          {trancheSubscriptions.length === 0 ? (
+                            <p className="text-sm text-slate-500 text-center py-4">
+                              Aucune souscription pour cette tranche
+                            </p>
+                          ) : (
+                            <div className="space-y-2">
+                              {/* Header du tableau */}
+                              <div className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase tracking-wider pb-2 px-3">
+                                <span className="flex-1">Investisseur</span>
+                                <span className="w-32 text-center">CGP</span>
+                                <span className="w-32 text-right">Montant investi</span>
+                                <span className="w-32 text-right">Coupon net</span>
+                              </div>
+
+                              {/* Lignes de souscriptions */}
+                              {trancheSubscriptions.map((sub) => (
+                                <div
+                                  key={sub.id}
+                                  className="flex items-center justify-between py-2.5 px-3 bg-white rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer"
+                                  onClick={() => {
+                                    setEditingSubscription(sub);
+                                    setShowEditSubscription(true);
+                                  }}
+                                  title="Cliquer pour modifier"
+                                >
+                                  <span className="flex-1 text-sm font-medium text-slate-900">
+                                    {sub.investisseur.nom_raison_sociale}
+                                  </span>
+                                  <span className="w-32 text-center text-xs text-amber-700 font-medium">
+                                    {sub.cgp || sub.investisseur.cgp || '-'}
+                                  </span>
+                                  <span className="w-32 text-right text-sm font-semibold text-green-600">
+                                    {formatCurrency(sub.montant_investi)}
+                                  </span>
+                                  <span className="w-32 text-right text-sm font-medium text-slate-700">
+                                    {formatCurrency(sub.coupon_net)}
+                                  </span>
+                                </div>
+                              ))}
+                              
+                              {/* Ligne de total */}
+                              <div className="flex items-center justify-between pt-3 mt-2 border-t border-slate-300 px-3">
+                                <span className="flex-1 text-sm font-bold text-slate-900">
+                                  TOTAL ({trancheSubscriptions.length} investisseur{trancheSubscriptions.length > 1 ? 's' : ''})
+                                </span>
+                                <span className="w-32"></span>
+                                <span className="w-32 text-right text-base font-bold text-green-700">
+                                  {formatCurrency(totalInvested)}
+                                </span>
+                                <span className="w-32 text-right text-base font-bold text-slate-900">
+                                  {formatCurrency(totalCoupons)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
 
               {tranches.length > TRANCHES_LIMIT && !showAllTranches && (
