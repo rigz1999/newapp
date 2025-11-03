@@ -8,6 +8,7 @@ import { SubscriptionsModal } from './SubscriptionsModal';
 import { TranchesModal } from './TranchesModal';
 import { AlertModal } from './AlertModal';
 import { EcheancierModal } from './EcheancierModal';
+import { PaymentsModal } from './PaymentsModal';  // ✅ AJOUT
 import {
   ArrowLeft,
   Edit,
@@ -116,6 +117,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   const [showAllTranches, setShowAllTranches] = useState(false);
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false);
   const [showTranchesModal, setShowTranchesModal] = useState(false);
+  const [showPaymentsModal, setShowPaymentsModal] = useState(false);  // ✅ AJOUT
 
   const [alertState, setAlertState] = useState<AlertState>({
     isOpen: false,
@@ -126,6 +128,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
   const TRANCHES_LIMIT = 5;
   const SUBSCRIPTIONS_LIMIT = 5;
+  const PAYMENTS_LIMIT = 5;  // ✅ AJOUT
 
   const [stats, setStats] = useState({
     totalLeve: 0,
@@ -784,14 +787,25 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           }}
         />
 
+        {/* ✅ SECTION MODIFIÉE - Historique des Paiements */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-4">Historique des Paiements</h2>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-xl font-bold text-slate-900">Historique des Paiements</h2>
+              <button
+                onClick={() => setShowPaymentsModal(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+              >
+                Voir tout ({payments.length})
+              </button>
+            </div>
+          </div>
 
           {payments.length === 0 ? (
             <p className="text-center text-slate-400 py-8">Aucun paiement enregistré</p>
           ) : (
             <div className="space-y-4">
-              {payments.map((payment) => (
+              {payments.slice(0, PAYMENTS_LIMIT).map((payment) => (
                 <div
                   key={payment.id}
                   className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50"
@@ -1225,6 +1239,16 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
           <EcheancierModal
             projectId={projectId!}
             onClose={() => setShowEcheancierModal(false)}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+          />
+        )}
+
+        {/* ✅ AJOUT DU MODAL PAIEMENTS */}
+        {showPaymentsModal && (
+          <PaymentsModal
+            payments={payments}
+            onClose={() => setShowPaymentsModal(false)}
             formatCurrency={formatCurrency}
             formatDate={formatDate}
           />
