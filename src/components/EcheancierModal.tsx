@@ -60,7 +60,7 @@ export function EcheancierModal({ projectId, onClose, formatCurrency, formatDate
       }
 
       const { data: echeancesData, error: echError } = await supabase
-        .from('echeances_coupons')
+        .from('coupons_echeances')
         .select('*')
         .in('souscription_id', subscriptionIds)
         .order('date_echeance', { ascending: true });
