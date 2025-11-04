@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download } from 'lucide-react';
+import { X, Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import * as XLSX from 'xlsx';
 
@@ -20,14 +20,17 @@ interface Echeance {
     id_souscription: string;
     coupon_brut: number;
     coupon_net: number;
+    montant_investi: number;
     investisseur: {
       nom_raison_sociale: string;
       type: string;
     };
     tranche: {
       tranche_name: string;
+      date_echeance_finale: string;
     };
   };
+  isLastEcheance: boolean;
 }
 
 interface DateGroup {
@@ -35,7 +38,9 @@ interface DateGroup {
   echeances: Echeance[];
   totalBrut: number;
   totalNet: number;
+  totalNominal: number;
   count: number;
+  isLastEcheance: boolean;
 }
 
 interface TrancheGroup {
@@ -67,8 +72,9 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
           id_souscription,
           coupon_brut,
           coupon_net,
+          montant_investi,
           investisseur:investisseurs(nom_raison_sociale, type),
-          tranche:tranches(tranche_name)
+          tranche:tranches(tranche_name, date_echeance_finale)
         `)
         .eq('projet_id', projectId);
 
@@ -92,15 +98,19 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
 
       const enrichedEcheances = (echeancesData || []).map(ech => {
         const sub = subscriptionsData?.find(s => s.id === ech.souscription_id);
+        const isLastEcheance = sub?.tranche?.date_echeance_finale === ech.date_echeance;
+        
         return {
           ...ech,
           souscription: {
             id_souscription: sub?.id_souscription || '',
             coupon_brut: sub?.coupon_brut || 0,
             coupon_net: sub?.coupon_net || 0,
+            montant_investi: sub?.montant_investi || 0,
             investisseur: sub?.investisseur || { nom_raison_sociale: '', type: 'Physique' },
-            tranche: sub?.tranche || { tranche_name: '' }
-          }
+            tranche: sub?.tranche || { tranche_name: '', date_echeance_finale: '' }
+          },
+          isLastEcheance
         };
       });
 
@@ -139,9 +149,12 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
       'Tranche': e.souscription.tranche.tranche_name,
       'Investisseur': e.souscription.investisseur.nom_raison_sociale,
       'Type': e.souscription.investisseur.type,
-      'ID Souscription': e.souscription.id_souscription,
       'Coupon Brut': e.souscription.coupon_brut,
       'Coupon Net': e.souscription.coupon_net,
+      'Remboursement Nominal': e.isLastEcheance ? e.souscription.montant_investi : 0,
+      'Total à Payer': e.isLastEcheance 
+        ? e.souscription.coupon_net + e.souscription.montant_investi 
+        : e.souscription.coupon_net,
       'Statut': e.statut === 'paye' ? 'Payé' : 'À venir',
     }));
 
@@ -154,9 +167,10 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
       { wch: 20 }, // Tranche
       { wch: 25 }, // Investisseur
       { wch: 10 }, // Type
-      { wch: 15 }, // ID Souscription
       { wch: 12 }, // Coupon Brut
       { wch: 12 }, // Coupon Net
+      { wch: 18 }, // Remboursement Nominal
+      { wch: 14 }, // Total à Payer
       { wch: 10 }, // Statut
     ];
     
@@ -193,7 +207,9 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
           echeances: [],
           totalBrut: 0,
           totalNet: 0,
-          count: 0
+          totalNominal: 0,
+          count: 0,
+          isLastEcheance: false
         };
         acc[trancheName].dateGroups.push(dateGroup);
       }
@@ -201,6 +217,10 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
       dateGroup.echeances.push(echeance);
       dateGroup.totalBrut += echeance.souscription.coupon_brut;
       dateGroup.totalNet += echeance.souscription.coupon_net;
+      if (echeance.isLastEcheance) {
+        dateGroup.totalNominal += echeance.souscription.montant_investi;
+        dateGroup.isLastEcheance = true;
+      }
       dateGroup.count += 1;
       
       acc[trancheName].totalBrut += echeance.souscription.coupon_brut;
@@ -381,7 +401,9 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                             const isDateExpanded = expandedDates.has(dateKey);
                             
                             return (
-                              <div key={dateKey} className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                              <div key={dateKey} className={`border rounded-lg overflow-hidden bg-white ${
+                                dateGroup.isLastEcheance ? 'border-amber-300 shadow-sm' : 'border-slate-200'
+                              }`}>
                                 {/* Header de date - Cliquable */}
                                 <button
                                   onClick={() => toggleDate(dateKey)}
@@ -398,6 +420,12 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                                       <span className="text-sm font-semibold text-slate-900">
                                         {formatDate(dateGroup.date)}
                                       </span>
+                                      {dateGroup.isLastEcheance && (
+                                        <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
+                                          <AlertCircle className="w-3 h-3" />
+                                          Échéance finale + Remboursement
+                                        </span>
+                                      )}
                                     </div>
                                     <div className="flex items-center gap-4">
                                       <div className="text-xs text-slate-600">
@@ -405,11 +433,17 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                                       </div>
                                       <div className="text-right">
                                         <div className="text-sm font-bold text-green-600">
-                                          {formatCurrency(dateGroup.totalNet)}
+                                          {formatCurrency(dateGroup.totalNet + dateGroup.totalNominal)}
                                         </div>
-                                        <div className="text-xs text-slate-500">
-                                          Brut: {formatCurrency(dateGroup.totalBrut)}
-                                        </div>
+                                        {dateGroup.isLastEcheance ? (
+                                          <div className="text-xs text-slate-500">
+                                            Coupon: {formatCurrency(dateGroup.totalNet)} + Nominal: {formatCurrency(dateGroup.totalNominal)}
+                                          </div>
+                                        ) : (
+                                          <div className="text-xs text-slate-500">
+                                            Brut: {formatCurrency(dateGroup.totalBrut)}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
@@ -424,11 +458,16 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                                           <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase">
                                             Investisseur
                                           </th>
-                                          <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase">
-                                            ID Souscription
-                                          </th>
                                           <th className="px-4 py-2 text-right text-xs font-semibold text-slate-600 uppercase">
                                             Coupon
+                                          </th>
+                                          {dateGroup.isLastEcheance && (
+                                            <th className="px-4 py-2 text-right text-xs font-semibold text-slate-600 uppercase">
+                                              Remboursement
+                                            </th>
+                                          )}
+                                          <th className="px-4 py-2 text-right text-xs font-semibold text-slate-600 uppercase">
+                                            Total à Payer
                                           </th>
                                           <th className="px-4 py-2 text-center text-xs font-semibold text-slate-600 uppercase">
                                             Statut
@@ -450,15 +489,30 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                                                 </span>
                                               </div>
                                             </td>
-                                            <td className="px-4 py-2 text-sm text-slate-600">
-                                              {echeance.souscription.id_souscription}
-                                            </td>
                                             <td className="px-4 py-2 text-right">
                                               <div className="text-base font-bold text-green-600">
                                                 {formatCurrency(echeance.souscription.coupon_net)}
                                               </div>
                                               <div className="text-xs text-slate-500">
                                                 Brut: {formatCurrency(echeance.souscription.coupon_brut)}
+                                              </div>
+                                            </td>
+                                            {echeance.isLastEcheance && (
+                                              <td className="px-4 py-2 text-right">
+                                                <div className="text-base font-bold text-blue-600">
+                                                  {formatCurrency(echeance.souscription.montant_investi)}
+                                                </div>
+                                                <div className="text-xs text-slate-500">
+                                                  Nominal
+                                                </div>
+                                              </td>
+                                            )}
+                                            <td className="px-4 py-2 text-right">
+                                              <div className="text-lg font-bold text-slate-900">
+                                                {formatCurrency(
+                                                  echeance.souscription.coupon_net + 
+                                                  (echeance.isLastEcheance ? echeance.souscription.montant_investi : 0)
+                                                )}
                                               </div>
                                             </td>
                                             <td className="px-4 py-2 text-center">
