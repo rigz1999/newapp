@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Calendar, Coins, TrendingUp, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -25,7 +26,7 @@ interface Echeance {
   };
 }
 
-export function EcheancierModal({ projectId, onClose, formatCurrency, formatDate }: EcheancierModalProps) {
+function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate }: EcheancierModalProps) {
   const [echeances, setEcheances] = useState<Echeance[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'a_venir' | 'paye'>('all');
@@ -107,7 +108,6 @@ export function EcheancierModal({ projectId, onClose, formatCurrency, formatDate
   };
 
   return (
-    // ✅ MODIFICATION : Ajout de z-[9999] pour passer au-dessus de tout
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
       <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
@@ -288,5 +288,13 @@ export function EcheancierModal({ projectId, onClose, formatCurrency, formatDate
         </div>
       </div>
     </div>
+  );
+}
+
+// ✅ SOLUTION : Export avec createPortal
+export function EcheancierModal(props: EcheancierModalProps) {
+  return createPortal(
+    <EcheancierModalContent {...props} />,
+    document.body
   );
 }
