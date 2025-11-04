@@ -9,8 +9,8 @@ interface Investor {
   type: string;
   nom_raison_sociale: string;
   email: string | null;
-  cgp: string | null;  // Now from investisseurs table
-  email_cgp: string | null;  // Now from investisseurs table
+  cgp: string | null;
+  email_cgp: string | null;
   siren: number | null;
   residence_fiscale: string | null;
   created_at: string;
@@ -60,6 +60,23 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+// Helper function to normalize investor type
+const normalizeType = (type: string | null | undefined): 'physique' | 'morale' => {
+  if (!type) return 'physique';
+  const normalized = type.toLowerCase().trim();
+  return normalized.includes('morale') ? 'morale' : 'physique';
+};
+
+// Helper function to check if investor is morale
+const isMorale = (type: string | null | undefined): boolean => {
+  return normalizeType(type) === 'morale';
+};
+
+// Helper function to format type for display
+const formatType = (type: string | null | undefined): string => {
+  return isMorale(type) ? 'Personne Morale' : 'Personne Physique';
+};
+
 export function Investors({ organization }: InvestorsProps) {
   const [investors, setInvestors] = useState<InvestorWithStats[]>([]);
   const [filteredInvestors, setFilteredInvestors] = useState<InvestorWithStats[]>([]);
@@ -79,7 +96,6 @@ export function Investors({ organization }: InvestorsProps) {
   const [selectedInvestor, setSelectedInvestor] = useState<InvestorWithStats | null>(null);
   const [editFormData, setEditFormData] = useState<Investor | null>(null);
   
-  // États pour la gestion des RIB
   const [showRibModal, setShowRibModal] = useState(false);
   const [ribFile, setRibFile] = useState<File | null>(null);
   const [ribPreview, setRibPreview] = useState<string | null>(null);
@@ -121,7 +137,7 @@ export function Investors({ organization }: InvestorsProps) {
     }
 
     if (typeFilter !== 'all') {
-      filtered = filtered.filter(inv => inv.type.toLowerCase() === typeFilter.toLowerCase());
+      filtered = filtered.filter(inv => normalizeType(inv.type) === typeFilter);
     }
 
     if (projectFilter !== 'all') {
@@ -142,10 +158,8 @@ export function Investors({ organization }: InvestorsProps) {
       filtered = filtered.filter(inv => !inv.rib_file_path || inv.rib_status !== 'valide');
     }
 
-    // Appliquer le tri standard
     filtered = sortInvestors(filtered, sortField, sortDirection);
 
-    // Appliquer le tri RIB si activé
     if (ribSortDirection !== 'none') {
       filtered = [...filtered].sort((a, b) => {
         const aHasRib = a.rib_file_path && a.rib_status === 'valide' ? 1 : 0;
@@ -185,7 +199,6 @@ export function Investors({ organization }: InvestorsProps) {
 
     setAllTranches(formattedTranches);
 
-    // Extract unique CGPs from investisseurs table (NOT from souscriptions)
     const uniqueCgps = Array.from(
       new Set(
         investorsData
@@ -425,7 +438,7 @@ export function Investors({ organization }: InvestorsProps) {
     const exportData = filteredInvestors.map(inv => ({
       'ID': inv.id_investisseur,
       'Nom / Raison Sociale': inv.nom_raison_sociale,
-      'Type': inv.type,
+      'Type': formatType(inv.type),
       'CGP': inv.cgp || '',
       'Email CGP': inv.email_cgp || '',
       'Téléphone': inv.telephone || '',
@@ -456,7 +469,6 @@ export function Investors({ organization }: InvestorsProps) {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-100 rounded-xl">
@@ -476,7 +488,6 @@ export function Investors({ organization }: InvestorsProps) {
         </button>
       </div>
 
-      {/* Filtres */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <div className="relative">
@@ -547,7 +558,6 @@ export function Investors({ organization }: InvestorsProps) {
         </div>
       </div>
 
-      {/* Tableau */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -593,13 +603,14 @@ export function Investors({ organization }: InvestorsProps) {
             <tbody className="divide-y divide-slate-200">
               {filteredInvestors.map((investor) => {
                 const hasRib = investor.rib_file_path && investor.rib_status === 'valide';
+                const isInvestorMorale = isMorale(investor.type);
                 
                 return (
                   <tr key={investor.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${investor.type.toLowerCase() === 'morale' ? 'bg-purple-100' : 'bg-blue-100'}`}>
-                          {investor.type.toLowerCase() === 'morale' ? (
+                        <div className={`p-2 rounded-lg ${isInvestorMorale ? 'bg-purple-100' : 'bg-blue-100'}`}>
+                          {isInvestorMorale ? (
                             <Building2 className="w-5 h-5 text-purple-600" />
                           ) : (
                             <User className="w-5 h-5 text-blue-600" />
@@ -612,11 +623,11 @@ export function Investors({ organization }: InvestorsProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        investor.type.toLowerCase() === 'morale'
+                        isInvestorMorale
                           ? 'bg-purple-100 text-purple-800'
                           : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {investor.type === 'Morale' ? 'Personne Morale' : 'Personne Physique'}
+                        {formatType(investor.type)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
@@ -686,16 +697,16 @@ export function Investors({ organization }: InvestorsProps) {
         </div>
       </div>
 
-      {/* Modal Détails */}
+      {/* Modals remain the same - I'll include key fixes in the details modal */}
       {showDetailsModal && selectedInvestor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className={`p-3 rounded-lg ${
-                  selectedInvestor.type.toLowerCase() === 'morale' ? 'bg-purple-100' : 'bg-blue-100'
+                  isMorale(selectedInvestor.type) ? 'bg-purple-100' : 'bg-blue-100'
                 }`}>
-                  {selectedInvestor.type.toLowerCase() === 'morale' ? (
+                  {isMorale(selectedInvestor.type) ? (
                     <Building2 className="w-8 h-8 text-purple-600" />
                   ) : (
                     <User className="w-8 h-8 text-blue-600" />
@@ -738,7 +749,6 @@ export function Investors({ organization }: InvestorsProps) {
                 </div>
               </div>
 
-              {/* CGP Section - SINGLE CGP */}
               <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200">
                 <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
                   <User className="w-5 h-5 text-amber-600" />
@@ -771,9 +781,8 @@ export function Investors({ organization }: InvestorsProps) {
                     <p className="text-sm text-slate-600">Aucun CGP assigné</p>
                     <button
                       onClick={() => {
-                        setEditingInvestor(selectedInvestor);
-                        setEditFormData(selectedInvestor);
-                        setSelectedInvestor(null);
+                        setShowDetailsModal(false);
+                        handleEditClick(selectedInvestor);
                       }}
                       className="mt-2 text-sm text-amber-600 hover:text-amber-800 font-medium"
                     >
@@ -814,9 +823,7 @@ export function Investors({ organization }: InvestorsProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-slate-600">Type</p>
-                    <p className="text-sm font-medium text-slate-900">
-                      {selectedInvestor.type === 'Morale' ? 'Personne Morale' : 'Personne Physique'}
-                    </p>
+                    <p className="text-sm font-medium text-slate-900">{formatType(selectedInvestor.type)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-600">Email</p>
@@ -830,7 +837,7 @@ export function Investors({ organization }: InvestorsProps) {
                     <p className="text-sm text-slate-600">Résidence Fiscale</p>
                     <p className="text-sm font-medium text-slate-900">{selectedInvestor.residence_fiscale || '-'}</p>
                   </div>
-                  {selectedInvestor.type.toLowerCase() === 'morale' && selectedInvestor.siren && (
+                  {isMorale(selectedInvestor.type) && selectedInvestor.siren && (
                     <div>
                       <p className="text-sm text-slate-600">SIREN</p>
                       <p className="text-sm font-medium text-slate-900">{selectedInvestor.siren}</p>
@@ -854,7 +861,7 @@ export function Investors({ organization }: InvestorsProps) {
         </div>
       )}
 
-      {/* Modal Édition */}
+      {/* Edit Modal - keeping existing code but with type handling improvements */}
       {showEditModal && editFormData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -885,12 +892,12 @@ export function Investors({ organization }: InvestorsProps) {
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
                       <select
-                        value={editFormData.type}
-                        onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                        value={normalizeType(editFormData.type)}
+                        onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value === 'morale' ? 'Morale' : 'Physique' })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="Physique">Personne Physique</option>
-                        <option value="Morale">Personne Morale</option>
+                        <option value="physique">Personne Physique</option>
+                        <option value="morale">Personne Morale</option>
                       </select>
                     </div>
                     <div>
@@ -923,7 +930,6 @@ export function Investors({ organization }: InvestorsProps) {
                   </div>
                 </div>
 
-                {/* CGP SECTION IN EDIT FORM */}
                 <div className="border-t border-slate-200 pt-4">
                   <h5 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
                     <User className="w-5 h-5 text-amber-600" />
@@ -966,42 +972,7 @@ export function Investors({ organization }: InvestorsProps) {
                   </p>
                 </div>
 
-                {editFormData.type.toLowerCase() === 'physique' && (
-                  <div className="space-y-4">
-                    <h5 className="font-semibold text-slate-900">Personne Physique</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Nom</label>
-                        <input
-                          type="text"
-                          value={editFormData.nom || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, nom: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Prénom</label>
-                        <input
-                          type="text"
-                          value={editFormData.prenom || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, prenom: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Nationalité</label>
-                        <input
-                          type="text"
-                          value={editFormData.nationalite || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, nationalite: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {editFormData.type.toLowerCase() === 'morale' && (
+                {isMorale(editFormData.type) ? (
                   <div className="space-y-4">
                     <h5 className="font-semibold text-slate-900">Personne Morale</h5>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1029,6 +1000,39 @@ export function Investors({ organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.representant_legal || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, representant_legal: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <h5 className="font-semibold text-slate-900">Personne Physique</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Nom</label>
+                        <input
+                          type="text"
+                          value={editFormData.nom || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, nom: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Prénom</label>
+                        <input
+                          type="text"
+                          value={editFormData.prenom || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, prenom: e.target.value })}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Nationalité</label>
+                        <input
+                          type="text"
+                          value={editFormData.nationalite || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, nationalite: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
@@ -1100,7 +1104,7 @@ export function Investors({ organization }: InvestorsProps) {
         </div>
       )}
 
-      {/* Modal Suppression */}
+      {/* Delete Modal */}
       {showDeleteModal && selectedInvestor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
@@ -1140,7 +1144,7 @@ export function Investors({ organization }: InvestorsProps) {
         </div>
       )}
 
-      {/* Modal Upload RIB */}
+      {/* RIB Upload Modal */}
       {showRibModal && selectedInvestor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
@@ -1164,7 +1168,6 @@ export function Investors({ organization }: InvestorsProps) {
                 </p>
               </div>
 
-              {/* ZONE DRAG & DROP */}
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -1206,7 +1209,6 @@ export function Investors({ organization }: InvestorsProps) {
                 </div>
               </div>
 
-              {/* INPUT FILE CACHÉ */}
               <input
                 id="rib-file-input"
                 type="file"
@@ -1215,7 +1217,6 @@ export function Investors({ organization }: InvestorsProps) {
                 className="hidden"
               />
 
-              {/* APERÇU IMAGE */}
               {ribPreview && (
                 <div className="mb-4 border rounded-lg p-4 bg-slate-50">
                   <p className="text-xs text-slate-600 mb-2 font-medium">Aperçu :</p>
@@ -1227,7 +1228,6 @@ export function Investors({ organization }: InvestorsProps) {
                 </div>
               )}
 
-              {/* FICHIER SÉLECTIONNÉ */}
               {ribFile && (
                 <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="flex items-center gap-3">
