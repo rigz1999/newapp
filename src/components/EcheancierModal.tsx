@@ -107,7 +107,8 @@ export function EcheancierModal({ projectId, onClose, formatCurrency, formatDate
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    // ✅ MODIFICATION : Ajout de z-[9999] pour passer au-dessus de tout
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
       <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-slate-200">
