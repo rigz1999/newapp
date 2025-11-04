@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2 } from 'lucide-react';
+import { X, Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import * as XLSX from 'xlsx';
 
 interface EcheancierModalProps {
   projectId: string;
@@ -27,11 +28,18 @@ interface Echeance {
   };
 }
 
-interface TrancheGroup {
-  trancheName: string;
+interface DateGroup {
+  date: string;
   echeances: Echeance[];
   total: number;
   count: number;
+}
+
+interface TrancheGroup {
+  trancheName: string;
+  dateGroups: DateGroup[];
+  totalMontant: number;
+  totalCount: number;
 }
 
 function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate }: EcheancierModalProps) {
@@ -39,6 +47,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'a_venir' | 'paye'>('all');
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchEcheances();
@@ -106,6 +115,45 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
     setExpandedTranches(newExpanded);
   };
 
+  const toggleDate = (key: string) => {
+    const newExpanded = new Set(expandedDates);
+    if (newExpanded.has(key)) {
+      newExpanded.delete(key);
+    } else {
+      newExpanded.add(key);
+    }
+    setExpandedDates(newExpanded);
+  };
+
+  const handleExportExcel = () => {
+    const exportData = filteredEcheances.map(e => ({
+      'Date Échéance': formatDate(e.date_echeance),
+      'Tranche': e.souscription.tranche.tranche_name,
+      'Investisseur': e.souscription.investisseur.nom_raison_sociale,
+      'Type': e.souscription.investisseur.type,
+      'ID Souscription': e.souscription.id_souscription,
+      'Montant': e.montant_coupon,
+      'Statut': e.statut === 'paye' ? 'Payé' : 'À venir',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Échéancier');
+    
+    // Ajuster la largeur des colonnes
+    ws['!cols'] = [
+      { wch: 12 }, // Date
+      { wch: 20 }, // Tranche
+      { wch: 25 }, // Investisseur
+      { wch: 10 }, // Type
+      { wch: 15 }, // ID Souscription
+      { wch: 12 }, // Montant
+      { wch: 10 }, // Statut
+    ];
+    
+    XLSX.writeFile(wb, `Echeancier_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   const filteredEcheances = echeances.filter((e) => {
     if (filter === 'all') return true;
     if (filter === 'a_venir') return e.statut === 'a_venir' || e.statut === 'en_attente';
@@ -113,24 +161,47 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
     return true;
   });
 
-  // Grouper par tranche
+  // Grouper par tranche puis par date
   const trancheGroups: TrancheGroup[] = Object.values(
     filteredEcheances.reduce((acc, echeance) => {
       const trancheName = echeance.souscription.tranche.tranche_name;
+      const date = echeance.date_echeance;
+      
       if (!acc[trancheName]) {
         acc[trancheName] = {
           trancheName,
+          dateGroups: [],
+          totalMontant: 0,
+          totalCount: 0
+        };
+      }
+      
+      let dateGroup = acc[trancheName].dateGroups.find(dg => dg.date === date);
+      if (!dateGroup) {
+        dateGroup = {
+          date,
           echeances: [],
           total: 0,
           count: 0
         };
+        acc[trancheName].dateGroups.push(dateGroup);
       }
-      acc[trancheName].echeances.push(echeance);
-      acc[trancheName].total += echeance.montant_coupon;
-      acc[trancheName].count += 1;
+      
+      dateGroup.echeances.push(echeance);
+      dateGroup.total += echeance.montant_coupon;
+      dateGroup.count += 1;
+      
+      acc[trancheName].totalMontant += echeance.montant_coupon;
+      acc[trancheName].totalCount += 1;
+      
       return acc;
     }, {} as Record<string, TrancheGroup>)
   );
+
+  // Trier les dates dans chaque tranche
+  trancheGroups.forEach(group => {
+    group.dateGroups.sort((a, b) => a.date.localeCompare(b.date));
+  });
 
   const stats = {
     total: echeances.length,
@@ -152,12 +223,21 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
               <h3 className="text-2xl font-bold text-slate-900">Échéancier Complet des Coupons</h3>
               <p className="text-sm text-slate-600 mt-1">Tous les paiements de coupons du projet</p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportExcel}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Exporter Excel
+              </button>
+              <button
+                onClick={onClose}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           {/* Stats Cards */}
@@ -230,7 +310,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
           </div>
         </div>
 
-        {/* Content - Groupé par Tranche */}
+        {/* Content - Groupé par Tranche puis Date */}
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -243,7 +323,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
           ) : (
             <div className="space-y-3">
               {trancheGroups.map((group) => {
-                const isExpanded = expandedTranches.has(group.trancheName);
+                const isTrancheExpanded = expandedTranches.has(group.trancheName);
                 
                 return (
                   <div key={group.trancheName} className="border border-slate-200 rounded-lg overflow-hidden">
@@ -254,87 +334,126 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          {isExpanded ? (
+                          {isTrancheExpanded ? (
                             <ChevronDown className="w-5 h-5 text-slate-400" />
                           ) : (
                             <ChevronRight className="w-5 h-5 text-slate-400" />
                           )}
                           <h4 className="text-base font-bold text-slate-900">{group.trancheName}</h4>
+                          <span className="text-sm text-slate-600">
+                            ({group.dateGroups.length} échéance{group.dateGroups.length > 1 ? 's' : ''})
+                          </span>
                         </div>
                         <div className="flex items-center gap-6">
                           <div className="text-sm text-slate-600">
-                            <span className="font-medium">{group.count}</span> coupon{group.count > 1 ? 's' : ''}
+                            <span className="font-medium">{group.totalCount}</span> coupon{group.totalCount > 1 ? 's' : ''}
                           </div>
                           <div className="text-base font-bold text-green-600">
-                            {formatCurrency(group.total)}
+                            {formatCurrency(group.totalMontant)}
                           </div>
                         </div>
                       </div>
                     </button>
 
-                    {/* Dropdown - Détail des souscriptions */}
-                    {isExpanded && (
+                    {/* Dropdown - Dates d'échéance */}
+                    {isTrancheExpanded && (
                       <div className="border-t border-slate-200 bg-slate-50">
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead className="bg-slate-100 border-b border-slate-200">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                  Date
-                                </th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                  Investisseur
-                                </th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                  ID Souscription
-                                </th>
-                                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                  Montant
-                                </th>
-                                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                  Statut
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200 bg-white">
-                              {group.echeances.map((echeance) => (
-                                <tr key={echeance.id} className="hover:bg-slate-50">
-                                  <td className="px-4 py-3 text-sm font-medium text-slate-900">
-                                    {formatDate(echeance.date_echeance)}
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <div className="flex items-center gap-2">
-                                      {echeance.souscription.investisseur.type === 'Morale' ? (
-                                        <Building2 className="w-4 h-4 text-purple-600" />
+                        <div className="space-y-2 p-4">
+                          {group.dateGroups.map((dateGroup) => {
+                            const dateKey = `${group.trancheName}-${dateGroup.date}`;
+                            const isDateExpanded = expandedDates.has(dateKey);
+                            
+                            return (
+                              <div key={dateKey} className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                                {/* Header de date - Cliquable */}
+                                <button
+                                  onClick={() => toggleDate(dateKey)}
+                                  className="w-full px-4 py-3 hover:bg-slate-50 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      {isDateExpanded ? (
+                                        <ChevronDown className="w-4 h-4 text-slate-400" />
                                       ) : (
-                                        <User className="w-4 h-4 text-blue-600" />
+                                        <ChevronRight className="w-4 h-4 text-slate-400" />
                                       )}
-                                      <span className="text-sm text-slate-900">
-                                        {echeance.souscription.investisseur.nom_raison_sociale}
+                                      <Calendar className="w-4 h-4 text-blue-600" />
+                                      <span className="text-sm font-semibold text-slate-900">
+                                        {formatDate(dateGroup.date)}
                                       </span>
                                     </div>
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-slate-600">
-                                    {echeance.souscription.id_souscription}
-                                  </td>
-                                  <td className="px-4 py-3 text-sm text-right font-semibold text-slate-900">
-                                    {formatCurrency(echeance.montant_coupon)}
-                                  </td>
-                                  <td className="px-4 py-3 text-center">
-                                    <span
-                                      className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${
-                                        echeance.statut === 'paye'
-                                          ? 'bg-green-100 text-green-700'
-                                          : 'bg-orange-100 text-orange-700'
-                                      }`}
-                                    >
-                                      {echeance.statut === 'paye' ? 'Payé' : 'À venir'}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                                    <div className="flex items-center gap-4">
+                                      <div className="text-xs text-slate-600">
+                                        {dateGroup.count} investisseur{dateGroup.count > 1 ? 's' : ''}
+                                      </div>
+                                      <div className="text-sm font-bold text-green-600">
+                                        {formatCurrency(dateGroup.total)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </button>
+
+                                {/* Dropdown - Liste des investisseurs */}
+                                {isDateExpanded && (
+                                  <div className="border-t border-slate-200 bg-slate-50">
+                                    <table className="w-full">
+                                      <thead className="bg-slate-100 border-b border-slate-200">
+                                        <tr>
+                                          <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase">
+                                            Investisseur
+                                          </th>
+                                          <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase">
+                                            ID Souscription
+                                          </th>
+                                          <th className="px-4 py-2 text-right text-xs font-semibold text-slate-600 uppercase">
+                                            Montant
+                                          </th>
+                                          <th className="px-4 py-2 text-center text-xs font-semibold text-slate-600 uppercase">
+                                            Statut
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-200 bg-white">
+                                        {dateGroup.echeances.map((echeance) => (
+                                          <tr key={echeance.id} className="hover:bg-slate-50">
+                                            <td className="px-4 py-2">
+                                              <div className="flex items-center gap-2">
+                                                {echeance.souscription.investisseur.type === 'Morale' ? (
+                                                  <Building2 className="w-4 h-4 text-purple-600" />
+                                                ) : (
+                                                  <User className="w-4 h-4 text-blue-600" />
+                                                )}
+                                                <span className="text-sm text-slate-900">
+                                                  {echeance.souscription.investisseur.nom_raison_sociale}
+                                                </span>
+                                              </div>
+                                            </td>
+                                            <td className="px-4 py-2 text-sm text-slate-600">
+                                              {echeance.souscription.id_souscription}
+                                            </td>
+                                            <td className="px-4 py-2 text-sm text-right font-semibold text-slate-900">
+                                              {formatCurrency(echeance.montant_coupon)}
+                                            </td>
+                                            <td className="px-4 py-2 text-center">
+                                              <span
+                                                className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                                  echeance.statut === 'paye'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : 'bg-orange-100 text-orange-700'
+                                                }`}
+                                              >
+                                                {echeance.statut === 'paye' ? 'Payé' : 'À venir'}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -349,7 +468,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
         <div className="p-6 border-t border-slate-200 bg-slate-50">
           <div className="flex justify-between items-center">
             <div className="text-sm text-slate-600">
-              {trancheGroups.length} tranche{trancheGroups.length > 1 ? 's' : ''} • {filteredEcheances.length} échéance{filteredEcheances.length > 1 ? 's' : ''}
+              {trancheGroups.length} tranche{trancheGroups.length > 1 ? 's' : ''} • {filteredEcheances.length} coupon{filteredEcheances.length > 1 ? 's' : ''}
               {filter === 'a_venir' && (
                 <span className="ml-2 font-medium text-orange-600">
                   • Montant total à venir: {formatCurrency(stats.montantAVenir)}
