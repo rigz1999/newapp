@@ -1,23 +1,16 @@
 // ============================================
-// Admin Panel - ONE ORG PER USER VERSION
+// SAFE Admin Panel - No Service Role Key Needed
 // Path: src/components/AdminPanel.tsx
-// Replace with this version that enforces one org per user
+// Replace your AdminPanel.tsx with this
 // ============================================
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Users, Building2, UserPlus, Shield, RefreshCw, 
-  CheckCircle, XCircle, Trash2, Plus, AlertCircle,
+  CheckCircle, Trash2, Plus, AlertCircle,
   Search, UserX
 } from 'lucide-react';
-
-interface User {
-  id: string;
-  email: string;
-  created_at: string;
-  raw_user_meta_data: any;
-}
 
 interface Organization {
   id: string;
@@ -25,15 +18,24 @@ interface Organization {
   created_at: string;
 }
 
-interface UserWithAccess extends User {
+interface Membership {
+  id: string;
+  user_id: string;
+  org_id: string | null;
+  role: string;
+  created_at: string;
+}
+
+interface UserWithAccess {
+  user_id: string;
   hasMembership: boolean;
   orgId?: string;
   orgName?: string;
   role?: string;
 }
 
-export function AdminPanel() {
-  const [users, setUsers] = useState<UserWithAccess[]>([]);
+export default function AdminPanel() {
+  const [memberships, setMemberships] = useState<Membership[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,15 +50,6 @@ export function AdminPanel() {
   const fetchData = async () => {
     setLoading(true);
 
-    // Fetch all users from auth
-    const { data: { users: authUsers }, error: usersError } = await supabase.auth.admin.listUsers();
-
-    if (usersError) {
-      console.error('Error fetching users:', usersError);
-      setLoading(false);
-      return;
-    }
-
     // Fetch all organizations
     const { data: orgs, error: orgsError } = await supabase
       .from('organizations')
@@ -69,96 +62,24 @@ export function AdminPanel() {
       setOrganizations(orgs || []);
     }
 
-    // Fetch all memberships
-    const { data: memberships, error: membershipsError } = await supabase
+    // Fetch all memberships with organization names
+    const { data: membershipData, error: membershipsError } = await supabase
       .from('memberships')
       .select(`
-        user_id,
-        role,
-        org_id,
+        *,
         organizations (
           name
         )
-      `);
+      `)
+      .order('created_at', { ascending: false });
 
     if (membershipsError) {
       console.error('Error fetching memberships:', membershipsError);
+    } else {
+      setMemberships(membershipData || []);
     }
 
-    // Combine data
-    const usersWithAccess: UserWithAccess[] = (authUsers || []).map(user => {
-      const membership = memberships?.find(m => m.user_id === user.id);
-      return {
-        ...user,
-        hasMembership: !!membership,
-        orgId: membership?.org_id || undefined,
-        orgName: membership?.organizations?.name,
-        role: membership?.role
-      };
-    });
-
-    setUsers(usersWithAccess);
     setLoading(false);
-  };
-
-  const handleGrantAccess = async (userId: string, orgId: string, role: string = 'member') => {
-    // Check if user already has an org membership (not super admin)
-    const existingMembership = users.find(u => u.id === userId)?.hasMembership;
-    
-    if (existingMembership) {
-      // User already has access - ask if they want to switch
-      const confirmSwitch = confirm(
-        'Cet utilisateur a déjà accès à une organisation. Voulez-vous changer son organisation?\n\n' +
-        'Ceci supprimera son accès actuel et lui donnera accès à la nouvelle organisation.'
-      );
-      
-      if (!confirmSwitch) return;
-      
-      // Delete old membership (only non-super-admin ones)
-      await supabase
-        .from('memberships')
-        .delete()
-        .eq('user_id', userId)
-        .not('org_id', 'is', null); // Don't delete super admin membership
-    }
-
-    // Create new membership
-    const { error } = await supabase
-      .from('memberships')
-      .insert({
-        user_id: userId,
-        org_id: orgId,
-        role: role
-      });
-
-    if (error) {
-      console.error('Error granting access:', error);
-      alert('Erreur lors de l\'attribution de l\'accès: ' + error.message);
-    } else {
-      alert('✅ Accès accordé avec succès !');
-      fetchData();
-    }
-  };
-
-  const handleRevokeAccess = async (userId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir révoquer l\'accès de cet utilisateur ?')) {
-      return;
-    }
-
-    // Only delete non-super-admin memberships
-    const { error } = await supabase
-      .from('memberships')
-      .delete()
-      .eq('user_id', userId)
-      .not('org_id', 'is', null);
-
-    if (error) {
-      console.error('Error revoking access:', error);
-      alert('Erreur lors de la révocation: ' + error.message);
-    } else {
-      alert('✅ Accès révoqué');
-      fetchData();
-    }
   };
 
   const handleCreateOrganization = async () => {
@@ -189,15 +110,39 @@ export function AdminPanel() {
     setCreating(false);
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.raw_user_meta_data?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  const handleDeleteOrganization = async (orgId: string, orgName: string) => {
+    const hasMemberships = memberships.some(m => m.org_id === orgId);
+    
+    if (hasMemberships) {
+      alert('⚠️ Impossible de supprimer cette organisation car elle contient des utilisateurs. Veuillez d\'abord retirer tous les utilisateurs.');
+      return;
+    }
+
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer "${orgName}" ?`)) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('organizations')
+      .delete()
+      .eq('id', orgId);
+
+    if (error) {
+      console.error('Error deleting organization:', error);
+      alert('Erreur: ' + error.message);
+    } else {
+      alert('✅ Organisation supprimée');
+      fetchData();
+    }
+  };
+
+  const filteredOrganizations = organizations.filter(org =>
+    org.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Separate super admins, regular users with access, and users without access
-  const superAdmins = filteredUsers.filter(u => u.role === 'super_admin' && !u.orgId);
-  const usersWithAccess = filteredUsers.filter(u => u.hasMembership && !(u.role === 'super_admin' && !u.orgId));
-  const usersWithoutAccess = filteredUsers.filter(u => !u.hasMembership);
+  // Separate super admins and regular users
+  const superAdmins = memberships.filter(m => m.role === 'super_admin' && !m.org_id);
+  const regularMemberships = memberships.filter(m => !(m.role === 'super_admin' && !m.org_id));
 
   if (loading) {
     return (
@@ -233,20 +178,20 @@ export function AdminPanel() {
         {/* Stats */}
         <div className="grid grid-cols-4 gap-4">
           <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <p className="text-sm text-slate-600 mb-1">Total Utilisateurs</p>
-            <p className="text-2xl font-bold text-slate-900">{users.length}</p>
+            <p className="text-sm text-slate-600 mb-1">Organisations</p>
+            <p className="text-2xl font-bold text-slate-900">{organizations.length}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Super Admins</p>
             <p className="text-2xl font-bold text-purple-600">{superAdmins.length}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <p className="text-sm text-slate-600 mb-1">Avec Accès</p>
-            <p className="text-2xl font-bold text-green-600">{usersWithAccess.length}</p>
+            <p className="text-sm text-slate-600 mb-1">Utilisateurs</p>
+            <p className="text-2xl font-bold text-green-600">{regularMemberships.length}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <p className="text-sm text-slate-600 mb-1">En attente</p>
-            <p className="text-2xl font-bold text-yellow-600">{usersWithoutAccess.length}</p>
+            <p className="text-sm text-slate-600 mb-1">Total Membres</p>
+            <p className="text-2xl font-bold text-blue-600">{memberships.length}</p>
           </div>
         </div>
       </div>
@@ -257,7 +202,7 @@ export function AdminPanel() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Rechercher un utilisateur..."
+            placeholder="Rechercher une organisation..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
@@ -265,7 +210,7 @@ export function AdminPanel() {
         </div>
       </div>
 
-      {/* Super Admins */}
+      {/* Super Admins Section */}
       {superAdmins.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
           <div className="p-6 border-b border-slate-200 bg-purple-50">
@@ -275,53 +220,61 @@ export function AdminPanel() {
             </h2>
           </div>
           <div className="divide-y divide-slate-200">
-            {superAdmins.map(user => (
-              <SuperAdminRow key={user.id} user={user} />
+            {superAdmins.map(membership => (
+              <div key={membership.id} className="p-6 bg-purple-50/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-900">User ID: {membership.user_id.substring(0, 8)}...</p>
+                      <p className="text-sm text-slate-600">Créé le {new Date(membership.created_at).toLocaleDateString('fr-FR')}</p>
+                    </div>
+                  </div>
+                  <div className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+                    Super Admin - Accès Total
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Users Without Access */}
-      {usersWithoutAccess.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
-          <div className="p-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <AlertCircle className="w-6 h-6 text-yellow-600" />
-              Utilisateurs en attente ({usersWithoutAccess.length})
-            </h2>
-          </div>
-          <div className="divide-y divide-slate-200">
-            {usersWithoutAccess.map(user => (
-              <UserRow 
-                key={user.id} 
-                user={user} 
-                organizations={organizations}
-                onGrantAccess={handleGrantAccess}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Users With Access */}
+      {/* Organizations List */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         <div className="p-6 border-b border-slate-200">
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-            Utilisateurs avec accès ({usersWithAccess.length})
+            <Building2 className="w-6 h-6 text-slate-900" />
+            Organisations ({filteredOrganizations.length})
           </h2>
         </div>
         <div className="divide-y divide-slate-200">
-          {usersWithAccess.map(user => (
-            <UserRowWithAccess
-              key={user.id}
-              user={user}
-              organizations={organizations}
-              onRevokeAccess={handleRevokeAccess}
-              onGrantAccess={handleGrantAccess}
-            />
-          ))}
+          {filteredOrganizations.length === 0 ? (
+            <div className="p-12 text-center">
+              <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-600 mb-2">Aucune organisation trouvée</p>
+              <button
+                onClick={() => setShowNewOrgModal(true)}
+                className="text-slate-900 hover:underline text-sm"
+              >
+                Créer une organisation
+              </button>
+            </div>
+          ) : (
+            filteredOrganizations.map(org => {
+              const orgMemberships = memberships.filter(m => m.org_id === org.id);
+              return (
+                <OrganizationRow
+                  key={org.id}
+                  organization={org}
+                  memberCount={orgMemberships.length}
+                  onDelete={handleDeleteOrganization}
+                />
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -342,6 +295,7 @@ export function AdminPanel() {
                 onChange={(e) => setNewOrgName(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
                 placeholder="Acme Corp"
+                autoFocus
               />
             </div>
             <div className="flex gap-3">
@@ -369,213 +323,46 @@ export function AdminPanel() {
   );
 }
 
-// Super Admin Row Component
-function SuperAdminRow({ user }: { user: UserWithAccess }) {
-  return (
-    <div className="p-6 bg-purple-50/50">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-            <Shield className="w-5 h-5 text-purple-600" />
-          </div>
-          <div>
-            <p className="font-medium text-slate-900">
-              {user.raw_user_meta_data?.full_name || 'Utilisateur'}
-            </p>
-            <p className="text-sm text-slate-600">{user.email}</p>
-          </div>
-        </div>
-        <div className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
-          Super Admin - Accès Total
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// User Row Component (without access)
-function UserRow({ 
-  user, 
-  organizations, 
-  onGrantAccess 
+// Organization Row Component
+function OrganizationRow({ 
+  organization, 
+  memberCount,
+  onDelete 
 }: { 
-  user: UserWithAccess; 
-  organizations: Organization[];
-  onGrantAccess: (userId: string, orgId: string, role: string) => void;
+  organization: Organization;
+  memberCount: number;
+  onDelete: (orgId: string, orgName: string) => void;
 }) {
-  const [selectedOrg, setSelectedOrg] = useState('');
-  const [selectedRole, setSelectedRole] = useState('member');
-
-  const handleGrant = () => {
-    if (!selectedOrg) {
-      alert('Veuillez sélectionner une organisation');
-      return;
-    }
-    onGrantAccess(user.id, selectedOrg, selectedRole);
-  };
-
-  return (
-    <div className="p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-              <UserX className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="font-medium text-slate-900">
-                {user.raw_user_meta_data?.full_name || 'Utilisateur'}
-              </p>
-              <p className="text-sm text-slate-600">{user.email}</p>
-            </div>
-          </div>
-          <p className="text-xs text-slate-500">
-            Inscrit le {new Date(user.created_at).toLocaleDateString('fr-FR')}
-          </p>
-        </div>
-
-        <div className="flex gap-3">
-          <select
-            value={selectedOrg}
-            onChange={(e) => setSelectedOrg(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
-          >
-            <option value="">Sélectionner organisation</option>
-            {organizations.map(org => (
-              <option key={org.id} value={org.id}>{org.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
-          >
-            <option value="member">Membre</option>
-            <option value="admin">Admin</option>
-            <option value="owner">Propriétaire</option>
-          </select>
-
-          <button
-            onClick={handleGrant}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
-          >
-            <UserPlus className="w-4 h-4" />
-            Donner accès
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// User Row Component (with access)
-function UserRowWithAccess({
-  user,
-  organizations,
-  onRevokeAccess,
-  onGrantAccess
-}: {
-  user: UserWithAccess;
-  organizations: Organization[];
-  onRevokeAccess: (userId: string) => void;
-  onGrantAccess: (userId: string, orgId: string, role: string) => void;
-}) {
-  const [isChanging, setIsChanging] = useState(false);
-  const [newOrg, setNewOrg] = useState('');
-
-  const handleChange = () => {
-    if (!newOrg) {
-      alert('Veuillez sélectionner une organisation');
-      return;
-    }
-    onGrantAccess(user.id, newOrg, user.role || 'member');
-    setIsChanging(false);
-  };
-
-  if (isChanging) {
-    return (
-      <div className="p-6 bg-blue-50">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <Users className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="font-medium text-slate-900">
-                {user.raw_user_meta_data?.full_name || 'Utilisateur'}
-              </p>
-              <p className="text-sm text-slate-600">{user.email}</p>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <select
-              value={newOrg}
-              onChange={(e) => setNewOrg(e.target.value)}
-              className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Nouvelle organisation</option>
-              {organizations.map(org => (
-                <option key={org.id} value={org.id}>{org.name}</option>
-              ))}
-            </select>
-            <button
-              onClick={handleChange}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-            >
-              Changer
-            </button>
-            <button
-              onClick={() => setIsChanging(false)}
-              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircle className="w-5 h-5 text-green-600" />
+          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <p className="font-medium text-slate-900">
-              {user.raw_user_meta_data?.full_name || 'Utilisateur'}
+            <p className="font-medium text-slate-900 text-lg">{organization.name}</p>
+            <p className="text-sm text-slate-600">
+              {memberCount} utilisateur{memberCount !== 1 ? 's' : ''} • Créée le {new Date(organization.created_at).toLocaleDateString('fr-FR')}
             </p>
-            <p className="text-sm text-slate-600">{user.email}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-sm font-medium text-slate-900">{user.orgName}</p>
-            <p className="text-xs text-slate-500">{user.role}</p>
+        <div className="flex items-center gap-3">
+          <div className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
+            {memberCount} membre{memberCount !== 1 ? 's' : ''}
           </div>
-          <button
-            onClick={() => setIsChanging(true)}
-            className="px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm"
-            title="Changer d'organisation"
-          >
-            Changer
-          </button>
-          <button
-            onClick={() => onRevokeAccess(user.id)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            title="Révoquer l'accès"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {memberCount === 0 && (
+            <button
+              onClick={() => onDelete(organization.id, organization.name)}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Supprimer l'organisation"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-export default AdminPanel;
