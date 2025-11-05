@@ -1,7 +1,8 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield } from 'lucide-react';
+import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield, UserCog } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
 
 interface LayoutProps {
   organization: { id: string; name: string; role: string };
@@ -11,14 +12,15 @@ export function Layout({ organization }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [pendingCount, setPendingCount] = useState(0);
+  const { isOrgAdmin, isSuperAdmin } = useAuth();
 
-  // Check if user is super admin
-  const isSuperAdmin = organization.role === 'super_admin';
+  // Check if user is super admin (fallback to organization role)
+  const isSuperAdminUser = isSuperAdmin || organization.role === 'super_admin';
 
   useEffect(() => {
-    if (isSuperAdmin) {
+    if (isSuperAdminUser) {
       fetchPendingCount();
-      
+
       // Subscribe to changes in profiles and memberships
       const profilesSubscription = supabase
         .channel('profiles-changes')
@@ -39,7 +41,7 @@ export function Layout({ organization }: LayoutProps) {
         membershipsSubscription.unsubscribe();
       };
     }
-  }, [isSuperAdmin]);
+  }, [isSuperAdminUser]);
 
   const fetchPendingCount = async () => {
     // Fetch profiles
@@ -155,8 +157,24 @@ export function Layout({ organization }: LayoutProps) {
               <span>Paiements</span>
             </Link>
 
+            {/* Members Management Link - Only for Organization Admins */}
+            {isOrgAdmin && !isSuperAdminUser && (
+              <>
+                <div className="border-t border-slate-700 my-4"></div>
+                <Link
+                  to="/membres"
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive('/membres') ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-blue-600 hover:text-white'
+                  }`}
+                >
+                  <UserCog className="w-5 h-5" />
+                  <span>Gestion Membres</span>
+                </Link>
+              </>
+            )}
+
             {/* Admin Panel Link - Only for Super Admins */}
-            {isSuperAdmin && (
+            {isSuperAdminUser && (
               <>
                 <div className="border-t border-slate-700 my-4"></div>
                 <Link
@@ -181,16 +199,16 @@ export function Layout({ organization }: LayoutProps) {
         <div className="mt-auto p-6 border-t border-slate-800">
           <div className="flex items-center gap-3 mb-4">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-              isSuperAdmin ? 'bg-purple-600' : 'bg-blue-600'
+              isSuperAdminUser ? 'bg-purple-600' : isOrgAdmin ? 'bg-blue-600' : 'bg-green-600'
             }`}>
-              {isSuperAdmin ? 'SA' : organization.name.charAt(0).toUpperCase()}
+              {isSuperAdminUser ? 'SA' : organization.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">
-                {isSuperAdmin ? 'Super Admin' : organization.name}
+                {isSuperAdminUser ? 'Super Admin' : organization.name}
               </p>
               <p className="text-sm text-slate-400 capitalize">
-                {isSuperAdmin ? 'Accès Total' : organization.role}
+                {isSuperAdminUser ? 'Accès Total' : isOrgAdmin ? 'Administrateur' : 'Membre'}
               </p>
             </div>
           </div>

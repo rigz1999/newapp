@@ -31,21 +31,21 @@ export interface Database {
           id: string
           org_id: string | null
           user_id: string
-          role: 'owner' | 'admin' | 'member' | 'super_admin'
+          role: 'member' | 'admin' | 'super_admin'
           created_at: string
         }
         Insert: {
           id?: string
           org_id?: string | null
           user_id: string
-          role?: 'owner' | 'admin' | 'member' | 'super_admin'
+          role?: 'member' | 'admin' | 'super_admin'
           created_at?: string
         }
         Update: {
           id?: string
           org_id?: string | null
           user_id?: string
-          role?: 'owner' | 'admin' | 'member' | 'super_admin'
+          role?: 'member' | 'admin' | 'super_admin'
           created_at?: string
         }
       }

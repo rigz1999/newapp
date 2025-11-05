@@ -14,9 +14,10 @@ const Investors = lazy(() => import('./components/Investors'));
 const Subscriptions = lazy(() => import('./components/Subscriptions'));
 const Payments = lazy(() => import('./components/Payments'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const Members = lazy(() => import('./components/Members'));
 
 function App() {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin, isOrgAdmin } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
 
   const handleLogout = async () => {
@@ -164,8 +165,22 @@ function App() {
               </Suspense>
             }
           />
-          
-          {/* Admin Panel - MUST be before wildcard route */}
+
+          {/* Members Management - For Organization Admins */}
+          <Route
+            path="membres"
+            element={
+              isOrgAdmin ? (
+                <Suspense fallback={<LoadingFallback />}>
+                  <Members />
+                </Suspense>
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+
+          {/* Admin Panel - For Super Admins - MUST be before wildcard route */}
           <Route
             path="admin"
             element={
