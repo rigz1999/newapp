@@ -130,6 +130,8 @@ export default function AdminPanel() {
           full_name: profile.full_name
         }));
 
+      console.log('🔍 PENDING USERS:', pending);
+      
       setPendingUsers(pending);
     }
 
