@@ -40,16 +40,27 @@ export default function Members() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   useEffect(() => {
+    console.log('Members useEffect - organization:', organization);
+    console.log('Members useEffect - orgLoading:', orgLoading);
+
     if (organization) {
       fetchMembers();
       fetchPendingUsers();
+    } else if (!orgLoading) {
+      // Organization is null but we're done loading - stop showing spinner
+      setLoading(false);
     }
-  }, [organization]);
+  }, [organization, orgLoading]);
 
   const fetchMembers = async () => {
-    if (!organization) return;
+    if (!organization) {
+      console.log('No organization, skipping fetchMembers');
+      return;
+    }
 
+    console.log('Fetching members for org:', organization.id);
     setLoading(true);
+
     const { data, error } = await supabase
       .from('memberships')
       .select(`
@@ -67,7 +78,9 @@ export default function Members() {
 
     if (error) {
       console.error('Error fetching members:', error);
+      alert('Erreur lors du chargement des membres: ' + error.message);
     } else {
+      console.log('Members fetched:', data);
       setMembers(data || []);
     }
     setLoading(false);
