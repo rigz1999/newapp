@@ -41,13 +41,9 @@ export function useAuth() {
         .select('role, org_id')
         .eq('user_id', userId);
 
-      console.log('DEBUG - memberships:', memberships);
-
       const isSuperAdmin = memberships?.some(
         m => m.role === 'super_admin' && m.org_id === null
       ) ?? false;
-
-      console.log('DEBUG - isSuperAdmin calculated:', isSuperAdmin);
 
       setIsAdmin(isSuperAdmin);
       setLoading(false);
