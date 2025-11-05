@@ -992,11 +992,20 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
           </div>
 
           {/* Status Badge */}
-          {!user.org_name && (
+          {!user.org_name && user.role !== 'super_admin' && (
             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2">
               <Clock className="w-5 h-5 text-yellow-600" />
               <p className="text-sm text-yellow-800">
                 <strong>En attente :</strong> Cet utilisateur n'a pas encore été assigné à une organisation.
+              </p>
+            </div>
+          )}
+          
+          {user.role === 'super_admin' && (
+            <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-2">
+              <Shield className="w-5 h-5 text-purple-600" />
+              <p className="text-sm text-purple-800">
+                <strong>Super Admin :</strong> Accès complet à toutes les organisations et fonctionnalités.
               </p>
             </div>
           )}
