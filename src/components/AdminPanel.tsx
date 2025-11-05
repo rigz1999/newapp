@@ -1,5 +1,5 @@
 // ============================================
-// SAFE Admin Panel - No Service Role Key Needed
+// SAFE Admin Panel - Avec Dropdown pour détails
 // Path: src/components/AdminPanel.tsx
 // Replace your AdminPanel.tsx with this
 // ============================================
@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase';
 import { 
   Users, Building2, UserPlus, Shield, RefreshCw, 
   CheckCircle, Trash2, Plus, AlertCircle,
-  Search, UserX
+  Search, UserX, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 interface Organization {
@@ -26,14 +26,6 @@ interface Membership {
   created_at: string;
 }
 
-interface UserWithAccess {
-  user_id: string;
-  hasMembership: boolean;
-  orgId?: string;
-  orgName?: string;
-  role?: string;
-}
-
 export default function AdminPanel() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -42,6 +34,7 @@ export default function AdminPanel() {
   const [showNewOrgModal, setShowNewOrgModal] = useState(false);
   const [newOrgName, setNewOrgName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchData();
@@ -134,6 +127,37 @@ export default function AdminPanel() {
       alert('✅ Organisation supprimée');
       fetchData();
     }
+  };
+
+  const handleRemoveMember = async (membershipId: string, userId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir retirer cet utilisateur ?')) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('memberships')
+      .delete()
+      .eq('id', membershipId);
+
+    if (error) {
+      console.error('Error removing member:', error);
+      alert('Erreur: ' + error.message);
+    } else {
+      alert('✅ Utilisateur retiré');
+      fetchData();
+    }
+  };
+
+  const toggleOrgExpanded = (orgId: string) => {
+    setExpandedOrgs(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orgId)) {
+        newSet.delete(orgId);
+      } else {
+        newSet.add(orgId);
+      }
+      return newSet;
+    });
   };
 
   const filteredOrganizations = organizations.filter(org =>
@@ -265,12 +289,16 @@ export default function AdminPanel() {
           ) : (
             filteredOrganizations.map(org => {
               const orgMemberships = memberships.filter(m => m.org_id === org.id);
+              const isExpanded = expandedOrgs.has(org.id);
               return (
                 <OrganizationRow
                   key={org.id}
                   organization={org}
-                  memberCount={orgMemberships.length}
+                  memberships={orgMemberships}
+                  isExpanded={isExpanded}
+                  onToggle={() => toggleOrgExpanded(org.id)}
                   onDelete={handleDeleteOrganization}
+                  onRemoveMember={handleRemoveMember}
                 />
               );
             })
@@ -323,46 +351,107 @@ export default function AdminPanel() {
   );
 }
 
-// Organization Row Component
+// Organization Row Component with Dropdown
 function OrganizationRow({ 
   organization, 
-  memberCount,
-  onDelete 
+  memberships,
+  isExpanded,
+  onToggle,
+  onDelete,
+  onRemoveMember
 }: { 
   organization: Organization;
-  memberCount: number;
+  memberships: Membership[];
+  isExpanded: boolean;
+  onToggle: () => void;
   onDelete: (orgId: string, orgName: string) => void;
+  onRemoveMember: (membershipId: string, userId: string) => void;
 }) {
-  return (
-    <div className="p-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-            <Building2 className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <p className="font-medium text-slate-900 text-lg">{organization.name}</p>
-            <p className="text-sm text-slate-600">
-              {memberCount} utilisateur{memberCount !== 1 ? 's' : ''} • Créée le {new Date(organization.created_at).toLocaleDateString('fr-FR')}
-            </p>
-          </div>
-        </div>
+  const memberCount = memberships.length;
 
-        <div className="flex items-center gap-3">
-          <div className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
-            {memberCount} membre{memberCount !== 1 ? 's' : ''}
-          </div>
-          {memberCount === 0 && (
+  return (
+    <div>
+      {/* Organization Header */}
+      <div className="p-6 hover:bg-slate-50 transition-colors">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
             <button
-              onClick={() => onDelete(organization.id, organization.name)}
-              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Supprimer l'organisation"
+              onClick={onToggle}
+              className="p-1 hover:bg-slate-200 rounded transition-colors"
             >
-              <Trash2 className="w-4 h-4" />
+              {isExpanded ? (
+                <ChevronUp className="w-5 h-5 text-slate-600" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-slate-600" />
+              )}
             </button>
-          )}
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-slate-900 text-lg">{organization.name}</p>
+              <p className="text-sm text-slate-600">
+                {memberCount} utilisateur{memberCount !== 1 ? 's' : ''} • Créée le {new Date(organization.created_at).toLocaleDateString('fr-FR')}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
+              {memberCount} membre{memberCount !== 1 ? 's' : ''}
+            </div>
+            {memberCount === 0 && (
+              <button
+                onClick={() => onDelete(organization.id, organization.name)}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Supprimer l'organisation"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Members List (Expanded) */}
+      {isExpanded && (
+        <div className="bg-slate-50 border-t border-slate-200">
+          {memberCount === 0 ? (
+            <div className="p-8 text-center">
+              <Users className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-600 text-sm">Aucun utilisateur dans cette organisation</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-200">
+              {memberships.map(membership => (
+                <div key={membership.id} className="p-4 pl-20 flex items-center justify-between hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <Users className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        User: {membership.user_id.substring(0, 12)}...
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        Rôle: <span className="font-medium capitalize">{membership.role}</span> • 
+                        Ajouté le {new Date(membership.created_at).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onRemoveMember(membership.id, membership.user_id)}
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    title="Retirer cet utilisateur"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
