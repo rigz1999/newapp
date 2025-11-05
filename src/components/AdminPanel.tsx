@@ -1,5 +1,5 @@
 // ============================================
-// SAFE Admin Panel - Avec Edit & Organisation par Type
+// SAFE Admin Panel - Avec Section "En Attente"
 // Path: src/components/AdminPanel.tsx
 // ============================================
 
@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 import { 
   Users, Building2, UserPlus, Shield, RefreshCw, 
   CheckCircle, Trash2, Plus, AlertCircle,
-  Search, UserX, ChevronDown, ChevronUp, Edit2
+  Search, UserX, ChevronDown, ChevronUp, Edit2, Clock
 } from 'lucide-react';
 
 interface Organization {
@@ -25,9 +25,17 @@ interface Membership {
   created_at: string;
 }
 
+interface PendingUser {
+  user_id: string;
+  email: string;
+  created_at: string;
+  full_name?: string;
+}
+
 export default function AdminPanel() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewOrgModal, setShowNewOrgModal] = useState(false);
@@ -36,7 +44,7 @@ export default function AdminPanel() {
   const [newOrgName, setNewOrgName] = useState('');
   const [creating, setCreating] = useState(false);
   const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['super-admins', 'organizations']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['pending', 'super-admins', 'organizations']));
 
   useEffect(() => {
     fetchData();
@@ -45,6 +53,7 @@ export default function AdminPanel() {
   const fetchData = async () => {
     setLoading(true);
 
+    // Fetch organizations
     const { data: orgs, error: orgsError } = await supabase
       .from('organizations')
       .select('*')
@@ -56,6 +65,7 @@ export default function AdminPanel() {
       setOrganizations(orgs || []);
     }
 
+    // Fetch memberships
     const { data: membershipData, error: membershipsError } = await supabase
       .from('memberships')
       .select(`
@@ -72,7 +82,54 @@ export default function AdminPanel() {
       setMemberships(membershipData || []);
     }
 
+    // Fetch pending users (users without any membership with org_id)
+    // We'll query the profiles table to get user info
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+    } else {
+      // Filter out users who already have an org membership
+      const userIdsWithOrg = new Set(
+        (membershipData || [])
+          .filter(m => m.org_id !== null)
+          .map(m => m.user_id)
+      );
+
+      const pending = (profilesData || [])
+        .filter(profile => !userIdsWithOrg.has(profile.id))
+        .map(profile => ({
+          user_id: profile.id,
+          email: profile.email || 'N/A',
+          created_at: profile.created_at,
+          full_name: profile.full_name
+        }));
+
+      setPendingUsers(pending);
+    }
+
     setLoading(false);
+  };
+
+  const handleGrantAccess = async (userId: string, orgId: string, role: string) => {
+    const { error } = await supabase
+      .from('memberships')
+      .insert({
+        user_id: userId,
+        org_id: orgId,
+        role: role
+      });
+
+    if (error) {
+      console.error('Error granting access:', error);
+      alert('Erreur lors de l\'attribution de l\'accès: ' + error.message);
+    } else {
+      alert('✅ Accès accordé avec succès !');
+      fetchData();
+    }
   };
 
   const handleCreateOrganization = async () => {
@@ -258,8 +315,8 @@ export default function AdminPanel() {
             <p className="text-2xl font-bold text-green-600">{regularMemberships.length}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <p className="text-sm text-slate-600 mb-1">Total Membres</p>
-            <p className="text-2xl font-bold text-blue-600">{memberships.length}</p>
+            <p className="text-sm text-slate-600 mb-1">En attente</p>
+            <p className="text-2xl font-bold text-yellow-600">{pendingUsers.length}</p>
           </div>
         </div>
       </div>
@@ -278,7 +335,42 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Super Admins Section - Collapsible */}
+      {/* Pending Users Section */}
+      {pendingUsers.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+          <button
+            onClick={() => toggleSection('pending')}
+            className="w-full p-6 bg-yellow-50 flex items-center justify-between hover:bg-yellow-100 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              {expandedSections.has('pending') ? (
+                <ChevronUp className="w-5 h-5 text-slate-600" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-slate-600" />
+              )}
+              <Clock className="w-6 h-6 text-yellow-600" />
+              <h2 className="text-xl font-bold text-slate-900">
+                Utilisateurs en attente ({pendingUsers.length})
+              </h2>
+            </div>
+          </button>
+          
+          {expandedSections.has('pending') && (
+            <div className="divide-y divide-slate-200">
+              {pendingUsers.map(user => (
+                <PendingUserRow
+                  key={user.user_id}
+                  user={user}
+                  organizations={organizations}
+                  onGrantAccess={handleGrantAccess}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Super Admins Section */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
         <button
           onClick={() => toggleSection('super-admins')}
@@ -321,7 +413,7 @@ export default function AdminPanel() {
         )}
       </div>
 
-      {/* Organizations Section - Collapsible */}
+      {/* Organizations Section */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         <button
           onClick={() => toggleSection('organizations')}
@@ -459,6 +551,82 @@ export default function AdminPanel() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Pending User Row Component
+function PendingUserRow({ 
+  user, 
+  organizations,
+  onGrantAccess
+}: { 
+  user: PendingUser;
+  organizations: Organization[];
+  onGrantAccess: (userId: string, orgId: string, role: string) => void;
+}) {
+  const [selectedOrg, setSelectedOrg] = useState('');
+  const [selectedRole, setSelectedRole] = useState('member');
+
+  const handleGrant = () => {
+    if (!selectedOrg) {
+      alert('Veuillez sélectionner une organisation');
+      return;
+    }
+    onGrantAccess(user.user_id, selectedOrg, selectedRole);
+  };
+
+  return (
+    <div className="p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+              <Clock className="w-5 h-5 text-yellow-600" />
+            </div>
+            <div>
+              <p className="font-medium text-slate-900">
+                {user.full_name || 'Utilisateur'}
+              </p>
+              <p className="text-sm text-slate-600">{user.email}</p>
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 ml-13">
+            Inscrit le {new Date(user.created_at).toLocaleDateString('fr-FR')}
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <select
+            value={selectedOrg}
+            onChange={(e) => setSelectedOrg(e.target.value)}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+          >
+            <option value="">Sélectionner organisation</option>
+            {organizations.map(org => (
+              <option key={org.id} value={org.id}>{org.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value)}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+          >
+            <option value="member">Membre</option>
+            <option value="admin">Admin</option>
+            <option value="owner">Propriétaire</option>
+          </select>
+
+          <button
+            onClick={handleGrant}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
+          >
+            <UserPlus className="w-4 h-4" />
+            Donner accès
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
