@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign } from 'lucide-react';
+import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface LayoutProps {
@@ -9,6 +9,9 @@ interface LayoutProps {
 export function Layout({ organization }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Check if user is super admin
+  const isSuperAdmin = organization.role === 'super_admin';
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -37,7 +40,7 @@ export function Layout({ organization }: LayoutProps) {
             <Link
               to="/"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                isActive('/') && !isActive('/admin') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
               <Home className="w-5 h-5" />
@@ -88,17 +91,39 @@ export function Layout({ organization }: LayoutProps) {
               <DollarSign className="w-5 h-5" />
               <span>Paiements</span>
             </Link>
+
+            {/* Admin Panel Link - Only for Super Admins */}
+            {isSuperAdmin && (
+              <>
+                <div className="border-t border-slate-700 my-4"></div>
+                <Link
+                  to="/admin"
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive('/admin') ? 'bg-purple-600 text-white' : 'text-slate-300 hover:bg-purple-600 hover:text-white'
+                  }`}
+                >
+                  <Shield className="w-5 h-5" />
+                  <span>Admin Panel</span>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
 
         <div className="mt-auto p-6 border-t border-slate-800">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-semibold">
-              {organization.role === 'admin' ? 'AM' : organization.name.charAt(0).toUpperCase()}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+              isSuperAdmin ? 'bg-purple-600' : 'bg-blue-600'
+            }`}>
+              {isSuperAdmin ? 'SA' : organization.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{organization.role === 'admin' ? 'Admin' : organization.name}</p>
-              <p className="text-sm text-slate-400 capitalize">{organization.role === 'admin' ? 'Manager' : organization.role}</p>
+              <p className="font-medium truncate">
+                {isSuperAdmin ? 'Super Admin' : organization.name}
+              </p>
+              <p className="text-sm text-slate-400 capitalize">
+                {isSuperAdmin ? 'Accès Total' : organization.role}
+              </p>
             </div>
           </div>
           <button
