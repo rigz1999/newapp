@@ -19,6 +19,8 @@ function App() {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
 
+  console.log('🔍 DEBUG - isAdmin:', isAdmin); // DEBUG
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
@@ -64,6 +66,8 @@ function App() {
       </div>
     </div>
   );
+
+  console.log('🔍 DEBUG - About to render routes, isAdmin:', isAdmin); // DEBUG
 
   return (
     <BrowserRouter>
@@ -127,17 +131,19 @@ function App() {
             }
           />
           
-          {/* Admin Panel - Only rendered if isAdmin is true */}
-          {isAdmin && (
-            <Route
-              path="admin"
-              element={
+          {/* Admin Panel route */}
+          <Route
+            path="admin"
+            element={
+              isAdmin ? (
                 <Suspense fallback={<LoadingFallback />}>
                   <AdminPanel />
                 </Suspense>
-              }
-            />
-          )}
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
           
           {/* Wildcard must be LAST */}
           <Route path="*" element={<Navigate to="/" replace />} />
