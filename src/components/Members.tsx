@@ -23,20 +23,24 @@ interface Member {
   };
 }
 
-interface PendingUser {
-  user_id: string;
+interface Invitation {
+  id: string;
   email: string;
-  full_name: string | null;
+  first_name: string;
+  last_name: string;
+  role: string;
+  status: string;
   created_at: string;
+  expires_at: string;
 }
 
 export default function Members() {
   const { user } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
   const [members, setMembers] = useState<Member[]>([]);
-  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -47,7 +51,7 @@ export default function Members() {
 
     if (organization) {
       fetchMembers();
-      fetchPendingUsers();
+      fetchInvitations();
     } else if (!orgLoading) {
       // Organization is null but we're done loading - stop showing spinner
       setLoading(false);

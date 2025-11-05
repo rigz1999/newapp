@@ -71,6 +71,50 @@ export interface Database {
           updated_at?: string
         }
       }
+      invitations: {
+        Row: {
+          id: string
+          email: string
+          first_name: string
+          last_name: string
+          org_id: string
+          role: 'member' | 'admin'
+          invited_by: string
+          token: string
+          status: 'pending' | 'accepted' | 'expired'
+          expires_at: string
+          created_at: string
+          accepted_at: string | null
+        }
+        Insert: {
+          id?: string
+          email: string
+          first_name: string
+          last_name: string
+          org_id: string
+          role?: 'member' | 'admin'
+          invited_by: string
+          token: string
+          status?: 'pending' | 'accepted' | 'expired'
+          expires_at: string
+          created_at?: string
+          accepted_at?: string | null
+        }
+        Update: {
+          id?: string
+          email?: string
+          first_name?: string
+          last_name?: string
+          org_id?: string
+          role?: 'member' | 'admin'
+          invited_by?: string
+          token?: string
+          status?: 'pending' | 'accepted' | 'expired'
+          expires_at?: string
+          created_at?: string
+          accepted_at?: string | null
+        }
+      }
       projects: {
         Row: {
           id: string
