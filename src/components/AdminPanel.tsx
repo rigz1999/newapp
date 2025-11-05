@@ -577,3 +577,5 @@ function UserRowWithAccess({
     </div>
   );
 }
+
+export default AdminPanel;
