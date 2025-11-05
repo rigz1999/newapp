@@ -1,5 +1,5 @@
 // ============================================
-// SAFE Admin Panel - Avec Section "En Attente"
+// Admin Panel - Avec Modals & Vue Détail Utilisateur
 // Path: src/components/AdminPanel.tsx
 // ============================================
 
@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 import { 
   Users, Building2, UserPlus, Shield, RefreshCw, 
   CheckCircle, Trash2, Plus, AlertCircle,
-  Search, UserX, ChevronDown, ChevronUp, Edit2, Clock
+  Search, UserX, ChevronDown, ChevronUp, Edit2, Clock, Eye, X, Mail, Calendar
 } from 'lucide-react';
 
 interface Organization {
@@ -32,15 +32,32 @@ interface PendingUser {
   full_name?: string;
 }
 
+interface UserDetail {
+  user_id: string;
+  email: string;
+  full_name?: string;
+  created_at: string;
+  org_name?: string;
+  role?: string;
+}
+
 export default function AdminPanel() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Modals state
   const [showNewOrgModal, setShowNewOrgModal] = useState(false);
   const [showEditOrgModal, setShowEditOrgModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRemoveUserModal, setShowRemoveUserModal] = useState(false);
+  const [showUserDetailModal, setShowUserDetailModal] = useState(false);
+  
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+  const [deletingItem, setDeletingItem] = useState<{ type: 'org' | 'user'; id: string; name: string } | null>(null);
+  const [selectedUserDetail, setSelectedUserDetail] = useState<UserDetail | null>(null);
   const [newOrgName, setNewOrgName] = useState('');
   const [creating, setCreating] = useState(false);
   const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
@@ -53,7 +70,6 @@ export default function AdminPanel() {
   const fetchData = async () => {
     setLoading(true);
 
-    // Fetch organizations
     const { data: orgs, error: orgsError } = await supabase
       .from('organizations')
       .select('*')
@@ -65,7 +81,6 @@ export default function AdminPanel() {
       setOrganizations(orgs || []);
     }
 
-    // Fetch memberships
     const { data: membershipData, error: membershipsError } = await supabase
       .from('memberships')
       .select(`
@@ -82,8 +97,6 @@ export default function AdminPanel() {
       setMemberships(membershipData || []);
     }
 
-    // Fetch pending users (users without any membership with org_id)
-    // We'll query the profiles table to get user info
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
@@ -92,7 +105,6 @@ export default function AdminPanel() {
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError);
     } else {
-      // Filter out users who already have an org membership
       const userIdsWithOrg = new Set(
         (membershipData || [])
           .filter(m => m.org_id !== null)
@@ -127,14 +139,12 @@ export default function AdminPanel() {
       console.error('Error granting access:', error);
       alert('Erreur lors de l\'attribution de l\'accès: ' + error.message);
     } else {
-      alert('✅ Accès accordé avec succès !');
       fetchData();
     }
   };
 
   const handleCreateOrganization = async () => {
     if (!newOrgName.trim()) {
-      alert('Le nom de l\'organisation est requis');
       return;
     }
 
@@ -151,7 +161,6 @@ export default function AdminPanel() {
       console.error('Error creating organization:', error);
       alert('Erreur: ' + error.message);
     } else {
-      alert('✅ Organisation créée !');
       setNewOrgName('');
       setShowNewOrgModal(false);
       fetchData();
@@ -162,7 +171,6 @@ export default function AdminPanel() {
 
   const handleEditOrganization = async () => {
     if (!editingOrg || !newOrgName.trim()) {
-      alert('Le nom de l\'organisation est requis');
       return;
     }
 
@@ -177,7 +185,6 @@ export default function AdminPanel() {
       console.error('Error updating organization:', error);
       alert('Erreur: ' + error.message);
     } else {
-      alert('✅ Organisation modifiée !');
       setNewOrgName('');
       setShowEditOrgModal(false);
       setEditingOrg(null);
@@ -187,48 +194,92 @@ export default function AdminPanel() {
     setCreating(false);
   };
 
-  const handleDeleteOrganization = async (orgId: string, orgName: string) => {
+  const confirmDeleteOrganization = (orgId: string, orgName: string) => {
     const hasMemberships = memberships.some(m => m.org_id === orgId);
     
     if (hasMemberships) {
-      alert('⚠️ Impossible de supprimer cette organisation car elle contient des utilisateurs. Veuillez d\'abord retirer tous les utilisateurs.');
+      alert('⚠️ Impossible de supprimer cette organisation car elle contient des utilisateurs.');
       return;
     }
 
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer "${orgName}" ?`)) {
-      return;
-    }
+    setDeletingItem({ type: 'org', id: orgId, name: orgName });
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteOrganization = async () => {
+    if (!deletingItem || deletingItem.type !== 'org') return;
 
     const { error } = await supabase
       .from('organizations')
       .delete()
-      .eq('id', orgId);
+      .eq('id', deletingItem.id);
 
     if (error) {
       console.error('Error deleting organization:', error);
       alert('Erreur: ' + error.message);
     } else {
-      alert('✅ Organisation supprimée');
+      setShowDeleteModal(false);
+      setDeletingItem(null);
       fetchData();
     }
   };
 
-  const handleRemoveMember = async (membershipId: string, userId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir retirer cet utilisateur ?')) {
-      return;
-    }
+  const confirmRemoveMember = (membershipId: string, userId: string) => {
+    setDeletingItem({ type: 'user', id: membershipId, name: userId });
+    setShowRemoveUserModal(true);
+  };
+
+  const handleRemoveMember = async () => {
+    if (!deletingItem || deletingItem.type !== 'user') return;
 
     const { error } = await supabase
       .from('memberships')
       .delete()
-      .eq('id', membershipId);
+      .eq('id', deletingItem.id);
 
     if (error) {
       console.error('Error removing member:', error);
       alert('Erreur: ' + error.message);
     } else {
-      alert('✅ Utilisateur retiré');
+      setShowRemoveUserModal(false);
+      setDeletingItem(null);
       fetchData();
+    }
+  };
+
+  const showUserDetail = async (userId: string) => {
+    // Find user in pending or memberships
+    const pendingUser = pendingUsers.find(u => u.user_id === userId);
+    if (pendingUser) {
+      setSelectedUserDetail({
+        user_id: pendingUser.user_id,
+        email: pendingUser.email,
+        full_name: pendingUser.full_name,
+        created_at: pendingUser.created_at
+      });
+      setShowUserDetailModal(true);
+      return;
+    }
+
+    const membership = memberships.find(m => m.user_id === userId);
+    if (membership) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      const org = organizations.find(o => o.id === membership.org_id);
+
+      setSelectedUserDetail({
+        user_id: userId,
+        email: profile?.email || 'N/A',
+        full_name: profile?.full_name,
+        created_at: profile?.created_at || membership.created_at,
+        org_name: org?.name,
+        role: membership.role
+      });
+      setShowUserDetailModal(true);
     }
   };
 
@@ -363,6 +414,7 @@ export default function AdminPanel() {
                   user={user}
                   organizations={organizations}
                   onGrantAccess={handleGrantAccess}
+                  onViewDetail={showUserDetail}
                 />
               ))}
             </div>
@@ -403,8 +455,17 @@ export default function AdminPanel() {
                       <p className="text-sm text-slate-600">Créé le {new Date(membership.created_at).toLocaleDateString('fr-FR')}</p>
                     </div>
                   </div>
-                  <div className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
-                    Super Admin - Accès Total
+                  <div className="flex items-center gap-3">
+                    <div className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+                      Super Admin - Accès Total
+                    </div>
+                    <button
+                      onClick={() => showUserDetail(membership.user_id)}
+                      className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
+                      title="Voir détails"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -457,8 +518,9 @@ export default function AdminPanel() {
                     isExpanded={isExpanded}
                     onToggle={() => toggleOrgExpanded(org.id)}
                     onEdit={() => openEditModal(org)}
-                    onDelete={handleDeleteOrganization}
-                    onRemoveMember={handleRemoveMember}
+                    onDelete={confirmDeleteOrganization}
+                    onRemoveMember={confirmRemoveMember}
+                    onViewUser={showUserDetail}
                   />
                 );
               })
@@ -467,90 +529,62 @@ export default function AdminPanel() {
         )}
       </div>
 
-      {/* New Organization Modal */}
-      {showNewOrgModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">
-              Nouvelle Organisation
-            </h3>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Nom de l'organisation
-              </label>
-              <input
-                type="text"
-                value={newOrgName}
-                onChange={(e) => setNewOrgName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-                placeholder="Acme Corp"
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowNewOrgModal(false);
-                  setNewOrgName('');
-                }}
-                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleCreateOrganization}
-                disabled={creating}
-                className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50"
-              >
-                {creating ? 'Création...' : 'Créer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modals */}
+      <NewOrgModal 
+        isOpen={showNewOrgModal}
+        onClose={() => {
+          setShowNewOrgModal(false);
+          setNewOrgName('');
+        }}
+        orgName={newOrgName}
+        setOrgName={setNewOrgName}
+        onCreate={handleCreateOrganization}
+        creating={creating}
+      />
 
-      {/* Edit Organization Modal */}
-      {showEditOrgModal && editingOrg && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">
-              Modifier l'Organisation
-            </h3>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Nom de l'organisation
-              </label>
-              <input
-                type="text"
-                value={newOrgName}
-                onChange={(e) => setNewOrgName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-                placeholder="Acme Corp"
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowEditOrgModal(false);
-                  setNewOrgName('');
-                  setEditingOrg(null);
-                }}
-                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleEditOrganization}
-                disabled={creating}
-                className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50"
-              >
-                {creating ? 'Modification...' : 'Modifier'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EditOrgModal
+        isOpen={showEditOrgModal}
+        onClose={() => {
+          setShowEditOrgModal(false);
+          setNewOrgName('');
+          setEditingOrg(null);
+        }}
+        orgName={newOrgName}
+        setOrgName={setNewOrgName}
+        onEdit={handleEditOrganization}
+        creating={creating}
+      />
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeletingItem(null);
+        }}
+        onConfirm={handleDeleteOrganization}
+        title="Supprimer l'organisation"
+        message={`Êtes-vous sûr de vouloir supprimer "${deletingItem?.name}" ? Cette action est irréversible.`}
+      />
+
+      <DeleteConfirmModal
+        isOpen={showRemoveUserModal}
+        onClose={() => {
+          setShowRemoveUserModal(false);
+          setDeletingItem(null);
+        }}
+        onConfirm={handleRemoveMember}
+        title="Retirer l'utilisateur"
+        message="Êtes-vous sûr de vouloir retirer cet utilisateur de l'organisation ? Il perdra l'accès immédiatement."
+      />
+
+      <UserDetailModal
+        isOpen={showUserDetailModal}
+        onClose={() => {
+          setShowUserDetailModal(false);
+          setSelectedUserDetail(null);
+        }}
+        user={selectedUserDetail}
+      />
     </div>
   );
 }
@@ -559,11 +593,13 @@ export default function AdminPanel() {
 function PendingUserRow({ 
   user, 
   organizations,
-  onGrantAccess
+  onGrantAccess,
+  onViewDetail
 }: { 
   user: PendingUser;
   organizations: Organization[];
   onGrantAccess: (userId: string, orgId: string, role: string) => void;
+  onViewDetail: (userId: string) => void;
 }) {
   const [selectedOrg, setSelectedOrg] = useState('');
   const [selectedRole, setSelectedRole] = useState('member');
@@ -596,13 +632,21 @@ function PendingUserRow({
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
+          <button
+            onClick={() => onViewDetail(user.user_id)}
+            className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            title="Voir détails"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          
           <select
             value={selectedOrg}
             onChange={(e) => setSelectedOrg(e.target.value)}
             className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
           >
-            <option value="">Sélectionner organisation</option>
+            <option value="">Organisation</option>
             {organizations.map(org => (
               <option key={org.id} value={org.id}>{org.name}</option>
             ))}
@@ -623,7 +667,7 @@ function PendingUserRow({
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
           >
             <UserPlus className="w-4 h-4" />
-            Donner accès
+            Valider
           </button>
         </div>
       </div>
@@ -639,7 +683,8 @@ function OrganizationRow({
   onToggle,
   onEdit,
   onDelete,
-  onRemoveMember
+  onRemoveMember,
+  onViewUser
 }: { 
   organization: Organization;
   memberships: Membership[];
@@ -648,12 +693,12 @@ function OrganizationRow({
   onEdit: () => void;
   onDelete: (orgId: string, orgName: string) => void;
   onRemoveMember: (membershipId: string, userId: string) => void;
+  onViewUser: (userId: string) => void;
 }) {
   const memberCount = memberships.length;
 
   return (
     <div>
-      {/* Organization Header */}
       <div className="p-6 hover:bg-slate-50 transition-colors">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
@@ -702,7 +747,6 @@ function OrganizationRow({
         </div>
       </div>
 
-      {/* Members List (Expanded) */}
       {isExpanded && (
         <div className="bg-slate-50 border-t border-slate-200">
           {memberCount === 0 ? (
@@ -728,19 +772,245 @@ function OrganizationRow({
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => onRemoveMember(membership.id, membership.user_id)}
-                    className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                    title="Retirer cet utilisateur"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onViewUser(membership.user_id)}
+                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Voir détails"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onRemoveMember(membership.id, membership.user_id)}
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Retirer cet utilisateur"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Modal Components
+function NewOrgModal({ isOpen, onClose, orgName, setOrgName, onCreate, creating }: any) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-slate-900">Nouvelle Organisation</h3>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
+            <X className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Nom de l'organisation
+          </label>
+          <input
+            type="text"
+            value={orgName}
+            onChange={(e) => setOrgName(e.target.value)}
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+            placeholder="Acme Corp"
+            autoFocus
+          />
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onCreate}
+            disabled={creating}
+            className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50"
+          >
+            {creating ? 'Création...' : 'Créer'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditOrgModal({ isOpen, onClose, orgName, setOrgName, onEdit, creating }: any) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-slate-900">Modifier l'Organisation</h3>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
+            <X className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Nom de l'organisation
+          </label>
+          <input
+            type="text"
+            value={orgName}
+            onChange={(e) => setOrgName(e.target.value)}
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+            placeholder="Acme Corp"
+            autoFocus
+          />
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onEdit}
+            disabled={creating}
+            className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50"
+          >
+            {creating ? 'Modification...' : 'Modifier'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeleteConfirmModal({ isOpen, onClose, onConfirm, title, message }: any) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
+            <p className="text-slate-600">{message}</p>
+          </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: () => void; user: UserDetail | null }) {
+  if (!isOpen || !user) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-slate-900">Détails de l'utilisateur</h3>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
+            <X className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Avatar */}
+          <div className="flex items-center gap-4 pb-4 border-b">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+              {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-slate-900">{user.full_name || 'Utilisateur'}</h4>
+              <p className="text-sm text-slate-600">{user.role ? `Rôle: ${user.role}` : 'En attente d\'approbation'}</p>
+            </div>
+          </div>
+
+          {/* Details */}
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <Mail className="w-5 h-5 text-slate-400 mt-0.5" />
+              <div>
+                <p className="text-xs text-slate-500 mb-1">Email</p>
+                <p className="text-sm font-medium text-slate-900">{user.email}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Calendar className="w-5 h-5 text-slate-400 mt-0.5" />
+              <div>
+                <p className="text-xs text-slate-500 mb-1">Date d'inscription</p>
+                <p className="text-sm font-medium text-slate-900">
+                  {new Date(user.created_at).toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                  })}
+                </p>
+              </div>
+            </div>
+
+            {user.org_name && (
+              <div className="flex items-start gap-3">
+                <Building2 className="w-5 h-5 text-slate-400 mt-0.5" />
+                <div>
+                  <p className="text-xs text-slate-500 mb-1">Organisation</p>
+                  <p className="text-sm font-medium text-slate-900">{user.org_name}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-start gap-3">
+              <Shield className="w-5 h-5 text-slate-400 mt-0.5" />
+              <div>
+                <p className="text-xs text-slate-500 mb-1">User ID</p>
+                <p className="text-xs font-mono text-slate-700 break-all">{user.user_id}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Status Badge */}
+          {!user.org_name && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2">
+              <Clock className="w-5 h-5 text-yellow-600" />
+              <p className="text-sm text-yellow-800">
+                <strong>En attente :</strong> Cet utilisateur n'a pas encore été assigné à une organisation.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            Fermer
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
