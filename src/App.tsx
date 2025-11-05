@@ -19,8 +19,6 @@ function App() {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
 
-  console.log('🔍 DEBUG - isAdmin:', isAdmin); // DEBUG
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
@@ -39,18 +37,56 @@ function App() {
 
   if (!isAdmin && !organization) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Aucune organisation</h2>
-          <p className="text-slate-600 mb-6">
-            Vous n'êtes membre d'aucune organisation. Contactez votre administrateur.
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+          {/* Icon */}
+          <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+
+          {/* Title */}
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">
+            Demande en cours de traitement
+          </h2>
+
+          {/* Message */}
+          <p className="text-slate-600 mb-6 leading-relaxed">
+            Votre compte a été créé avec succès ! 🎉
+            <br /><br />
+            Un administrateur doit maintenant valider votre accès. Vous recevrez un email de confirmation dès que votre compte sera activé.
           </p>
-          <button
-            onClick={handleLogout}
-            className="bg-slate-900 text-white px-6 py-2 rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            Se déconnecter
-          </button>
+
+          {/* Info box */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+            <p className="text-sm text-blue-800">
+              <strong>💡 Que faire en attendant ?</strong>
+              <br />
+              • Vérifiez vos emails (inbox et spam)
+              <br />
+              • Le traitement prend généralement 24-48h
+              <br />
+              • Vous pouvez vous reconnecter plus tard
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="space-y-3">
+            <button
+              onClick={handleLogout}
+              className="w-full px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
+            >
+              Se déconnecter
+            </button>
+            
+            <a 
+              href="mailto:support@investflow.com" 
+              className="block text-sm text-slate-600 hover:text-slate-900 transition-colors"
+            >
+              Besoin d'aide ? Contactez le support →
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -66,8 +102,6 @@ function App() {
       </div>
     </div>
   );
-
-  console.log('🔍 DEBUG - About to render routes, isAdmin:', isAdmin); // DEBUG
 
   return (
     <BrowserRouter>
@@ -131,7 +165,7 @@ function App() {
             }
           />
           
-          {/* Admin Panel route */}
+          {/* Admin Panel - MUST be before wildcard route */}
           <Route
             path="admin"
             element={
