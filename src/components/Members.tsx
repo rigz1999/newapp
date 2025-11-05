@@ -8,8 +8,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useOrganization } from '../hooks/useOrganization';
 import {
-  Users, UserPlus, Trash2, RefreshCw, Shield,
-  Mail, Calendar, Edit2, X, AlertCircle, CheckCircle, Clock
+  Users, UserPlus, Trash2, RefreshCw,
+  Mail, Calendar, Edit2, X, AlertCircle, Clock, Send
 } from 'lucide-react';
 
 interface Member {
@@ -46,27 +46,18 @@ export default function Members() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   useEffect(() => {
-    console.log('Members useEffect - organization:', organization);
-    console.log('Members useEffect - orgLoading:', orgLoading);
-
     if (organization) {
       fetchMembers();
       fetchInvitations();
     } else if (!orgLoading) {
-      // Organization is null but we're done loading - stop showing spinner
       setLoading(false);
     }
   }, [organization, orgLoading]);
 
   const fetchMembers = async () => {
-    if (!organization) {
-      console.log('No organization, skipping fetchMembers');
-      return;
-    }
+    if (!organization) return;
 
-    console.log('Fetching members for org:', organization.id);
     setLoading(true);
-
     const { data, error } = await supabase
       .from('memberships')
       .select(`
@@ -86,77 +77,25 @@ export default function Members() {
       console.error('Error fetching members:', error);
       alert('Erreur lors du chargement des membres: ' + error.message);
     } else {
-      console.log('Members fetched:', data);
       setMembers(data || []);
     }
     setLoading(false);
   };
 
-  const fetchPendingUsers = async () => {
-    // Get all profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      return;
-    }
-
-    // Get all memberships to filter out users who already have org access
-    const { data: allMemberships, error: membershipsError } = await supabase
-      .from('memberships')
-      .select('user_id, org_id, role');
-
-    if (membershipsError) {
-      console.error('Error fetching memberships:', membershipsError);
-      return;
-    }
-
-    // Filter out users who have org memberships or are super admins
-    const userIdsWithOrg = new Set(
-      (allMemberships || [])
-        .filter(m => m.org_id !== null)
-        .map(m => m.user_id)
-    );
-
-    const superAdminIds = new Set(
-      (allMemberships || [])
-        .filter(m => m.role === 'super_admin' && !m.org_id)
-        .map(m => m.user_id)
-    );
-
-    const pending = (profiles || [])
-      .filter(profile => !userIdsWithOrg.has(profile.id) && !superAdminIds.has(profile.id))
-      .map(profile => ({
-        user_id: profile.id,
-        email: profile.email || 'N/A',
-        full_name: profile.full_name,
-        created_at: profile.created_at
-      }));
-
-    setPendingUsers(pending);
-  };
-
-  const handleAddMember = async (userId: string, role: string) => {
+  const fetchInvitations = async () => {
     if (!organization) return;
 
-    const { error } = await supabase
-      .from('memberships')
-      .insert({
-        user_id: userId,
-        org_id: organization.id,
-        role: role
-      });
+    const { data, error } = await supabase
+      .from('invitations')
+      .select('*')
+      .eq('org_id', organization.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error adding member:', error);
-      alert('Erreur lors de l\'ajout du membre: ' + error.message);
+      console.error('Error fetching invitations:', error);
     } else {
-      setShowAddModal(false);
-      fetchMembers();
-      fetchPendingUsers();
+      setInvitations(data || []);
     }
   };
 
@@ -196,6 +135,20 @@ export default function Members() {
     }
   };
 
+  const handleCancelInvitation = async (invitationId: string) => {
+    const { error } = await supabase
+      .from('invitations')
+      .delete()
+      .eq('id', invitationId);
+
+    if (error) {
+      console.error('Error canceling invitation:', error);
+      alert('Erreur: ' + error.message);
+    } else {
+      fetchInvitations();
+    }
+  };
+
   const openRemoveModal = (member: Member) => {
     setSelectedMember(member);
     setShowRemoveModal(true);
@@ -225,6 +178,8 @@ export default function Members() {
     );
   }
 
+  const pendingInvitations = invitations.filter(inv => inv.status === 'pending');
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -240,16 +195,16 @@ export default function Members() {
             </div>
           </div>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => setShowInviteModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors"
           >
             <UserPlus className="w-4 h-4" />
-            Ajouter un Membre
+            Inviter un Membre
           </button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Total Membres</p>
             <p className="text-2xl font-bold text-slate-900">{members.length}</p>
@@ -266,8 +221,50 @@ export default function Members() {
               {members.filter(m => m.role === 'member').length}
             </p>
           </div>
+          <div className="bg-white rounded-lg p-4 border border-slate-200">
+            <p className="text-sm text-slate-600 mb-1">Invitations</p>
+            <p className="text-2xl font-bold text-yellow-600">{pendingInvitations.length}</p>
+          </div>
         </div>
       </div>
+
+      {/* Pending Invitations */}
+      {pendingInvitations.length > 0 && (
+        <div className="bg-yellow-50 rounded-xl border border-yellow-200 mb-6 p-6">
+          <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-yellow-600" />
+            Invitations en attente ({pendingInvitations.length})
+          </h2>
+          <div className="space-y-3">
+            {pendingInvitations.map(inv => (
+              <div key={inv.id} className="bg-white rounded-lg p-4 flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-slate-900">{inv.first_name} {inv.last_name}</p>
+                  <p className="text-sm text-slate-600">{inv.email}</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Invité le {new Date(inv.created_at).toLocaleDateString('fr-FR')} • 
+                    Expire le {new Date(inv.expires_at).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    inv.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                  }`}>
+                    {inv.role === 'admin' ? 'Administrateur' : 'Membre'}
+                  </span>
+                  <button
+                    onClick={() => handleCancelInvitation(inv.id)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Annuler l'invitation"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Members List */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
@@ -280,10 +277,10 @@ export default function Members() {
             <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <p className="text-slate-600 mb-2">Aucun membre dans cette organisation</p>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => setShowInviteModal(true)}
               className="text-blue-900 hover:underline text-sm"
             >
-              Ajouter le premier membre
+              Inviter le premier membre
             </button>
           </div>
         ) : (
@@ -342,12 +339,16 @@ export default function Members() {
         )}
       </div>
 
-      {/* Add Member Modal */}
-      <AddMemberModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        pendingUsers={pendingUsers}
-        onAdd={handleAddMember}
+      {/* Invite Member Modal */}
+      <InviteMemberModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        organization={organization}
+        userId={user?.id}
+        onSuccess={() => {
+          fetchInvitations();
+          setShowInviteModal(false);
+        }}
       />
 
       {/* Remove Member Modal */}
@@ -375,106 +376,183 @@ export default function Members() {
   );
 }
 
-// Add Member Modal Component
-function AddMemberModal({
+// Invite Member Modal Component
+function InviteMemberModal({
   isOpen,
   onClose,
-  pendingUsers,
-  onAdd
+  organization,
+  userId,
+  onSuccess
 }: {
   isOpen: boolean;
   onClose: () => void;
-  pendingUsers: PendingUser[];
-  onAdd: (userId: string, role: string) => void;
+  organization: any;
+  userId: string | undefined;
+  onSuccess: () => void;
 }) {
-  const [selectedUser, setSelectedUser] = useState('');
-  const [selectedRole, setSelectedRole] = useState('member');
+  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [role, setRole] = useState<'member' | 'admin'>('member');
+  const [sending, setSending] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleAdd = () => {
-    if (!selectedUser) {
-      alert('Veuillez sélectionner un utilisateur');
+  const handleSendInvitation = async () => {
+    if (!email || !firstName || !lastName) {
+      alert('Veuillez remplir tous les champs');
       return;
     }
-    onAdd(selectedUser, selectedRole);
-    setSelectedUser('');
-    setSelectedRole('member');
+
+    if (!userId) {
+      alert('Erreur: utilisateur non connecté');
+      return;
+    }
+
+    setSending(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Session expirée');
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invitation`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            email,
+            firstName,
+            lastName,
+            role,
+            orgId: organization.id,
+            orgName: organization.name,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erreur lors de l\'envoi de l\'invitation');
+      }
+
+      alert(`✅ Invitation envoyée à ${email}!`);
+      setEmail('');
+      setFirstName('');
+      setLastName('');
+      setRole('member');
+      onSuccess();
+    } catch (error: any) {
+      console.error('Error sending invitation:', error);
+      alert(`❌ Erreur: ${error.message}`);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-slate-900">Ajouter un Membre</h3>
+          <h3 className="text-xl font-bold text-slate-900">Inviter un Membre</h3>
           <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
             <X className="w-5 h-5 text-slate-600" />
           </button>
         </div>
 
-        {pendingUsers.length === 0 ? (
-          <div className="text-center py-8">
-            <Clock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-600">Aucun utilisateur en attente</p>
-            <p className="text-sm text-slate-500 mt-2">
-              Les nouveaux utilisateurs qui s'inscrivent apparaîtront ici.
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Email *
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="exemple@email.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Prénom *
+            </label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Jean"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Nom *
+            </label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Dupont"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Rôle *
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as 'member' | 'admin')}
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="member">Membre</option>
+              <option value="admin">Administrateur</option>
+            </select>
+            <p className="text-xs text-slate-500 mt-2">
+              {role === 'admin'
+                ? 'Peut gérer les membres et accéder à toutes les données'
+                : 'Peut accéder et modifier les données de l\'organisation'}
             </p>
           </div>
-        ) : (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Sélectionner un utilisateur
-              </label>
-              <select
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">-- Choisir un utilisateur --</option>
-                {pendingUsers.map(user => (
-                  <option key={user.user_id} value={user.user_id}>
-                    {user.full_name || user.email} ({user.email})
-                  </option>
-                ))}
-              </select>
-            </div>
+        </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Rôle
-              </label>
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="member">Membre</option>
-                <option value="admin">Administrateur</option>
-              </select>
-              <p className="text-xs text-slate-500 mt-2">
-                {selectedRole === 'admin'
-                  ? 'Peut gérer les membres et accéder à toutes les données'
-                  : 'Peut accéder et modifier les données de l\'organisation'}
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleAdd}
-                className="flex-1 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors"
-              >
-                Ajouter
-              </button>
-            </div>
-          </>
-        )}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+            disabled={sending}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSendInvitation}
+            disabled={sending}
+            className="flex-1 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {sending ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Envoi...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Envoyer
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
