@@ -47,15 +47,31 @@ export function Layout({ organization }: LayoutProps) {
       .from('profiles')
       .select('id');
 
-    // Fetch memberships with org_id
+    // Fetch memberships with org_id (users who have an organization)
     const { data: membershipsData } = await supabase
       .from('memberships')
-      .select('user_id')
-      .not('org_id', 'is', null);
+      .select('user_id, role, org_id');
 
     if (profilesData && membershipsData) {
-      const userIdsWithOrg = new Set(membershipsData.map(m => m.user_id));
-      const pending = profilesData.filter(p => !userIdsWithOrg.has(p.id));
+      // Users with organization
+      const userIdsWithOrg = new Set(
+        membershipsData
+          .filter(m => m.org_id !== null)
+          .map(m => m.user_id)
+      );
+      
+      // Super admins (they don't need org)
+      const superAdminIds = new Set(
+        membershipsData
+          .filter(m => m.role === 'super_admin' && !m.org_id)
+          .map(m => m.user_id)
+      );
+
+      // Pending users = profiles without org and not super admin
+      const pending = profilesData.filter(
+        p => !userIdsWithOrg.has(p.id) && !superAdminIds.has(p.id)
+      );
+      
       setPendingCount(pending.length);
     }
   };
