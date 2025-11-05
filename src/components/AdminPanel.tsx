@@ -926,6 +926,11 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, title, message }: any)
 function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: () => void; user: UserDetail | null }) {
   if (!isOpen || !user) return null;
 
+  // Déterminer le statut de l'utilisateur
+  const isSuperAdmin = user.role === 'super_admin';
+  const hasOrganization = !!user.org_name;
+  const isPending = !hasOrganization && !isSuperAdmin;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
@@ -939,28 +944,36 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
         <div className="space-y-4">
           {/* Avatar */}
           <div className="flex items-center gap-4 pb-4 border-b">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold ${
+              isSuperAdmin ? 'bg-gradient-to-br from-purple-500 to-pink-600' : 
+              hasOrganization ? 'bg-gradient-to-br from-blue-500 to-cyan-600' : 
+              'bg-gradient-to-br from-yellow-500 to-orange-600'
+            }`}>
               {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
             </div>
-            <div>
-              <h4 className="text-lg font-semibold text-slate-900">{user.full_name || 'Utilisateur'}</h4>
-              <p className="text-sm text-slate-600">{user.role ? `Rôle: ${user.role}` : 'En attente d\'approbation'}</p>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-lg font-semibold text-slate-900 truncate">{user.full_name || 'Utilisateur'}</h4>
+              <p className="text-sm text-slate-600">
+                {isSuperAdmin ? 'Super Admin' : 
+                 user.role ? `Rôle: ${user.role}` : 
+                 'En attente d\'approbation'}
+              </p>
             </div>
           </div>
 
           {/* Details */}
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <Mail className="w-5 h-5 text-slate-400 mt-0.5" />
-              <div>
+              <Mail className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 mb-1">Email</p>
-                <p className="text-sm font-medium text-slate-900">{user.email}</p>
+                <p className="text-sm font-medium text-slate-900 break-words">{user.email}</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-slate-400 mt-0.5" />
-              <div>
+              <Calendar className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 mb-1">Date d'inscription</p>
                 <p className="text-sm font-medium text-slate-900">
                   {new Date(user.created_at).toLocaleDateString('fr-FR', { 
@@ -972,19 +985,19 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
               </div>
             </div>
 
-            {user.org_name && (
+            {hasOrganization && (
               <div className="flex items-start gap-3">
-                <Building2 className="w-5 h-5 text-slate-400 mt-0.5" />
-                <div>
+                <Building2 className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
                   <p className="text-xs text-slate-500 mb-1">Organisation</p>
-                  <p className="text-sm font-medium text-slate-900">{user.org_name}</p>
+                  <p className="text-sm font-medium text-slate-900 truncate">{user.org_name}</p>
                 </div>
               </div>
             )}
 
             <div className="flex items-start gap-3">
-              <Shield className="w-5 h-5 text-slate-400 mt-0.5" />
-              <div>
+              <Shield className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 mb-1">User ID</p>
                 <p className="text-xs font-mono text-slate-700 break-all">{user.user_id}</p>
               </div>
@@ -992,18 +1005,18 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
           </div>
 
           {/* Status Badge */}
-          {!user.org_name && user.role !== 'super_admin' && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2">
-              <Clock className="w-5 h-5 text-yellow-600" />
+          {isPending && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+              <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-yellow-800">
                 <strong>En attente :</strong> Cet utilisateur n'a pas encore été assigné à une organisation.
               </p>
             </div>
           )}
           
-          {user.role === 'super_admin' && (
-            <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-600" />
+          {isSuperAdmin && (
+            <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-start gap-2">
+              <Shield className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-purple-800">
                 <strong>Super Admin :</strong> Accès complet à toutes les organisations et fonctionnalités.
               </p>
