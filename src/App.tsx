@@ -68,16 +68,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Admin Panel - Outside Layout (no sidebar) */}
-        <Route 
-          path="/admin" 
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <AdminPanel />
-            </Suspense>
-          } 
-        />
-
         {/* Main App Routes - Inside Layout (with sidebar) */}
         <Route path="/" element={<Layout organization={effectiveOrg} />}>
           <Route
@@ -136,6 +126,19 @@ function App() {
               </Suspense>
             }
           />
+          
+          {/* Admin Panel - Inside Layout for super admins only */}
+          {isAdmin && (
+            <Route
+              path="admin"
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <AdminPanel />
+                </Suspense>
+              }
+            />
+          )}
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
