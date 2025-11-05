@@ -1,7 +1,7 @@
 // ============================================
-// Admin Panel - Grant User Access to Organizations
+// Admin Panel - ONE ORG PER USER VERSION
 // Path: src/components/AdminPanel.tsx
-// Add this as a new page in your app
+// Replace with this version that enforces one org per user
 // ============================================
 
 import { useState, useEffect } from 'react';
@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase';
 import { 
   Users, Building2, UserPlus, Shield, RefreshCw, 
   CheckCircle, XCircle, Trash2, Plus, AlertCircle,
-  Search
+  Search, UserX
 } from 'lucide-react';
 
 interface User {
@@ -27,6 +27,7 @@ interface Organization {
 
 interface UserWithAccess extends User {
   hasMembership: boolean;
+  orgId?: string;
   orgName?: string;
   role?: string;
 }
@@ -74,6 +75,7 @@ export function AdminPanel() {
       .select(`
         user_id,
         role,
+        org_id,
         organizations (
           name
         )
@@ -89,6 +91,7 @@ export function AdminPanel() {
       return {
         ...user,
         hasMembership: !!membership,
+        orgId: membership?.org_id || undefined,
         orgName: membership?.organizations?.name,
         role: membership?.role
       };
@@ -99,6 +102,27 @@ export function AdminPanel() {
   };
 
   const handleGrantAccess = async (userId: string, orgId: string, role: string = 'member') => {
+    // Check if user already has an org membership (not super admin)
+    const existingMembership = users.find(u => u.id === userId)?.hasMembership;
+    
+    if (existingMembership) {
+      // User already has access - ask if they want to switch
+      const confirmSwitch = confirm(
+        'Cet utilisateur a déjà accès à une organisation. Voulez-vous changer son organisation?\n\n' +
+        'Ceci supprimera son accès actuel et lui donnera accès à la nouvelle organisation.'
+      );
+      
+      if (!confirmSwitch) return;
+      
+      // Delete old membership (only non-super-admin ones)
+      await supabase
+        .from('memberships')
+        .delete()
+        .eq('user_id', userId)
+        .not('org_id', 'is', null); // Don't delete super admin membership
+    }
+
+    // Create new membership
     const { error } = await supabase
       .from('memberships')
       .insert({
@@ -121,10 +145,12 @@ export function AdminPanel() {
       return;
     }
 
+    // Only delete non-super-admin memberships
     const { error } = await supabase
       .from('memberships')
       .delete()
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .not('org_id', 'is', null);
 
     if (error) {
       console.error('Error revoking access:', error);
@@ -147,7 +173,7 @@ export function AdminPanel() {
       .from('organizations')
       .insert({
         name: newOrgName.trim(),
-        owner_id: null // Can be set later if needed
+        owner_id: null
       });
 
     if (error) {
@@ -168,8 +194,10 @@ export function AdminPanel() {
     user.raw_user_meta_data?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Separate super admins, regular users with access, and users without access
+  const superAdmins = filteredUsers.filter(u => u.role === 'super_admin' && !u.orgId);
+  const usersWithAccess = filteredUsers.filter(u => u.hasMembership && !(u.role === 'super_admin' && !u.orgId));
   const usersWithoutAccess = filteredUsers.filter(u => !u.hasMembership);
-  const usersWithAccess = filteredUsers.filter(u => u.hasMembership);
 
   if (loading) {
     return (
@@ -203,18 +231,22 @@ export function AdminPanel() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Total Utilisateurs</p>
             <p className="text-2xl font-bold text-slate-900">{users.length}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <p className="text-sm text-slate-600 mb-1">En attente d'accès</p>
-            <p className="text-2xl font-bold text-yellow-600">{usersWithoutAccess.length}</p>
+            <p className="text-sm text-slate-600 mb-1">Super Admins</p>
+            <p className="text-2xl font-bold text-purple-600">{superAdmins.length}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <p className="text-sm text-slate-600 mb-1">Organisations</p>
-            <p className="text-2xl font-bold text-slate-900">{organizations.length}</p>
+            <p className="text-sm text-slate-600 mb-1">Avec Accès</p>
+            <p className="text-2xl font-bold text-green-600">{usersWithAccess.length}</p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-slate-200">
+            <p className="text-sm text-slate-600 mb-1">En attente</p>
+            <p className="text-2xl font-bold text-yellow-600">{usersWithoutAccess.length}</p>
           </div>
         </div>
       </div>
@@ -232,6 +264,23 @@ export function AdminPanel() {
           />
         </div>
       </div>
+
+      {/* Super Admins */}
+      {superAdmins.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+          <div className="p-6 border-b border-slate-200 bg-purple-50">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <Shield className="w-6 h-6 text-purple-600" />
+              Super Administrateurs ({superAdmins.length})
+            </h2>
+          </div>
+          <div className="divide-y divide-slate-200">
+            {superAdmins.map(user => (
+              <SuperAdminRow key={user.id} user={user} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Users Without Access */}
       {usersWithoutAccess.length > 0 && (
@@ -268,7 +317,9 @@ export function AdminPanel() {
             <UserRowWithAccess
               key={user.id}
               user={user}
+              organizations={organizations}
               onRevokeAccess={handleRevokeAccess}
+              onGrantAccess={handleGrantAccess}
             />
           ))}
         </div>
@@ -318,6 +369,30 @@ export function AdminPanel() {
   );
 }
 
+// Super Admin Row Component
+function SuperAdminRow({ user }: { user: UserWithAccess }) {
+  return (
+    <div className="p-6 bg-purple-50/50">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+            <Shield className="w-5 h-5 text-purple-600" />
+          </div>
+          <div>
+            <p className="font-medium text-slate-900">
+              {user.raw_user_meta_data?.full_name || 'Utilisateur'}
+            </p>
+            <p className="text-sm text-slate-600">{user.email}</p>
+          </div>
+        </div>
+        <div className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+          Super Admin - Accès Total
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // User Row Component (without access)
 function UserRow({ 
   user, 
@@ -344,8 +419,8 @@ function UserRow({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
-              <Users className="w-5 h-5 text-slate-600" />
+            <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+              <UserX className="w-5 h-5 text-yellow-600" />
             </div>
             <div>
               <p className="font-medium text-slate-900">
@@ -383,7 +458,7 @@ function UserRow({
 
           <button
             onClick={handleGrant}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2"
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
           >
             <UserPlus className="w-4 h-4" />
             Donner accès
@@ -397,11 +472,72 @@ function UserRow({
 // User Row Component (with access)
 function UserRowWithAccess({
   user,
-  onRevokeAccess
+  organizations,
+  onRevokeAccess,
+  onGrantAccess
 }: {
   user: UserWithAccess;
+  organizations: Organization[];
   onRevokeAccess: (userId: string) => void;
+  onGrantAccess: (userId: string, orgId: string, role: string) => void;
 }) {
+  const [isChanging, setIsChanging] = useState(false);
+  const [newOrg, setNewOrg] = useState('');
+
+  const handleChange = () => {
+    if (!newOrg) {
+      alert('Veuillez sélectionner une organisation');
+      return;
+    }
+    onGrantAccess(user.id, newOrg, user.role || 'member');
+    setIsChanging(false);
+  };
+
+  if (isChanging) {
+    return (
+      <div className="p-6 bg-blue-50">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <Users className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="font-medium text-slate-900">
+                {user.raw_user_meta_data?.full_name || 'Utilisateur'}
+              </p>
+              <p className="text-sm text-slate-600">{user.email}</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <select
+              value={newOrg}
+              onChange={(e) => setNewOrg(e.target.value)}
+              className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Nouvelle organisation</option>
+              {organizations.map(org => (
+                <option key={org.id} value={org.id}>{org.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleChange}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            >
+              Changer
+            </button>
+            <button
+              onClick={() => setIsChanging(false)}
+              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between">
@@ -422,6 +558,13 @@ function UserRowWithAccess({
             <p className="text-sm font-medium text-slate-900">{user.orgName}</p>
             <p className="text-xs text-slate-500">{user.role}</p>
           </div>
+          <button
+            onClick={() => setIsChanging(true)}
+            className="px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm"
+            title="Changer d'organisation"
+          >
+            Changer
+          </button>
           <button
             onClick={() => onRevokeAccess(user.id)}
             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
