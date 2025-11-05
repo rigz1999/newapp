@@ -127,19 +127,17 @@ function App() {
             }
           />
           
-          {/* Admin Panel - MUST be before wildcard route */}
-          <Route
-            path="admin"
-            element={
-              isAdmin ? (
+          {/* Admin Panel - Only rendered if isAdmin is true */}
+          {isAdmin && (
+            <Route
+              path="admin"
+              element={
                 <Suspense fallback={<LoadingFallback />}>
                   <AdminPanel />
                 </Suspense>
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
+              }
+            />
+          )}
           
           {/* Wildcard must be LAST */}
           <Route path="*" element={<Navigate to="/" replace />} />
