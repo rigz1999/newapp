@@ -105,14 +105,24 @@ export default function AdminPanel() {
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError);
     } else {
+      // Trouver tous les user_ids qui ont un membership avec une organisation
       const userIdsWithOrg = new Set(
         (membershipData || [])
           .filter(m => m.org_id !== null)
           .map(m => m.user_id)
       );
 
+      // Les utilisateurs en attente sont ceux qui:
+      // 1. N'ont pas de membership avec org_id
+      // 2. Ne sont pas super_admin (super admins n'ont pas d'org_id mais c'est normal)
+      const superAdminIds = new Set(
+        (membershipData || [])
+          .filter(m => m.role === 'super_admin' && !m.org_id)
+          .map(m => m.user_id)
+      );
+
       const pending = (profilesData || [])
-        .filter(profile => !userIdsWithOrg.has(profile.id))
+        .filter(profile => !userIdsWithOrg.has(profile.id) && !superAdminIds.has(profile.id))
         .map(profile => ({
           user_id: profile.id,
           email: profile.email || 'N/A',
