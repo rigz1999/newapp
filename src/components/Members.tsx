@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 import { useOrganization } from '../hooks/useOrganization';
 import {
   Users, UserPlus, Trash2, RefreshCw, Shield,
@@ -30,7 +31,8 @@ interface PendingUser {
 }
 
 export default function Members() {
-  const { organization, loading: orgLoading } = useOrganization();
+  const { user } = useAuth();
+  const { organization, loading: orgLoading } = useOrganization(user?.id);
   const [members, setMembers] = useState<Member[]>([]);
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
