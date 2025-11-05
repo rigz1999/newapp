@@ -13,6 +13,7 @@ const Coupons = lazy(() => import('./components/Coupons'));
 const Investors = lazy(() => import('./components/Investors'));
 const Subscriptions = lazy(() => import('./components/Subscriptions'));
 const Payments = lazy(() => import('./components/Payments'));
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
 
 function App() {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -124,6 +125,11 @@ function App() {
               </Suspense>
             }
           />
+          <Route path="/admin" element={
+  <Suspense fallback={<LoadingFallback />}>
+    <AdminPanel />
+  </Suspense>
+} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
