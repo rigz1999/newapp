@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { AlertModal } from './Modals';
@@ -307,32 +307,42 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
   };
 
   // Extract unique values for multi-select filters
-  const uniqueProjects = Array.from(
-    new Set(subscriptions.map(s => s.tranches?.projets?.projet).filter(Boolean))
-  ).map(name => ({ value: name!, label: name! }));
+  const uniqueProjects = useMemo(() =>
+    Array.from(
+      new Set(subscriptions.map(s => s.tranches?.projets?.projet).filter(Boolean))
+    ).map(name => ({ value: name!, label: name! })),
+    [subscriptions]
+  );
 
   // Cascading filter: Only show tranches from selected projects
-  const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
-  const uniqueTranches = Array.from(
-    new Set(
-      subscriptions
-        .filter(s => {
-          // If no projects selected, show all tranches
-          if (!projectFilter || projectFilter.values.length === 0) return true;
-          // Otherwise, only show tranches from selected projects
-          return projectFilter.values.includes(s.tranches?.projets?.projet || '');
-        })
-        .map(s => s.tranches?.tranche_name)
-        .filter(Boolean)
-    )
-  ).map(name => ({ value: name!, label: name! }));
+  const uniqueTranches = useMemo(() => {
+    const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
+    const selectedProjects = projectFilter?.values || [];
 
-  const uniqueInvestorTypes = Array.from(
-    new Set(subscriptions.map(s => s.investisseurs?.type).filter(Boolean))
-  ).map(type => ({
-    value: type!,
-    label: type!.toLowerCase() === 'physique' ? 'Personne physique' : 'Personne morale'
-  }));
+    return Array.from(
+      new Set(
+        subscriptions
+          .filter(s => {
+            // If no projects selected, show all tranches
+            if (selectedProjects.length === 0) return true;
+            // Otherwise, only show tranches from selected projects
+            return selectedProjects.includes(s.tranches?.projets?.projet || '');
+          })
+          .map(s => s.tranches?.tranche_name)
+          .filter(Boolean)
+      )
+    ).map(name => ({ value: name!, label: name! }));
+  }, [subscriptions, advancedFilters.filters.multiSelect]);
+
+  const uniqueInvestorTypes = useMemo(() =>
+    Array.from(
+      new Set(subscriptions.map(s => s.investisseurs?.type).filter(Boolean))
+    ).map(type => ({
+      value: type!,
+      label: type!.toLowerCase() === 'physique' ? 'Personne physique' : 'Personne morale'
+    })),
+    [subscriptions]
+  );
 
   // Count active filters
   const activeFiltersCount = [
