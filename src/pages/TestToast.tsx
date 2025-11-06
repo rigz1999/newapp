@@ -1,5 +1,5 @@
 // Test page for Toast notification system
-import { useToast, ToastContainer } from '../components/Toast';
+import { useToast, ToastContainer } from '../components/common/Toast';
 
 export default function TestToast() {
   const { toasts, toast, removeToast } = useToast();
