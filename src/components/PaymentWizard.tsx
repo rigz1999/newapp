@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, ArrowLeft, Trash2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
+import { validateFile, FILE_VALIDATION_PRESETS } from '../utils/fileValidation';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
@@ -144,18 +145,17 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      const validFiles = selectedFiles.filter(f => {
-        const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-        if (!validTypes.includes(f.type)) {
-          setError('Seuls les fichiers PDF, PNG, JPG et WEBP sont acceptés');
-          return false;
+      const validFiles: File[] = [];
+
+      for (const file of selectedFiles) {
+        const validation = validateFile(file, FILE_VALIDATION_PRESETS.documents);
+        if (!validation.valid) {
+          setError(validation.error || 'Fichier invalide');
+          return;
         }
-        if (f.size > 10 * 1024 * 1024) {
-          setError('Taille maximale: 10MB par fichier');
-          return false;
-        }
-        return true;
-      });
+        validFiles.push(file);
+      }
+
       setFiles(validFiles);
       setError('');
     }
@@ -165,183 +165,153 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
     setFiles(files.filter((_, idx) => idx !== indexToRemove));
   };
 
-  // ========================================
-// 🎯 REMPLACEZ UNIQUEMENT LA FONCTION handleAnalyze
-// (lignes 164-271 de votre fichier actuel)
-// ========================================
-
-// ⚡ HELPER : Compresser une image (AJOUTER AVANT handleAnalyze, ligne 163)
-const compressImage = (imageDataUrl: string, quality: number = 0.7): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX_SIZE = 1200;
-      
-      let width = img.width;
-      let height = img.height;
-      
-      if (width > MAX_SIZE || height > MAX_SIZE) {
-        if (width > height) {
-          height = (height / width) * MAX_SIZE;
-          width = MAX_SIZE;
-        } else {
-          width = (width / height) * MAX_SIZE;
-          height = MAX_SIZE;
-        }
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      const compressed = canvas.toDataURL('image/jpeg', quality);
-      resolve(compressed.split(',')[1]);
-    };
-    img.onerror = reject;
-    img.src = imageDataUrl;
-  });
-};
-
-// ========================================
-// ⚡ NOUVELLE FONCTION handleAnalyze OPTIMISÉE
-// ========================================
-const handleAnalyze = async () => {
-  if (files.length === 0) return;
-
-  console.time('⏱️ TOTAL');
-  setAnalyzing(true);
-  setError('');
-
-  try {
-    const base64Images: string[] = [];
-    
-    console.time('🖼️ Conversion Base64');
-
-    // Convertir tous les fichiers en Base64 compressé
-    for (const file of files) {
-      if (file.type === 'application/pdf') {
-        // PDF → PNG → Base64
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const compressImage = (imageDataUrl: string, quality: number = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 1200;
         
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({ scale: 1.5 }); // ⚡ 1.5 au lieu de 2.0
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d')!;
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-
-          await page.render({ canvasContext: context, viewport: viewport }).promise;
-          
-          // Compresser avant d'envoyer
-          const imageDataUrl = canvas.toDataURL('image/png');
-          const compressed = await compressImage(imageDataUrl, 0.7);
-          base64Images.push(compressed);
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = (height / width) * MAX_SIZE;
+            width = MAX_SIZE;
+          } else {
+            width = (width / height) * MAX_SIZE;
+            height = MAX_SIZE;
+          }
         }
-      } else {
-        // Image directe → Base64 compressé
-        const reader = new FileReader();
-        const base64 = await new Promise<string>((resolve, reject) => {
-          reader.onload = async (e) => {
-            const dataUrl = e.target?.result as string;
-            try {
-              const compressed = await compressImage(dataUrl, 0.7);
-              resolve(compressed);
-            } catch (err) {
-              reject(err);
-            }
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        base64Images.push(base64);
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressed.split(',')[1]);
+      };
+      img.onerror = reject;
+      img.src = imageDataUrl;
+    });
+  };
+
+  const handleAnalyze = async () => {
+    if (files.length === 0) return;
+
+    console.time('⏱️ TOTAL');
+    setAnalyzing(true);
+    setError('');
+
+    try {
+      const base64Images: string[] = [];
+      
+      console.time('🖼️ Conversion Base64');
+
+      for (const file of files) {
+        if (file.type === 'application/pdf') {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          
+          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d')!;
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+            
+            const imageDataUrl = canvas.toDataURL('image/png');
+            const compressed = await compressImage(imageDataUrl, 0.7);
+            base64Images.push(compressed);
+          }
+        } else {
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve, reject) => {
+            reader.onload = async (e) => {
+              const dataUrl = e.target?.result as string;
+              try {
+                const compressed = await compressImage(dataUrl, 0.7);
+                resolve(compressed);
+              } catch (err) {
+                reject(err);
+              }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          base64Images.push(base64);
+        }
       }
+
+      console.timeEnd('🖼️ Conversion Base64');
+      console.log(`📦 ${base64Images.length} image(s) converties`);
+
+      const totalSize = base64Images.reduce((sum, img) => sum + img.length, 0);
+      const totalSizeMB = (totalSize * 0.75 / 1024 / 1024).toFixed(2);
+      console.log(`📊 Taille totale: ${totalSizeMB} MB`);
+
+      if (totalSize > 5 * 1024 * 1024) {
+        throw new Error(`Les images sont trop volumineuses (${totalSizeMB} MB). Limite: 5 MB. Réduisez le nombre de fichiers.`);
+      }
+
+      const expectedPayments = subscriptions.map(sub => ({
+        investorName: sub.investisseur.nom_raison_sociale,
+        expectedAmount: sub.coupon_net,
+        subscriptionId: sub.id,
+        investisseurId: sub.investisseur_id
+      }));
+
+      console.time('🤖 Analyse IA');
+
+      const { data, error: funcError } = await supabase.functions.invoke('analyze-payment-batch', {
+        body: { 
+          base64Images: base64Images,
+          expectedPayments: expectedPayments 
+        }
+      });
+
+      console.timeEnd('🤖 Analyse IA');
+
+      if (funcError) throw funcError;
+      if (!data.succes) throw new Error(data.erreur);
+
+      const enrichedMatches = data.correspondances.map((match: any) => {
+        const subscription = subscriptions.find(
+          s => s.investisseur.nom_raison_sociale.toLowerCase() === match.paiement.beneficiaire.toLowerCase()
+        );
+        return { ...match, matchedSubscription: subscription };
+      });
+
+      setMatches(enrichedMatches);
+      
+      const autoSelected = new Set<number>();
+      enrichedMatches.forEach((match: PaymentMatch, idx: number) => {
+        if (match.statut === 'correspondance') {
+          autoSelected.add(idx);
+        }
+      });
+      setSelectedMatches(autoSelected);
+      
+      setUploadedFileUrls([]);
+      setTempFileNames([]);
+      
+      setStep('results');
+
+      console.timeEnd('⏱️ TOTAL');
+
+    } catch (err: any) {
+      console.error('Erreur analyse:', err);
+      setError(err.message || 'Erreur lors de l\'analyse');
+    } finally {
+      setAnalyzing(false);
     }
-
-    console.timeEnd('🖼️ Conversion Base64');
-    console.log(`📦 ${base64Images.length} image(s) converties`);
-
-    // Vérifier la taille totale
-    const totalSize = base64Images.reduce((sum, img) => sum + img.length, 0);
-    const totalSizeMB = (totalSize * 0.75 / 1024 / 1024).toFixed(2);
-    console.log(`📊 Taille totale: ${totalSizeMB} MB`);
-
-    if (totalSize > 5 * 1024 * 1024) {
-      throw new Error(`Les images sont trop volumineuses (${totalSizeMB} MB). Limite: 5 MB. Réduisez le nombre de fichiers.`);
-    }
-
-    const expectedPayments = subscriptions.map(sub => ({
-      investorName: sub.investisseur.nom_raison_sociale,
-      expectedAmount: sub.coupon_net,
-      subscriptionId: sub.id,
-      investisseurId: sub.investisseur_id
-    }));
-
-    console.time('🤖 Analyse IA');
-
-    // ⚡ APPEL OPTIMISÉ avec Base64
-    const { data, error: funcError } = await supabase.functions.invoke('analyze-payment-batch', {
-      body: { 
-        base64Images: base64Images, // ⚡ Base64 au lieu d'URLs
-        expectedPayments: expectedPayments 
-      }
-    });
-
-    console.timeEnd('🤖 Analyse IA');
-
-    if (funcError) throw funcError;
-    if (!data.succes) throw new Error(data.erreur);
-
-    const enrichedMatches = data.correspondances.map((match: any) => {
-      const subscription = subscriptions.find(
-        s => s.investisseur.nom_raison_sociale.toLowerCase() === match.paiement.beneficiaire.toLowerCase()
-      );
-      return { ...match, matchedSubscription: subscription };
-    });
-
-    setMatches(enrichedMatches);
-    
-    // Auto-select valid matches
-    const autoSelected = new Set<number>();
-    enrichedMatches.forEach((match: PaymentMatch, idx: number) => {
-      if (match.statut === 'correspondance') {
-        autoSelected.add(idx);
-      }
-    });
-    setSelectedMatches(autoSelected);
-    
-    // Plus besoin de stocker les fichiers temporaires
-    setUploadedFileUrls([]);
-    setTempFileNames([]);
-    
-    setStep('results');
-
-    console.timeEnd('⏱️ TOTAL');
-
-  } catch (err: any) {
-    console.error('Erreur analyse:', err);
-    setError(err.message || 'Erreur lors de l\'analyse');
-  } finally {
-    setAnalyzing(false);
-  }
-};
-
-// ========================================
-// 📝 INSTRUCTIONS
-// ========================================
-/*
-1. Trouvez la ligne 163 dans votre PaymentWizard.tsx
-2. AJOUTEZ la fonction compressImage (lignes 7-34 ci-dessus)
-3. REMPLACEZ la fonction handleAnalyze (lignes 164-271) par la nouvelle (lignes 38-157 ci-dessus)
-4. NE TOUCHEZ À RIEN D'AUTRE
-5. Sauvegardez
-
-Résultat : Même interface, 5x plus rapide !
-*/
+  };
 
   const toggleSelectMatch = (idx: number) => {
     const newSelected = new Set(selectedMatches);
@@ -373,9 +343,7 @@ Résultat : Même interface, 5x plus rapide !
       const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
       const validMatches = selectedMatchesList.filter(m => m.matchedSubscription);
 
-      // Create payment records and save proofs
       for (const match of validMatches) {
-        // Create payment record
         const { data: paymentData, error: paymentError } = await supabase
           .from('paiements')
           .insert({
@@ -393,7 +361,6 @@ Résultat : Même interface, 5x plus rapide !
 
         if (paymentError) throw paymentError;
 
-        // Download first temp file and upload to permanent storage
         if (tempFileNames.length > 0) {
           const firstTempFile = tempFileNames[0];
           const { data: downloadData, error: downloadError } = await supabase.storage
@@ -402,7 +369,6 @@ Résultat : Même interface, 5x plus rapide !
 
           if (downloadError) throw downloadError;
 
-          // Upload to permanent storage
           const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
           const { error: uploadError } = await supabase.storage
             .from('payment-proofs')
@@ -410,12 +376,10 @@ Résultat : Même interface, 5x plus rapide !
 
           if (uploadError) throw uploadError;
 
-          // Get permanent URL
           const { data: urlData } = supabase.storage
             .from('payment-proofs')
             .getPublicUrl(permanentFileName);
 
-          // Save proof record
           const { error: proofError } = await supabase
             .from('payment_proofs')
             .insert({
@@ -431,7 +395,6 @@ Résultat : Même interface, 5x plus rapide !
         }
       }
 
-      // Clean up temp files
       if (tempFileNames.length > 0) {
         await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
       }
@@ -453,9 +416,7 @@ Résultat : Même interface, 5x plus rapide !
     try {
       const validMatchesList = matches.filter(m => m.statut === 'correspondance' && m.matchedSubscription);
 
-      // Create payment records and save proofs
       for (const match of validMatchesList) {
-        // Create payment record
         const { data: paymentData, error: paymentError } = await supabase
           .from('paiements')
           .insert({
@@ -473,7 +434,6 @@ Résultat : Même interface, 5x plus rapide !
 
         if (paymentError) throw paymentError;
 
-        // Download first temp file and upload to permanent storage
         if (tempFileNames.length > 0) {
           const firstTempFile = tempFileNames[0];
           const { data: downloadData, error: downloadError } = await supabase.storage
@@ -482,7 +442,6 @@ Résultat : Même interface, 5x plus rapide !
 
           if (downloadError) throw downloadError;
 
-          // Upload to permanent storage
           const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
           const { error: uploadError } = await supabase.storage
             .from('payment-proofs')
@@ -490,12 +449,10 @@ Résultat : Même interface, 5x plus rapide !
 
           if (uploadError) throw uploadError;
 
-          // Get permanent URL
           const { data: urlData } = supabase.storage
             .from('payment-proofs')
             .getPublicUrl(permanentFileName);
 
-          // Save proof record
           const { error: proofError } = await supabase
             .from('payment_proofs')
             .insert({
@@ -511,7 +468,6 @@ Résultat : Même interface, 5x plus rapide !
         }
       }
 
-      // Clean up temp files
       if (tempFileNames.length > 0) {
         await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
       }
@@ -645,7 +601,6 @@ Résultat : Même interface, 5x plus rapide !
                 <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                 <input
                   type="file"
-                  accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
                   multiple
                   onChange={handleFileSelect}
                   className="hidden"
@@ -655,7 +610,7 @@ Résultat : Même interface, 5x plus rapide !
                 <label htmlFor="file-upload" className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
                   Choisir des fichiers
                 </label>
-                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier) - v3.0</p>
+                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier)</p>
               </div>
 
               {files.length > 0 && (
@@ -882,7 +837,6 @@ Résultat : Même interface, 5x plus rapide !
                   Vous allez valider <span className="font-bold">{selectedMatches.size} paiement{selectedMatches.size > 1 ? 's' : ''}</span>:
                 </p>
                 
-                {/* WARNINGS EN HAUT */}
                 {hasNoMatchInSelection && (
                   <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4 mb-4">
                     <div className="flex items-start gap-2 mb-3">
@@ -916,7 +870,6 @@ Résultat : Même interface, 5x plus rapide !
                   </div>
                 )}
                 
-                {/* LISTE DES PAIEMENTS */}
                 <ul className="space-y-2 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-2">
                   {selectedMatchesList.map((match, idx) => (
                     <li key={idx} className={`text-sm p-2 rounded ${
