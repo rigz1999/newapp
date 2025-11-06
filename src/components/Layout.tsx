@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { GlobalSearch } from './GlobalSearch';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 interface LayoutProps {
   organization: { id: string; name: string; role: string };
@@ -19,6 +20,22 @@ export function Layout({ organization }: LayoutProps) {
 
   // Check if user is super admin (fallback to organization role)
   const isSuperAdminUser = isSuperAdmin || organization.role === 'super_admin';
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: 'k',
+      metaKey: true,
+      callback: () => setIsSearchOpen(true),
+      description: 'Open search'
+    },
+    {
+      key: ',',
+      metaKey: true,
+      callback: () => navigate('/parametres'),
+      description: 'Open settings'
+    }
+  ]);
 
   useEffect(() => {
     if (isSuperAdminUser) {
