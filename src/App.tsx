@@ -17,6 +17,7 @@ const Payments = lazy(() => import('./components/Payments'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const Members = lazy(() => import('./components/Members'));
 const Settings = lazy(() => import('./components/Settings'));
+const TestToast = lazy(() => import('./pages/TestToast'));
 
 function App() {
   const { user, loading: authLoading, isAdmin, isOrgAdmin } = useAuth();
@@ -111,6 +112,13 @@ function App() {
       <Routes>
         {/* Public Route - Invitation Accept (no auth required) */}
         <Route path="/invitation/accept" element={<InvitationAccept />} />
+
+        {/* Test Routes - Development only */}
+        <Route path="/test/toast" element={
+          <Suspense fallback={<LoadingFallback />}>
+            <TestToast />
+          </Suspense>
+        } />
 
         {/* Main App Routes - Inside Layout (with sidebar) */}
         <Route path="/" element={<Layout organization={effectiveOrg} />}>
