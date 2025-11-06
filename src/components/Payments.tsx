@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Eye } from 'lucide-react';
+import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Eye, Filter, X } from 'lucide-react';
 import { ViewProofsModal } from './ViewProofsModal';
 import { TableSkeleton } from './Skeleton';
 import { Pagination, paginate } from './Pagination';
+import { useAdvancedFilters } from '../hooks/useAdvancedFilters';
+import { DateRangePicker } from './filters/DateRangePicker';
+import { MultiSelectFilter } from './filters/MultiSelectFilter';
+import { FilterPresets } from './filters/FilterPresets';
 
 interface PaymentsProps {
   organization: { id: string; name: string; role: string };
@@ -49,14 +53,35 @@ export function Payments({ organization }: PaymentsProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
 
+  // Advanced filtering
+  const advancedFilters = useAdvancedFilters({
+    persistKey: 'payments-filters',
+  });
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Get unique values for filters
+  const uniqueProjects = Array.from(
+    new Set(payments.map(p => p.tranche?.projet?.projet).filter(Boolean))
+  ).map(name => ({ value: name!, label: name! }));
+
+  const uniqueTypes = Array.from(
+    new Set(payments.map(p => p.type || 'Coupon').filter(Boolean))
+  ).map(type => ({ value: type, label: type }));
+
   useEffect(() => {
     fetchPayments();
   }, [organization.id]);
 
   useEffect(() => {
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
     filterPayments();
-  }, [payments, searchTerm, sortOrder]);
+  }, [
+    payments,
+    searchTerm,
+    sortOrder,
+    advancedFilters.filters.dateRange,
+    advancedFilters.filters.multiSelect,
+  ]);
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -118,9 +143,16 @@ export function Payments({ organization }: PaymentsProps) {
     return data || [];
   };
 
+  const handleViewProofs = async (payment: Payment) => {
+    const proofsData = await loadProofs(payment.id);
+    setProofs(proofsData);
+    setViewingProofs(payment);
+  };
+
   const filterPayments = () => {
     let filtered = [...payments];
 
+    // Basic search
     if (searchTerm) {
       filtered = filtered.filter(
         (p) =>
@@ -131,6 +163,33 @@ export function Payments({ organization }: PaymentsProps) {
       );
     }
 
+    // Advanced filters - Date range
+    if (advancedFilters.filters.dateRange.startDate && advancedFilters.filters.dateRange.endDate) {
+      const startDate = new Date(advancedFilters.filters.dateRange.startDate);
+      const endDate = new Date(advancedFilters.filters.dateRange.endDate);
+      filtered = filtered.filter((p) => {
+        const paymentDate = new Date(p.date_paiement);
+        return paymentDate >= startDate && paymentDate <= endDate;
+      });
+    }
+
+    // Advanced filters - Multi-select projects
+    const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
+    if (projectFilter && projectFilter.values.length > 0) {
+      filtered = filtered.filter((p) =>
+        projectFilter.values.includes(p.tranche?.projet?.projet || '')
+      );
+    }
+
+    // Advanced filters - Multi-select types
+    const typeFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'type');
+    if (typeFilter && typeFilter.values.length > 0) {
+      filtered = filtered.filter((p) =>
+        typeFilter.values.includes(p.type || 'Coupon')
+      );
+    }
+
+    // Sort
     filtered.sort((a, b) => {
       const dateA = new Date(a.date_paiement).getTime();
       const dateB = new Date(b.date_paiement).getTime();
@@ -192,6 +251,11 @@ export function Payments({ organization }: PaymentsProps) {
     URL.revokeObjectURL(url);
   };
 
+  const hasActiveFilters = 
+    advancedFilters.filters.dateRange.startDate ||
+    advancedFilters.filters.dateRange.endDate ||
+    advancedFilters.filters.multiSelect.length > 0;
+
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -227,7 +291,8 @@ export function Payments({ organization }: PaymentsProps) {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        {/* Basic Filters */}
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
@@ -247,7 +312,92 @@ export function Payments({ organization }: PaymentsProps) {
             <option value="desc">Plus récents</option>
             <option value="asc">Plus anciens</option>
           </select>
+
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+              showAdvancedFilters || hasActiveFilters
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Filter className="w-5 h-5" />
+            Filtres avancés
+            {hasActiveFilters && (
+              <span className="bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs font-semibold">
+                {advancedFilters.filters.multiSelect.length + 
+                  (advancedFilters.filters.dateRange.startDate ? 1 : 0)}
+              </span>
+            )}
+          </button>
         </div>
+
+        {/* Advanced Filters Panel */}
+        {showAdvancedFilters && (
+          <div className="border-t border-slate-200 pt-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {/* Date Range */}
+              <DateRangePicker
+                startDate={advancedFilters.filters.dateRange.startDate}
+                endDate={advancedFilters.filters.dateRange.endDate}
+                onStartDateChange={(date) =>
+                  advancedFilters.setDateRange(date, advancedFilters.filters.dateRange.endDate)
+                }
+                onEndDateChange={(date) =>
+                  advancedFilters.setDateRange(advancedFilters.filters.dateRange.startDate, date)
+                }
+                label="Période de paiement"
+              />
+
+              {/* Project Filter */}
+              <MultiSelectFilter
+                label="Projets"
+                options={uniqueProjects}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'projet')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('projet', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('projet', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('projet')}
+                placeholder="Tous les projets"
+              />
+
+              {/* Type Filter */}
+              <MultiSelectFilter
+                label="Type de paiement"
+                options={uniqueTypes}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'type')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('type', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('type', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('type')}
+                placeholder="Tous les types"
+              />
+
+              {/* Filter Presets */}
+              <FilterPresets
+                presets={advancedFilters.presets}
+                onSave={(name) => advancedFilters.savePreset(name)}
+                onLoad={(id) => advancedFilters.loadPreset(id)}
+                onDelete={(id) => advancedFilters.deletePreset(id)}
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  advancedFilters.clearAllFilters();
+                  setSearchTerm('');
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+              >
+                <X className="w-4 h-4" />
+                Effacer tous les filtres
+              </button>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="p-6">
@@ -258,7 +408,7 @@ export function Payments({ organization }: PaymentsProps) {
             <DollarSign className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun paiement</h3>
             <p className="text-slate-600">
-              {searchTerm
+              {searchTerm || hasActiveFilters
                 ? "Aucun paiement ne correspond à vos critères"
                 : "Aucun paiement enregistré"}
             </p>
@@ -294,11 +444,7 @@ export function Payments({ organization }: PaymentsProps) {
                     <td className="px-4 py-3 text-sm">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={async () => {
-                            const proofsData = await loadProofs(payment.id);
-                            setProofs(proofsData);
-                            setViewingProofs(payment);
-                          }}
+                          onClick={() => handleViewProofs(payment)}
                           className="flex items-center gap-1 px-3 py-1 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs font-medium"
                         >
                           <Eye className="w-4 h-4" />
