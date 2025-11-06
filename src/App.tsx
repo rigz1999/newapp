@@ -15,6 +15,7 @@ const Subscriptions = lazy(() => import('./components/Subscriptions'));
 const Payments = lazy(() => import('./components/Payments'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const Members = lazy(() => import('./components/Members'));
+const Settings = lazy(() => import('./components/Settings'));
 
 function App() {
   const { user, loading: authLoading, isAdmin, isOrgAdmin } = useAuth();
@@ -162,6 +163,16 @@ function App() {
             element={
               <Suspense fallback={<LoadingFallback />}>
                 <Payments organization={effectiveOrg} />
+              </Suspense>
+            }
+          />
+
+          {/* Settings - For all users */}
+          <Route
+            path="parametres"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Settings />
               </Suspense>
             }
           />

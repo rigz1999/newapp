@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield, UserCog } from 'lucide-react';
+import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield, UserCog, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -12,7 +12,8 @@ export function Layout({ organization }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [pendingCount, setPendingCount] = useState(0);
-  const { isOrgAdmin, isSuperAdmin } = useAuth();
+  const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
+  const { isOrgAdmin, isSuperAdmin, user } = useAuth();
 
   // Check if user is super admin (fallback to organization role)
   const isSuperAdminUser = isSuperAdmin || organization.role === 'super_admin';
@@ -42,6 +43,25 @@ export function Layout({ organization }: LayoutProps) {
       };
     }
   }, [isSuperAdminUser]);
+
+  // Fetch user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        setUserProfile(profile);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
 
   const fetchPendingCount = async () => {
     // Fetch profiles
@@ -157,6 +177,18 @@ export function Layout({ organization }: LayoutProps) {
               <span>Paiements</span>
             </Link>
 
+            {/* Settings Link */}
+            <div className="border-t border-slate-700 my-4"></div>
+            <Link
+              to="/parametres"
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive('/parametres') ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <Settings className="w-5 h-5" />
+              <span>Paramètres</span>
+            </Link>
+
             {/* Members Management Link - Only for Organization Admins */}
             {isOrgAdmin && !isSuperAdminUser && (
               <>
@@ -201,14 +233,14 @@ export function Layout({ organization }: LayoutProps) {
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
               isSuperAdminUser ? 'bg-purple-600' : isOrgAdmin ? 'bg-blue-600' : 'bg-green-600'
             }`}>
-              {isSuperAdminUser ? 'SA' : organization.name.charAt(0).toUpperCase()}
+              {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">
-                {isSuperAdminUser ? 'Super Admin' : organization.name}
+                {userProfile?.full_name || 'Utilisateur'}
               </p>
               <p className="text-sm text-slate-400 capitalize">
-                {isSuperAdminUser ? 'Accès Total' : isOrgAdmin ? 'Administrateur' : 'Membre'}
+                {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Administrateur' : 'Membre'}
               </p>
             </div>
           </div>
