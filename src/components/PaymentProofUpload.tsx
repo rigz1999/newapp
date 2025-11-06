@@ -459,7 +459,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                 <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                 <input
                   type="file"
-                  accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
                   onChange={handleFileChange}
                   className="hidden"
                   id="file-upload"
