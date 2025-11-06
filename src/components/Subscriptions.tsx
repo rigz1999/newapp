@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2 } from 'lucide-react';
+import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { AlertModal } from './Modals';
 import { TableSkeleton } from './Skeleton';
 import { Pagination, paginate } from './Pagination';
+import { useAdvancedFilters } from '../hooks/useAdvancedFilters';
+import { DateRangePicker } from './filters/DateRangePicker';
+import { MultiSelectFilter } from './filters/MultiSelectFilter';
+import { FilterPresets } from './filters/FilterPresets';
 
 interface Subscription {
   id: string;
@@ -35,12 +39,12 @@ interface SubscriptionsProps {
 export function Subscriptions({ organization }: SubscriptionsProps) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [projectFilter, setProjectFilter] = useState('all');
-  const [trancheFilter, setTrancheFilter] = useState('all');
-  const [yearFilter, setYearFilter] = useState('all');
-  const [monthFilter, setMonthFilter] = useState('all');
-  const [dayFilter, setDayFilter] = useState('all');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Advanced filters
+  const advancedFilters = useAdvancedFilters({
+    persistKey: 'subscriptions-filters',
+  });
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -277,94 +281,88 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
     URL.revokeObjectURL(url);
   };
 
-  const uniqueProjects = Array.from(new Set(subscriptions.map(s => s.tranches.projets.projet)));
+  // Extract unique values for multi-select filters
+  const uniqueProjects = Array.from(
+    new Set(subscriptions.map(s => s.tranches?.projets?.projet).filter(Boolean))
+  ).map(name => ({ value: name!, label: name! }));
 
-  const availableTranches = projectFilter === 'all'
-    ? []
-    : Array.from(new Set(
-        subscriptions
-          .filter(s => s.tranches.projets.projet === projectFilter)
-          .map(s => s.tranches.tranche_name)
-      ));
+  // Cascading filter: Only show tranches from selected projects
+  const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
+  const uniqueTranches = Array.from(
+    new Set(
+      subscriptions
+        .filter(s => {
+          // If no projects selected, show all tranches
+          if (!projectFilter || projectFilter.values.length === 0) return true;
+          // Otherwise, only show tranches from selected projects
+          return projectFilter.values.includes(s.tranches?.projets?.projet || '');
+        })
+        .map(s => s.tranches?.tranche_name)
+        .filter(Boolean)
+    )
+  ).map(name => ({ value: name!, label: name! }));
 
-  const uniqueYears = Array.from(new Set(
-    subscriptions.map(s => new Date(s.date_souscription).getFullYear())
-  )).sort((a, b) => b - a);
+  const uniqueInvestorTypes = Array.from(
+    new Set(subscriptions.map(s => s.investisseurs?.type).filter(Boolean))
+  ).map(type => ({
+    value: type!,
+    label: type!.toLowerCase() === 'physique' ? 'Personne physique' : 'Personne morale'
+  }));
 
-  const availableMonths = yearFilter === 'all' ? [] : Array.from(new Set(
-    subscriptions
-      .filter(s => new Date(s.date_souscription).getFullYear().toString() === yearFilter)
-      .map(s => new Date(s.date_souscription).getMonth() + 1)
-  )).sort((a, b) => a - b);
-
-  const availableDays = (yearFilter === 'all' || monthFilter === 'all') ? [] : Array.from(new Set(
-    subscriptions
-      .filter(s => {
-        const date = new Date(s.date_souscription);
-        return date.getFullYear().toString() === yearFilter &&
-               (date.getMonth() + 1).toString() === monthFilter;
-      })
-      .map(s => new Date(s.date_souscription).getDate())
-  )).sort((a, b) => a - b);
-
-  const handleProjectChange = (project: string) => {
-    setProjectFilter(project);
-    setTrancheFilter('all');
-  };
-
-  const handleYearChange = (year: string) => {
-    setYearFilter(year);
-    setMonthFilter('all');
-    setDayFilter('all');
-  };
-
-  const handleMonthChange = (month: string) => {
-    setMonthFilter(month);
-    setDayFilter('all');
-  };
-
-  const matchesDateFilter = (dateStr: string) => {
-    const date = new Date(dateStr);
-
-    if (yearFilter !== 'all' && date.getFullYear().toString() !== yearFilter) {
-      return false;
-    }
-
-    if (monthFilter !== 'all' && (date.getMonth() + 1).toString() !== monthFilter) {
-      return false;
-    }
-
-    if (dayFilter !== 'all' && date.getDate().toString() !== dayFilter) {
-      return false;
-    }
-
-    return true;
-  };
+  // Count active filters
+  const activeFiltersCount = [
+    advancedFilters.filters.search ? 1 : 0,
+    advancedFilters.filters.dateRange.startDate || advancedFilters.filters.dateRange.endDate ? 1 : 0,
+    ...advancedFilters.filters.multiSelect.map(f => f.values.length > 0 ? 1 : 0)
+  ].reduce((a, b) => a + b, 0);
 
   const filteredSubscriptions = subscriptions.filter((sub) => {
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    // Search filter
+    if (advancedFilters.filters.search) {
+      const term = advancedFilters.filters.search.toLowerCase();
       const matchesSearch = (
-        sub.tranches.projets.projet.toLowerCase().includes(term) ||
-        sub.tranches.projets.emetteur.toLowerCase().includes(term) ||
-        sub.tranches.tranche_name.toLowerCase().includes(term) ||
-        sub.investisseurs.nom_raison_sociale?.toLowerCase().includes(term) ||
-        sub.investisseurs.representant_legal?.toLowerCase().includes(term) ||
-        sub.investisseurs.email?.toLowerCase().includes(term)
+        sub.tranches?.projets?.projet?.toLowerCase().includes(term) ||
+        sub.tranches?.projets?.emetteur?.toLowerCase().includes(term) ||
+        sub.tranches?.tranche_name?.toLowerCase().includes(term) ||
+        sub.investisseurs?.nom_raison_sociale?.toLowerCase().includes(term) ||
+        sub.investisseurs?.representant_legal?.toLowerCase().includes(term) ||
+        sub.investisseurs?.email?.toLowerCase().includes(term)
       );
       if (!matchesSearch) return false;
     }
 
-    if (projectFilter !== 'all' && sub.tranches.projets.projet !== projectFilter) {
-      return false;
+    // Date range filter
+    if (advancedFilters.filters.dateRange.startDate && advancedFilters.filters.dateRange.endDate) {
+      const startDate = new Date(advancedFilters.filters.dateRange.startDate);
+      const endDate = new Date(advancedFilters.filters.dateRange.endDate);
+      const subDate = new Date(sub.date_souscription);
+      if (subDate < startDate || subDate > endDate) {
+        return false;
+      }
     }
 
-    if (trancheFilter !== 'all' && sub.tranches.tranche_name !== trancheFilter) {
-      return false;
+    // Multi-select project filter
+    const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
+    if (projectFilter && projectFilter.values.length > 0) {
+      if (!projectFilter.values.includes(sub.tranches?.projets?.projet || '')) {
+        return false;
+      }
     }
 
-    if (!matchesDateFilter(sub.date_souscription)) {
-      return false;
+    // Multi-select tranche filter
+    const trancheFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'tranche');
+    if (trancheFilter && trancheFilter.values.length > 0) {
+      if (!trancheFilter.values.includes(sub.tranches?.tranche_name || '')) {
+        return false;
+      }
+    }
+
+    // Multi-select investor type filter
+    const investorTypeFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'investorType');
+    if (investorTypeFilter && investorTypeFilter.values.length > 0) {
+      if (!investorTypeFilter.values.includes(sub.investisseurs?.type || '')) {
+        return false;
+      }
     }
 
     return true;
@@ -386,89 +384,116 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+        {/* Filters Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+          {/* Basic Search */}
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Rechercher..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                placeholder="Rechercher par projet, tranche, investisseur..."
+                value={advancedFilters.filters.search}
+                onChange={(e) => advancedFilters.setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
-            <select
-              value={projectFilter}
-              onChange={(e) => handleProjectChange(e.target.value)}
-              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white"
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+                showAdvancedFilters || activeFiltersCount > 0
+                  ? 'bg-blue-50 border-blue-300 text-blue-700'
+                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+              }`}
             >
-              <option value="all">Tous les projets</option>
-              {uniqueProjects.map((project) => (
-                <option key={project} value={project}>
-                  {project}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={trancheFilter}
-              onChange={(e) => setTrancheFilter(e.target.value)}
-              disabled={projectFilter === 'all'}
-              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="all">Toutes les tranches</option>
-              {availableTranches.map((tranche) => (
-                <option key={tranche} value={tranche}>
-                  {tranche}
-                </option>
-              ))}
-            </select>
+              <Filter className="w-5 h-5" />
+              <span className="font-medium">Filtres avancés</span>
+              {activeFiltersCount > 0 && (
+                <span className="bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+              {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <select
-              value={yearFilter}
-              onChange={(e) => handleYearChange(e.target.value)}
-              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white"
-            >
-              <option value="all">Toutes les années</option>
-              {uniqueYears.map((year) => (
-                <option key={year} value={year.toString()}>
-                  {year}
-                </option>
-              ))}
-            </select>
+          {/* Advanced Filters Panel */}
+          {showAdvancedFilters && (
+            <div className="border-t border-slate-200 pt-6 space-y-4">
+              {/* Filter Presets */}
+              <FilterPresets
+                presets={advancedFilters.presets}
+                onSave={(name) => advancedFilters.savePreset(name)}
+                onLoad={(id) => advancedFilters.loadPreset(id)}
+                onDelete={(id) => advancedFilters.deletePreset(id)}
+              />
 
-            <select
-              value={monthFilter}
-              onChange={(e) => handleMonthChange(e.target.value)}
-              disabled={yearFilter === 'all'}
-              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="all">Tous les mois</option>
-              {availableMonths.map((month) => (
-                <option key={month} value={month.toString()}>
-                  {new Date(2000, month - 1).toLocaleString('fr-FR', { month: 'long' })}
-                </option>
-              ))}
-            </select>
+              {/* Date Range Filter */}
+              <DateRangePicker
+                label="Période de souscription"
+                startDate={advancedFilters.filters.dateRange.startDate}
+                endDate={advancedFilters.filters.dateRange.endDate}
+                onStartDateChange={(date) =>
+                  advancedFilters.setDateRange(date, advancedFilters.filters.dateRange.endDate)
+                }
+                onEndDateChange={(date) =>
+                  advancedFilters.setDateRange(advancedFilters.filters.dateRange.startDate, date)
+                }
+              />
 
-            <select
-              value={dayFilter}
-              onChange={(e) => setDayFilter(e.target.value)}
-              disabled={yearFilter === 'all' || monthFilter === 'all'}
-              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="all">Tous les jours</option>
-              {availableDays.map((day) => (
-                <option key={day} value={day.toString()}>
-                  {day}
-                </option>
-              ))}
-            </select>
-          </div>
+              {/* Multi-select Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <MultiSelectFilter
+                  label="Projets"
+                  options={uniqueProjects}
+                  selectedValues={
+                    advancedFilters.filters.multiSelect.find(f => f.field === 'projet')?.values || []
+                  }
+                  onAdd={(value) => advancedFilters.addMultiSelectFilter('projet', value)}
+                  onRemove={(value) => advancedFilters.removeMultiSelectFilter('projet', value)}
+                  onClear={() => advancedFilters.clearMultiSelectFilter('projet')}
+                  placeholder="Sélectionner des projets..."
+                />
+
+                <MultiSelectFilter
+                  label="Tranches"
+                  options={uniqueTranches}
+                  selectedValues={
+                    advancedFilters.filters.multiSelect.find(f => f.field === 'tranche')?.values || []
+                  }
+                  onAdd={(value) => advancedFilters.addMultiSelectFilter('tranche', value)}
+                  onRemove={(value) => advancedFilters.removeMultiSelectFilter('tranche', value)}
+                  onClear={() => advancedFilters.clearMultiSelectFilter('tranche')}
+                  placeholder="Sélectionner des tranches..."
+                />
+
+                <MultiSelectFilter
+                  label="Type d'investisseur"
+                  options={uniqueInvestorTypes}
+                  selectedValues={
+                    advancedFilters.filters.multiSelect.find(f => f.field === 'investorType')?.values || []
+                  }
+                  onAdd={(value) => advancedFilters.addMultiSelectFilter('investorType', value)}
+                  onRemove={(value) => advancedFilters.removeMultiSelectFilter('investorType', value)}
+                  onClear={() => advancedFilters.clearMultiSelectFilter('investorType')}
+                  placeholder="Sélectionner des types..."
+                />
+              </div>
+
+              {/* Clear All Filters */}
+              {activeFiltersCount > 0 && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => advancedFilters.clearAllFilters()}
+                    className="text-sm text-slate-600 hover:text-slate-900 underline"
+                  >
+                    Effacer tous les filtres
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {loading ? (
