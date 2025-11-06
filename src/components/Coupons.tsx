@@ -21,6 +21,7 @@ import {
 import * as XLSX from 'xlsx';
 import { PaymentWizard } from './PaymentWizard';
 import { TableSkeleton } from './Skeleton';
+import { Pagination, paginate } from './Pagination';
 
 interface Coupon {
   id: string;
@@ -89,11 +90,16 @@ export function Coupons({ organization }: CouponsProps) {
   // Lists for filters
   const [allProjets, setAllProjets] = useState<string[]>([]);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(25);
+
   useEffect(() => {
     fetchCoupons();
   }, []);
 
   useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters change
     applyFilters();
   }, [searchTerm, statutFilter, projetFilter, periodeFilter, coupons]);
 
@@ -493,7 +499,7 @@ export function Coupons({ organization }: CouponsProps) {
         </div>
       ) : (
         <div className="space-y-6">
-          {groupedData.map(({ date, tranches }) => {
+          {paginate(groupedData, currentPage, itemsPerPage).map(({ date, tranches }) => {
             const daysUntil = getDaysUntil(date);
             const dateTotal = tranches.reduce((sum, t) => sum + t.total, 0);
 
@@ -729,6 +735,14 @@ export function Coupons({ organization }: CouponsProps) {
               </div>
             </div>
           </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(groupedData.length / itemsPerPage)}
+            totalItems={groupedData.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page) => setCurrentPage(page)}
+            itemName="groupes de dates"
+          />
         </div>
       )}
 

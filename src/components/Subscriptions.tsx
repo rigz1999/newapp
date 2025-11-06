@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2 } from 'lucide-react';
 import { AlertModal } from './Modals';
 import { TableSkeleton } from './Skeleton';
+import { Pagination, paginate } from './Pagination';
 
 interface Subscription {
   id: string;
@@ -67,6 +68,10 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
     message: string;
     type?: 'success' | 'error' | 'warning' | 'info';
   }>({ title: '', message: '', type: 'info' });
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(25);
 
   useEffect(() => {
     let isMounted = true;
@@ -511,7 +516,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {filteredSubscriptions.map((sub) => (
+                  {paginate(filteredSubscriptions, currentPage, itemsPerPage).map((sub) => (
                     <tr key={sub.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-900">
@@ -571,6 +576,15 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                   ))}
                 </tbody>
               </table>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(filteredSubscriptions.length / itemsPerPage)}
+                totalItems={filteredSubscriptions.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={(page) => setCurrentPage(page)}
+                itemName="souscriptions"
+              />
             </div>
           </div>
         )}

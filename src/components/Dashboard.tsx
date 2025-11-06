@@ -6,6 +6,8 @@ import { PaymentWizard } from './PaymentWizard';
 import { getDashboardCacheKey, onCacheInvalidated } from '../utils/cacheManager';
 import { AlertModal } from './Modals';
 import { DashboardSkeleton } from './Skeleton';
+import { formatCurrency, formatDate, getRelativeDate, formatMontantDisplay, groupDigitsWithSpaces } from '../utils/formatters';
+import { isValidSIREN } from '../utils/validators';
 import {
   TrendingUp,
   CheckCircle2,
@@ -22,62 +24,6 @@ import {
   FileText,
   Download
 } from 'lucide-react';
-
-/* ===========================
-   Helpers (pure utils)
-=========================== */
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  }).format(date);
-};
-
-const getRelativeDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = date.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "Aujourd'hui";
-  if (diffDays === 1) return "Demain";
-  if (diffDays < 0) return `Il y a ${Math.abs(diffDays)} jour${Math.abs(diffDays) > 1 ? 's' : ''}`;
-  return `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
-};
-
-// SIREN validation: exactly 9 digits + Luhn (mod-10)
-const isValidSIREN = (value: string) => {
-  if (!/^\d{9}$/.test(value)) return false;
-  // Luhn algorithm for SIREN: double digits at even indices (0, 2, 4, 6, 8)
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    let digit = parseInt(value.charAt(i), 10);
-    if ((i % 2) === 0) { // double every digit at even index when processing left-to-right
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-  }
-  return sum % 10 === 0;
-};
-
-const groupDigitsWithSpaces = (digitsOnly: string) =>
-  digitsOnly ? digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '';
-
-const formatMontantDisplay = (digitsOnly: string) => {
-  const grouped = groupDigitsWithSpaces(digitsOnly);
-  return grouped ? `${grouped} €` : '';
-};
 
 /**
  * Génère les alertes dynamiques basées sur les données réelles
