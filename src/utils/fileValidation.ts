@@ -3,6 +3,8 @@
 // Path: src/utils/fileValidation.ts
 // ============================================
 
+import { fileUpload } from '../config';
+
 export interface FileValidationResult {
   valid: boolean;
   error?: string;
@@ -14,7 +16,7 @@ export interface FileValidationOptions {
   allowedExtensions?: string[];
 }
 
-const DEFAULT_MAX_SIZE_MB = 10;
+const DEFAULT_MAX_SIZE_MB = fileUpload.maxSizeDocuments;
 const DEFAULT_ALLOWED_TYPES = [
   'image/jpeg',
   'image/jpg',
@@ -130,18 +132,19 @@ export function validateFiles(
 
 /**
  * Preset configurations for common file types
+ * Uses config values from environment variables
  */
 export const FILE_VALIDATION_PRESETS = {
   // Images only
   images: {
-    maxSizeMB: 5,
+    maxSizeMB: fileUpload.maxSizeImages,
     allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
     allowedExtensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
   },
 
   // Documents (PDF, images)
   documents: {
-    maxSizeMB: 10,
+    maxSizeMB: fileUpload.maxSizeDocuments,
     allowedTypes: [
       'image/jpeg',
       'image/jpg',
@@ -155,14 +158,14 @@ export const FILE_VALIDATION_PRESETS = {
 
   // PDF only
   pdf: {
-    maxSizeMB: 10,
+    maxSizeMB: fileUpload.maxSizeDocuments,
     allowedTypes: ['application/pdf'],
     allowedExtensions: ['.pdf'],
   },
 
   // RIB/Bank documents (images and PDF)
   rib: {
-    maxSizeMB: 5,
+    maxSizeMB: fileUpload.maxSizeRib,
     allowedTypes: [
       'image/jpeg',
       'image/jpg',

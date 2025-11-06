@@ -1,3 +1,14 @@
+// ============================================
+// Advanced Filtering Hook
+// Path: src/hooks/useAdvancedFilters.ts
+//
+// Provides advanced filtering with:
+// - Date range filters
+// - Multi-select filters
+// - Search filters
+// - Filter presets (localStorage)
+// ============================================
+
 import { useState, useCallback, useEffect } from 'react';
 
 export interface DateRangeFilter {
@@ -24,8 +35,34 @@ export interface FilterPreset {
 }
 
 interface UseAdvancedFiltersOptions {
-  persistKey?: string;
+  persistKey?: string; // localStorage key for saving presets
   initialFilters?: Partial<FilterState>;
+}
+
+interface UseAdvancedFiltersReturn {
+  filters: FilterState;
+  setSearch: (search: string) => void;
+  setDateRange: (startDate: string | null, endDate: string | null) => void;
+  addMultiSelectFilter: (field: string, value: string) => void;
+  removeMultiSelectFilter: (field: string, value: string) => void;
+  clearMultiSelectFilter: (field: string) => void;
+  setCustomFilter: (key: string, value: any) => void;
+  clearAllFilters: () => void;
+
+  // Presets
+  presets: FilterPreset[];
+  savePreset: (name: string) => void;
+  loadPreset: (id: string) => void;
+  deletePreset: (id: string) => void;
+
+  // Apply filters to data
+  applyFilters: <T extends Record<string, any>>(
+    data: T[],
+    options?: {
+      searchFields?: (keyof T)[];
+      dateField?: keyof T;
+    }
+  ) => T[];
 }
 
 const defaultFilterState: FilterState = {
@@ -35,7 +72,9 @@ const defaultFilterState: FilterState = {
   customFilters: {},
 };
 
-export function useAdvancedFilters(options: UseAdvancedFiltersOptions = {}) {
+export function useAdvancedFilters(
+  options: UseAdvancedFiltersOptions = {}
+): UseAdvancedFiltersReturn {
   const { persistKey, initialFilters } = options;
 
   const [filters, setFilters] = useState<FilterState>({
@@ -45,6 +84,7 @@ export function useAdvancedFilters(options: UseAdvancedFiltersOptions = {}) {
 
   const [presets, setPresets] = useState<FilterPreset[]>([]);
 
+  // Load presets from localStorage on mount
   useEffect(() => {
     if (persistKey) {
       const saved = localStorage.getItem(`filter-presets-${persistKey}`);
@@ -58,6 +98,7 @@ export function useAdvancedFilters(options: UseAdvancedFiltersOptions = {}) {
     }
   }, [persistKey]);
 
+  // Save presets to localStorage whenever they change
   useEffect(() => {
     if (persistKey && presets.length > 0) {
       localStorage.setItem(`filter-presets-${persistKey}`, JSON.stringify(presets));
@@ -83,7 +124,7 @@ export function useAdvancedFilters(options: UseAdvancedFiltersOptions = {}) {
       const existing = prev.multiSelect.find((f) => f.field === field);
       if (existing) {
         if (existing.values.includes(value)) {
-          return prev;
+          return prev; // Already exists
         }
         return {
           ...prev,
@@ -156,6 +197,54 @@ export function useAdvancedFilters(options: UseAdvancedFiltersOptions = {}) {
     setPresets((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  const applyFilters = useCallback(
+    <T extends Record<string, any>>(
+      data: T[],
+      options: {
+        searchFields?: (keyof T)[];
+        dateField?: keyof T;
+      } = {}
+    ): T[] => {
+      let filtered = [...data];
+
+      // Apply search filter
+      if (filters.search && options.searchFields) {
+        const searchLower = filters.search.toLowerCase();
+        filtered = filtered.filter((item) =>
+          options.searchFields!.some((field) =>
+            String(item[field] || '').toLowerCase().includes(searchLower)
+          )
+        );
+      }
+
+      // Apply date range filter
+      if (
+        filters.dateRange.startDate &&
+        filters.dateRange.endDate &&
+        options.dateField
+      ) {
+        const startDate = new Date(filters.dateRange.startDate);
+        const endDate = new Date(filters.dateRange.endDate);
+        filtered = filtered.filter((item) => {
+          const itemDate = new Date(item[options.dateField!]);
+          return itemDate >= startDate && itemDate <= endDate;
+        });
+      }
+
+      // Apply multi-select filters
+      filters.multiSelect.forEach((multiFilter) => {
+        if (multiFilter.values.length > 0) {
+          filtered = filtered.filter((item) =>
+            multiFilter.values.includes(String(item[multiFilter.field]))
+          );
+        }
+      });
+
+      return filtered;
+    },
+    [filters]
+  );
+
   return {
     filters,
     setSearch,
@@ -169,5 +258,6 @@ export function useAdvancedFilters(options: UseAdvancedFiltersOptions = {}) {
     savePreset,
     loadPreset,
     deletePreset,
+    applyFilters,
   };
 }

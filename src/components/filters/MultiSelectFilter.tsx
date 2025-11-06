@@ -1,3 +1,8 @@
+// ============================================
+// Multi-Select Filter Component
+// Path: src/components/filters/MultiSelectFilter.tsx
+// ============================================
+
 import { useState } from 'react';
 import { ChevronDown, X, Check } from 'lucide-react';
 

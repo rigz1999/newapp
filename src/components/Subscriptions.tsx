@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2, Filter } from 'lucide-react';
+import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { AlertModal } from './Modals';
 import { TableSkeleton } from './Skeleton';
 import { Pagination, paginate } from './Pagination';
@@ -39,7 +39,37 @@ interface SubscriptionsProps {
 export function Subscriptions({ organization }: SubscriptionsProps) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Advanced filters
+  const advancedFilters = useAdvancedFilters({
+    persistKey: 'subscriptions-filters',
+  });
+
+  // Clear invalid tranche selections when project filter changes
+  useEffect(() => {
+    const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
+    const trancheFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'tranche');
+
+    if (projectFilter && projectFilter.values.length > 0 && trancheFilter && trancheFilter.values.length > 0) {
+      // Get valid tranches for selected projects
+      const validTranches = Array.from(
+        new Set(
+          subscriptions
+            .filter(s => projectFilter.values.includes(s.tranches?.projets?.projet || ''))
+            .map(s => s.tranches?.tranche_name)
+            .filter(Boolean)
+        )
+      );
+
+      // Remove tranche selections that are no longer valid
+      trancheFilter.values.forEach(selectedTranche => {
+        if (!validTranches.includes(selectedTranche)) {
+          advancedFilters.removeMultiSelectFilter('tranche', selectedTranche);
+        }
+      });
+    }
+  }, [advancedFilters.filters.multiSelect, subscriptions]);
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -71,26 +101,6 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
-
-  // Advanced filtering
-  const advancedFilters = useAdvancedFilters({
-    persistKey: 'subscriptions-filters',
-  });
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
-  // Get unique values for filters
-  const uniqueProjects = Array.from(
-    new Set(subscriptions.map(s => s.tranches?.projets?.projet).filter(Boolean))
-  ).map(name => ({ value: name!, label: name! }));
-
-  const uniqueTranches = Array.from(
-    new Set(subscriptions.map(s => s.tranches?.tranche_name).filter(Boolean))
-  ).map(name => ({ value: name!, label: name! }));
-
-  const uniqueInvestorTypes = [
-    { value: 'physique', label: 'Personne physique' },
-    { value: 'morale', label: 'Personne morale' },
-  ];
 
   useEffect(() => {
     let isMounted = true;
@@ -175,8 +185,10 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
 
       if (error) throw error;
 
+      // Refresh data
       await fetchSubscriptions();
       
+      // Close modals
       setShowConfirmModal(false);
       setShowEditModal(false);
       setEditingSubscription(null);
@@ -221,8 +233,10 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
 
       if (error) throw error;
 
+      // Refresh data
       await fetchSubscriptions();
       
+      // Close modal
       setShowDeleteModal(false);
       setDeletingSubscription(null);
     } catch (error) {
@@ -292,23 +306,67 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
     URL.revokeObjectURL(url);
   };
 
-  // Apply all filters
+  // Extract unique values for multi-select filters
+  const uniqueProjects = useMemo(() =>
+    Array.from(
+      new Set(subscriptions.map(s => s.tranches?.projets?.projet).filter(Boolean))
+    ).map(name => ({ value: name!, label: name! })),
+    [subscriptions]
+  );
+
+  // Cascading filter: Only show tranches from selected projects
+  const uniqueTranches = useMemo(() => {
+    const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
+    const selectedProjects = projectFilter?.values || [];
+
+    return Array.from(
+      new Set(
+        subscriptions
+          .filter(s => {
+            // If no projects selected, show all tranches
+            if (selectedProjects.length === 0) return true;
+            // Otherwise, only show tranches from selected projects
+            return selectedProjects.includes(s.tranches?.projets?.projet || '');
+          })
+          .map(s => s.tranches?.tranche_name)
+          .filter(Boolean)
+      )
+    ).map(name => ({ value: name!, label: name! }));
+  }, [subscriptions, advancedFilters.filters.multiSelect]);
+
+  const uniqueInvestorTypes = useMemo(() =>
+    Array.from(
+      new Set(subscriptions.map(s => s.investisseurs?.type).filter(Boolean))
+    ).map(type => ({
+      value: type!,
+      label: type!.toLowerCase() === 'physique' ? 'Personne physique' : 'Personne morale'
+    })),
+    [subscriptions]
+  );
+
+  // Count active filters
+  const activeFiltersCount = [
+    advancedFilters.filters.search ? 1 : 0,
+    advancedFilters.filters.dateRange.startDate || advancedFilters.filters.dateRange.endDate ? 1 : 0,
+    ...advancedFilters.filters.multiSelect.map(f => f.values.length > 0 ? 1 : 0)
+  ].reduce((a, b) => a + b, 0);
+
   const filteredSubscriptions = subscriptions.filter((sub) => {
-    // Basic search
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    // Search filter
+    if (advancedFilters.filters.search) {
+      const term = advancedFilters.filters.search.toLowerCase();
       const matchesSearch = (
-        sub.tranches.projets.projet.toLowerCase().includes(term) ||
-        sub.tranches.projets.emetteur.toLowerCase().includes(term) ||
-        sub.tranches.tranche_name.toLowerCase().includes(term) ||
-        sub.investisseurs.nom_raison_sociale?.toLowerCase().includes(term) ||
-        sub.investisseurs.representant_legal?.toLowerCase().includes(term) ||
-        sub.investisseurs.email?.toLowerCase().includes(term)
+        sub.tranches?.projets?.projet?.toLowerCase().includes(term) ||
+        sub.tranches?.projets?.emetteur?.toLowerCase().includes(term) ||
+        sub.tranches?.tranche_name?.toLowerCase().includes(term) ||
+        sub.investisseurs?.nom_raison_sociale?.toLowerCase().includes(term) ||
+        sub.investisseurs?.representant_legal?.toLowerCase().includes(term) ||
+        sub.investisseurs?.email?.toLowerCase().includes(term)
       );
       if (!matchesSearch) return false;
     }
 
-    // Advanced filters - Date range
+    // Date range filter
     if (advancedFilters.filters.dateRange.startDate && advancedFilters.filters.dateRange.endDate) {
       const startDate = new Date(advancedFilters.filters.dateRange.startDate);
       const endDate = new Date(advancedFilters.filters.dateRange.endDate);
@@ -318,7 +376,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       }
     }
 
-    // Advanced filters - Multi-select projects
+    // Multi-select project filter
     const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
     if (projectFilter && projectFilter.values.length > 0) {
       if (!projectFilter.values.includes(sub.tranches?.projets?.projet || '')) {
@@ -326,7 +384,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       }
     }
 
-    // Advanced filters - Multi-select tranches
+    // Multi-select tranche filter
     const trancheFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'tranche');
     if (trancheFilter && trancheFilter.values.length > 0) {
       if (!trancheFilter.values.includes(sub.tranches?.tranche_name || '')) {
@@ -334,21 +392,16 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       }
     }
 
-    // Advanced filters - Investor type
-    const typeFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'investor_type');
-    if (typeFilter && typeFilter.values.length > 0) {
-      if (!typeFilter.values.includes(sub.investisseurs.type.toLowerCase())) {
+    // Multi-select investor type filter
+    const investorTypeFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'investorType');
+    if (investorTypeFilter && investorTypeFilter.values.length > 0) {
+      if (!investorTypeFilter.values.includes(sub.investisseurs?.type || '')) {
         return false;
       }
     }
 
     return true;
   });
-
-  const hasActiveFilters = 
-    advancedFilters.filters.dateRange.startDate ||
-    advancedFilters.filters.dateRange.endDate ||
-    advancedFilters.filters.multiSelect.length > 0;
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
@@ -366,57 +419,66 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-          {/* Basic Filters */}
+        {/* Filters Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+          {/* Basic Search */}
           <div className="flex flex-col md:flex-row gap-4 mb-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Rechercher..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+                placeholder="Rechercher par projet, tranche, investisseur..."
+                value={advancedFilters.filters.search}
+                onChange={(e) => advancedFilters.setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
-                showAdvancedFilters || hasActiveFilters
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+                showAdvancedFilters || activeFiltersCount > 0
+                  ? 'bg-blue-50 border-blue-300 text-blue-700'
+                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
               }`}
             >
               <Filter className="w-5 h-5" />
-              Filtres avancés
-              {hasActiveFilters && (
-                <span className="bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs font-semibold">
-                  {advancedFilters.filters.multiSelect.length + 
-                    (advancedFilters.filters.dateRange.startDate ? 1 : 0)}
+              <span className="font-medium">Filtres avancés</span>
+              {activeFiltersCount > 0 && (
+                <span className="bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {activeFiltersCount}
                 </span>
               )}
+              {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
           </div>
 
           {/* Advanced Filters Panel */}
           {showAdvancedFilters && (
-            <div className="border-t border-slate-200 pt-4 mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                {/* Date Range */}
-                <DateRangePicker
-                  startDate={advancedFilters.filters.dateRange.startDate}
-                  endDate={advancedFilters.filters.dateRange.endDate}
-                  onStartDateChange={(date) =>
-                    advancedFilters.setDateRange(date, advancedFilters.filters.dateRange.endDate)
-                  }
-                  onEndDateChange={(date) =>
-                    advancedFilters.setDateRange(advancedFilters.filters.dateRange.startDate, date)
-                  }
-                  label="Période de souscription"
-                />
+            <div className="border-t border-slate-200 pt-6 space-y-4">
+              {/* Filter Presets */}
+              <FilterPresets
+                presets={advancedFilters.presets}
+                onSave={(name) => advancedFilters.savePreset(name)}
+                onLoad={(id) => advancedFilters.loadPreset(id)}
+                onDelete={(id) => advancedFilters.deletePreset(id)}
+              />
 
-                {/* Project Filter */}
+              {/* Date Range Filter */}
+              <DateRangePicker
+                label="Période de souscription"
+                startDate={advancedFilters.filters.dateRange.startDate}
+                endDate={advancedFilters.filters.dateRange.endDate}
+                onStartDateChange={(date) =>
+                  advancedFilters.setDateRange(date, advancedFilters.filters.dateRange.endDate)
+                }
+                onEndDateChange={(date) =>
+                  advancedFilters.setDateRange(advancedFilters.filters.dateRange.startDate, date)
+                }
+              />
+
+              {/* Multi-select Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <MultiSelectFilter
                   label="Projets"
                   options={uniqueProjects}
@@ -426,10 +488,9 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                   onAdd={(value) => advancedFilters.addMultiSelectFilter('projet', value)}
                   onRemove={(value) => advancedFilters.removeMultiSelectFilter('projet', value)}
                   onClear={() => advancedFilters.clearMultiSelectFilter('projet')}
-                  placeholder="Tous les projets"
+                  placeholder="Sélectionner des projets..."
                 />
 
-                {/* Tranche Filter */}
                 <MultiSelectFilter
                   label="Tranches"
                   options={uniqueTranches}
@@ -439,43 +500,33 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                   onAdd={(value) => advancedFilters.addMultiSelectFilter('tranche', value)}
                   onRemove={(value) => advancedFilters.removeMultiSelectFilter('tranche', value)}
                   onClear={() => advancedFilters.clearMultiSelectFilter('tranche')}
-                  placeholder="Toutes les tranches"
+                  placeholder="Sélectionner des tranches..."
                 />
 
-                {/* Investor Type Filter */}
                 <MultiSelectFilter
                   label="Type d'investisseur"
                   options={uniqueInvestorTypes}
                   selectedValues={
-                    advancedFilters.filters.multiSelect.find(f => f.field === 'investor_type')?.values || []
+                    advancedFilters.filters.multiSelect.find(f => f.field === 'investorType')?.values || []
                   }
-                  onAdd={(value) => advancedFilters.addMultiSelectFilter('investor_type', value)}
-                  onRemove={(value) => advancedFilters.removeMultiSelectFilter('investor_type', value)}
-                  onClear={() => advancedFilters.clearMultiSelectFilter('investor_type')}
-                  placeholder="Tous les types"
-                />
-
-                {/* Filter Presets */}
-                <FilterPresets
-                  presets={advancedFilters.presets}
-                  onSave={(name) => advancedFilters.savePreset(name)}
-                  onLoad={(id) => advancedFilters.loadPreset(id)}
-                  onDelete={(id) => advancedFilters.deletePreset(id)}
+                  onAdd={(value) => advancedFilters.addMultiSelectFilter('investorType', value)}
+                  onRemove={(value) => advancedFilters.removeMultiSelectFilter('investorType', value)}
+                  onClear={() => advancedFilters.clearMultiSelectFilter('investorType')}
+                  placeholder="Sélectionner des types..."
                 />
               </div>
 
-              <div className="flex justify-end">
-                <button
-                  onClick={() => {
-                    advancedFilters.clearAllFilters();
-                    setSearchTerm('');
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
-                >
-                  <X className="w-4 h-4" />
-                  Effacer tous les filtres
-                </button>
-              </div>
+              {/* Clear All Filters */}
+              {activeFiltersCount > 0 && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => advancedFilters.clearAllFilters()}
+                    className="text-sm text-slate-600 hover:text-slate-900 underline"
+                  >
+                    Effacer tous les filtres
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -489,7 +540,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
             <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">Aucune souscription</h3>
             <p className="text-slate-600">
-              {searchTerm || hasActiveFilters ? 'Aucun résultat pour cette recherche' : 'Importez des tranches pour voir les souscriptions'}
+              {searchTerm ? 'Aucun résultat pour cette recherche' : 'Importez des tranches pour voir les souscriptions'}
             </p>
           </div>
         ) : (
@@ -598,9 +649,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           </div>
         )}
 
-        {/* ALL THE MODALS STAY THE SAME - Edit, View, Delete, Confirm, Alert */}
-        {/* I'll keep them as is to save space - just copy from line 592 onwards from original */}
-        
+        {/* Edit Modal */}
         {showEditModal && editingSubscription && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -731,6 +780,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           </div>
         )}
 
+        {/* Confirmation Modal */}
         {showConfirmModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
@@ -779,6 +829,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           </div>
         )}
 
+        {/* View Modal */}
         {showViewModal && viewingSubscription && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -800,6 +851,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
               </div>
 
               <div className="p-6 space-y-6">
+                {/* Project Info */}
                 <div>
                   <h4 className="text-sm font-semibold text-slate-900 mb-3">Projet</h4>
                   <div className="bg-slate-50 rounded-lg p-4 space-y-2">
@@ -818,6 +870,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                   </div>
                 </div>
 
+                {/* Investor Info */}
                 <div>
                   <h4 className="text-sm font-semibold text-slate-900 mb-3">Investisseur</h4>
                   <div className="bg-slate-50 rounded-lg p-4 space-y-2">
@@ -840,6 +893,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                   </div>
                 </div>
 
+                {/* Subscription Details */}
                 <div>
                   <h4 className="text-sm font-semibold text-slate-900 mb-3">Détails de la souscription</h4>
                   <div className="bg-slate-50 rounded-lg p-4 space-y-2">
@@ -883,6 +937,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           </div>
         )}
 
+        {/* Delete Confirmation Modal */}
         {showDeleteModal && deletingSubscription && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
@@ -945,6 +1000,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           </div>
         )}
 
+      {/* Alert Modal */}
       <AlertModal
         isOpen={showAlertModal}
         onClose={() => setShowAlertModal(false)}

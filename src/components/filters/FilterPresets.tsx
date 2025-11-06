@@ -1,3 +1,8 @@
+// ============================================
+// Filter Presets Component
+// Path: src/components/filters/FilterPresets.tsx
+// ============================================
+
 import { useState } from 'react';
 import { Save, Trash2, Star } from 'lucide-react';
 import type { FilterPreset } from '../../hooks/useAdvancedFilters';
