@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth';
 import { useOrganization } from './hooks/useOrganization';
 import { Login } from './components/Login';
 import { Layout } from './components/Layout';
+import { InvitationAccept } from './components/InvitationAccept';
 import { supabase } from './lib/supabase';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -108,6 +109,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Route - Invitation Accept (no auth required) */}
+        <Route path="/invitation/accept" element={<InvitationAccept />} />
+
         {/* Main App Routes - Inside Layout (with sidebar) */}
         <Route path="/" element={<Layout organization={effectiveOrg} />}>
           <Route
@@ -204,7 +208,7 @@ function App() {
               )
             }
           />
-          
+
           {/* Wildcard must be LAST */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
