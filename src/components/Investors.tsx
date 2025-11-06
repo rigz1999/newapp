@@ -661,7 +661,6 @@ export function Investors({ organization }: InvestorsProps) {
     XLSX.writeFile(wb, `investisseurs_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  const uniqueProjects = Array.from(new Set(investors.flatMap(inv => inv.projects || [])));
 
   if (loading) {
     return (
