@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Eye, Filter, X } from 'lucide-react';
-import { ViewProofsModal } from './ViewProofsModal';
-import { TableSkeleton } from './Skeleton';
-import { Pagination, paginate } from './Pagination';
-import { useAdvancedFilters } from '../hooks/useAdvancedFilters';
-import { DateRangePicker } from './filters/DateRangePicker';
-import { MultiSelectFilter } from './filters/MultiSelectFilter';
-import { FilterPresets } from './filters/FilterPresets';
+import { ViewProofsModal } from '../investors/ViewProofsModal';
+import { TableSkeleton } from '../common/Skeleton';
+import { Pagination, paginate } from '../common/Pagination';
+import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
+import { DateRangePicker } from '../filters/DateRangePicker';
+import { MultiSelectFilter } from '../filters/MultiSelectFilter';
+import { FilterPresets } from '../filters/FilterPresets';
 
 interface PaymentsProps {
   organization: { id: string; name: string; role: string };

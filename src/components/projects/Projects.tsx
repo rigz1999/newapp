@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { FolderOpen, Plus, Layers, Search, Eye, Users, X, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import { triggerCacheInvalidation } from '../utils/cacheManager';
-import { AlertModal } from './Modals';
-import { CardSkeleton } from './Skeleton';
-import { formatCurrency, formatMontantDisplay, groupDigitsWithSpaces } from '../utils/formatters';
-import { isValidSIREN } from '../utils/validators';
-import { useAdvancedFilters } from '../hooks/useAdvancedFilters';
-import { MultiSelectFilter } from './filters/MultiSelectFilter';
-import { FilterPresets } from './filters/FilterPresets';
+import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { AlertModal } from '../common/Modals';
+import { CardSkeleton } from '../common/Skeleton';
+import { formatCurrency, formatMontantDisplay, groupDigitsWithSpaces } from '../../utils/formatters';
+import { isValidSIREN } from '../../utils/validators';
+import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
+import { MultiSelectFilter } from '../filters/MultiSelectFilter';
+import { FilterPresets } from '../filters/FilterPresets';
 
 interface ProjectWithStats {
   id: string;

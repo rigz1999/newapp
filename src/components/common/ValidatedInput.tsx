@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { validateField, ValidationRule } from '../utils/formValidation';
+import { validateField, ValidationRule } from '../../utils/formValidation';
 
 interface ValidatedInputProps {
   label: string;

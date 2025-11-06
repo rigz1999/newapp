@@ -5,9 +5,9 @@
 // ============================================
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { LogIn, UserPlus, Clock, RefreshCw } from 'lucide-react';
-import { formatErrorMessage } from '../utils/errorMessages';
+import { formatErrorMessage } from '../../utils/errorMessages';
 
 export function Login() {
   const [email, setEmail] = useState('');

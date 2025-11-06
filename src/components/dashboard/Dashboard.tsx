@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { TrancheWizard } from './TrancheWizard';
-import { PaymentWizard } from './PaymentWizard';
-import { getDashboardCacheKey, onCacheInvalidated } from '../utils/cacheManager';
-import { AlertModal } from './Modals';
-import { DashboardSkeleton } from './Skeleton';
-import { formatCurrency, formatDate, getRelativeDate, formatMontantDisplay, groupDigitsWithSpaces } from '../utils/formatters';
-import { isValidSIREN } from '../utils/validators';
-import { generateAlerts, type Alert, type Payment, type UpcomingCoupon } from '../utils/dashboardAlerts';
+import { supabase } from '../../lib/supabase';
+import { TrancheWizard } from '../tranches/TrancheWizard';
+import { PaymentWizard } from '../payments/PaymentWizard';
+import { getDashboardCacheKey, onCacheInvalidated } from '../../utils/cacheManager';
+import { AlertModal } from '../common/Modals';
+import { DashboardSkeleton } from '../common/Skeleton';
+import { formatCurrency, formatDate, getRelativeDate, formatMontantDisplay, groupDigitsWithSpaces } from '../../utils/formatters';
+import { isValidSIREN } from '../../utils/validators';
+import { generateAlerts, type Alert, type Payment, type UpcomingCoupon } from '../../utils/dashboardAlerts';
 import {
   TrendingUp,
   CheckCircle2,

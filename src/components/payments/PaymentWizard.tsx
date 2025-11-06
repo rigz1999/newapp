@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, ArrowLeft, Trash2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
-import { validateFile, FILE_VALIDATION_PRESETS } from '../utils/fileValidation';
+import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 

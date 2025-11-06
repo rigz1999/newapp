@@ -4,16 +4,16 @@
 // ============================================
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../hooks/useAuth';
-import { useOrganization } from '../hooks/useOrganization';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
+import { useOrganization } from '../../hooks/useOrganization';
 import {
   Users, UserPlus, Trash2, RefreshCw,
   Mail, Calendar, Edit2, X, AlertCircle, Clock, Send
 } from 'lucide-react';
-import { formatErrorMessage } from '../utils/errorMessages';
-import { AlertModal } from './Modals';
-import { TableSkeleton } from './Skeleton';
+import { formatErrorMessage } from '../../utils/errorMessages';
+import { AlertModal } from '../common/Modals';
+import { TableSkeleton } from '../common/Skeleton';
 
 interface Member {
   id: string;

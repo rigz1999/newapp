@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import { X, CheckCircle, AlertCircle, Loader, Edit } from "lucide-react";
-import { FileUpload } from "./FileUpload";
+import { FileUpload } from "../investors/FileUpload";
 
 interface Project {
   id: string;

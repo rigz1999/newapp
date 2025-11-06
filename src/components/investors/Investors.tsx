@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { ConfirmModal, AlertModal } from './Modals';
-import { TableSkeleton } from './Skeleton';
-import { Pagination, paginate } from './Pagination';
-import { validateFile, FILE_VALIDATION_PRESETS } from '../utils/fileValidation';
-import { useAdvancedFilters } from '../hooks/useAdvancedFilters';
-import { DateRangePicker } from './filters/DateRangePicker';
-import { MultiSelectFilter } from './filters/MultiSelectFilter';
-import { FilterPresets } from './filters/FilterPresets';
+import { ConfirmModal, AlertModal } from '../common/Modals';
+import { TableSkeleton } from '../common/Skeleton';
+import { Pagination, paginate } from '../common/Pagination';
+import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
+import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
+import { DateRangePicker } from '../filters/DateRangePicker';
+import { MultiSelectFilter } from '../filters/MultiSelectFilter';
+import { FilterPresets } from '../filters/FilterPresets';
 
 interface Investor {
   id: string;

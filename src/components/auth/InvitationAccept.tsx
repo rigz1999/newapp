@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { CheckCircle, AlertCircle, Lock, Mail, User, RefreshCw } from 'lucide-react';
 
 interface Invitation {

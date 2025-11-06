@@ -4,13 +4,13 @@
 // ============================================
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import {
   User, Lock, Mail, Save, RefreshCw, CheckCircle, X, AlertCircle
 } from 'lucide-react';
-import { formatErrorMessage } from '../utils/errorMessages';
-import { CardSkeleton } from './Skeleton';
+import { formatErrorMessage } from '../../utils/errorMessages';
+import { CardSkeleton } from '../common/Skeleton';
 
 export default function Settings() {
   const { user } = useAuth();

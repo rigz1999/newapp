@@ -4,7 +4,7 @@
 // ============================================
 
 import { AlertCircle, X } from 'lucide-react';
-import { formatErrorMessage } from '../utils/errorMessages';
+import { formatErrorMessage } from '../../utils/errorMessages';
 
 interface ErrorMessageProps {
   error?: any;

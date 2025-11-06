@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { Sidebar } from './Sidebar';
+import { supabase } from '../../lib/supabase';
+import { Sidebar } from '../layouts/Sidebar';
 import { ArrowLeft, Upload, Download, Layers, AlertCircle, X } from 'lucide-react';
-import { FileUpload } from './FileUpload';
+import { FileUpload } from '../investors/FileUpload';
 
 interface Tranche {
   id: string;

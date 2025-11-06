@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { TrancheWizard } from './TrancheWizard';
-import { PaymentWizard } from './PaymentWizard';
-import { EcheancierCard } from './EcheancierCard';
-import { SubscriptionsModal } from './SubscriptionsModal';
-import { TranchesModal } from './TranchesModal';
-import { AlertModal } from './AlertModal';
-import { EcheancierModal } from './EcheancierModal';
-import { PaymentsModal } from './PaymentsModal';  // ✅ AJOUT
+import { supabase } from '../../lib/supabase';
+import { TrancheWizard } from '../tranches/TrancheWizard';
+import { PaymentWizard } from '../payments/PaymentWizard';
+import { EcheancierCard } from '../coupons/EcheancierCard';
+import { SubscriptionsModal } from '../subscriptions/SubscriptionsModal';
+import { TranchesModal } from '../tranches/TranchesModal';
+import { AlertModal } from '../common/AlertModal';
+import { EcheancierModal } from '../coupons/EcheancierModal';
+import { PaymentsModal } from '../payments/PaymentsModal';  // ✅ AJOUT
 import {
   ArrowLeft,
   Edit,
@@ -27,7 +27,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import { DashboardSkeleton } from './Skeleton';
+import { DashboardSkeleton } from '../common/Skeleton';
 
 interface ProjectDetailProps {
   organization: { id: string; name: string; role: string };

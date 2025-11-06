@@ -1,10 +1,10 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield, UserCog, Settings, Search } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { GlobalSearch } from './GlobalSearch';
-import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useAuth } from '../../hooks/useAuth';
+import { GlobalSearch } from '../dashboard/GlobalSearch';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 
 interface LayoutProps {
   organization: { id: string; name: string; role: string };

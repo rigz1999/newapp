@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import { AlertModal } from './Modals';
-import { TableSkeleton } from './Skeleton';
-import { Pagination, paginate } from './Pagination';
-import { useAdvancedFilters } from '../hooks/useAdvancedFilters';
-import { DateRangePicker } from './filters/DateRangePicker';
-import { MultiSelectFilter } from './filters/MultiSelectFilter';
-import { FilterPresets } from './filters/FilterPresets';
+import { AlertModal } from '../common/Modals';
+import { TableSkeleton } from '../common/Skeleton';
+import { Pagination, paginate } from '../common/Pagination';
+import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
+import { DateRangePicker } from '../filters/DateRangePicker';
+import { MultiSelectFilter } from '../filters/MultiSelectFilter';
+import { FilterPresets } from '../filters/FilterPresets';
 
 interface Subscription {
   id: string;

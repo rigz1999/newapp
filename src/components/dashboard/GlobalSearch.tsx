@@ -5,9 +5,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Search, X, Folder, Users, Layers, FileText, DollarSign, Receipt, TrendingUp, Clock } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { cachedQuery, queryCache } from '../utils/queryOptimization';
+import { cachedQuery, queryCache } from '../../utils/queryOptimization';
 
 interface SearchResult {
   type: 'project' | 'investor' | 'tranche' | 'subscription' | 'payment' | 'coupon';

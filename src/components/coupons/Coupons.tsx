@@ -1,5 +1,5 @@
  import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import {
   Calendar,
   Search,
@@ -20,13 +20,13 @@ import {
   Upload
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { PaymentWizard } from './PaymentWizard';
-import { TableSkeleton } from './Skeleton';
-import { Pagination, paginate } from './Pagination';
-import { useAdvancedFilters } from '../hooks/useAdvancedFilters';
-import { MultiSelectFilter } from './filters/MultiSelectFilter';
-import { FilterPresets } from './filters/FilterPresets';
-import { DateRangePicker } from './filters/DateRangePicker';
+import { PaymentWizard } from '../payments/PaymentWizard';
+import { TableSkeleton } from '../common/Skeleton';
+import { Pagination, paginate } from '../common/Pagination';
+import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
+import { MultiSelectFilter } from '../filters/MultiSelectFilter';
+import { FilterPresets } from '../filters/FilterPresets';
+import { DateRangePicker } from '../filters/DateRangePicker';
 
 interface Coupon {
   id: string;

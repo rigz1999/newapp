@@ -4,14 +4,14 @@
 // ============================================
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import {
   Users, Building2, UserPlus, Shield, RefreshCw,
   CheckCircle, Trash2, Plus, AlertCircle,
   Search, UserX, ChevronDown, ChevronUp, Edit2, Clock, Eye, X, Mail, Calendar
 } from 'lucide-react';
-import { AlertModal } from './Modals';
-import { TableSkeleton } from './Skeleton';
+import { AlertModal } from '../common/Modals';
+import { TableSkeleton } from '../common/Skeleton';
 
 interface Organization {
   id: string;

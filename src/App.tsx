@@ -2,23 +2,23 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useOrganization } from './hooks/useOrganization';
-import { Login } from './components/Login';
-import { Layout } from './components/Layout';
-import { InvitationAccept } from './components/InvitationAccept';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { DashboardSkeleton } from './components/Skeleton';
+import { Login } from './components/auth/Login';
+import { Layout } from './components/layouts/Layout';
+import { InvitationAccept } from './components/auth/InvitationAccept';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { DashboardSkeleton } from './components/common/Skeleton';
 import { supabase } from './lib/supabase';
 
-const Dashboard = lazy(() => import('./components/Dashboard'));
-const Projects = lazy(() => import('./components/Projects'));
-const ProjectDetail = lazy(() => import('./components/ProjectDetail'));
-const Coupons = lazy(() => import('./components/Coupons'));
-const Investors = lazy(() => import('./components/Investors'));
-const Subscriptions = lazy(() => import('./components/Subscriptions'));
-const Payments = lazy(() => import('./components/Payments'));
-const AdminPanel = lazy(() => import('./components/AdminPanel'));
-const Members = lazy(() => import('./components/Members'));
-const Settings = lazy(() => import('./components/Settings'));
+const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
+const Projects = lazy(() => import('./components/projects/Projects'));
+const ProjectDetail = lazy(() => import('./components/projects/ProjectDetail'));
+const Coupons = lazy(() => import('./components/coupons/Coupons'));
+const Investors = lazy(() => import('./components/investors/Investors'));
+const Subscriptions = lazy(() => import('./components/subscriptions/Subscriptions'));
+const Payments = lazy(() => import('./components/payments/Payments'));
+const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
+const Members = lazy(() => import('./components/admin/Members'));
+const Settings = lazy(() => import('./components/admin/Settings'));
 
 function App() {
   const { user, loading: authLoading, isAdmin, isOrgAdmin } = useAuth();

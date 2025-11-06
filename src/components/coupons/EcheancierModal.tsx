@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import * as XLSX from 'xlsx';
 
 interface EcheancierModalProps {

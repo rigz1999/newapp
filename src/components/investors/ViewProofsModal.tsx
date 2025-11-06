@@ -1,7 +1,7 @@
 import { X, Download, Eye, Trash2, AlertTriangle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useState } from 'react';
-import { AlertModal } from './Modals';
+import { AlertModal } from '../common/Modals';
 
 interface ViewProofsModalProps {
   payment: any;
