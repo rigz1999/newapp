@@ -470,7 +470,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                 >
                   {files.length > 0 ? 'Ajouter d\'autres fichiers' : 'Choisir des fichiers'}
                 </label>
-                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier) - v2.0</p>
+                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier) - v3.0</p>
               </div>
 
               {files.length > 0 && (
