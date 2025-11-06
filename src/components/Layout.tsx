@@ -1,8 +1,9 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield, UserCog, Settings } from 'lucide-react';
+import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield, UserCog, Settings, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { GlobalSearch } from './GlobalSearch';
 
 interface LayoutProps {
   organization: { id: string; name: string; role: string };
@@ -13,6 +14,7 @@ export function Layout({ organization }: LayoutProps) {
   const navigate = useNavigate();
   const [pendingCount, setPendingCount] = useState(0);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
   const { isOrgAdmin, isSuperAdmin, user } = useAuth();
 
   // Check if user is super admin (fallback to organization role)
@@ -62,6 +64,19 @@ export function Layout({ organization }: LayoutProps) {
 
     fetchUserProfile();
   }, [user]);
+
+  // Keyboard shortcut for global search (Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const fetchPendingCount = async () => {
     // Fetch profiles
@@ -253,8 +268,37 @@ export function Layout({ organization }: LayoutProps) {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto ml-64">
-        <Outlet />
+      <main className="flex-1 ml-64 flex flex-col">
+        {/* Header with Global Search */}
+        <header className="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <div className="flex-1 max-w-2xl">
+              <button
+                onClick={() => setShowSearch(true)}
+                className="w-full flex items-center gap-3 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-slate-600"
+              >
+                <Search className="w-5 h-5" />
+                <span className="text-sm">Rechercher partout...</span>
+                <span className="ml-auto text-xs bg-white px-2 py-1 rounded border border-slate-300">
+                  Ctrl+K
+                </span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto">
+          <Outlet />
+        </div>
+
+        {/* Global Search Modal */}
+        {showSearch && (
+          <GlobalSearch
+            orgId={organization.id}
+            onClose={() => setShowSearch(false)}
+          />
+        )}
       </main>
     </div>
   );
