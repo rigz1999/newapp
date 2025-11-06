@@ -65,19 +65,6 @@ export function Layout({ organization }: LayoutProps) {
     fetchUserProfile();
   }, [user]);
 
-  // Global search keyboard shortcut (Cmd+K / Ctrl+K)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsSearchOpen(true);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const fetchPendingCount = async () => {
     // Fetch profiles
     const { data: profilesData } = await supabase
@@ -143,7 +130,6 @@ export function Layout({ organization }: LayoutProps) {
           >
             <Search className="w-4 h-4" />
             <span className="text-sm">Rechercher...</span>
-            <kbd className="ml-auto px-2 py-0.5 text-xs bg-slate-700 rounded">⌘K</kbd>
           </button>
 
           <nav className="space-y-2">

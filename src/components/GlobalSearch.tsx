@@ -26,13 +26,25 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Close modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -134,23 +146,9 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
     onClose?.();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex((prev) => Math.min(prev + 1, results.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex((prev) => Math.max(prev - 1, 0));
-    } else if (e.key === 'Enter' && results[selectedIndex]) {
-      handleSelect(results[selectedIndex]);
-    } else if (e.key === 'Escape') {
-      onClose?.();
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-20 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[600px] flex flex-col">
+      <div ref={modalRef} className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[600px] flex flex-col">
         {/* Header avec recherche */}
         <div className="p-4 border-b border-slate-200">
           <div className="relative">
@@ -160,7 +158,6 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
               placeholder="Rechercher un projet, investisseur ou tranche..."
               className="w-full pl-12 pr-12 py-4 text-lg border-none focus:outline-none focus:ring-0"
             />
@@ -192,13 +189,11 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
           {!loading && results.length > 0 && (
             <div className="py-2">
-              {results.map((result, index) => (
+              {results.map((result) => (
                 <button
                   key={`${result.type}-${result.id}`}
                   onClick={() => handleSelect(result)}
-                  className={`w-full px-4 py-3 flex items-center gap-4 hover:bg-slate-50 transition-colors ${
-                    index === selectedIndex ? 'bg-blue-50' : ''
-                  }`}
+                  className="w-full px-4 py-3 flex items-center gap-4 hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex-shrink-0">{result.icon}</div>
                   <div className="flex-1 text-left">
@@ -216,15 +211,6 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
               <p>Tapez au moins 2 caractères pour rechercher</p>
             </div>
           )}
-        </div>
-
-        {/* Footer avec raccourcis */}
-        <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
-          <div className="flex gap-4">
-            <span><kbd className="px-2 py-1 bg-white border border-slate-300 rounded">↑↓</kbd> Naviguer</span>
-            <span><kbd className="px-2 py-1 bg-white border border-slate-300 rounded">Enter</kbd> Sélectionner</span>
-            <span><kbd className="px-2 py-1 bg-white border border-slate-300 rounded">Esc</kbd> Fermer</span>
-          </div>
         </div>
       </div>
     </div>
