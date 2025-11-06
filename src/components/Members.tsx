@@ -12,6 +12,7 @@ import {
   Mail, Calendar, Edit2, X, AlertCircle, Clock, Send
 } from 'lucide-react';
 import { formatErrorMessage } from '../utils/errorMessages';
+import { AlertModal } from './Modals';
 
 interface Member {
   id: string;
@@ -48,6 +49,14 @@ export default function Members() {
   const [successEmail, setSuccessEmail] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
+  // Alert modal state
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertModalConfig, setAlertModalConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
+
   useEffect(() => {
     if (organization) {
       fetchMembers();
@@ -78,7 +87,12 @@ export default function Members() {
 
     if (error) {
       console.error('Error fetching members:', error);
-      alert(formatErrorMessage(error));
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: formatErrorMessage(error),
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } else {
       setMembers(data || []);
     }
@@ -112,7 +126,12 @@ export default function Members() {
 
     if (error) {
       console.error('Error removing member:', error);
-      alert(formatErrorMessage(error));
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: formatErrorMessage(error),
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } else {
       setShowRemoveModal(false);
       setSelectedMember(null);
@@ -130,7 +149,12 @@ export default function Members() {
 
     if (error) {
       console.error('Error changing role:', error);
-      alert(formatErrorMessage(error));
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: formatErrorMessage(error),
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } else {
       setShowRoleModal(false);
       setSelectedMember(null);
@@ -146,7 +170,12 @@ export default function Members() {
 
     if (error) {
       console.error('Error canceling invitation:', error);
-      alert(formatErrorMessage(error));
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: formatErrorMessage(error),
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } else {
       fetchInvitations();
     }
@@ -384,6 +413,15 @@ export default function Members() {
         onClose={() => setShowSuccessModal(false)}
         email={successEmail}
       />
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertModalConfig.title}
+        message={alertModalConfig.message}
+        type={alertModalConfig.type}
+      />
     </div>
   );
 }
@@ -408,16 +446,34 @@ function InviteMemberModal({
   const [role, setRole] = useState<'member' | 'admin'>('member');
   const [sending, setSending] = useState(false);
 
+  // Alert modal state
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
+
   if (!isOpen) return null;
 
   const handleSendInvitation = async () => {
     if (!email || !firstName || !lastName) {
-      alert('Veuillez remplir tous les champs');
+      setAlertConfig({
+        title: 'Champs manquants',
+        message: 'Veuillez remplir tous les champs',
+        type: 'warning'
+      });
+      setShowAlert(true);
       return;
     }
 
     if (!userId) {
-      alert('Erreur: utilisateur non connecté');
+      setAlertConfig({
+        title: 'Erreur',
+        message: 'Utilisateur non connecté',
+        type: 'error'
+      });
+      setShowAlert(true);
       return;
     }
 
@@ -464,17 +520,23 @@ function InviteMemberModal({
       onSuccess(invitedEmail);
     } catch (error: any) {
       console.error('Error sending invitation:', error);
-      alert(`❌ ${formatErrorMessage(error)}`);
+      setAlertConfig({
+        title: 'Erreur',
+        message: formatErrorMessage(error),
+        type: 'error'
+      });
+      setShowAlert(true);
     } finally {
       setSending(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-slate-900">Inviter un Membre</h3>
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-slate-900">Inviter un Membre</h3>
           <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
             <X className="w-5 h-5 text-slate-600" />
           </button>
@@ -568,6 +630,15 @@ function InviteMemberModal({
         </div>
       </div>
     </div>
+
+    <AlertModal
+      isOpen={showAlert}
+      onClose={() => setShowAlert(false)}
+      title={alertConfig.title}
+      message={alertConfig.message}
+      type={alertConfig.type}
+    />
+    </>
   );
 }
 
@@ -633,6 +704,14 @@ function ChangeRoleModal({
 }) {
   const [newRole, setNewRole] = useState('member');
 
+  // Alert modal state
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
+
   useEffect(() => {
     if (member) {
       setNewRole(member.role);
@@ -643,17 +722,23 @@ function ChangeRoleModal({
 
   const handleConfirm = () => {
     if (newRole === member.role) {
-      alert('Le rôle est déjà ' + (newRole === 'admin' ? 'Administrateur' : 'Membre'));
+      setAlertConfig({
+        title: 'Aucun changement',
+        message: 'Le rôle est déjà ' + (newRole === 'admin' ? 'Administrateur' : 'Membre'),
+        type: 'info'
+      });
+      setShowAlert(true);
       return;
     }
     onConfirm(newRole);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-slate-900">Changer le Rôle</h3>
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-slate-900">Changer le Rôle</h3>
           <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
             <X className="w-5 h-5 text-slate-600" />
           </button>
@@ -698,6 +783,15 @@ function ChangeRoleModal({
         </div>
       </div>
     </div>
+
+    <AlertModal
+      isOpen={showAlert}
+      onClose={() => setShowAlert(false)}
+      title={alertConfig.title}
+      message={alertConfig.message}
+      type={alertConfig.type}
+    />
+    </>
   );
 }
 

@@ -5,11 +5,12 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { 
-  Users, Building2, UserPlus, Shield, RefreshCw, 
+import {
+  Users, Building2, UserPlus, Shield, RefreshCw,
   CheckCircle, Trash2, Plus, AlertCircle,
   Search, UserX, ChevronDown, ChevronUp, Edit2, Clock, Eye, X, Mail, Calendar
 } from 'lucide-react';
+import { AlertModal } from './Modals';
 
 interface Organization {
   id: string;
@@ -62,6 +63,14 @@ export default function AdminPanel() {
   const [creating, setCreating] = useState(false);
   const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['pending', 'super-admins', 'organizations']));
+
+  // Alert modal state
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertModalConfig, setAlertModalConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
 
   useEffect(() => {
     fetchData();
@@ -147,7 +156,12 @@ export default function AdminPanel() {
 
     if (error) {
       console.error('Error granting access:', error);
-      alert('Erreur lors de l\'attribution de l\'accès: ' + error.message);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de l\'attribution de l\'accès: ' + error.message,
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } else {
       fetchData();
     }
@@ -169,7 +183,12 @@ export default function AdminPanel() {
 
     if (error) {
       console.error('Error creating organization:', error);
-      alert('Erreur: ' + error.message);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur: ' + error.message,
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } else {
       setNewOrgName('');
       setShowNewOrgModal(false);
@@ -193,7 +212,12 @@ export default function AdminPanel() {
 
     if (error) {
       console.error('Error updating organization:', error);
-      alert('Erreur: ' + error.message);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur: ' + error.message,
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } else {
       setNewOrgName('');
       setShowEditOrgModal(false);
@@ -208,7 +232,12 @@ export default function AdminPanel() {
     const hasMemberships = memberships.some(m => m.org_id === orgId);
     
     if (hasMemberships) {
-      alert('⚠️ Impossible de supprimer cette organisation car elle contient des utilisateurs.');
+      setAlertModalConfig({
+        title: 'Suppression impossible',
+        message: 'Impossible de supprimer cette organisation car elle contient des utilisateurs.',
+        type: 'warning'
+      });
+      setShowAlertModal(true);
       return;
     }
 
@@ -226,7 +255,12 @@ export default function AdminPanel() {
 
     if (error) {
       console.error('Error deleting organization:', error);
-      alert('Erreur: ' + error.message);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur: ' + error.message,
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } else {
       setShowDeleteModal(false);
       setDeletingItem(null);
@@ -249,7 +283,12 @@ export default function AdminPanel() {
 
     if (error) {
       console.error('Error removing member:', error);
-      alert('Erreur: ' + error.message);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur: ' + error.message,
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } else {
       setShowRemoveUserModal(false);
       setDeletingItem(null);
@@ -595,6 +634,15 @@ export default function AdminPanel() {
         }}
         user={selectedUserDetail}
       />
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertModalConfig.title}
+        message={alertModalConfig.message}
+        type={alertModalConfig.type}
+      />
     </div>
   );
 }
@@ -614,17 +662,21 @@ function PendingUserRow({
   const [selectedOrg, setSelectedOrg] = useState('');
   const [selectedRole, setSelectedRole] = useState('member');
 
+  // Alert modal state
+  const [showAlert, setShowAlert] = useState(false);
+
   const handleGrant = () => {
     if (!selectedOrg) {
-      alert('Veuillez sélectionner une organisation');
+      setShowAlert(true);
       return;
     }
     onGrantAccess(user.user_id, selectedOrg, selectedRole);
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-start justify-between gap-4">
+    <>
+      <div className="p-6">
+        <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -681,6 +733,15 @@ function PendingUserRow({
         </div>
       </div>
     </div>
+
+    <AlertModal
+      isOpen={showAlert}
+      onClose={() => setShowAlert(false)}
+      title="Sélection requise"
+      message="Veuillez sélectionner une organisation"
+      type="warning"
+    />
+    </>
   );
 }
 
