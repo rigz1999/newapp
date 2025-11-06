@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { FolderOpen, Plus, Layers, Search, Eye, Users, X } from 'lucide-react';
 import { triggerCacheInvalidation } from '../utils/cacheManager';
+import { AlertModal } from './Modals';
 
 interface ProjectWithStats {
   id: string;
