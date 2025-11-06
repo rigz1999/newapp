@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { ConfirmModal, AlertModal } from './Modals';
 
 interface Investor {
   id: string;
@@ -103,12 +104,27 @@ export function Investors({ organization }: InvestorsProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  
-  const [allTranches, setAllTranches] = useState<Array<{ 
-    id: string; 
-    tranche_name: string; 
-    projet_id: string; 
-    projet_nom: string 
+
+  // Modal states for replacing alert() and confirm()
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'danger' | 'warning' | 'info';
+  }>({ title: '', message: '', onConfirm: () => {} });
+  const [alertModalConfig, setAlertModalConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
+
+  const [allTranches, setAllTranches] = useState<Array<{
+    id: string;
+    tranche_name: string;
+    projet_id: string;
+    projet_nom: string
   }>>([]);
 
   const [allCgps, setAllCgps] = useState<string[]>([]);
@@ -286,7 +302,12 @@ export function Investors({ organization }: InvestorsProps) {
 
     if (error) {
       console.error('Error updating investor:', error);
-      alert('Erreur lors de la mise à jour');
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de la mise à jour',
+        type: 'error'
+      });
+      setShowAlertModal(true);
       return;
     }
 
@@ -309,7 +330,12 @@ export function Investors({ organization }: InvestorsProps) {
 
     if (error) {
       console.error('Error deleting investor:', error);
-      alert('Erreur lors de la suppression');
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de la suppression',
+        type: 'error'
+      });
+      setShowAlertModal(true);
       return;
     }
 
@@ -426,43 +452,60 @@ export function Investors({ organization }: InvestorsProps) {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Erreur téléchargement RIB:', error);
-      alert('❌ Erreur lors du téléchargement du RIB');
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors du téléchargement du RIB',
+        type: 'error'
+      });
+      setShowAlertModal(true);
     }
   };
 
-  const handleDeleteRib = async (investor: InvestorWithStats) => {
+  const handleDeleteRib = (investor: InvestorWithStats) => {
     if (!investor.rib_file_path) return;
 
-    const confirmDelete = window.confirm(
-      `Êtes-vous sûr de vouloir supprimer le RIB de ${investor.nom_raison_sociale} ?\n\nCette action est irréversible.`
-    );
+    setConfirmModalConfig({
+      title: 'Supprimer le RIB',
+      message: `Êtes-vous sûr de vouloir supprimer le RIB de ${investor.nom_raison_sociale} ?\n\nCette action est irréversible.`,
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const { error: storageError } = await supabase.storage
+            .from('documents')
+            .remove([investor.rib_file_path!]);
 
-    if (!confirmDelete) return;
+          if (storageError) throw storageError;
 
-    try {
-      const { error: storageError } = await supabase.storage
-        .from('documents')
-        .remove([investor.rib_file_path]);
+          const { error: updateError } = await supabase
+            .from('investisseurs')
+            .update({
+              rib_file_path: null,
+              rib_uploaded_at: null,
+              rib_status: 'manquant'
+            })
+            .eq('id', investor.id);
 
-      if (storageError) throw storageError;
+          if (updateError) throw updateError;
 
-      const { error: updateError } = await supabase
-        .from('investisseurs')
-        .update({
-          rib_file_path: null,
-          rib_uploaded_at: null,
-          rib_status: 'manquant'
-        })
-        .eq('id', investor.id);
-
-      if (updateError) throw updateError;
-
-      alert('✅ RIB supprimé avec succès !');
-      fetchInvestors();
-    } catch (error) {
-      console.error('Erreur suppression RIB:', error);
-      alert('❌ Erreur lors de la suppression du RIB');
-    }
+          setAlertModalConfig({
+            title: 'Succès',
+            message: 'RIB supprimé avec succès !',
+            type: 'success'
+          });
+          setShowAlertModal(true);
+          fetchInvestors();
+        } catch (error) {
+          console.error('Erreur suppression RIB:', error);
+          setAlertModalConfig({
+            title: 'Erreur',
+            message: 'Erreur lors de la suppression du RIB',
+            type: 'error'
+          });
+          setShowAlertModal(true);
+        }
+      }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleExportExcel = () => {
@@ -1377,6 +1420,25 @@ export function Investors({ organization }: InvestorsProps) {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmModalConfig.onConfirm}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        type={confirmModalConfig.type}
+      />
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertModalConfig.title}
+        message={alertModalConfig.message}
+        type={alertModalConfig.type}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { TrancheWizard } from './TrancheWizard';
 import { PaymentWizard } from './PaymentWizard';
 import { getDashboardCacheKey, onCacheInvalidated } from '../utils/cacheManager';
+import { AlertModal } from './Modals';
 import {
   TrendingUp,
   CheckCircle2,
@@ -56,11 +57,11 @@ const getRelativeDate = (dateString: string) => {
 // SIREN validation: exactly 9 digits + Luhn (mod-10)
 const isValidSIREN = (value: string) => {
   if (!/^\d{9}$/.test(value)) return false;
-  // Luhn for 9 digits
+  // Luhn algorithm for SIREN: double digits at even indices (0, 2, 4, 6, 8)
   let sum = 0;
   for (let i = 0; i < 9; i++) {
     let digit = parseInt(value.charAt(i), 10);
-    if ((i % 2) === 1) { // double every second digit (index starting at 0)
+    if ((i % 2) === 0) { // double every digit at even index when processing left-to-right
       digit *= 2;
       if (digit > 9) digit -= 9;
     }
@@ -305,6 +306,14 @@ export function Dashboard({ organization }: DashboardProps) {
 
   const [sirenError, setSirenError] = useState<string>('');
   const [creatingProject, setCreatingProject] = useState(false);
+
+  // Alert modal state
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertModalConfig, setAlertModalConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
 
   // Cache with org-specific key + version
   const CACHE_KEY = getDashboardCacheKey(organization.id);
@@ -781,7 +790,14 @@ export function Dashboard({ organization }: DashboardProps) {
               </button>
 
               <button
-                onClick={() => alert('Export en cours de développement')}
+                onClick={() => {
+                  setAlertModalConfig({
+                    title: 'En développement',
+                    message: 'Export en cours de développement',
+                    type: 'info'
+                  });
+                  setShowAlertModal(true);
+                }}
                 className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
               >
                 <div className="bg-slate-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -1126,7 +1142,12 @@ export function Dashboard({ organization }: DashboardProps) {
                   navigate(`/projets/${data.id}`);
                 } catch (err: any) {
                   console.error('Error creating project:', err);
-                  alert('Erreur lors de la création du projet: ' + err.message);
+                  setAlertModalConfig({
+                    title: 'Erreur',
+                    message: 'Erreur lors de la création du projet: ' + err.message,
+                    type: 'error'
+                  });
+                  setShowAlertModal(true);
                 } finally {
                   setCreatingProject(false);
                 }
@@ -1483,6 +1504,15 @@ export function Dashboard({ organization }: DashboardProps) {
           </div>
         </div>
       )}
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertModalConfig.title}
+        message={alertModalConfig.message}
+        type={alertModalConfig.type}
+      />
     </div>
   );
 }

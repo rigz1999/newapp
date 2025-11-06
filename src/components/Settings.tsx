@@ -3,7 +3,7 @@
 // Path: src/components/Settings.tsx
 // ============================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -15,6 +15,7 @@ export default function Settings() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const errorMessageRef = useRef<HTMLDivElement>(null);
 
   // Profile fields
   const [email, setEmail] = useState('');
@@ -36,6 +37,13 @@ export default function Settings() {
       fetchUserProfile();
     }
   }, [user]);
+
+  // Scroll to error message when it appears
+  useEffect(() => {
+    if (errorMessage && errorMessageRef.current) {
+      errorMessageRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [errorMessage]);
 
   const fetchUserProfile = async () => {
     if (!user) return;
@@ -179,7 +187,7 @@ export default function Settings() {
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-lg p-4 flex items-start gap-3">
+        <div ref={errorMessageRef} className="mb-6 bg-red-50 border-2 border-red-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-red-900 font-medium">Erreur</p>

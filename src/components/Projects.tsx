@@ -23,10 +23,11 @@ interface ProjectsProps {
 // Helpers (identiques au Dashboard)
 const isValidSIREN = (value: string) => {
   if (!/^\d{9}$/.test(value)) return false;
+  // Luhn algorithm for SIREN: double digits at even indices (0, 2, 4, 6, 8)
   let sum = 0;
   for (let i = 0; i < 9; i++) {
     let digit = parseInt(value.charAt(i), 10);
-    if ((i % 2) === 1) {
+    if ((i % 2) === 0) { // double every digit at even index when processing left-to-right
       digit *= 2;
       if (digit > 9) digit -= 9;
     }
@@ -471,25 +472,6 @@ export function Projects({ organization }: ProjectsProps) {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="taux2" className="block text-sm font-medium text-slate-900 mb-2">
-                        Taux d'intérêt (%) <span className="text-red-600">*</span>
-                      </label>
-                      <input
-                        id="taux2"
-                        type="number"
-                        required
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        inputMode="decimal"
-                        value={newProjectData.taux_interet}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Ex: 8.50"
-                      />
-                    </div>
-
                     <div>
                       <label htmlFor="montant" className="block text-sm font-medium text-slate-900 mb-2">
                         Montant global à lever (€) <span className="text-red-600">*</span>
