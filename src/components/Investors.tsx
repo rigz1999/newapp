@@ -105,6 +105,12 @@ export function Investors({ organization }: InvestorsProps) {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
+  // RIB View Modal states
+  const [showRibViewModal, setShowRibViewModal] = useState(false);
+  const [ribViewUrl, setRibViewUrl] = useState<string | null>(null);
+  const [ribViewLoading, setRibViewLoading] = useState(false);
+  const [currentRibInvestor, setCurrentRibInvestor] = useState<InvestorWithStats | null>(null);
+
   // Modal states for replacing alert() and confirm()
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -461,6 +467,56 @@ export function Investors({ organization }: InvestorsProps) {
     }
   };
 
+  const handleViewRib = async (investor: InvestorWithStats) => {
+    if (!investor.rib_file_path) return;
+
+    setCurrentRibInvestor(investor);
+    setShowRibViewModal(true);
+    setRibViewLoading(true);
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .download(investor.rib_file_path);
+
+      if (error) throw error;
+
+      const url = window.URL.createObjectURL(data);
+      setRibViewUrl(url);
+    } catch (error) {
+      console.error('Erreur chargement RIB:', error);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors du chargement du RIB',
+        type: 'error'
+      });
+      setShowAlertModal(true);
+      setShowRibViewModal(false);
+    } finally {
+      setRibViewLoading(false);
+    }
+  };
+
+  const handleCloseRibView = () => {
+    if (ribViewUrl) {
+      window.URL.revokeObjectURL(ribViewUrl);
+    }
+    setRibViewUrl(null);
+    setShowRibViewModal(false);
+    setCurrentRibInvestor(null);
+  };
+
+  const handleDownloadFromView = () => {
+    if (!currentRibInvestor || !ribViewUrl) return;
+
+    const a = document.createElement('a');
+    a.href = ribViewUrl;
+    a.download = `RIB_${currentRibInvestor.nom_raison_sociale}.${currentRibInvestor.rib_file_path?.split('.').pop()}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const handleDeleteRib = (investor: InvestorWithStats) => {
     if (!investor.rib_file_path) return;
 
@@ -718,12 +774,12 @@ export function Investors({ organization }: InvestorsProps) {
                         {hasRib ? (
                           <>
                             <button
-                              onClick={() => handleDownloadRib(investor)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors text-xs font-medium"
-                              title="Télécharger le RIB"
+                              onClick={() => handleViewRib(investor)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                              title="Voir le RIB"
                             >
-                              <Download className="w-3.5 h-3.5" />
-                              Télécharger
+                              <Eye className="w-3.5 h-3.5" />
+                              Voir
                             </button>
                             <button
                               onClick={() => handleDeleteRib(investor)}
@@ -1415,6 +1471,68 @@ export function Investors({ organization }: InvestorsProps) {
                     Uploader le RIB
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RIB View Modal */}
+      {showRibViewModal && currentRibInvestor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900">
+                RIB - {currentRibInvestor.nom_raison_sociale}
+              </h3>
+              <button
+                onClick={handleCloseRibView}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto p-6">
+              {ribViewLoading ? (
+                <div className="flex items-center justify-center h-96">
+                  <div className="flex flex-col items-center gap-4">
+                    <RefreshCw className="w-12 h-12 text-blue-600 animate-spin" />
+                    <p className="text-sm text-slate-600">Chargement du RIB...</p>
+                  </div>
+                </div>
+              ) : ribViewUrl ? (
+                <div className="flex items-center justify-center">
+                  {currentRibInvestor.rib_file_path?.toLowerCase().endsWith('.pdf') ? (
+                    <iframe
+                      src={ribViewUrl}
+                      className="w-full h-[600px] border rounded-lg"
+                      title="RIB PDF"
+                    />
+                  ) : (
+                    <img
+                      src={ribViewUrl}
+                      alt="RIB"
+                      className="max-w-full h-auto rounded-lg shadow-lg"
+                    />
+                  )}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end gap-3">
+              <button
+                onClick={handleCloseRibView}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={handleDownloadFromView}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Télécharger
               </button>
             </div>
           </div>
