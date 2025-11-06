@@ -43,6 +43,8 @@ export default function Members() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successEmail, setSuccessEmail] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   useEffect(() => {
@@ -345,9 +347,11 @@ export default function Members() {
         onClose={() => setShowInviteModal(false)}
         organization={organization}
         userId={user?.id}
-        onSuccess={() => {
+        onSuccess={(email: string) => {
           fetchInvitations();
           setShowInviteModal(false);
+          setSuccessEmail(email);
+          setShowSuccessModal(true);
         }}
       />
 
@@ -372,6 +376,13 @@ export default function Members() {
         member={selectedMember}
         onConfirm={handleChangeRole}
       />
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        email={successEmail}
+      />
     </div>
   );
 }
@@ -388,7 +399,7 @@ function InviteMemberModal({
   onClose: () => void;
   organization: any;
   userId: string | undefined;
-  onSuccess: () => void;
+  onSuccess: (email: string) => void;
 }) {
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -443,12 +454,13 @@ function InviteMemberModal({
         throw new Error(result.error || 'Erreur lors de l\'envoi de l\'invitation');
       }
 
-      alert(`✅ Invitation envoyée à ${email}!`);
+      // Success - trigger success modal
+      const invitedEmail = email;
       setEmail('');
       setFirstName('');
       setLastName('');
       setRole('member');
-      onSuccess();
+      onSuccess(invitedEmail);
     } catch (error: any) {
       console.error('Error sending invitation:', error);
       alert(`❌ Erreur: ${error.message}`);
@@ -681,6 +693,68 @@ function ChangeRoleModal({
             className="flex-1 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors"
           >
             Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Success Modal Component
+function SuccessModal({
+  isOpen,
+  onClose,
+  email
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  email: string;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8" onClick={(e) => e.stopPropagation()}>
+        <div className="text-center">
+          {/* Success Icon */}
+          <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+
+          {/* Title */}
+          <h3 className="text-2xl font-bold text-slate-900 mb-3">
+            Invitation envoyée !
+          </h3>
+
+          {/* Message */}
+          <p className="text-slate-600 mb-2">
+            Un email d'invitation a été envoyé à
+          </p>
+          <p className="text-lg font-semibold text-blue-600 mb-6">
+            {email}
+          </p>
+
+          {/* Info Box */}
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6 text-left">
+            <p className="text-sm text-blue-900 leading-relaxed">
+              <strong className="flex items-center gap-2 mb-2">
+                <span className="text-lg">📧</span>
+                Prochaines étapes :
+              </strong>
+              <span className="block ml-7">• L'utilisateur recevra un email d'invitation</span>
+              <span className="block ml-7">• Il pourra créer son compte en cliquant sur le lien</span>
+              <span className="block ml-7">• L'invitation expire dans 7 jours</span>
+            </p>
+          </div>
+
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
+          >
+            Parfait ! 🎉
           </button>
         </div>
       </div>
