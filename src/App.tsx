@@ -5,6 +5,8 @@ import { useOrganization } from './hooks/useOrganization';
 import { Login } from './components/Login';
 import { Layout } from './components/Layout';
 import { InvitationAccept } from './components/InvitationAccept';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { DashboardSkeleton } from './components/Skeleton';
 import { supabase } from './lib/supabase';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -17,7 +19,6 @@ const Payments = lazy(() => import('./components/Payments'));
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
 const Members = lazy(() => import('./components/Members'));
 const Settings = lazy(() => import('./components/Settings'));
-const TestToast = lazy(() => import('./pages/TestToast'));
 
 function App() {
   const { user, loading: authLoading, isAdmin, isOrgAdmin } = useAuth();
@@ -26,6 +27,7 @@ function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
+  
 
   if (authLoading || (!isAdmin && orgLoading)) {
     return <DashboardSkeleton />;
@@ -94,27 +96,14 @@ function App() {
 
   const effectiveOrg = organization || { id: 'admin', name: 'Admin', role: 'admin' };
 
-  const LoadingFallback = () => (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mb-4"></div>
-        <p className="text-slate-600">Chargement...</p>
-      </div>
-    </div>
-  );
+  const LoadingFallback = () => <DashboardSkeleton />;
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Route - Invitation Accept (no auth required) */}
-        <Route path="/invitation/accept" element={<InvitationAccept />} />
-
-        {/* Test Routes - Development only */}
-        <Route path="/test/toast" element={
-          <Suspense fallback={<LoadingFallback />}>
-            <TestToast />
-          </Suspense>
-        } />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Route - Invitation Accept (no auth required) */}
+          <Route path="/invitation/accept" element={<InvitationAccept />} />
 
         {/* Main App Routes - Inside Layout (with sidebar) */}
         <Route path="/" element={<Layout organization={effectiveOrg} />}>
@@ -218,6 +207,7 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
