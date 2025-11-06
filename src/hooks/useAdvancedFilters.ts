@@ -34,9 +34,23 @@ export interface FilterPreset {
   filters: FilterState;
 }
 
+export interface RecentFilter {
+  id: string;
+  timestamp: number;
+  filters: FilterState;
+  usageCount: number;
+}
+
+export interface FilterAnalytics {
+  totalUses: number;
+  fieldUsage: Record<string, number>; // field name -> usage count
+  lastUsed: number;
+}
+
 interface UseAdvancedFiltersOptions {
   persistKey?: string; // localStorage key for saving presets
   initialFilters?: Partial<FilterState>;
+  maxRecentFilters?: number; // Max number of recent filters to keep (default: 5)
 }
 
 interface UseAdvancedFiltersReturn {
@@ -54,6 +68,14 @@ interface UseAdvancedFiltersReturn {
   savePreset: (name: string) => void;
   loadPreset: (id: string) => void;
   deletePreset: (id: string) => void;
+
+  // Recently used filters
+  recentFilters: RecentFilter[];
+  loadRecentFilter: (id: string) => void;
+  clearRecentFilters: () => void;
+
+  // Analytics
+  analytics: FilterAnalytics;
 
   // Apply filters to data
   applyFilters: <T extends Record<string, any>>(
@@ -75,7 +97,7 @@ const defaultFilterState: FilterState = {
 export function useAdvancedFilters(
   options: UseAdvancedFiltersOptions = {}
 ): UseAdvancedFiltersReturn {
-  const { persistKey, initialFilters } = options;
+  const { persistKey, initialFilters, maxRecentFilters = 5 } = options;
 
   const [filters, setFilters] = useState<FilterState>({
     ...defaultFilterState,
@@ -83,6 +105,12 @@ export function useAdvancedFilters(
   });
 
   const [presets, setPresets] = useState<FilterPreset[]>([]);
+  const [recentFilters, setRecentFilters] = useState<RecentFilter[]>([]);
+  const [analytics, setAnalytics] = useState<FilterAnalytics>({
+    totalUses: 0,
+    fieldUsage: {},
+    lastUsed: Date.now(),
+  });
 
   // Load presets from localStorage on mount
   useEffect(() => {
@@ -98,12 +126,120 @@ export function useAdvancedFilters(
     }
   }, [persistKey]);
 
+  // Load recent filters from localStorage on mount
+  useEffect(() => {
+    if (persistKey) {
+      const saved = localStorage.getItem(`filter-recent-${persistKey}`);
+      if (saved) {
+        try {
+          setRecentFilters(JSON.parse(saved));
+        } catch (e) {
+          console.error('Failed to load recent filters:', e);
+        }
+      }
+    }
+  }, [persistKey]);
+
+  // Load analytics from localStorage on mount
+  useEffect(() => {
+    if (persistKey) {
+      const saved = localStorage.getItem(`filter-analytics-${persistKey}`);
+      if (saved) {
+        try {
+          setAnalytics(JSON.parse(saved));
+        } catch (e) {
+          console.error('Failed to load filter analytics:', e);
+        }
+      }
+    }
+  }, [persistKey]);
+
   // Save presets to localStorage whenever they change
   useEffect(() => {
     if (persistKey && presets.length > 0) {
       localStorage.setItem(`filter-presets-${persistKey}`, JSON.stringify(presets));
     }
   }, [presets, persistKey]);
+
+  // Save recent filters to localStorage whenever they change
+  useEffect(() => {
+    if (persistKey && recentFilters.length > 0) {
+      localStorage.setItem(`filter-recent-${persistKey}`, JSON.stringify(recentFilters));
+    }
+  }, [recentFilters, persistKey]);
+
+  // Save analytics to localStorage whenever they change
+  useEffect(() => {
+    if (persistKey) {
+      localStorage.setItem(`filter-analytics-${persistKey}`, JSON.stringify(analytics));
+    }
+  }, [analytics, persistKey]);
+
+  // Track filter usage whenever filters change
+  useEffect(() => {
+    const hasActiveFilters =
+      filters.search ||
+      filters.dateRange.startDate ||
+      filters.dateRange.endDate ||
+      filters.multiSelect.some(f => f.values.length > 0);
+
+    if (hasActiveFilters && persistKey) {
+      // Update analytics
+      const newFieldUsage = { ...analytics.fieldUsage };
+
+      if (filters.search) {
+        newFieldUsage['search'] = (newFieldUsage['search'] || 0) + 1;
+      }
+
+      if (filters.dateRange.startDate || filters.dateRange.endDate) {
+        newFieldUsage['dateRange'] = (newFieldUsage['dateRange'] || 0) + 1;
+      }
+
+      filters.multiSelect.forEach(f => {
+        if (f.values.length > 0) {
+          newFieldUsage[f.field] = (newFieldUsage[f.field] || 0) + 1;
+        }
+      });
+
+      setAnalytics(prev => ({
+        totalUses: prev.totalUses + 1,
+        fieldUsage: newFieldUsage,
+        lastUsed: Date.now(),
+      }));
+
+      // Add to recent filters
+      const filterSignature = JSON.stringify(filters);
+      const existingRecent = recentFilters.find(
+        rf => JSON.stringify(rf.filters) === filterSignature
+      );
+
+      if (existingRecent) {
+        // Update existing recent filter
+        setRecentFilters(prev =>
+          prev
+            .map(rf =>
+              rf.id === existingRecent.id
+                ? { ...rf, timestamp: Date.now(), usageCount: rf.usageCount + 1 }
+                : rf
+            )
+            .sort((a, b) => b.timestamp - a.timestamp)
+        );
+      } else {
+        // Add new recent filter
+        const newRecent: RecentFilter = {
+          id: `recent-${Date.now()}`,
+          timestamp: Date.now(),
+          filters: { ...filters },
+          usageCount: 1,
+        };
+
+        setRecentFilters(prev => {
+          const updated = [newRecent, ...prev];
+          return updated.slice(0, maxRecentFilters);
+        });
+      }
+    }
+  }, [filters, persistKey, maxRecentFilters]);
 
   const setSearch = useCallback((search: string) => {
     setFilters((prev) => ({ ...prev, search }));
@@ -197,6 +333,20 @@ export function useAdvancedFilters(
     setPresets((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  const loadRecentFilter = useCallback((id: string) => {
+    const recent = recentFilters.find(rf => rf.id === id);
+    if (recent) {
+      setFilters(recent.filters);
+    }
+  }, [recentFilters]);
+
+  const clearRecentFilters = useCallback(() => {
+    setRecentFilters([]);
+    if (persistKey) {
+      localStorage.removeItem(`filter-recent-${persistKey}`);
+    }
+  }, [persistKey]);
+
   const applyFilters = useCallback(
     <T extends Record<string, any>>(
       data: T[],
@@ -258,6 +408,10 @@ export function useAdvancedFilters(
     savePreset,
     loadPreset,
     deletePreset,
+    recentFilters,
+    loadRecentFilter,
+    clearRecentFilters,
+    analytics,
     applyFilters,
   };
 }
