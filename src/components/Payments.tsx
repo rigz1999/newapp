@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Eye } from 'lucide-react';
 import { ViewProofsModal } from './ViewProofsModal';
+import { TableSkeleton } from './Skeleton';
 
 interface PaymentsProps {
   organization: { id: string; name: string; role: string };
@@ -243,8 +244,8 @@ export function Payments({ organization }: PaymentsProps) {
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+          <div className="p-6">
+            <TableSkeleton rows={8} columns={8} />
           </div>
         ) : filteredPayments.length === 0 ? (
           <div className="text-center py-12">

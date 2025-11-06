@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2 } from 'lucide-react';
 import { AlertModal } from './Modals';
+import { TableSkeleton } from './Skeleton';
 
 interface Subscription {
   id: string;
@@ -466,8 +467,8 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         </div>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+          <div className="p-6">
+            <TableSkeleton rows={8} columns={7} />
           </div>
         ) : filteredSubscriptions.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">

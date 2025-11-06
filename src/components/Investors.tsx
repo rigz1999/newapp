@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ConfirmModal, AlertModal } from './Modals';
+import { TableSkeleton } from './Skeleton';
 
 interface Investor {
   id: string;
@@ -588,10 +589,12 @@ export function Investors({ organization }: InvestorsProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-slate-600">Chargement des investisseurs...</p>
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900">Investisseurs</h1>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <TableSkeleton rows={10} columns={6} />
         </div>
       </div>
     );

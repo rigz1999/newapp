@@ -11,6 +11,7 @@ import {
   Search, UserX, ChevronDown, ChevronUp, Edit2, Clock, Eye, X, Mail, Calendar
 } from 'lucide-react';
 import { AlertModal } from './Modals';
+import { TableSkeleton } from './Skeleton';
 
 interface Organization {
   id: string;
@@ -371,8 +372,33 @@ export default function AdminPanel() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <RefreshCw className="w-12 h-12 text-slate-600 animate-spin" />
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900">Administration</h1>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-24 mb-4"></div>
+              <div className="h-8 bg-slate-200 rounded w-16"></div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-24 mb-4"></div>
+              <div className="h-8 bg-slate-200 rounded w-16"></div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-24 mb-4"></div>
+              <div className="h-8 bg-slate-200 rounded w-16"></div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <TableSkeleton rows={10} columns={4} />
+        </div>
       </div>
     );
   }

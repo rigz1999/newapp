@@ -10,6 +10,7 @@ import {
   User, Lock, Mail, Save, RefreshCw, CheckCircle, X, AlertCircle
 } from 'lucide-react';
 import { formatErrorMessage } from '../utils/errorMessages';
+import { CardSkeleton } from './Skeleton';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -164,8 +165,15 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <RefreshCw className="w-12 h-12 text-slate-600 animate-spin" />
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900">Paramètres</h1>
+        </div>
+        <div className="space-y-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
       </div>
     );
   }
