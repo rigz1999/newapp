@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Upload, X, CheckCircle, AlertTriangle, XCircle, Trash2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
+import { validateFile, FILE_VALIDATION_PRESETS } from '../utils/fileValidation';
 
 // Configure le worker avec la version 5.4 (correspond au package installé)
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
@@ -44,18 +45,17 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      const validFiles = selectedFiles.filter(f => {
-        const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-        if (!validTypes.includes(f.type)) {
-          setError('Seuls les fichiers PDF, PNG, JPG et WEBP sont acceptés');
-          return false;
+      const validFiles: File[] = [];
+
+      for (const file of selectedFiles) {
+        const validation = validateFile(file, FILE_VALIDATION_PRESETS.documents);
+        if (!validation.valid) {
+          setError(validation.error || 'Fichier invalide');
+          return;
         }
-        if (f.size > 10 * 1024 * 1024) {
-          setError('Taille maximale: 10MB');
-          return false;
-        }
-        return true;
-      });
+        validFiles.push(file);
+      }
+
       setFiles(prev => [...prev, ...validFiles]);
       setError(null);
     }

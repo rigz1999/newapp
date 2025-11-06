@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { ConfirmModal, AlertModal } from './Modals';
 import { TableSkeleton } from './Skeleton';
 import { Pagination, paginate } from './Pagination';
+import { validateFile, FILE_VALIDATION_PRESETS } from '../utils/fileValidation';
 
 interface Investor {
   id: string;
@@ -367,7 +368,15 @@ export function Investors({ organization }: InvestorsProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file before accepting it
+    const validation = validateFile(file, FILE_VALIDATION_PRESETS.rib);
+    if (!validation.valid) {
+      setUploadError(validation.error || 'Fichier invalide');
+      return;
+    }
+
     setRibFile(file);
+    setUploadError(''); // Clear any previous errors
 
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
