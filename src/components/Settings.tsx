@@ -110,23 +110,46 @@ export default function Settings() {
       return;
     }
 
+    if (newPassword === currentPassword) {
+      setErrorMessage('Le nouveau mot de passe doit être différent de l\'ancien');
+      return;
+    }
+
     setSaving(true);
     setErrorMessage('');
 
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
+    try {
+      // First, verify the current password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: currentPassword,
+      });
 
-    setSaving(false);
+      if (signInError) {
+        setSaving(false);
+        setErrorMessage('Le mot de passe actuel est incorrect');
+        return;
+      }
 
-    if (error) {
-      setErrorMessage('Erreur lors du changement de mot de passe: ' + error.message);
-    } else {
-      setSuccessMessage('Mot de passe changé avec succès');
-      setShowSuccessModal(true);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      // If sign in successful, proceed to update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      setSaving(false);
+
+      if (updateError) {
+        setErrorMessage('Erreur lors du changement de mot de passe: ' + updateError.message);
+      } else {
+        setSuccessMessage('Mot de passe changé avec succès');
+        setShowSuccessModal(true);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch (err: any) {
+      setSaving(false);
+      setErrorMessage('Erreur inattendue: ' + err.message);
     }
   };
 
