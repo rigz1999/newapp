@@ -27,6 +27,7 @@ function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
+  
 
   if (authLoading || (!isAdmin && orgLoading)) {
     return (
