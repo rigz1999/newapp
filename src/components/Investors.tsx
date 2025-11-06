@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle } from 'lucide-react';
+import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ConfirmModal, AlertModal } from './Modals';
 import { TableSkeleton } from './Skeleton';
 import { Pagination, paginate } from './Pagination';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../utils/fileValidation';
+import { useAdvancedFilters } from '../hooks/useAdvancedFilters';
+import { DateRangePicker } from './filters/DateRangePicker';
+import { MultiSelectFilter } from './filters/MultiSelectFilter';
+import { FilterPresets } from './filters/FilterPresets';
 
 interface Investor {
   id: string;
@@ -83,17 +87,16 @@ const formatType = (type: string | null | undefined): string => {
 
 export function Investors({ organization }: InvestorsProps) {
   const [investors, setInvestors] = useState<InvestorWithStats[]>([]);
-  const [filteredInvestors, setFilteredInvestors] = useState<InvestorWithStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [projectFilter, setProjectFilter] = useState<string>('all');
-  const [trancheFilter, setTrancheFilter] = useState<string>('all');
-  const [cgpFilter, setCgpFilter] = useState<string>('all');
-  const [ribFilter, setRibFilter] = useState<string>('all');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortField, setSortField] = useState<SortField>('nom_raison_sociale');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [ribSortDirection, setRibSortDirection] = useState<'none' | 'asc' | 'desc'>('none');
+
+  // Advanced filters
+  const advancedFilters = useAdvancedFilters({
+    persistKey: 'investors-filters',
+  });
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -153,44 +156,92 @@ export function Investors({ organization }: InvestorsProps) {
     return () => {
       isMounted = false;
       setInvestors([]);
-      setFilteredInvestors([]);
     };
   }, []);
 
-  useEffect(() => {
-    setCurrentPage(1); // Reset to first page when filters change
-    let filtered = investors;
+  // Extract unique values for filters
+  const uniqueTypes = useMemo(() => [
+    { value: 'physique', label: 'Personne Physique' },
+    { value: 'morale', label: 'Personne Morale' },
+  ], []);
 
-    if (searchTerm) {
+  const uniqueProjects = useMemo(() =>
+    Array.from(new Set(investors.flatMap(inv => inv.projects || []))).map(p => ({ value: p, label: p })),
+    [investors]
+  );
+
+  const uniqueTranches = useMemo(() =>
+    Array.from(new Set(investors.flatMap(inv => inv.tranches || []))).map(t => ({ value: t, label: t })),
+    [investors]
+  );
+
+  const uniqueCgps = useMemo(() =>
+    Array.from(new Set(investors.map(inv => inv.cgp).filter(Boolean))).map(c => ({ value: c!, label: c! })),
+    [investors]
+  );
+
+  const uniqueRibStatus = useMemo(() => [
+    { value: 'with-rib', label: 'Avec RIB' },
+    { value: 'without-rib', label: 'Sans RIB' },
+  ], []);
+
+  // Apply filters and sorting
+  const filteredInvestors = useMemo(() => {
+    let filtered = [...investors];
+
+    // Search filter
+    if (advancedFilters.filters.search) {
+      const term = advancedFilters.filters.search.toLowerCase();
       filtered = filtered.filter(inv =>
-        inv.nom_raison_sociale.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inv.id_investisseur.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (inv.cgp && inv.cgp.toLowerCase().includes(searchTerm.toLowerCase()))
+        inv.nom_raison_sociale.toLowerCase().includes(term) ||
+        inv.id_investisseur.toLowerCase().includes(term) ||
+        (inv.cgp && inv.cgp.toLowerCase().includes(term)) ||
+        (inv.email && inv.email.toLowerCase().includes(term))
       );
     }
 
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(inv => normalizeType(inv.type) === typeFilter);
+    // Multi-select type filter
+    const typeFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'type');
+    if (typeFilter && typeFilter.values.length > 0) {
+      filtered = filtered.filter(inv => typeFilter.values.includes(normalizeType(inv.type)));
     }
 
-    if (projectFilter !== 'all') {
-      filtered = filtered.filter(inv => inv.projects?.includes(projectFilter));
+    // Multi-select project filter
+    const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'project');
+    if (projectFilter && projectFilter.values.length > 0) {
+      filtered = filtered.filter(inv =>
+        inv.projects?.some(p => projectFilter.values.includes(p))
+      );
     }
 
-    if (trancheFilter !== 'all') {
-      filtered = filtered.filter(inv => inv.tranches?.includes(trancheFilter));
+    // Multi-select tranche filter
+    const trancheFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'tranche');
+    if (trancheFilter && trancheFilter.values.length > 0) {
+      filtered = filtered.filter(inv =>
+        inv.tranches?.some(t => trancheFilter.values.includes(t))
+      );
     }
 
-    if (cgpFilter !== 'all') {
-      filtered = filtered.filter(inv => inv.cgp === cgpFilter);
+    // Multi-select CGP filter
+    const cgpFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'cgp');
+    if (cgpFilter && cgpFilter.values.length > 0) {
+      filtered = filtered.filter(inv => inv.cgp && cgpFilter.values.includes(inv.cgp));
     }
 
-    if (ribFilter === 'with-rib') {
-      filtered = filtered.filter(inv => inv.rib_file_path && inv.rib_status === 'valide');
-    } else if (ribFilter === 'without-rib') {
-      filtered = filtered.filter(inv => !inv.rib_file_path || inv.rib_status !== 'valide');
+    // Multi-select RIB status filter
+    const ribFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'ribStatus');
+    if (ribFilter && ribFilter.values.length > 0) {
+      filtered = filtered.filter(inv => {
+        const hasRib = inv.rib_file_path && inv.rib_status === 'valide';
+        return ribFilter.values.some(val => {
+          if (val === 'with-rib') return hasRib;
+          if (val === 'without-rib') return !hasRib;
+          return false;
+        });
+      });
     }
 
+    // Apply sorting
     filtered = sortInvestors(filtered, sortField, sortDirection);
 
     if (ribSortDirection !== 'none') {
@@ -201,8 +252,19 @@ export function Investors({ organization }: InvestorsProps) {
       });
     }
 
-    setFilteredInvestors(filtered);
-  }, [searchTerm, typeFilter, projectFilter, trancheFilter, cgpFilter, ribFilter, investors, sortField, sortDirection, ribSortDirection]);
+    return filtered;
+  }, [investors, advancedFilters.filters, sortField, sortDirection, ribSortDirection]);
+
+  // Count active filters
+  const activeFiltersCount = useMemo(() => [
+    advancedFilters.filters.search ? 1 : 0,
+    ...advancedFilters.filters.multiSelect.map(f => f.values.length > 0 ? 1 : 0)
+  ].reduce((a, b) => a + b, 0), [advancedFilters.filters]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [advancedFilters.filters]);
 
   const fetchInvestors = async () => {
     setLoading(true);
@@ -257,7 +319,6 @@ export function Investors({ organization }: InvestorsProps) {
     });
 
     setInvestors(investorsWithStats);
-    setFilteredInvestors(investorsWithStats);
     setLoading(false);
   };
 
@@ -636,74 +697,127 @@ export function Investors({ organization }: InvestorsProps) {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          <div className="relative">
+      {/* Filters Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+        {/* Basic Search */}
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Rechercher par nom, ID, CGP, email..."
+              value={advancedFilters.filters.search}
+              onChange={(e) => advancedFilters.setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+              showAdvancedFilters || activeFiltersCount > 0
+                ? 'bg-blue-50 border-blue-300 text-blue-700'
+                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+            }`}
           >
-            <option value="all">Tous les types</option>
-            <option value="physique">Personne Physique</option>
-            <option value="morale">Personne Morale</option>
-          </select>
-
-          <select
-            value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Tous les projets</option>
-            {uniqueProjects.map(project => (
-              <option key={project} value={project}>{project}</option>
-            ))}
-          </select>
-
-          <select
-            value={trancheFilter}
-            onChange={(e) => setTrancheFilter(e.target.value)}
-            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Toutes les tranches</option>
-            {allTranches.map(tranche => (
-              <option key={tranche.id} value={tranche.tranche_name}>
-                {tranche.tranche_name} ({tranche.projet_nom})
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={cgpFilter}
-            onChange={(e) => setCgpFilter(e.target.value)}
-            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Tous les CGP</option>
-            {allCgps.map(cgp => (
-              <option key={cgp} value={cgp}>{cgp}</option>
-            ))}
-          </select>
-
-          <select
-            value={ribFilter}
-            onChange={(e) => setRibFilter(e.target.value)}
-            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Tous les RIB</option>
-            <option value="with-rib">Avec RIB</option>
-            <option value="without-rib">Sans RIB</option>
-          </select>
+            <Filter className="w-5 h-5" />
+            <span className="font-medium">Filtres avancés</span>
+            {activeFiltersCount > 0 && (
+              <span className="bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {activeFiltersCount}
+              </span>
+            )}
+            {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
         </div>
+
+        {/* Advanced Filters Panel */}
+        {showAdvancedFilters && (
+          <div className="border-t border-slate-200 pt-6 space-y-4">
+            {/* Filter Presets */}
+            <FilterPresets
+              presets={advancedFilters.presets}
+              onSave={(name) => advancedFilters.savePreset(name)}
+              onLoad={(id) => advancedFilters.loadPreset(id)}
+              onDelete={(id) => advancedFilters.deletePreset(id)}
+            />
+
+            {/* Multi-select Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <MultiSelectFilter
+                label="Type d'investisseur"
+                options={uniqueTypes}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'type')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('type', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('type', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('type')}
+                placeholder="Sélectionner des types..."
+              />
+
+              <MultiSelectFilter
+                label="Projets"
+                options={uniqueProjects}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'project')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('project', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('project', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('project')}
+                placeholder="Sélectionner des projets..."
+              />
+
+              <MultiSelectFilter
+                label="Tranches"
+                options={uniqueTranches}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'tranche')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('tranche', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('tranche', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('tranche')}
+                placeholder="Sélectionner des tranches..."
+              />
+
+              <MultiSelectFilter
+                label="CGP"
+                options={uniqueCgps}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'cgp')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('cgp', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('cgp', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('cgp')}
+                placeholder="Sélectionner des CGP..."
+              />
+
+              <MultiSelectFilter
+                label="Statut RIB"
+                options={uniqueRibStatus}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'ribStatus')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('ribStatus', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('ribStatus', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('ribStatus')}
+                placeholder="Sélectionner un statut..."
+              />
+            </div>
+
+            {/* Clear All Filters */}
+            {activeFiltersCount > 0 && (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => advancedFilters.clearAllFilters()}
+                  className="text-sm text-slate-600 hover:text-slate-900 underline"
+                >
+                  Effacer tous les filtres
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
