@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { FolderOpen, Plus, Layers, Search, Eye, Users, X } from 'lucide-react';
 import { triggerCacheInvalidation } from '../utils/cacheManager';
 import { AlertModal } from './Modals';
+import { CardSkeleton } from './Skeleton';
 
 interface ProjectWithStats {
   id: string;
@@ -287,8 +288,13 @@ export function Projects({ organization }: ProjectsProps) {
       </div>
 
       {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
         </div>
       ) : filteredProjects.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">

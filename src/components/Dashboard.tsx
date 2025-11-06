@@ -5,6 +5,7 @@ import { TrancheWizard } from './TrancheWizard';
 import { PaymentWizard } from './PaymentWizard';
 import { getDashboardCacheKey, onCacheInvalidated } from '../utils/cacheManager';
 import { AlertModal } from './Modals';
+import { DashboardSkeleton } from './Skeleton';
 import {
   TrendingUp,
   CheckCircle2,
@@ -676,9 +677,7 @@ export function Dashboard({ organization }: DashboardProps) {
       </div>
 
       {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-        </div>
+        <DashboardSkeleton />
       ) : (
         <>
           {alerts.length > 0 && (

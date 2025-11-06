@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { PaymentWizard } from './PaymentWizard';
+import { TableSkeleton } from './Skeleton';
 
 interface Coupon {
   id: string;
@@ -334,10 +335,12 @@ export function Coupons({ organization }: CouponsProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-slate-600">Chargement des coupons...</p>
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900">Coupons</h1>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <TableSkeleton rows={10} columns={7} />
         </div>
       </div>
     );

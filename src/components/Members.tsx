@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { formatErrorMessage } from '../utils/errorMessages';
 import { AlertModal } from './Modals';
+import { TableSkeleton } from './Skeleton';
 
 interface Member {
   id: string;
@@ -193,8 +194,13 @@ export default function Members() {
 
   if (orgLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <RefreshCw className="w-12 h-12 text-slate-600 animate-spin" />
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-slate-900">Membres</h1>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <TableSkeleton rows={8} columns={4} />
+        </div>
       </div>
     );
   }
