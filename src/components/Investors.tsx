@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle } from 'lucide-react';
+import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { ConfirmModal, AlertModal } from './Modals';
 
 interface Investor {
   id: string;
@@ -100,12 +101,36 @@ export function Investors({ organization }: InvestorsProps) {
   const [ribFile, setRibFile] = useState<File | null>(null);
   const [ribPreview, setRibPreview] = useState<string | null>(null);
   const [uploadingRib, setUploadingRib] = useState(false);
-  
-  const [allTranches, setAllTranches] = useState<Array<{ 
-    id: string; 
-    tranche_name: string; 
-    projet_id: string; 
-    projet_nom: string 
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  // RIB View Modal states
+  const [showRibViewModal, setShowRibViewModal] = useState(false);
+  const [ribViewUrl, setRibViewUrl] = useState<string | null>(null);
+  const [ribViewLoading, setRibViewLoading] = useState(false);
+  const [currentRibInvestor, setCurrentRibInvestor] = useState<InvestorWithStats | null>(null);
+
+  // Modal states for replacing alert() and confirm()
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'danger' | 'warning' | 'info';
+  }>({ title: '', message: '', onConfirm: () => {} });
+  const [alertModalConfig, setAlertModalConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
+
+  const [allTranches, setAllTranches] = useState<Array<{
+    id: string;
+    tranche_name: string;
+    projet_id: string;
+    projet_nom: string
   }>>([]);
 
   const [allCgps, setAllCgps] = useState<string[]>([]);
@@ -283,7 +308,12 @@ export function Investors({ organization }: InvestorsProps) {
 
     if (error) {
       console.error('Error updating investor:', error);
-      alert('Erreur lors de la mise à jour');
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de la mise à jour',
+        type: 'error'
+      });
+      setShowAlertModal(true);
       return;
     }
 
@@ -306,7 +336,12 @@ export function Investors({ organization }: InvestorsProps) {
 
     if (error) {
       console.error('Error deleting investor:', error);
-      alert('Erreur lors de la suppression');
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de la suppression',
+        type: 'error'
+      });
+      setShowAlertModal(true);
       return;
     }
 
@@ -340,8 +375,22 @@ export function Investors({ organization }: InvestorsProps) {
     if (!ribFile || !selectedInvestor) return;
 
     setUploadingRib(true);
+    setUploadProgress(0);
+    setUploadError('');
+    setUploadSuccess(false);
 
     try {
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 100);
+
       const fileExt = ribFile.name.split('.').pop();
       const fileName = `${selectedInvestor.id}_${Date.now()}.${fileExt}`;
       const filePath = `ribs/${fileName}`;
@@ -350,7 +399,11 @@ export function Investors({ organization }: InvestorsProps) {
         .from('documents')
         .upload(filePath, ribFile);
 
+      clearInterval(progressInterval);
+
       if (uploadError) throw uploadError;
+
+      setUploadProgress(95);
 
       const { error: updateError } = await supabase
         .from('investisseurs')
@@ -363,15 +416,25 @@ export function Investors({ organization }: InvestorsProps) {
 
       if (updateError) throw updateError;
 
-      setShowRibModal(false);
-      fetchInvestors();
-      
-      alert('✅ RIB uploadé avec succès !');
-    } catch (error) {
+      setUploadProgress(100);
+      setUploadSuccess(true);
+
+      // Close modal after showing success
+      setTimeout(() => {
+        setShowRibModal(false);
+        setUploadingRib(false);
+        setUploadProgress(0);
+        setUploadSuccess(false);
+        setRibFile(null);
+        setRibPreview(null);
+        fetchInvestors();
+      }, 2000);
+
+    } catch (error: any) {
       console.error('Erreur upload RIB:', error);
-      alert('❌ Erreur lors de l\'upload du RIB');
-    } finally {
+      setUploadError(error.message || 'Erreur lors de l\'upload du RIB');
       setUploadingRib(false);
+      setUploadProgress(0);
     }
   };
 
@@ -395,43 +458,110 @@ export function Investors({ organization }: InvestorsProps) {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Erreur téléchargement RIB:', error);
-      alert('❌ Erreur lors du téléchargement du RIB');
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors du téléchargement du RIB',
+        type: 'error'
+      });
+      setShowAlertModal(true);
     }
   };
 
-  const handleDeleteRib = async (investor: InvestorWithStats) => {
+  const handleViewRib = async (investor: InvestorWithStats) => {
     if (!investor.rib_file_path) return;
 
-    const confirmDelete = window.confirm(
-      `Êtes-vous sûr de vouloir supprimer le RIB de ${investor.nom_raison_sociale} ?\n\nCette action est irréversible.`
-    );
-
-    if (!confirmDelete) return;
+    setCurrentRibInvestor(investor);
+    setShowRibViewModal(true);
+    setRibViewLoading(true);
 
     try {
-      const { error: storageError } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('documents')
-        .remove([investor.rib_file_path]);
+        .download(investor.rib_file_path);
 
-      if (storageError) throw storageError;
+      if (error) throw error;
 
-      const { error: updateError } = await supabase
-        .from('investisseurs')
-        .update({
-          rib_file_path: null,
-          rib_uploaded_at: null,
-          rib_status: 'manquant'
-        })
-        .eq('id', investor.id);
-
-      if (updateError) throw updateError;
-
-      alert('✅ RIB supprimé avec succès !');
-      fetchInvestors();
+      const url = window.URL.createObjectURL(data);
+      setRibViewUrl(url);
     } catch (error) {
-      console.error('Erreur suppression RIB:', error);
-      alert('❌ Erreur lors de la suppression du RIB');
+      console.error('Erreur chargement RIB:', error);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors du chargement du RIB',
+        type: 'error'
+      });
+      setShowAlertModal(true);
+      setShowRibViewModal(false);
+    } finally {
+      setRibViewLoading(false);
     }
+  };
+
+  const handleCloseRibView = () => {
+    if (ribViewUrl) {
+      window.URL.revokeObjectURL(ribViewUrl);
+    }
+    setRibViewUrl(null);
+    setShowRibViewModal(false);
+    setCurrentRibInvestor(null);
+  };
+
+  const handleDownloadFromView = () => {
+    if (!currentRibInvestor || !ribViewUrl) return;
+
+    const a = document.createElement('a');
+    a.href = ribViewUrl;
+    a.download = `RIB_${currentRibInvestor.nom_raison_sociale}.${currentRibInvestor.rib_file_path?.split('.').pop()}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleDeleteRib = (investor: InvestorWithStats) => {
+    if (!investor.rib_file_path) return;
+
+    setConfirmModalConfig({
+      title: 'Supprimer le RIB',
+      message: `Êtes-vous sûr de vouloir supprimer le RIB de ${investor.nom_raison_sociale} ?\n\nCette action est irréversible.`,
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const { error: storageError } = await supabase.storage
+            .from('documents')
+            .remove([investor.rib_file_path!]);
+
+          if (storageError) throw storageError;
+
+          const { error: updateError } = await supabase
+            .from('investisseurs')
+            .update({
+              rib_file_path: null,
+              rib_uploaded_at: null,
+              rib_status: 'manquant'
+            })
+            .eq('id', investor.id);
+
+          if (updateError) throw updateError;
+
+          setAlertModalConfig({
+            title: 'Succès',
+            message: 'RIB supprimé avec succès !',
+            type: 'success'
+          });
+          setShowAlertModal(true);
+          fetchInvestors();
+        } catch (error) {
+          console.error('Erreur suppression RIB:', error);
+          setAlertModalConfig({
+            title: 'Erreur',
+            message: 'Erreur lors de la suppression du RIB',
+            type: 'error'
+          });
+          setShowAlertModal(true);
+        }
+      }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleExportExcel = () => {
@@ -644,12 +774,12 @@ export function Investors({ organization }: InvestorsProps) {
                         {hasRib ? (
                           <>
                             <button
-                              onClick={() => handleDownloadRib(investor)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors text-xs font-medium"
-                              title="Télécharger le RIB"
+                              onClick={() => handleViewRib(investor)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                              title="Voir le RIB"
                             >
-                              <Download className="w-3.5 h-3.5" />
-                              Télécharger
+                              <Eye className="w-3.5 h-3.5" />
+                              Voir
                             </button>
                             <button
                               onClick={() => handleDeleteRib(investor)}
@@ -1246,8 +1376,71 @@ export function Investors({ organization }: InvestorsProps) {
                         setRibPreview(null);
                       }}
                       className="text-slate-400 hover:text-red-600 transition-colors"
+                      disabled={uploadingRib}
                     >
                       <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Progress */}
+              {uploadingRib && (
+                <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-blue-900">
+                      Upload en cours...
+                    </span>
+                    <span className="text-sm font-semibold text-blue-900">
+                      {uploadProgress}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-full transition-all duration-300 ease-out"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Success */}
+              {uploadSuccess && (
+                <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-full">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-900">
+                        RIB uploadé avec succès !
+                      </p>
+                      <p className="text-xs text-green-700">
+                        Le document a été enregistré et validé
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Error */}
+              {uploadError && (
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-red-900">
+                        Erreur lors de l'upload
+                      </p>
+                      <p className="text-xs text-red-700 mt-1">
+                        {uploadError}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setUploadError('')}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -1283,6 +1476,87 @@ export function Investors({ organization }: InvestorsProps) {
           </div>
         </div>
       )}
+
+      {/* RIB View Modal */}
+      {showRibViewModal && currentRibInvestor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900">
+                RIB - {currentRibInvestor.nom_raison_sociale}
+              </h3>
+              <button
+                onClick={handleCloseRibView}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto p-6">
+              {ribViewLoading ? (
+                <div className="flex items-center justify-center h-96">
+                  <div className="flex flex-col items-center gap-4">
+                    <RefreshCw className="w-12 h-12 text-blue-600 animate-spin" />
+                    <p className="text-sm text-slate-600">Chargement du RIB...</p>
+                  </div>
+                </div>
+              ) : ribViewUrl ? (
+                <div className="flex items-center justify-center">
+                  {currentRibInvestor.rib_file_path?.toLowerCase().endsWith('.pdf') ? (
+                    <iframe
+                      src={ribViewUrl}
+                      className="w-full h-[600px] border rounded-lg"
+                      title="RIB PDF"
+                    />
+                  ) : (
+                    <img
+                      src={ribViewUrl}
+                      alt="RIB"
+                      className="max-w-full h-auto rounded-lg shadow-lg"
+                    />
+                  )}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end gap-3">
+              <button
+                onClick={handleCloseRibView}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                Fermer
+              </button>
+              <button
+                onClick={handleDownloadFromView}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Télécharger
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmModalConfig.onConfirm}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        type={confirmModalConfig.type}
+      />
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertModalConfig.title}
+        message={alertModalConfig.message}
+        type={alertModalConfig.type}
+      />
     </div>
   );
 }

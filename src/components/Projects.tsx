@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { FolderOpen, Plus, Layers, Search, Eye, Users, X } from 'lucide-react';
+import { triggerCacheInvalidation } from '../utils/cacheManager';
+import { AlertModal } from './Modals';
 
 interface ProjectWithStats {
   id: string;
@@ -22,10 +24,11 @@ interface ProjectsProps {
 // Helpers (identiques au Dashboard)
 const isValidSIREN = (value: string) => {
   if (!/^\d{9}$/.test(value)) return false;
+  // Luhn algorithm for SIREN: double digits at even indices (0, 2, 4, 6, 8)
   let sum = 0;
   for (let i = 0; i < 9; i++) {
     let digit = parseInt(value.charAt(i), 10);
-    if ((i % 2) === 1) {
+    if ((i % 2) === 0) { // double every digit at even index when processing left-to-right
       digit *= 2;
       if (digit > 9) digit -= 9;
     }
@@ -154,7 +157,8 @@ export function Projects({ organization }: ProjectsProps) {
         projet: newProjectData.projet,
         type: newProjectData.type || null,
         emetteur: newProjectData.emetteur,
-        siren_emetteur: newProjectData.siren_emetteur ? parseInt(newProjectData.siren_emetteur) : null,
+        // Keep SIREN as string to preserve leading zeros (e.g., "012345678")
+        siren_emetteur: newProjectData.siren_emetteur || null,
         nom_representant: newProjectData.nom_representant || null,
         prenom_representant: newProjectData.prenom_representant || null,
         email_representant: newProjectData.email_representant || null,
@@ -187,6 +191,9 @@ export function Projects({ organization }: ProjectsProps) {
         .single();
 
       if (error) throw error;
+
+      // Invalidate dashboard cache since new project affects stats
+      triggerCacheInvalidation(organization.id);
 
       setShowCreateModal(false);
       resetNewProjectForm();
@@ -466,25 +473,6 @@ export function Projects({ organization }: ProjectsProps) {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="taux2" className="block text-sm font-medium text-slate-900 mb-2">
-                        Taux d'intérêt (%) <span className="text-red-600">*</span>
-                      </label>
-                      <input
-                        id="taux2"
-                        type="number"
-                        required
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        inputMode="decimal"
-                        value={newProjectData.taux_interet}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Ex: 8.50"
-                      />
-                    </div>
-
                     <div>
                       <label htmlFor="montant" className="block text-sm font-medium text-slate-900 mb-2">
                         Montant global à lever (€) <span className="text-red-600">*</span>

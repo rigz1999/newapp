@@ -1,6 +1,7 @@
 import { X, Download, Eye, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useState } from 'react';
+import { AlertModal } from './Modals';
 
 interface ViewProofsModalProps {
   payment: any;
@@ -12,6 +13,14 @@ interface ViewProofsModalProps {
 export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: ViewProofsModalProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ proofId: string; fileUrl: string; fileName: string } | null>(null);
+
+  // Alert modal state
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertModalConfig, setAlertModalConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
 
   const downloadFile = (url: string, filename: string) => {
     const a = document.createElement('a');
@@ -83,7 +92,12 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
       }
     } catch (err: any) {
       console.error('Error deleting proof:', err);
-      alert('Erreur lors de la suppression du justificatif: ' + err.message);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de la suppression du justificatif: ' + err.message,
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } finally {
       setDeleting(null);
       setConfirmDelete(null);
@@ -224,6 +238,15 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
           </div>
         </div>
       )}
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertModalConfig.title}
+        message={alertModalConfig.message}
+        type={alertModalConfig.type}
+      />
     </>
   );
 }

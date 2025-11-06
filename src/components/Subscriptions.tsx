@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2 } from 'lucide-react';
+import { AlertModal } from './Modals';
 
 interface Subscription {
   id: string;
@@ -57,6 +58,14 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Alert modal state
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertModalConfig, setAlertModalConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
 
   useEffect(() => {
     let isMounted = true;
@@ -150,7 +159,12 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       setEditingSubscription(null);
     } catch (error) {
       console.error('Error updating subscription:', error);
-      alert('Erreur lors de la mise à jour');
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de la mise à jour',
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } finally {
       setSaving(false);
     }
@@ -192,7 +206,12 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       setDeletingSubscription(null);
     } catch (error) {
       console.error('Error deleting subscription:', error);
-      alert('Erreur lors de la suppression');
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de la suppression',
+        type: 'error'
+      });
+      setShowAlertModal(true);
     } finally {
       setDeleting(false);
     }
@@ -905,6 +924,15 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
             </div>
           </div>
         )}
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertModalConfig.title}
+        message={alertModalConfig.message}
+        type={alertModalConfig.type}
+      />
     </div>
   );
 }

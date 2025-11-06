@@ -29,24 +29,90 @@ export interface Database {
       memberships: {
         Row: {
           id: string
-          org_id: string
+          org_id: string | null
           user_id: string
-          role: 'owner' | 'admin' | 'member'
+          role: 'member' | 'admin' | 'super_admin'
           created_at: string
         }
         Insert: {
           id?: string
-          org_id: string
+          org_id?: string | null
           user_id: string
-          role?: 'owner' | 'admin' | 'member'
+          role?: 'member' | 'admin' | 'super_admin'
           created_at?: string
         }
         Update: {
           id?: string
-          org_id?: string
+          org_id?: string | null
           user_id?: string
-          role?: 'owner' | 'admin' | 'member'
+          role?: 'member' | 'admin' | 'super_admin'
           created_at?: string
+        }
+      }
+      profiles: {
+        Row: {
+          id: string
+          email: string
+          full_name: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          full_name?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          full_name?: string | null
+          updated_at?: string
+        }
+      }
+      invitations: {
+        Row: {
+          id: string
+          email: string
+          first_name: string
+          last_name: string
+          org_id: string
+          role: 'member' | 'admin'
+          invited_by: string
+          token: string
+          status: 'pending' | 'accepted' | 'expired'
+          expires_at: string
+          created_at: string
+          accepted_at: string | null
+        }
+        Insert: {
+          id?: string
+          email: string
+          first_name: string
+          last_name: string
+          org_id: string
+          role?: 'member' | 'admin'
+          invited_by: string
+          token: string
+          status?: 'pending' | 'accepted' | 'expired'
+          expires_at: string
+          created_at?: string
+          accepted_at?: string | null
+        }
+        Update: {
+          id?: string
+          email?: string
+          first_name?: string
+          last_name?: string
+          org_id?: string
+          role?: 'member' | 'admin'
+          invited_by?: string
+          token?: string
+          status?: 'pending' | 'accepted' | 'expired'
+          expires_at?: string
+          created_at?: string
+          accepted_at?: string | null
         }
       }
       projects: {
