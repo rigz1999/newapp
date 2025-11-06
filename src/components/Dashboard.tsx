@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { TrancheWizard } from './TrancheWizard';
 import { PaymentWizard } from './PaymentWizard';
+import { getDashboardCacheKey, onCacheInvalidated } from '../utils/cacheManager';
 import {
   TrendingUp,
   CheckCircle2,
@@ -306,8 +307,7 @@ export function Dashboard({ organization }: DashboardProps) {
   const [creatingProject, setCreatingProject] = useState(false);
 
   // Cache with org-specific key + version
-  const CACHE_VERSION = 1;
-  const CACHE_KEY = `saad_dashboard_cache_v${CACHE_VERSION}_${organization.id}`;
+  const CACHE_KEY = getDashboardCacheKey(organization.id);
   const CACHE_DURATION = 5 * 60 * 1000;
 
   const getCachedData = () => {
@@ -400,6 +400,15 @@ export function Dashboard({ organization }: DashboardProps) {
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [showNewProject, resetNewProjectForm]);
+
+  // Listen for cache invalidation events from other components
+  useEffect(() => {
+    const cleanup = onCacheInvalidated(() => {
+      console.log('[Dashboard] Cache invalidated, refreshing data...');
+      handleRefresh();
+    });
+    return cleanup;
+  }, []);
 
   const fetchData = async () => {
     const isRefresh = !loading;

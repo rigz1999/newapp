@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { FolderOpen, Plus, Layers, Search, Eye, Users, X } from 'lucide-react';
+import { triggerCacheInvalidation } from '../utils/cacheManager';
 
 interface ProjectWithStats {
   id: string;
@@ -188,6 +189,9 @@ export function Projects({ organization }: ProjectsProps) {
         .single();
 
       if (error) throw error;
+
+      // Invalidate dashboard cache since new project affects stats
+      triggerCacheInvalidation(organization.id);
 
       setShowCreateModal(false);
       resetNewProjectForm();
