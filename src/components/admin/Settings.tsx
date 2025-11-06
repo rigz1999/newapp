@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import {
-  User, Lock, Mail, Save, RefreshCw, CheckCircle, X, AlertCircle
+  User, Lock, Mail, Save, RefreshCw, CheckCircle, X, AlertCircle, Bell, Send
 } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { CardSkeleton } from '../common/Skeleton';
@@ -27,6 +27,13 @@ export default function Settings() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Reminder settings
+  const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [remind7Days, setRemind7Days] = useState(false);
+  const [remind14Days, setRemind14Days] = useState(false);
+  const [remind30Days, setRemind30Days] = useState(false);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
 
   // Success/Error states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -68,6 +75,20 @@ export default function Settings() {
         setFirstName(names[0] || '');
         setLastName(names.slice(1).join(' ') || '');
       }
+    }
+
+    // Get reminder settings
+    const { data: reminderSettings, error: reminderError } = await supabase
+      .from('user_reminder_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!reminderError && reminderSettings) {
+      setRemindersEnabled(reminderSettings.enabled);
+      setRemind7Days(reminderSettings.remind_7_days);
+      setRemind14Days(reminderSettings.remind_14_days);
+      setRemind30Days(reminderSettings.remind_30_days);
     }
 
     setLoading(false);
@@ -159,6 +180,75 @@ export default function Settings() {
       }
     } catch (err: any) {
       setSaving(false);
+      setErrorMessage(formatErrorMessage(err));
+    }
+  };
+
+  const handleUpdateReminderSettings = async () => {
+    if (!user) return;
+
+    // Validate that at least one reminder period is selected if reminders are enabled
+    if (remindersEnabled && !remind7Days && !remind14Days && !remind30Days) {
+      setErrorMessage('Veuillez sélectionner au moins une période de rappel');
+      return;
+    }
+
+    setSaving(true);
+    setErrorMessage('');
+
+    try {
+      // Upsert reminder settings
+      const { error } = await supabase
+        .from('user_reminder_settings')
+        .upsert({
+          user_id: user.id,
+          enabled: remindersEnabled,
+          remind_7_days: remind7Days,
+          remind_14_days: remind14Days,
+          remind_30_days: remind30Days,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      setSaving(false);
+
+      if (error) {
+        setErrorMessage(formatErrorMessage(error));
+      } else {
+        setSuccessMessage('Préférences de rappel mises à jour avec succès');
+        setShowSuccessModal(true);
+      }
+    } catch (err: any) {
+      setSaving(false);
+      setErrorMessage(formatErrorMessage(err));
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!user) return;
+
+    setSendingTestEmail(true);
+    setErrorMessage('');
+
+    try {
+      // Call the Edge Function directly for test email
+      const { data, error } = await supabase.functions.invoke('send-coupon-reminders', {
+        body: { testMode: true, userId: user.id }
+      });
+
+      setSendingTestEmail(false);
+
+      if (error) {
+        setErrorMessage(formatErrorMessage(error));
+      } else if (data?.error) {
+        setErrorMessage(data.error);
+      } else {
+        setSuccessMessage('Email de test envoyé avec succès ! Vérifiez votre boîte de réception.');
+        setShowSuccessModal(true);
+      }
+    } catch (err: any) {
+      setSendingTestEmail(false);
       setErrorMessage(formatErrorMessage(err));
     }
   };
@@ -364,6 +454,153 @@ export default function Settings() {
                   <>
                     <Lock className="w-4 h-4" />
                     Changer le mot de passe
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Email Reminder Settings Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+          <div className="p-6 border-b border-slate-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-slate-700" />
+                <h2 className="text-xl font-bold text-slate-900">Rappels de paiements</h2>
+              </div>
+              {/* Master toggle */}
+              <button
+                onClick={() => setRemindersEnabled(!remindersEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  remindersEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    remindersEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+            <p className="text-sm text-slate-600 mt-2">
+              Recevez des rappels par email pour les coupons à échéance prochaine
+            </p>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* Reminder periods */}
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-slate-700 mb-3">
+                Périodes de rappel
+              </label>
+
+              {/* 7 days */}
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={remind7Days}
+                  onChange={(e) => setRemind7Days(e.target.checked)}
+                  disabled={!remindersEnabled}
+                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                    7 jours avant l'échéance
+                  </span>
+                  <p className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
+                    Rappel une semaine avant la date de paiement
+                  </p>
+                </div>
+              </label>
+
+              {/* 14 days */}
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={remind14Days}
+                  onChange={(e) => setRemind14Days(e.target.checked)}
+                  disabled={!remindersEnabled}
+                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                    14 jours avant l'échéance
+                  </span>
+                  <p className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
+                    Rappel deux semaines avant la date de paiement
+                  </p>
+                </div>
+              </label>
+
+              {/* 30 days */}
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={remind30Days}
+                  onChange={(e) => setRemind30Days(e.target.checked)}
+                  disabled={!remindersEnabled}
+                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                    30 jours avant l'échéance
+                  </span>
+                  <p className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
+                    Rappel un mois avant la date de paiement
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {/* Info box */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-900">
+                  <p className="font-medium mb-1">Comment ça marche ?</p>
+                  <p className="text-blue-800">
+                    Les rappels sont envoyés automatiquement chaque jour à 7h00. Vous recevrez un email
+                    listant tous les coupons correspondant aux périodes que vous avez sélectionnées.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={handleUpdateReminderSettings}
+                disabled={saving || !remindersEnabled}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {saving ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Enregistrer les préférences
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleSendTestEmail}
+                disabled={sendingTestEmail || !remindersEnabled}
+                className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {sendingTestEmail ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Envoi...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Email test
                   </>
                 )}
               </button>
