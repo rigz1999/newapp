@@ -655,7 +655,7 @@ Résultat : Même interface, 5x plus rapide !
                 <label htmlFor="file-upload" className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
                   Choisir des fichiers
                 </label>
-                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier)</p>
+                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier) - v3.0</p>
               </div>
 
               {files.length > 0 && (
