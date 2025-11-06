@@ -1,3 +1,8 @@
+// ============================================
+// Date Range Picker Component
+// Path: src/components/filters/DateRangePicker.tsx
+// ============================================
+
 import { Calendar } from 'lucide-react';
 
 interface DateRangePickerProps {
