@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 export default function Settings() {
-  const { user, userRole } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -327,23 +327,6 @@ export default function Settings() {
                   </>
                 )}
               </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Account Info Card */}
-        <div className="bg-slate-50 rounded-xl border border-slate-200 p-6">
-          <h3 className="font-semibold text-slate-900 mb-3">Informations du compte</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-slate-600">Rôle:</span>
-              <span className="font-medium text-slate-900 capitalize">
-                {userRole === 'admin' ? 'Administrateur' : userRole === 'super_admin' ? 'Super Administrateur' : 'Membre'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-600">ID Utilisateur:</span>
-              <span className="font-mono text-xs text-slate-700">{user?.id.substring(0, 20)}...</span>
             </div>
           </div>
         </div>
