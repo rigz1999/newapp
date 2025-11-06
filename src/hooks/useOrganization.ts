@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 
 interface Organization {
   id: string;
@@ -12,16 +13,16 @@ export function useOrganization(userId: string | undefined) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('useOrganization - userId:', userId);
+    logger.log('useOrganization - userId:', userId);
 
     if (!userId) {
-      console.log('useOrganization - No userId, stopping');
+      logger.log('useOrganization - No userId, stopping');
       setLoading(false);
       return;
     }
 
     const fetchOrganization = async () => {
-      console.log('useOrganization - Fetching memberships for userId:', userId);
+      logger.log('useOrganization - Fetching memberships for userId:', userId);
 
       // Fetch ALL memberships (not just one)
       const { data: memberships, error } = await supabase
@@ -29,17 +30,17 @@ export function useOrganization(userId: string | undefined) {
         .select('org_id, role, organizations(id, name)')
         .eq('user_id', userId);
 
-      console.log('useOrganization - Memberships result:', { memberships, error });
+      logger.log('useOrganization - Memberships result:', { memberships, error });
 
       if (error) {
-        console.error('useOrganization - Error fetching memberships:', error);
+        logger.error('useOrganization - Error fetching memberships:', error);
         setOrganization(null);
         setLoading(false);
         return;
       }
 
       if (!memberships || memberships.length === 0) {
-        console.log('useOrganization - No memberships found');
+        logger.log('useOrganization - No memberships found');
         setOrganization(null);
         setLoading(false);
         return;
@@ -51,7 +52,7 @@ export function useOrganization(userId: string | undefined) {
       );
 
       if (superAdminMembership) {
-        console.log('useOrganization - Super admin detected');
+        logger.log('useOrganization - Super admin detected');
         // Super admin - return special org object
         setOrganization({
           id: 'super_admin',
@@ -64,11 +65,11 @@ export function useOrganization(userId: string | undefined) {
 
       // Regular user - get their first organization
       const regularMembership = memberships.find(m => m.org_id !== null && m.organizations);
-      console.log('useOrganization - Regular membership found:', regularMembership);
+      logger.log('useOrganization - Regular membership found:', regularMembership);
 
       if (regularMembership && regularMembership.organizations) {
         const org = regularMembership.organizations as any;
-        console.log('useOrganization - Setting organization:', {
+        logger.log('useOrganization - Setting organization:', {
           id: org.id,
           name: org.name,
           role: regularMembership.role,
@@ -79,7 +80,7 @@ export function useOrganization(userId: string | undefined) {
           role: regularMembership.role,
         });
       } else {
-        console.log('useOrganization - No valid organization found in membership');
+        logger.log('useOrganization - No valid organization found in membership');
         setOrganization(null);
       }
 
