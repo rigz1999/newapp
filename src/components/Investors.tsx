@@ -4,6 +4,7 @@ import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, Ale
 import * as XLSX from 'xlsx';
 import { ConfirmModal, AlertModal } from './Modals';
 import { TableSkeleton } from './Skeleton';
+import { Pagination, paginate } from './Pagination';
 
 interface Investor {
   id: string;
@@ -112,6 +113,10 @@ export function Investors({ organization }: InvestorsProps) {
   const [ribViewLoading, setRibViewLoading] = useState(false);
   const [currentRibInvestor, setCurrentRibInvestor] = useState<InvestorWithStats | null>(null);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(25);
+
   // Modal states for replacing alert() and confirm()
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -152,6 +157,7 @@ export function Investors({ organization }: InvestorsProps) {
   }, []);
 
   useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters change
     let filtered = investors;
 
     if (searchTerm) {
@@ -734,7 +740,7 @@ export function Investors({ organization }: InvestorsProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {filteredInvestors.map((investor) => {
+              {paginate(filteredInvestors, currentPage, itemsPerPage).map((investor) => {
                 const hasRib = investor.rib_file_path && investor.rib_status === 'valide';
                 const isInvestorMorale = isMorale(investor.type);
                 
@@ -827,6 +833,15 @@ export function Investors({ organization }: InvestorsProps) {
               })}
             </tbody>
           </table>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredInvestors.length / itemsPerPage)}
+            totalItems={filteredInvestors.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page) => setCurrentPage(page)}
+            itemName="investisseurs"
+          />
         </div>
       </div>
 

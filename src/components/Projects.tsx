@@ -5,6 +5,8 @@ import { FolderOpen, Plus, Layers, Search, Eye, Users, X } from 'lucide-react';
 import { triggerCacheInvalidation } from '../utils/cacheManager';
 import { AlertModal } from './Modals';
 import { CardSkeleton } from './Skeleton';
+import { formatCurrency, formatMontantDisplay, groupDigitsWithSpaces } from '../utils/formatters';
+import { isValidSIREN } from '../utils/validators';
 
 interface ProjectWithStats {
   id: string;
@@ -21,30 +23,6 @@ interface ProjectWithStats {
 interface ProjectsProps {
   organization: { id: string; name: string; role: string };
 }
-
-// Helpers (identiques au Dashboard)
-const isValidSIREN = (value: string) => {
-  if (!/^\d{9}$/.test(value)) return false;
-  // Luhn algorithm for SIREN: double digits at even indices (0, 2, 4, 6, 8)
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    let digit = parseInt(value.charAt(i), 10);
-    if ((i % 2) === 0) { // double every digit at even index when processing left-to-right
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-  }
-  return sum % 10 === 0;
-};
-
-const groupDigitsWithSpaces = (digitsOnly: string) =>
-  digitsOnly ? digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '';
-
-const formatMontantDisplay = (digitsOnly: string) => {
-  const grouped = groupDigitsWithSpaces(digitsOnly);
-  return grouped ? `${grouped} €` : '';
-};
 
 export function Projects({ organization }: ProjectsProps) {
   const navigate = useNavigate();
@@ -226,15 +204,6 @@ export function Projects({ organization }: ProjectsProps) {
       telephone_rep_masse: '',
     });
     setSirenError('');
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
   };
 
   const isFormValid = newProjectData.projet.trim() !== '' &&

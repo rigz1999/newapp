@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Eye } from 'lucide-react';
 import { ViewProofsModal } from './ViewProofsModal';
 import { TableSkeleton } from './Skeleton';
+import { Pagination, paginate } from './Pagination';
 
 interface PaymentsProps {
   organization: { id: string; name: string; role: string };
@@ -44,11 +45,16 @@ export function Payments({ organization }: PaymentsProps) {
     paymentsCount: 0,
   });
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(25);
+
   useEffect(() => {
     fetchPayments();
   }, [organization.id]);
 
   useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters change
     filterPayments();
   }, [payments, searchTerm, sortOrder]);
 
@@ -272,7 +278,7 @@ export function Payments({ organization }: PaymentsProps) {
                 </tr>
               </thead>
               <tbody>
-                {filteredPayments.map((payment) => (
+                {paginate(filteredPayments, currentPage, itemsPerPage).map((payment) => (
                   <tr key={payment.id} className="border-b border-slate-100 hover:bg-slate-50">
                     <td className="px-4 py-3 text-sm font-medium text-slate-900">{payment.id_paiement}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">
@@ -304,6 +310,15 @@ export function Payments({ organization }: PaymentsProps) {
                 ))}
               </tbody>
             </table>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(filteredPayments.length / itemsPerPage)}
+              totalItems={filteredPayments.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => setCurrentPage(page)}
+              itemName="paiements"
+            />
           </div>
         )}
       </div>

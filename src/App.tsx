@@ -110,57 +110,71 @@ function App() {
           <Route
             index
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <Dashboard organization={effectiveOrg} />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Dashboard organization={effectiveOrg} />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
           <Route
             path="projets"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <Projects organization={effectiveOrg} />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Projects organization={effectiveOrg} />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
           <Route
             path="projets/:projectId"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <ProjectDetail organization={effectiveOrg} />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ProjectDetail organization={effectiveOrg} />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
           <Route
             path="coupons"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <Coupons organization={effectiveOrg} />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Coupons organization={effectiveOrg} />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
           <Route
             path="investisseurs"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <Investors organization={effectiveOrg} />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Investors organization={effectiveOrg} />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
           <Route
             path="souscriptions"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <Subscriptions organization={effectiveOrg} />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Subscriptions organization={effectiveOrg} />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
           <Route
             path="paiements"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <Payments organization={effectiveOrg} />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Payments organization={effectiveOrg} />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
 
@@ -168,9 +182,11 @@ function App() {
           <Route
             path="parametres"
             element={
-              <Suspense fallback={<LoadingFallback />}>
-                <Settings />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingFallback />}>
+                  <Settings />
+                </Suspense>
+              </ErrorBoundary>
             }
           />
 
@@ -179,9 +195,11 @@ function App() {
             path="membres"
             element={
               isOrgAdmin ? (
-                <Suspense fallback={<LoadingFallback />}>
-                  <Members />
-                </Suspense>
+                <ErrorBoundary>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Members />
+                  </Suspense>
+                </ErrorBoundary>
               ) : (
                 <Navigate to="/" replace />
               )
@@ -193,9 +211,11 @@ function App() {
             path="admin"
             element={
               isAdmin ? (
-                <Suspense fallback={<LoadingFallback />}>
-                  <AdminPanel />
-                </Suspense>
+                <ErrorBoundary>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <AdminPanel />
+                  </Suspense>
+                </ErrorBoundary>
               ) : (
                 <Navigate to="/" replace />
               )
