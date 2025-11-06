@@ -1,5 +1,3 @@
-Paste this code:
-
 import { useState } from 'react';
 import { ChevronDown, X, Check } from 'lucide-react';
 
