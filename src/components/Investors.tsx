@@ -1369,7 +1369,6 @@ export function Investors({ organization }: InvestorsProps) {
               <input
                 id="rib-file-input"
                 type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
                 onChange={handleFileChange}
                 className="hidden"
               />
