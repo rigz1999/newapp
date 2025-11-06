@@ -1,10 +1,3 @@
-Let me give you all the files you need to create. We'll do this step by step:
-
-Step 1: Create the Advanced Filters Hook
-Create a new file: src/hooks/useAdvancedFilters.ts
-
-Paste this code:
-
 import { useState, useCallback, useEffect } from 'react';
 
 export interface DateRangeFilter {
