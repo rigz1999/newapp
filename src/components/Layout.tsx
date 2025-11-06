@@ -1,8 +1,9 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield, UserCog, Settings } from 'lucide-react';
+import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield, UserCog, Settings, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { GlobalSearch } from './GlobalSearch';
 
 interface LayoutProps {
   organization: { id: string; name: string; role: string };
@@ -13,6 +14,7 @@ export function Layout({ organization }: LayoutProps) {
   const navigate = useNavigate();
   const [pendingCount, setPendingCount] = useState(0);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isOrgAdmin, isSuperAdmin, user } = useAuth();
 
   // Check if user is super admin (fallback to organization role)
@@ -114,12 +116,21 @@ export function Layout({ organization }: LayoutProps) {
     <div className="min-h-screen bg-slate-50 flex">
       <aside className="w-64 bg-slate-900 text-white flex flex-col fixed h-screen">
         <div className="p-6">
-          <div className="flex items-center gap-2 mb-8">
+          <div className="flex items-center gap-2 mb-6">
             <div className="bg-blue-600 p-2 rounded-lg">
               <TrendingUp className="w-6 h-6" />
             </div>
             <span className="text-xl font-bold">InvestFlow</span>
           </div>
+
+          {/* Global Search Button */}
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="w-full flex items-center gap-3 px-4 py-2.5 mb-6 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-slate-200"
+          >
+            <Search className="w-4 h-4" />
+            <span className="text-sm">Rechercher...</span>
+          </button>
 
           <nav className="space-y-2">
             <Link
@@ -256,6 +267,14 @@ export function Layout({ organization }: LayoutProps) {
       <main className="flex-1 overflow-y-auto ml-64">
         <Outlet />
       </main>
+
+      {/* Global Search Modal */}
+      {isSearchOpen && (
+        <GlobalSearch
+          orgId={organization.id}
+          onClose={() => setIsSearchOpen(false)}
+        />
+      )}
     </div>
   );
 }
