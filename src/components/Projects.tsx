@@ -154,7 +154,8 @@ export function Projects({ organization }: ProjectsProps) {
         projet: newProjectData.projet,
         type: newProjectData.type || null,
         emetteur: newProjectData.emetteur,
-        siren_emetteur: newProjectData.siren_emetteur ? parseInt(newProjectData.siren_emetteur) : null,
+        // Keep SIREN as string to preserve leading zeros (e.g., "012345678")
+        siren_emetteur: newProjectData.siren_emetteur || null,
         nom_representant: newProjectData.nom_representant || null,
         prenom_representant: newProjectData.prenom_representant || null,
         email_representant: newProjectData.email_representant || null,
