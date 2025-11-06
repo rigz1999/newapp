@@ -46,6 +46,31 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
     persistKey: 'subscriptions-filters',
   });
 
+  // Clear invalid tranche selections when project filter changes
+  useEffect(() => {
+    const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
+    const trancheFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'tranche');
+
+    if (projectFilter && projectFilter.values.length > 0 && trancheFilter && trancheFilter.values.length > 0) {
+      // Get valid tranches for selected projects
+      const validTranches = Array.from(
+        new Set(
+          subscriptions
+            .filter(s => projectFilter.values.includes(s.tranches?.projets?.projet || ''))
+            .map(s => s.tranches?.tranche_name)
+            .filter(Boolean)
+        )
+      );
+
+      // Remove tranche selections that are no longer valid
+      trancheFilter.values.forEach(selectedTranche => {
+        if (!validTranches.includes(selectedTranche)) {
+          advancedFilters.removeMultiSelectFilter('tranche', selectedTranche);
+        }
+      });
+    }
+  }, [advancedFilters.filters.multiSelect, subscriptions]);
+
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
