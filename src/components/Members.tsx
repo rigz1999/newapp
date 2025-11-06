@@ -11,6 +11,7 @@ import {
   Users, UserPlus, Trash2, RefreshCw,
   Mail, Calendar, Edit2, X, AlertCircle, Clock, Send
 } from 'lucide-react';
+import { formatErrorMessage } from '../utils/errorMessages';
 
 interface Member {
   id: string;
@@ -77,7 +78,7 @@ export default function Members() {
 
     if (error) {
       console.error('Error fetching members:', error);
-      alert('Erreur lors du chargement des membres: ' + error.message);
+      alert(formatErrorMessage(error));
     } else {
       setMembers(data || []);
     }
@@ -111,7 +112,7 @@ export default function Members() {
 
     if (error) {
       console.error('Error removing member:', error);
-      alert('Erreur: ' + error.message);
+      alert(formatErrorMessage(error));
     } else {
       setShowRemoveModal(false);
       setSelectedMember(null);
@@ -129,7 +130,7 @@ export default function Members() {
 
     if (error) {
       console.error('Error changing role:', error);
-      alert('Erreur: ' + error.message);
+      alert(formatErrorMessage(error));
     } else {
       setShowRoleModal(false);
       setSelectedMember(null);
@@ -145,7 +146,7 @@ export default function Members() {
 
     if (error) {
       console.error('Error canceling invitation:', error);
-      alert('Erreur: ' + error.message);
+      alert(formatErrorMessage(error));
     } else {
       fetchInvitations();
     }
@@ -463,7 +464,7 @@ function InviteMemberModal({
       onSuccess(invitedEmail);
     } catch (error: any) {
       console.error('Error sending invitation:', error);
-      alert(`❌ Erreur: ${error.message}`);
+      alert(`❌ ${formatErrorMessage(error)}`);
     } finally {
       setSending(false);
     }

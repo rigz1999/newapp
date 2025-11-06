@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 import {
   User, Lock, Mail, Save, RefreshCw, CheckCircle, X, AlertCircle
 } from 'lucide-react';
+import { formatErrorMessage } from '../utils/errorMessages';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -87,7 +88,7 @@ export default function Settings() {
     setSaving(false);
 
     if (error) {
-      setErrorMessage('Erreur lors de la mise à jour du profil: ' + error.message);
+      setErrorMessage(formatErrorMessage(error));
     } else {
       setSuccessMessage('Profil mis à jour avec succès');
       setShowSuccessModal(true);
@@ -139,7 +140,7 @@ export default function Settings() {
       setSaving(false);
 
       if (updateError) {
-        setErrorMessage('Erreur lors du changement de mot de passe: ' + updateError.message);
+        setErrorMessage(formatErrorMessage(updateError));
       } else {
         setSuccessMessage('Mot de passe changé avec succès');
         setShowSuccessModal(true);
@@ -149,7 +150,7 @@ export default function Settings() {
       }
     } catch (err: any) {
       setSaving(false);
-      setErrorMessage('Erreur inattendue: ' + err.message);
+      setErrorMessage(formatErrorMessage(err));
     }
   };
 

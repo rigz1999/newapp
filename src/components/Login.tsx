@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { LogIn, UserPlus, Clock, RefreshCw } from 'lucide-react';
+import { formatErrorMessage } from '../utils/errorMessages';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -74,7 +75,7 @@ export function Login() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(formatErrorMessage(error));
       setLoading(false);
     }
   };
@@ -102,7 +103,7 @@ export function Login() {
     });
 
     if (authError) {
-      setError(authError.message);
+      setError(formatErrorMessage(authError));
       setLoading(false);
       return;
     }
