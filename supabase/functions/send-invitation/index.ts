@@ -125,153 +125,164 @@ serve(async (req) => {
                   max-width: 600px;
                   margin: 0 auto;
                   background: white;
-                  border-radius: 16px;
+                  border-radius: 12px;
                   overflow: hidden;
-                  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
                 }
                 .header {
-                  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                  background: #1e40af;
                   color: white;
                   padding: 48px 40px;
                   text-align: center;
                 }
                 .header h1 {
-                  font-size: 28px;
+                  font-size: 32px;
                   font-weight: 700;
-                  margin-bottom: 8px;
+                  margin-bottom: 12px;
+                  letter-spacing: -0.5px;
                 }
                 .header p {
                   font-size: 16px;
-                  opacity: 0.9;
+                  opacity: 0.95;
+                  font-weight: 400;
                 }
                 .content {
-                  padding: 40px;
+                  padding: 48px 40px;
                 }
                 .greeting {
                   font-size: 18px;
-                  color: #1e293b;
+                  color: #0f172a;
                   margin-bottom: 24px;
+                  font-weight: 500;
                 }
                 .message {
                   font-size: 16px;
                   color: #475569;
-                  margin-bottom: 28px;
+                  margin-bottom: 32px;
                   line-height: 1.7;
                 }
                 .info-card {
-                  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                  border: 2px solid #3b82f6;
-                  border-radius: 12px;
-                  padding: 24px;
-                  margin: 28px 0;
+                  background: #f8fafc;
+                  border: 2px solid #e2e8f0;
+                  border-radius: 10px;
+                  padding: 28px;
+                  margin: 32px 0;
                 }
                 .info-item {
                   display: flex;
-                  align-items: center;
-                  margin-bottom: 12px;
+                  align-items: flex-start;
+                  margin-bottom: 16px;
                   font-size: 15px;
                 }
                 .info-item:last-child {
                   margin-bottom: 0;
                 }
                 .info-icon {
-                  font-size: 20px;
-                  margin-right: 12px;
-                  min-width: 24px;
+                  width: 20px;
+                  height: 20px;
+                  margin-right: 14px;
+                  margin-top: 2px;
+                  flex-shrink: 0;
                 }
                 .info-label {
                   font-weight: 600;
-                  color: #1e40af;
+                  color: #0f172a;
                   margin-right: 8px;
+                  min-width: 110px;
                 }
                 .info-value {
-                  color: #1e293b;
+                  color: #475569;
+                  flex: 1;
                 }
                 .role-badge {
                   display: inline-block;
-                  background: ${role === 'admin' ? 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)' : 'linear-gradient(135deg, #059669 0%, #34d399 100%)'};
+                  background: ${role === 'admin' ? '#7c3aed' : '#059669'};
                   color: white;
-                  padding: 6px 16px;
-                  border-radius: 20px;
+                  padding: 8px 18px;
+                  border-radius: 6px;
                   font-size: 14px;
                   font-weight: 600;
                   margin-left: 4px;
                 }
                 .cta-container {
                   text-align: center;
-                  margin: 36px 0;
+                  margin: 40px 0;
                 }
                 .button {
                   display: inline-block;
-                  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-                  color: white;
-                  padding: 16px 40px;
+                  background: #2563eb;
+                  color: #ffffff !important;
+                  padding: 18px 48px;
                   text-decoration: none;
-                  border-radius: 10px;
+                  border-radius: 8px;
                   font-weight: 600;
                   font-size: 16px;
-                  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3), 0 2px 4px -1px rgba(59, 130, 246, 0.2);
+                  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
                   transition: all 0.3s ease;
                 }
                 .button:hover {
-                  transform: translateY(-2px);
-                  box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4), 0 3px 5px -1px rgba(59, 130, 246, 0.3);
+                  background: #1d4ed8;
+                  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.5);
                 }
                 .link-box {
                   background: #f8fafc;
                   border: 1px solid #e2e8f0;
                   border-radius: 8px;
-                  padding: 16px;
-                  margin: 24px 0;
+                  padding: 18px;
+                  margin: 28px 0;
                 }
                 .link-box p {
                   color: #64748b;
                   font-size: 13px;
-                  margin-bottom: 8px;
+                  margin-bottom: 10px;
+                  font-weight: 500;
                 }
                 .link-box a {
-                  color: #3b82f6;
+                  color: #2563eb;
                   word-break: break-all;
                   font-size: 13px;
                   text-decoration: none;
                 }
                 .expiry-notice {
-                  background: #fef3c7;
-                  border-left: 4px solid #f59e0b;
+                  background: #fff7ed;
+                  border: 1px solid #fed7aa;
+                  border-left: 4px solid #f97316;
                   border-radius: 8px;
-                  padding: 16px;
-                  margin: 24px 0;
+                  padding: 18px;
+                  margin: 28px 0;
                 }
-                .expiry-notice p {
-                  color: #92400e;
-                  font-size: 14px;
-                  margin: 0;
+                .expiry-notice-content {
                   display: flex;
-                  align-items: center;
+                  align-items: flex-start;
                 }
-                .expiry-notice .icon {
-                  font-size: 20px;
-                  margin-right: 10px;
+                .expiry-icon {
+                  width: 20px;
+                  height: 20px;
+                  margin-right: 12px;
+                  margin-top: 2px;
+                  flex-shrink: 0;
+                }
+                .expiry-text {
+                  color: #9a3412;
+                  font-size: 14px;
+                  line-height: 1.6;
                 }
                 .footer {
                   background: #f8fafc;
-                  padding: 32px 40px;
+                  padding: 36px 40px;
                   text-align: center;
                   border-top: 1px solid #e2e8f0;
-                }
-                .footer p {
-                  color: #64748b;
-                  font-size: 14px;
-                  margin-bottom: 8px;
                 }
                 .footer-logo {
                   font-size: 24px;
                   font-weight: 700;
-                  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-                  -webkit-background-clip: text;
-                  -webkit-text-fill-color: transparent;
-                  background-clip: text;
+                  color: #1e40af;
                   margin-bottom: 8px;
+                }
+                .footer p {
+                  color: #64748b;
+                  font-size: 14px;
+                  margin-bottom: 6px;
                 }
               </style>
             </head>
@@ -279,8 +290,8 @@ serve(async (req) => {
               <div class="container">
                 <!-- Header -->
                 <div class="header">
-                  <h1>✨ Bienvenue sur InvestFlow</h1>
-                  <p>Vous avez été invité à rejoindre une organisation</p>
+                  <h1>Bienvenue sur InvestFlow</h1>
+                  <p>Invitation à rejoindre une organisation</p>
                 </div>
 
                 <!-- Content -->
@@ -290,36 +301,42 @@ serve(async (req) => {
                   </div>
 
                   <div class="message">
-                    Vous avez été invité(e) à rejoindre <strong>${orgName}</strong> sur la plateforme InvestFlow avec le rôle de<span class="role-badge">${role === 'admin' ? '👨‍💼 Administrateur' : '👤 Membre'}</span>
+                    Vous avez été invité(e) à rejoindre <strong>${orgName}</strong> sur la plateforme InvestFlow avec le rôle de<span class="role-badge">${role === 'admin' ? 'Administrateur' : 'Membre'}</span>
                   </div>
 
                   <!-- Info Card -->
                   <div class="info-card">
                     <div class="info-item">
-                      <span class="info-icon">📧</span>
-                      <span class="info-label">Email:</span>
+                      <svg class="info-icon" fill="none" stroke="#3b82f6" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                      </svg>
+                      <span class="info-label">Email :</span>
                       <span class="info-value">${email}</span>
                     </div>
                     <div class="info-item">
-                      <span class="info-icon">🏢</span>
-                      <span class="info-label">Organisation:</span>
+                      <svg class="info-icon" fill="none" stroke="#3b82f6" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                      </svg>
+                      <span class="info-label">Organisation :</span>
                       <span class="info-value">${orgName}</span>
                     </div>
                     <div class="info-item">
-                      <span class="info-icon">🎯</span>
-                      <span class="info-label">Rôle:</span>
+                      <svg class="info-icon" fill="none" stroke="#3b82f6" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                      </svg>
+                      <span class="info-label">Rôle :</span>
                       <span class="info-value">${role === 'admin' ? 'Administrateur - Accès complet à la gestion' : 'Membre - Accès aux données de l\'organisation'}</span>
                     </div>
                   </div>
 
                   <div class="message">
-                    Pour activer votre compte et définir votre mot de passe, cliquez sur le bouton ci-dessous :
+                    Pour activer votre compte et définir votre mot de passe, veuillez cliquer sur le bouton ci-dessous :
                   </div>
 
                   <!-- CTA Button -->
                   <div class="cta-container">
-                    <a href="${invitationLink}" class="button">
-                      🚀 Activer mon compte
+                    <a href="${invitationLink}" class="button" style="color: #ffffff;">
+                      Activer mon compte
                     </a>
                   </div>
 
@@ -331,10 +348,14 @@ serve(async (req) => {
 
                   <!-- Expiry Notice -->
                   <div class="expiry-notice">
-                    <p>
-                      <span class="icon">⏰</span>
-                      <strong>Important :</strong> Cette invitation expire dans 7 jours. Pensez à activer votre compte rapidement.
-                    </p>
+                    <div class="expiry-notice-content">
+                      <svg class="expiry-icon" fill="none" stroke="#f97316" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <div class="expiry-text">
+                        <strong>Important :</strong> Cette invitation expire dans 7 jours. Veuillez activer votre compte rapidement.
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -342,7 +363,7 @@ serve(async (req) => {
                 <div class="footer">
                   <div class="footer-logo">InvestFlow</div>
                   <p>Plateforme de gestion d'investissements</p>
-                  <p style="margin-top: 16px;">Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email en toute sécurité.</p>
+                  <p style="margin-top: 18px; color: #94a3b8;">Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email en toute sécurité.</p>
                 </div>
               </div>
             </body>
