@@ -1,11 +1,11 @@
- import { useState, useEffect } from 'react';
+ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { 
-  Calendar, 
-  Search, 
-  Eye, 
-  CheckCircle, 
-  Clock, 
+import {
+  Calendar,
+  Search,
+  Eye,
+  CheckCircle,
+  Clock,
   AlertTriangle,
   Download,
   X,
@@ -15,6 +15,7 @@ import {
   Filter,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Layers,
   Upload
 } from 'lucide-react';
@@ -22,6 +23,10 @@ import * as XLSX from 'xlsx';
 import { PaymentWizard } from './PaymentWizard';
 import { TableSkeleton } from './Skeleton';
 import { Pagination, paginate } from './Pagination';
+import { useAdvancedFilters } from '../hooks/useAdvancedFilters';
+import { MultiSelectFilter } from './filters/MultiSelectFilter';
+import { FilterPresets } from './filters/FilterPresets';
+import { DateRangePicker } from './filters/DateRangePicker';
 
 interface Coupon {
   id: string;
@@ -70,25 +75,21 @@ const formatDate = (dateString: string) => {
 
 export function Coupons({ organization }: CouponsProps) {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [filteredCoupons, setFilteredCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statutFilter, setStatutFilter] = useState('all');
-  const [projetFilter, setProjetFilter] = useState('all');
-  const [periodeFilter, setPeriodeFilter] = useState('30');
-  
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Advanced filters
+  const advancedFilters = useAdvancedFilters({
+    persistKey: 'coupons-filters',
+  });
+
   // Expand/Collapse states
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
-  
+
   // Modals
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
-  
-  // Lists for filters
-  const [allProjets, setAllProjets] = useState<string[]>([]);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,10 +99,10 @@ export function Coupons({ organization }: CouponsProps) {
     fetchCoupons();
   }, []);
 
+  // Reset to first page when filters change
   useEffect(() => {
-    setCurrentPage(1); // Reset to first page when filters change
-    applyFilters();
-  }, [searchTerm, statutFilter, projetFilter, periodeFilter, coupons]);
+    setCurrentPage(1);
+  }, [advancedFilters.filters]);
 
   const fetchCoupons = async () => {
     setLoading(true);
@@ -170,10 +171,6 @@ export function Coupons({ organization }: CouponsProps) {
       });
 
       setCoupons(processedCoupons);
-      
-      const projets = Array.from(new Set(processedCoupons.map(c => c.projet_nom))).sort();
-      setAllProjets(projets);
-      
     } catch (error) {
       console.error('Error fetching coupons:', error);
     } finally {
@@ -181,12 +178,36 @@ export function Coupons({ organization }: CouponsProps) {
     }
   };
 
-  const applyFilters = () => {
+  // Extract unique values for filters
+  const uniqueProjets = useMemo(() =>
+    Array.from(new Set(coupons.map(c => c.projet_nom))).sort().map(p => ({ value: p, label: p })),
+    [coupons]
+  );
+
+  const uniqueTranches = useMemo(() =>
+    Array.from(new Set(coupons.map(c => c.tranche_nom))).sort().map(t => ({ value: t, label: t })),
+    [coupons]
+  );
+
+  const uniqueStatuts = useMemo(() => [
+    { value: 'en_attente', label: 'En attente' },
+    { value: 'paye', label: 'Payé' },
+    { value: 'en_retard', label: 'En retard' },
+  ], []);
+
+  const uniqueCGPs = useMemo(() =>
+    Array.from(new Set(coupons.map(c => c.investisseur_cgp).filter(Boolean))).sort().map(cgp => ({ value: cgp!, label: cgp! })),
+    [coupons]
+  );
+
+  // Apply filters
+  const filteredCoupons = useMemo(() => {
     let filtered = [...coupons];
     const now = new Date();
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    // Search filter
+    if (advancedFilters.filters.search) {
+      const term = advancedFilters.filters.search.toLowerCase();
       filtered = filtered.filter(c =>
         c.investisseur_nom.toLowerCase().includes(term) ||
         c.projet_nom.toLowerCase().includes(term) ||
@@ -195,31 +216,53 @@ export function Coupons({ organization }: CouponsProps) {
       );
     }
 
-    if (statutFilter !== 'all') {
+    // Date range filter for echéance
+    if (advancedFilters.filters.dateRange.startDate && advancedFilters.filters.dateRange.endDate) {
+      const startDate = new Date(advancedFilters.filters.dateRange.startDate);
+      const endDate = new Date(advancedFilters.filters.dateRange.endDate);
+      filtered = filtered.filter(c => {
+        const echeance = new Date(c.date_echeance);
+        return echeance >= startDate && echeance <= endDate;
+      });
+    }
+
+    // Multi-select statut filter
+    const statutFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'statut');
+    if (statutFilter && statutFilter.values.length > 0) {
       filtered = filtered.filter(c => {
         const isOverdue = new Date(c.date_echeance) < now && c.statut !== 'paye';
         const actualStatut = isOverdue ? 'en_retard' : c.statut;
-        return actualStatut === statutFilter;
+        return statutFilter.values.includes(actualStatut);
       });
     }
 
-    if (projetFilter !== 'all') {
-      filtered = filtered.filter(c => c.projet_nom === projetFilter);
+    // Multi-select project filter
+    const projetFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
+    if (projetFilter && projetFilter.values.length > 0) {
+      filtered = filtered.filter(c => projetFilter.values.includes(c.projet_nom));
     }
 
-    if (periodeFilter !== 'all') {
-      const days = parseInt(periodeFilter);
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + days);
-      
-      filtered = filtered.filter(c => {
-        const echeance = new Date(c.date_echeance);
-        return echeance >= now && echeance <= endDate;
-      });
+    // Multi-select tranche filter
+    const trancheFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'tranche');
+    if (trancheFilter && trancheFilter.values.length > 0) {
+      filtered = filtered.filter(c => trancheFilter.values.includes(c.tranche_nom));
     }
 
-    setFilteredCoupons(filtered);
-  };
+    // Multi-select CGP filter
+    const cgpFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'cgp');
+    if (cgpFilter && cgpFilter.values.length > 0) {
+      filtered = filtered.filter(c => c.investisseur_cgp && cgpFilter.values.includes(c.investisseur_cgp));
+    }
+
+    return filtered;
+  }, [coupons, advancedFilters.filters]);
+
+  // Count active filters
+  const activeFiltersCount = useMemo(() => [
+    advancedFilters.filters.search ? 1 : 0,
+    advancedFilters.filters.dateRange.startDate || advancedFilters.filters.dateRange.endDate ? 1 : 0,
+    ...advancedFilters.filters.multiSelect.map(f => f.values.length > 0 ? 1 : 0)
+  ].reduce((a, b) => a + b, 0), [advancedFilters.filters]);
 
   // ✅ MODIFICATION : KPI sans filtre de période
   const calculateStats = () => {
@@ -434,56 +477,128 @@ export function Coupons({ organization }: CouponsProps) {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Filter className="w-5 h-5 text-slate-600" />
-          <span className="text-sm font-semibold text-slate-900">Filtres</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="relative">
+      {/* Filters Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+        {/* Basic Search */}
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Rechercher par investisseur, projet, tranche..."
+              value={advancedFilters.filters.search}
+              onChange={(e) => advancedFilters.setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          <select
-            value={statutFilter}
-            onChange={(e) => setStatutFilter(e.target.value)}
-            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+              showAdvancedFilters || activeFiltersCount > 0
+                ? 'bg-blue-50 border-blue-300 text-blue-700'
+                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+            }`}
           >
-            <option value="all">Tous les statuts</option>
-            <option value="en_attente">En Attente</option>
-            <option value="paye">Payé</option>
-            <option value="en_retard">En Retard</option>
-          </select>
-
-          <select
-            value={projetFilter}
-            onChange={(e) => setProjetFilter(e.target.value)}
-            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Tous les projets</option>
-            {allProjets.map(projet => (
-              <option key={projet} value={projet}>{projet}</option>
-            ))}
-          </select>
-
-          <select
-            value={periodeFilter}
-            onChange={(e) => setPeriodeFilter(e.target.value)}
-            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Toutes les périodes</option>
-            <option value="7">7 prochains jours</option>
-            <option value="30">30 prochains jours</option>
-            <option value="90">90 prochains jours</option>
-          </select>
+            <Filter className="w-5 h-5" />
+            <span className="font-medium">Filtres avancés</span>
+            {activeFiltersCount > 0 && (
+              <span className="bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {activeFiltersCount}
+              </span>
+            )}
+            {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
         </div>
+
+        {/* Advanced Filters Panel */}
+        {showAdvancedFilters && (
+          <div className="border-t border-slate-200 pt-6 space-y-4">
+            {/* Filter Presets */}
+            <FilterPresets
+              presets={advancedFilters.presets}
+              onSave={(name) => advancedFilters.savePreset(name)}
+              onLoad={(id) => advancedFilters.loadPreset(id)}
+              onDelete={(id) => advancedFilters.deletePreset(id)}
+            />
+
+            {/* Date Range Filter */}
+            <DateRangePicker
+              label="Période d'échéance"
+              startDate={advancedFilters.filters.dateRange.startDate}
+              endDate={advancedFilters.filters.dateRange.endDate}
+              onStartDateChange={(date) =>
+                advancedFilters.setDateRange(date, advancedFilters.filters.dateRange.endDate)
+              }
+              onEndDateChange={(date) =>
+                advancedFilters.setDateRange(advancedFilters.filters.dateRange.startDate, date)
+              }
+            />
+
+            {/* Multi-select Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <MultiSelectFilter
+                label="Statut"
+                options={uniqueStatuts}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'statut')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('statut', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('statut', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('statut')}
+                placeholder="Sélectionner des statuts..."
+              />
+
+              <MultiSelectFilter
+                label="Projets"
+                options={uniqueProjets}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'projet')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('projet', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('projet', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('projet')}
+                placeholder="Sélectionner des projets..."
+              />
+
+              <MultiSelectFilter
+                label="Tranches"
+                options={uniqueTranches}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'tranche')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('tranche', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('tranche', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('tranche')}
+                placeholder="Sélectionner des tranches..."
+              />
+
+              <MultiSelectFilter
+                label="CGP"
+                options={uniqueCGPs}
+                selectedValues={
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'cgp')?.values || []
+                }
+                onAdd={(value) => advancedFilters.addMultiSelectFilter('cgp', value)}
+                onRemove={(value) => advancedFilters.removeMultiSelectFilter('cgp', value)}
+                onClear={() => advancedFilters.clearMultiSelectFilter('cgp')}
+                placeholder="Sélectionner des CGP..."
+              />
+            </div>
+
+            {/* Clear All Filters */}
+            {activeFiltersCount > 0 && (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => advancedFilters.clearAllFilters()}
+                  className="text-sm text-slate-600 hover:text-slate-900 underline"
+                >
+                  Effacer tous les filtres
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Coupons List */}
