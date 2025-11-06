@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle } from 'lucide-react';
+import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface Investor {
@@ -100,6 +100,9 @@ export function Investors({ organization }: InvestorsProps) {
   const [ribFile, setRibFile] = useState<File | null>(null);
   const [ribPreview, setRibPreview] = useState<string | null>(null);
   const [uploadingRib, setUploadingRib] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   
   const [allTranches, setAllTranches] = useState<Array<{ 
     id: string; 
@@ -340,8 +343,22 @@ export function Investors({ organization }: InvestorsProps) {
     if (!ribFile || !selectedInvestor) return;
 
     setUploadingRib(true);
+    setUploadProgress(0);
+    setUploadError('');
+    setUploadSuccess(false);
 
     try {
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 100);
+
       const fileExt = ribFile.name.split('.').pop();
       const fileName = `${selectedInvestor.id}_${Date.now()}.${fileExt}`;
       const filePath = `ribs/${fileName}`;
@@ -350,7 +367,11 @@ export function Investors({ organization }: InvestorsProps) {
         .from('documents')
         .upload(filePath, ribFile);
 
+      clearInterval(progressInterval);
+
       if (uploadError) throw uploadError;
+
+      setUploadProgress(95);
 
       const { error: updateError } = await supabase
         .from('investisseurs')
@@ -363,15 +384,25 @@ export function Investors({ organization }: InvestorsProps) {
 
       if (updateError) throw updateError;
 
-      setShowRibModal(false);
-      fetchInvestors();
-      
-      alert('✅ RIB uploadé avec succès !');
-    } catch (error) {
+      setUploadProgress(100);
+      setUploadSuccess(true);
+
+      // Close modal after showing success
+      setTimeout(() => {
+        setShowRibModal(false);
+        setUploadingRib(false);
+        setUploadProgress(0);
+        setUploadSuccess(false);
+        setRibFile(null);
+        setRibPreview(null);
+        fetchInvestors();
+      }, 2000);
+
+    } catch (error: any) {
       console.error('Erreur upload RIB:', error);
-      alert('❌ Erreur lors de l\'upload du RIB');
-    } finally {
+      setUploadError(error.message || 'Erreur lors de l\'upload du RIB');
       setUploadingRib(false);
+      setUploadProgress(0);
     }
   };
 
@@ -1246,8 +1277,71 @@ export function Investors({ organization }: InvestorsProps) {
                         setRibPreview(null);
                       }}
                       className="text-slate-400 hover:text-red-600 transition-colors"
+                      disabled={uploadingRib}
                     >
                       <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Progress */}
+              {uploadingRib && (
+                <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-blue-900">
+                      Upload en cours...
+                    </span>
+                    <span className="text-sm font-semibold text-blue-900">
+                      {uploadProgress}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-full transition-all duration-300 ease-out"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Success */}
+              {uploadSuccess && (
+                <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-full">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-900">
+                        RIB uploadé avec succès !
+                      </p>
+                      <p className="text-xs text-green-700">
+                        Le document a été enregistré et validé
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Error */}
+              {uploadError && (
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-red-900">
+                        Erreur lors de l'upload
+                      </p>
+                      <p className="text-xs text-red-700 mt-1">
+                        {uploadError}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setUploadError('')}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
