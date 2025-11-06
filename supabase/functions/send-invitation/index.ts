@@ -107,87 +107,243 @@ serve(async (req) => {
           <html>
             <head>
               <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <style>
+                * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+                }
                 body {
                   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                   line-height: 1.6;
-                  color: #333;
+                  color: #1e293b;
+                  background-color: #f1f5f9;
+                  padding: 40px 20px;
+                }
+                .container {
                   max-width: 600px;
                   margin: 0 auto;
-                  padding: 20px;
+                  background: white;
+                  border-radius: 16px;
+                  overflow: hidden;
+                  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
                 }
                 .header {
-                  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+                  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
                   color: white;
-                  padding: 30px;
-                  border-radius: 8px 8px 0 0;
+                  padding: 48px 40px;
                   text-align: center;
                 }
+                .header h1 {
+                  font-size: 28px;
+                  font-weight: 700;
+                  margin-bottom: 8px;
+                }
+                .header p {
+                  font-size: 16px;
+                  opacity: 0.9;
+                }
                 .content {
-                  background: #f8fafc;
-                  padding: 30px;
-                  border-radius: 0 0 8px 8px;
+                  padding: 40px;
+                }
+                .greeting {
+                  font-size: 18px;
+                  color: #1e293b;
+                  margin-bottom: 24px;
+                }
+                .message {
+                  font-size: 16px;
+                  color: #475569;
+                  margin-bottom: 28px;
+                  line-height: 1.7;
+                }
+                .info-card {
+                  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                  border: 2px solid #3b82f6;
+                  border-radius: 12px;
+                  padding: 24px;
+                  margin: 28px 0;
+                }
+                .info-item {
+                  display: flex;
+                  align-items: center;
+                  margin-bottom: 12px;
+                  font-size: 15px;
+                }
+                .info-item:last-child {
+                  margin-bottom: 0;
+                }
+                .info-icon {
+                  font-size: 20px;
+                  margin-right: 12px;
+                  min-width: 24px;
+                }
+                .info-label {
+                  font-weight: 600;
+                  color: #1e40af;
+                  margin-right: 8px;
+                }
+                .info-value {
+                  color: #1e293b;
+                }
+                .role-badge {
+                  display: inline-block;
+                  background: ${role === 'admin' ? 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)' : 'linear-gradient(135deg, #059669 0%, #34d399 100%)'};
+                  color: white;
+                  padding: 6px 16px;
+                  border-radius: 20px;
+                  font-size: 14px;
+                  font-weight: 600;
+                  margin-left: 4px;
+                }
+                .cta-container {
+                  text-align: center;
+                  margin: 36px 0;
                 }
                 .button {
                   display: inline-block;
-                  background: #1e293b;
+                  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
                   color: white;
-                  padding: 14px 28px;
+                  padding: 16px 40px;
                   text-decoration: none;
-                  border-radius: 6px;
-                  margin: 20px 0;
+                  border-radius: 10px;
                   font-weight: 600;
+                  font-size: 16px;
+                  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3), 0 2px 4px -1px rgba(59, 130, 246, 0.2);
+                  transition: all 0.3s ease;
                 }
-                .info-box {
-                  background: white;
-                  border-left: 4px solid #3b82f6;
-                  padding: 15px;
-                  margin: 20px 0;
-                  border-radius: 4px;
+                .button:hover {
+                  transform: translateY(-2px);
+                  box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4), 0 3px 5px -1px rgba(59, 130, 246, 0.3);
+                }
+                .link-box {
+                  background: #f8fafc;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 8px;
+                  padding: 16px;
+                  margin: 24px 0;
+                }
+                .link-box p {
+                  color: #64748b;
+                  font-size: 13px;
+                  margin-bottom: 8px;
+                }
+                .link-box a {
+                  color: #3b82f6;
+                  word-break: break-all;
+                  font-size: 13px;
+                  text-decoration: none;
+                }
+                .expiry-notice {
+                  background: #fef3c7;
+                  border-left: 4px solid #f59e0b;
+                  border-radius: 8px;
+                  padding: 16px;
+                  margin: 24px 0;
+                }
+                .expiry-notice p {
+                  color: #92400e;
+                  font-size: 14px;
+                  margin: 0;
+                  display: flex;
+                  align-items: center;
+                }
+                .expiry-notice .icon {
+                  font-size: 20px;
+                  margin-right: 10px;
                 }
                 .footer {
+                  background: #f8fafc;
+                  padding: 32px 40px;
                   text-align: center;
+                  border-top: 1px solid #e2e8f0;
+                }
+                .footer p {
                   color: #64748b;
                   font-size: 14px;
-                  margin-top: 30px;
+                  margin-bottom: 8px;
+                }
+                .footer-logo {
+                  font-size: 24px;
+                  font-weight: 700;
+                  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                  -webkit-background-clip: text;
+                  -webkit-text-fill-color: transparent;
+                  background-clip: text;
+                  margin-bottom: 8px;
                 }
               </style>
             </head>
             <body>
-              <div class="header">
-                <h1 style="margin: 0;">🎉 Invitation à InvestFlow</h1>
-              </div>
-              <div class="content">
-                <p>Bonjour <strong>${firstName} ${lastName}</strong>,</p>
-
-                <p>Vous avez été invité(e) à rejoindre <strong>${orgName}</strong> sur InvestFlow en tant que <strong>${role === 'admin' ? 'Administrateur' : 'Membre'}</strong>.</p>
-
-                <div class="info-box">
-                  <p style="margin: 0;"><strong>📧 Email:</strong> ${email}</p>
-                  <p style="margin: 10px 0 0 0;"><strong>🏢 Organisation:</strong> ${orgName}</p>
-                  <p style="margin: 10px 0 0 0;"><strong>👤 Rôle:</strong> ${role === 'admin' ? 'Administrateur' : 'Membre'}</p>
+              <div class="container">
+                <!-- Header -->
+                <div class="header">
+                  <h1>✨ Bienvenue sur InvestFlow</h1>
+                  <p>Vous avez été invité à rejoindre une organisation</p>
                 </div>
 
-                <p>Cliquez sur le bouton ci-dessous pour créer votre compte et définir votre mot de passe :</p>
+                <!-- Content -->
+                <div class="content">
+                  <div class="greeting">
+                    Bonjour <strong>${firstName} ${lastName}</strong>,
+                  </div>
 
-                <div style="text-align: center;">
-                  <a href="${invitationLink}" class="button">
-                    Activer mon compte
-                  </a>
+                  <div class="message">
+                    Vous avez été invité(e) à rejoindre <strong>${orgName}</strong> sur la plateforme InvestFlow avec le rôle de<span class="role-badge">${role === 'admin' ? '👨‍💼 Administrateur' : '👤 Membre'}</span>
+                  </div>
+
+                  <!-- Info Card -->
+                  <div class="info-card">
+                    <div class="info-item">
+                      <span class="info-icon">📧</span>
+                      <span class="info-label">Email:</span>
+                      <span class="info-value">${email}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-icon">🏢</span>
+                      <span class="info-label">Organisation:</span>
+                      <span class="info-value">${orgName}</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-icon">🎯</span>
+                      <span class="info-label">Rôle:</span>
+                      <span class="info-value">${role === 'admin' ? 'Administrateur - Accès complet à la gestion' : 'Membre - Accès aux données de l\'organisation'}</span>
+                    </div>
+                  </div>
+
+                  <div class="message">
+                    Pour activer votre compte et définir votre mot de passe, cliquez sur le bouton ci-dessous :
+                  </div>
+
+                  <!-- CTA Button -->
+                  <div class="cta-container">
+                    <a href="${invitationLink}" class="button">
+                      🚀 Activer mon compte
+                    </a>
+                  </div>
+
+                  <!-- Alternative Link -->
+                  <div class="link-box">
+                    <p>Ou copiez ce lien dans votre navigateur :</p>
+                    <a href="${invitationLink}">${invitationLink}</a>
+                  </div>
+
+                  <!-- Expiry Notice -->
+                  <div class="expiry-notice">
+                    <p>
+                      <span class="icon">⏰</span>
+                      <strong>Important :</strong> Cette invitation expire dans 7 jours. Pensez à activer votre compte rapidement.
+                    </p>
+                  </div>
                 </div>
 
-                <p style="color: #64748b; font-size: 14px;">
-                  Ou copiez ce lien dans votre navigateur :<br>
-                  <a href="${invitationLink}" style="color: #3b82f6; word-break: break-all;">${invitationLink}</a>
-                </p>
-
-                <p style="color: #ef4444; font-size: 14px;">
-                  ⚠️ Cette invitation expire dans 7 jours.
-                </p>
-              </div>
-              <div class="footer">
-                <p>Cet email a été envoyé par InvestFlow</p>
-                <p>Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email.</p>
+                <!-- Footer -->
+                <div class="footer">
+                  <div class="footer-logo">InvestFlow</div>
+                  <p>Plateforme de gestion d'investissements</p>
+                  <p style="margin-top: 16px;">Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email en toute sécurité.</p>
+                </div>
               </div>
             </body>
           </html>
