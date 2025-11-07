@@ -1,10 +1,11 @@
 // ============================================
-// Error Boundary Component
+// Error Boundary Component with Sentry Integration
 // Path: src/components/ErrorBoundary.tsx
 // ============================================
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import * as Sentry from '@sentry/react';
 
 interface Props {
   children: ReactNode;
@@ -25,8 +26,21 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
-    // Error already logged in getDerivedStateFromError
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Log to Sentry with full error context
+    Sentry.captureException(error, {
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+      level: 'error',
+    });
+
+    // Also log to console in development
+    if (import.meta.env.DEV) {
+      console.error('Error caught by boundary:', error, errorInfo);
+    }
   }
 
   private handleReset = () => {
