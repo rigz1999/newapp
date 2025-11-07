@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface EcheancierModalProps {
   projectId: string;
@@ -142,7 +142,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
     setExpandedDates(newExpanded);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const exportData = filteredEcheances.map(e => ({
       'Date Échéance': formatDate(e.date_echeance),
       'Tranche': e.souscription.tranche.tranche_name,
@@ -157,23 +157,34 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
       'Statut': e.statut === 'paye' ? 'Payé' : 'À venir',
     }));
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Échéancier');
-    
-    ws['!cols'] = [
-      { wch: 12 }, // Date
-      { wch: 20 }, // Tranche
-      { wch: 25 }, // Investisseur
-      { wch: 10 }, // Type
-      { wch: 12 }, // Coupon Brut
-      { wch: 12 }, // Coupon Net
-      { wch: 18 }, // Remboursement Nominal
-      { wch: 14 }, // Total à Payer
-      { wch: 10 }, // Statut
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Échéancier');
+
+    // Add headers with custom column widths
+    worksheet.columns = [
+      { header: 'Date', key: 'Date', width: 12 },
+      { header: 'Tranche', key: 'Tranche', width: 20 },
+      { header: 'Investisseur', key: 'Investisseur', width: 25 },
+      { header: 'Type', key: 'Type', width: 10 },
+      { header: 'Coupon Brut', key: 'Coupon Brut', width: 12 },
+      { header: 'Coupon Net', key: 'Coupon Net', width: 12 },
+      { header: 'Remboursement Nominal', key: 'Remboursement Nominal', width: 18 },
+      { header: 'Total à Payer', key: 'Total à Payer', width: 14 },
+      { header: 'Statut', key: 'Statut', width: 10 }
     ];
-    
-    XLSX.writeFile(wb, `Echeancier_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    // Add data rows
+    exportData.forEach(row => worksheet.addRow(row));
+
+    // Generate file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Echeancier_${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const filteredEcheances = echeances.filter((e) => {

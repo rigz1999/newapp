@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { ConfirmModal, AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
+import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
@@ -370,6 +371,20 @@ function Investors({ organization: _organization }: InvestorsProps) {
   const handleEditSave = async () => {
     if (!editFormData || !selectedInvestor) return;
 
+    // Validate SIREN for personne morale
+    if (isMorale(editFormData.type) && editFormData.siren) {
+      const sirenString = String(editFormData.siren);
+      if (!isValidSIREN(sirenString)) {
+        setAlertModalConfig({
+          title: 'SIREN Invalide',
+          message: 'Le numéro SIREN doit contenir 9 chiffres et être valide selon l\'algorithme de Luhn.',
+          type: 'error'
+        });
+        setShowAlertModal(true);
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from('investisseurs')
       .update(editFormData)
@@ -635,7 +650,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
     setShowConfirmModal(true);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const exportData = filteredInvestors.map(inv => ({
       'ID': inv.id_investisseur,
       'Nom / Raison Sociale': inv.nom_raison_sociale,
@@ -649,10 +664,28 @@ function Investors({ organization: _organization }: InvestorsProps) {
       'RIB': inv.rib_status === 'valide' ? 'Oui' : 'Non'
     }));
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Investisseurs');
-    XLSX.writeFile(wb, `investisseurs_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Investisseurs');
+
+    // Add headers
+    worksheet.columns = Object.keys(exportData[0] || {}).map(key => ({
+      header: key,
+      key: key,
+      width: 20
+    }));
+
+    // Add data rows
+    exportData.forEach(row => worksheet.addRow(row));
+
+    // Generate file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `investisseurs_${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
   };
 
 
