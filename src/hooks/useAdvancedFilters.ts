@@ -119,7 +119,8 @@ export function useAdvancedFilters(
       if (saved) {
         try {
           setPresets(JSON.parse(saved));
-        } catch (e) {
+        } catch {
+          // Ignore parse errors
         }
       }
     }
@@ -132,7 +133,8 @@ export function useAdvancedFilters(
       if (saved) {
         try {
           setRecentFilters(JSON.parse(saved));
-        } catch (e) {
+        } catch {
+          // Ignore parse errors
         }
       }
     }
@@ -145,7 +147,7 @@ export function useAdvancedFilters(
       if (saved) {
         try {
           setAnalytics(JSON.parse(saved));
-        } catch (e) {
+        } catch {
         }
       }
     }

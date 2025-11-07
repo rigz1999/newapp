@@ -75,7 +75,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
 
       if (error) throw error;
       setProjects(data || []);
-    } catch (err) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
       );
 
       setTranches(tranchesWithStats);
-    } catch (err) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
 
       if (error) throw error;
       setSubscriptions((data || []) as Subscription[]);
-    } catch (err) {
+    } catch {
     } finally {
       setLoading(false);
     }

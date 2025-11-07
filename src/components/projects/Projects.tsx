@@ -3,9 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { FolderOpen, Plus, Layers, Search, Eye, Users, X, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
-import { AlertModal } from '../common/Modals';
 import { CardSkeleton } from '../common/Skeleton';
-import { formatCurrency, formatMontantDisplay, groupDigitsWithSpaces } from '../../utils/formatters';
 import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
@@ -156,7 +154,7 @@ export function Projects({ organization }: ProjectsProps) {
       });
 
       setProjects(projectsWithStats);
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -205,7 +203,7 @@ export function Projects({ organization }: ProjectsProps) {
         projectToCreate.base_interet = parseInt(newProjectData.base_interet);
       }
 
-      const { data, error } = await supabase
+      const { data: _data, error } = await supabase
         .from('projets')
         .insert([projectToCreate])
         .select()

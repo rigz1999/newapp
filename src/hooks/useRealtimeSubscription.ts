@@ -8,7 +8,6 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { features } from '../config';
 
 export type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
@@ -59,9 +58,9 @@ export function useRealtimeSubscription<T extends { [key: string]: any } = any>(
     const newChannel = supabase.channel(channelName);
 
     // Build filter string
-    let subscriptionFilter = `public:${table}`;
+    let _subscriptionFilter = `public:${table}`;
     if (filter) {
-      subscriptionFilter += `:${filter}`;
+      _subscriptionFilter += `:${filter}`;
     }
 
     // Subscribe to changes

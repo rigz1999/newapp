@@ -7,7 +7,6 @@ import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
-import { DateRangePicker } from '../filters/DateRangePicker';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
 
@@ -85,7 +84,7 @@ const formatType = (type: string | null | undefined): string => {
   return isMorale(type) ? 'Personne Morale' : 'Personne Physique';
 };
 
-function Investors({ organization }: InvestorsProps) {
+function Investors({ organization: _organization }: InvestorsProps) {
   const [investors, setInvestors] = useState<InvestorWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -136,14 +135,14 @@ function Investors({ organization }: InvestorsProps) {
     type?: 'success' | 'error' | 'warning' | 'info';
   }>({ title: '', message: '', type: 'info' });
 
-  const [allTranches, setAllTranches] = useState<Array<{
+  const [_allTranches, setAllTranches] = useState<Array<{
     id: string;
     tranche_name: string;
     projet_id: string;
     projet_nom: string
   }>>([]);
 
-  const [allCgps, setAllCgps] = useState<string[]>([]);
+  const [_allCgps, setAllCgps] = useState<string[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -513,7 +512,7 @@ function Investors({ organization }: InvestorsProps) {
     }
   };
 
-  const handleDownloadRib = async (investor: InvestorWithStats) => {
+  const _handleDownloadRib = async (investor: InvestorWithStats) => {
     if (!investor.rib_file_path) return;
 
     try {
@@ -531,7 +530,7 @@ function Investors({ organization }: InvestorsProps) {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (error) {
+    } catch {
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors du téléchargement du RIB',
@@ -557,7 +556,7 @@ function Investors({ organization }: InvestorsProps) {
 
       const url = window.URL.createObjectURL(data);
       setRibViewUrl(url);
-    } catch (error) {
+    } catch {
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors du chargement du RIB',
@@ -623,7 +622,7 @@ function Investors({ organization }: InvestorsProps) {
           });
           setShowAlertModal(true);
           fetchInvestors();
-        } catch (error) {
+        } catch {
           setAlertModalConfig({
             title: 'Erreur',
             message: 'Erreur lors de la suppression du RIB',

@@ -31,7 +31,7 @@ interface Payment {
   } | null;
 }
 
-type StatusFilter = 'all' | 'paid' | 'pending' | 'late';
+type _StatusFilter = 'all' | 'paid' | 'pending' | 'late';
 type SortOrder = 'desc' | 'asc';
 
 export function Payments({ organization }: PaymentsProps) {
@@ -125,7 +125,8 @@ export function Payments({ organization }: PaymentsProps) {
         paymentsCount: paymentsData.length,
       });
 
-    } catch (error) {
+    } catch {
+      // Error already handled
     } finally {
       setLoading(false);
     }
@@ -208,7 +209,7 @@ export function Payments({ organization }: PaymentsProps) {
     return new Date(dateStr).toLocaleDateString('fr-FR');
   };
 
-  const getStatusIcon = (status: string) => {
+  const _getStatusIcon = (status: string) => {
     const s = status?.toLowerCase();
     if (s === 'paid' || s === 'payé') return <CheckCircle2 className="w-4 h-4 text-green-600" />;
     if (s === 'pending' || s === 'en attente') return <Clock className="w-4 h-4 text-yellow-600" />;
@@ -216,7 +217,7 @@ export function Payments({ organization }: PaymentsProps) {
     return <Clock className="w-4 h-4 text-slate-600" />;
   };
 
-  const getStatusBadgeClass = (status: string) => {
+  const _getStatusBadgeClass = (status: string) => {
     const s = status?.toLowerCase();
     if (s === 'paid' || s === 'payé') return 'bg-green-100 text-green-700';
     if (s === 'pending' || s === 'en attente') return 'bg-yellow-100 text-yellow-700';

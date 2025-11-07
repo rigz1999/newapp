@@ -18,7 +18,6 @@ import {
   Layers,
   Calendar,
   Plus,
-  Loader,
   X,
   AlertTriangle,
   CalendarDays,
@@ -102,7 +101,7 @@ interface AlertState {
   onConfirm?: () => void;
 }
 
-export function ProjectDetail({ organization }: ProjectDetailProps) {
+export function ProjectDetail({ organization: _organization }: ProjectDetailProps) {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
@@ -321,7 +320,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
   };
 
   // 2) AJOUTÉ : toggle pour développer / réduire une tranche
-  const toggleTrancheExpand = (trancheId: string) => {
+  const toggleTrancheExpand = (___trancheId: string) => {
     const newExpanded = new Set(expandedTrancheIds);
     if (newExpanded.has(trancheId)) {
       newExpanded.delete(trancheId);
@@ -869,7 +868,7 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
         <EcheancierCard 
           projectId={projectId!} 
           tranches={tranches}
-          onPaymentClick={(trancheId) => {
+          onPaymentClick={(_trancheId) => {
             setShowPaymentWizard(true);
           }}
           onViewAll={() => {
