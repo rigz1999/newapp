@@ -297,29 +297,28 @@ export default function AdminPanel() {
   const handleDeletePendingUser = async () => {
     if (!deletingItem || deletingItem.type !== 'pending_user') return;
 
-    // Delete the user profile
-    const { error } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', deletingItem.id);
+    try {
+      // Use edge function to delete user from auth (bypasses RLS)
+      const { data, error: funcError } = await supabase.functions.invoke('delete-pending-user', {
+        body: { userId: deletingItem.id }
+      });
 
-    if (error) {
-      setAlertModalConfig({
-        title: 'Erreur',
-        message: 'Erreur lors de la suppression: ' + error.message,
-        type: 'error'
-      });
-      setShowAlertModal(true);
-    } else {
-      setAlertModalConfig({
-        title: 'Succès',
-        message: 'Utilisateur supprimé avec succès',
-        type: 'success'
-      });
-      setShowAlertModal(true);
+      if (funcError) throw funcError;
+      if (data?.error) throw new Error(data.error);
+
+      // Close modal and refresh
       setShowDeletePendingUserModal(false);
       setDeletingItem(null);
       fetchData();
+
+    } catch (error: any) {
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: error.message || 'Erreur lors de la suppression',
+        type: 'error'
+      });
+      setShowAlertModal(true);
+      setShowDeletePendingUserModal(false);
     }
   };
 
