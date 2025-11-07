@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { X, Search, Calendar, Edit, Trash2 } from 'lucide-react';
 
 interface TranchesModalProps {
   tranches: any[];

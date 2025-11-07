@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, ArrowLeft, Trash2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
+import { isValidAmount } from '../../utils/validators';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
@@ -296,6 +297,16 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
         return { ...match, matchedSubscription: subscription };
       });
 
+      // Validate extracted payment amounts
+      const invalidAmounts = enrichedMatches.filter((match: PaymentMatch) =>
+        !isValidAmount(match.paiement.montant)
+      );
+
+      if (invalidAmounts.length > 0) {
+        console.warn('⚠️ Montants invalides détectés:', invalidAmounts);
+        // Continue but user will see validation error when trying to save
+      }
+
       setMatches(enrichedMatches);
       
       const autoSelected = new Set<number>();
@@ -350,6 +361,17 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
     try {
       const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
       const validMatches = selectedMatchesList.filter(m => m.matchedSubscription);
+
+      // Validate payment amounts
+      for (const match of validMatches) {
+        const amount = match.paiement.montant;
+        if (!isValidAmount(amount)) {
+          throw new Error(
+            `Montant invalide pour ${match.paiement.beneficiaire}: ${amount}. ` +
+            'Le montant doit être un nombre positif.'
+          );
+        }
+      }
 
       for (const match of validMatches) {
         const { data: paymentData, error: paymentError } = await ((supabase
