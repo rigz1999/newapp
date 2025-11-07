@@ -144,7 +144,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       )
       .order('date_souscription', { ascending: false });
 
-    setSubscriptions((data as any) || []);
+    setSubscriptions((data || []) as Subscription[]);
     setLoading(false);
   };
 

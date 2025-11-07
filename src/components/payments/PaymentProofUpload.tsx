@@ -236,8 +236,15 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
       console.log('Data:', data);
       console.log('Error:', funcError);
 
-      if (funcError) throw funcError;
-      if (!data.succes) throw new Error(data.erreur);
+      if (funcError) {
+        // Check if the function doesn't exist
+        if (funcError.message?.includes('not found') || funcError.message?.includes('FunctionsRelayError')) {
+          const functionName = payments && payments.length > 1 ? 'analyze-payment-batch' : 'analyze-payment';
+          throw new Error(`La fonction d'analyse des paiements n'est pas disponible. Veuillez contacter l'administrateur pour déployer la fonction Edge "${functionName}".`);
+        }
+        throw funcError;
+      }
+      if (!data?.succes) throw new Error(data?.erreur || 'Erreur lors de l\'analyse du paiement');
 
       setAnalysisResult({
         ...data,

@@ -64,6 +64,7 @@ interface Tranche {
 interface Subscription {
   id: string;
   id_souscription: string;
+  investisseur_id: string;
   date_souscription: string;
   montant_investi: number;
   nombre_obligations: number;
@@ -195,18 +196,18 @@ export function ProjectDetail({ organization }: ProjectDetailProps) {
 
       setProject(projectData);
       setTranches(tranchesData);
-      setSubscriptions(subscriptionsWithCoupons as any);
+      setSubscriptions(subscriptionsWithCoupons);
       setPayments(paymentsData);
 
       if (subscriptionsWithCoupons.length > 0) {
-        const totalLeve = subscriptionsWithCoupons.reduce((sum: number, sub: any) => sum + Number(sub.montant_investi || 0), 0);
-        const uniqueInvestors = new Set(subscriptionsWithCoupons.map((s: any) => s.investisseur_id)).size;
+        const totalLeve = subscriptionsWithCoupons.reduce((sum, sub) => sum + Number(sub.montant_investi || 0), 0);
+        const uniqueInvestors = new Set(subscriptionsWithCoupons.map(s => s.investisseur_id)).size;
 
         const upcomingCoupons = subscriptionsWithCoupons
-          .filter((s: any) => s.prochain_coupon?.date_prochain_coupon)
-          .sort((a: any, b: any) => 
-            new Date(a.prochain_coupon.date_prochain_coupon).getTime() - 
-            new Date(b.prochain_coupon.date_prochain_coupon).getTime()
+          .filter(s => s.prochain_coupon?.date_prochain_coupon)
+          .sort((a, b) =>
+            new Date(a.prochain_coupon!.date_prochain_coupon).getTime() -
+            new Date(b.prochain_coupon!.date_prochain_coupon).getTime()
           );
 
         const nextCoupon = upcomingCoupons[0];

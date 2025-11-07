@@ -8,6 +8,29 @@ interface Organization {
   role: string;
 }
 
+interface OrganizationData {
+  id: string;
+  name: string;
+}
+
+interface MembershipData {
+  org_id: string | null;
+  role: string;
+  organizations: OrganizationData | OrganizationData[] | null;
+}
+
+// Type guard to validate organization data
+function isValidOrganization(org: unknown): org is OrganizationData {
+  return (
+    typeof org === 'object' &&
+    org !== null &&
+    'id' in org &&
+    'name' in org &&
+    typeof (org as OrganizationData).id === 'string' &&
+    typeof (org as OrganizationData).name === 'string'
+  );
+}
+
 export function useOrganization(userId: string | undefined) {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,67 +47,84 @@ export function useOrganization(userId: string | undefined) {
     const fetchOrganization = async () => {
       logger.log('useOrganization - Fetching memberships for userId:', userId);
 
-      // Fetch ALL memberships (not just one)
-      const { data: memberships, error } = await supabase
-        .from('memberships')
-        .select('org_id, role, organizations(id, name)')
-        .eq('user_id', userId);
+      try {
+        // Fetch ALL memberships (not just one)
+        const { data: memberships, error } = await supabase
+          .from('memberships')
+          .select('org_id, role, organizations(id, name)')
+          .eq('user_id', userId);
 
-      logger.log('useOrganization - Memberships result:', { memberships, error });
+        logger.log('useOrganization - Memberships result:', { memberships, error });
 
-      if (error) {
-        logger.error('useOrganization - Error fetching memberships:', error);
+        if (error) {
+          logger.error('useOrganization - Error fetching memberships:', error);
+          setOrganization(null);
+          setLoading(false);
+          return;
+        }
+
+        if (!memberships || memberships.length === 0) {
+          logger.log('useOrganization - No memberships found');
+          setOrganization(null);
+          setLoading(false);
+          return;
+        }
+
+        // Check if user is super admin (org_id = NULL)
+        const superAdminMembership = memberships.find(
+          (m: MembershipData) => m.role === 'super_admin' && m.org_id === null
+        );
+
+        if (superAdminMembership) {
+          logger.log('useOrganization - Super admin detected');
+          // Super admin - return special org object
+          setOrganization({
+            id: 'super_admin',
+            name: 'Super Admin',
+            role: 'super_admin'
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Regular user - get their first organization
+        const regularMembership = memberships.find(
+          (m: MembershipData) => m.org_id !== null && m.organizations
+        );
+        logger.log('useOrganization - Regular membership found:', regularMembership);
+
+        if (regularMembership && regularMembership.organizations) {
+          // Handle both single object and array responses
+          const orgData = Array.isArray(regularMembership.organizations)
+            ? regularMembership.organizations[0]
+            : regularMembership.organizations;
+
+          // Validate the organization data before using it
+          if (isValidOrganization(orgData)) {
+            logger.log('useOrganization - Setting organization:', {
+              id: orgData.id,
+              name: orgData.name,
+              role: regularMembership.role,
+            });
+            setOrganization({
+              id: orgData.id,
+              name: orgData.name,
+              role: regularMembership.role,
+            });
+          } else {
+            logger.error('useOrganization - Invalid organization data:', orgData);
+            setOrganization(null);
+          }
+        } else {
+          logger.log('useOrganization - No valid organization found in membership');
+          setOrganization(null);
+        }
+      } catch (error) {
+        logger.error('useOrganization - Unexpected error:', error);
         setOrganization(null);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      if (!memberships || memberships.length === 0) {
-        logger.log('useOrganization - No memberships found');
-        setOrganization(null);
-        setLoading(false);
-        return;
-      }
-
-      // Check if user is super admin (org_id = NULL)
-      const superAdminMembership = memberships.find(
-        m => m.role === 'super_admin' && m.org_id === null
-      );
-
-      if (superAdminMembership) {
-        logger.log('useOrganization - Super admin detected');
-        // Super admin - return special org object
-        setOrganization({
-          id: 'super_admin',
-          name: 'Super Admin',
-          role: 'super_admin'
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Regular user - get their first organization
-      const regularMembership = memberships.find(m => m.org_id !== null && m.organizations);
-      logger.log('useOrganization - Regular membership found:', regularMembership);
-
-      if (regularMembership && regularMembership.organizations) {
-        const org = regularMembership.organizations as any;
-        logger.log('useOrganization - Setting organization:', {
-          id: org.id,
-          name: org.name,
-          role: regularMembership.role,
-        });
-        setOrganization({
-          id: org.id,
-          name: org.name,
-          role: regularMembership.role,
-        });
-      } else {
-        logger.log('useOrganization - No valid organization found in membership');
-        setOrganization(null);
-      }
-
-      setLoading(false);
     };
 
     fetchOrganization();

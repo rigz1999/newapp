@@ -24,6 +24,7 @@ export interface UpcomingCoupon {
   coupon_brut: number;
   investisseur_id: string;
   tranche_id: string;
+  investor_count?: number; // For grouped coupons
   tranche?: {
     tranche_name: string;
     projet_id: string;

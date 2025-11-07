@@ -625,8 +625,9 @@ export function Projects({ organization }: ProjectsProps) {
                         }}
                         onPaste={(e) => {
                           e.preventDefault();
-                          const text = (e.clipboardData || (window as any).clipboardData).getData('text');
-                          const digits = (text || '').replace(/\D/g, '');
+                          const clipboardData = e.clipboardData || (window as ClipboardEvent).clipboardData;
+                          const text = clipboardData?.getData('text') || '';
+                          const digits = text.replace(/\D/g, '');
                           setNewProjectData(prev => ({
                             ...prev,
                             montant_global_eur: digits
