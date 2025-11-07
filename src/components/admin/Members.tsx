@@ -143,10 +143,10 @@ export default function Members() {
   const handleChangeRole = async (newRole: string) => {
     if (!selectedMember) return;
 
-    const { error } = await supabase
+    const { error } = await (supabase
       .from('memberships')
       .update({ role: newRole })
-      .eq('id', selectedMember.id);
+      .eq('id', selectedMember.id) as any);
 
     if (error) {
       console.error('Error changing role:', error);

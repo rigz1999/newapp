@@ -285,7 +285,9 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
         }
         throw funcError;
       }
-      if (!data?.succes) throw new Error(data?.erreur || 'Erreur lors de l\'analyse des paiements');
+      if (!data) throw new Error('Aucune donnée reçue de la fonction d\'analyse');
+      if (!data.succes) throw new Error(data.erreur || 'Erreur lors de l\'analyse des paiements');
+      if (!data.correspondances) throw new Error('Données de correspondance manquantes');
 
       const enrichedMatches = data.correspondances.map((match: any) => {
         const subscription = subscriptions.find(

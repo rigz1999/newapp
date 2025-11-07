@@ -726,7 +726,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 <select
                   aria-label="Année"
                   value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
                   className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value={2024}>2024</option>
@@ -980,8 +980,8 @@ export function Dashboard({ organization }: DashboardProps) {
                     taux_interet: parseFloat(newProjectData.taux_interet),
                     montant_global_eur: newProjectData.montant_global_eur ? parseFloat(newProjectData.montant_global_eur) : null,
                     periodicite_coupon: newProjectData.periodicite_coupon,
-                    maturite_mois: parseInt(newProjectData.maturite_mois),
-                    base_interet: parseInt(newProjectData.base_interet),
+                    maturite_mois: parseInt(newProjectData.maturite_mois, 10),
+                    base_interet: parseInt(newProjectData.base_interet, 10),
                     // keep identifiers as strings
                     siren_emetteur: newProjectData.siren_emetteur || null,
                     nom_representant: newProjectData.nom_representant || null,
