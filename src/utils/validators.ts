@@ -79,3 +79,20 @@ export const isRequired = (value: any): boolean => {
   if (typeof value === 'string') return value.trim().length > 0;
   return true;
 };
+
+/**
+ * Validate number (can be negative or zero)
+ */
+export const isValidNumber = (value: string | number): boolean => {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return !isNaN(num) && isFinite(num);
+};
+
+/**
+ * Validate date range (start date must be before end date)
+ */
+export const isValidDateRange = (startDate: string, endDate: string): boolean => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  return start < end;
+};

@@ -6,6 +6,7 @@ import { ConfirmModal, AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
+import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
@@ -369,6 +370,20 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
   const handleEditSave = async () => {
     if (!editFormData || !selectedInvestor) return;
+
+    // Validate SIREN for personne morale
+    if (isMorale(editFormData.type) && editFormData.siren) {
+      const sirenString = String(editFormData.siren);
+      if (!isValidSIREN(sirenString)) {
+        setAlertModalConfig({
+          title: 'SIREN Invalide',
+          message: 'Le numéro SIREN doit contenir 9 chiffres et être valide selon l\'algorithme de Luhn.',
+          type: 'error'
+        });
+        setShowAlertModal(true);
+        return;
+      }
+    }
 
     const { error } = await supabase
       .from('investisseurs')
