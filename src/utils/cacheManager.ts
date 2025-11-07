@@ -25,9 +25,7 @@ export function invalidateDashboardCache(orgId: string): void {
   try {
     const cacheKey = getDashboardCacheKey(orgId);
     localStorage.removeItem(cacheKey);
-    console.log(`[Cache] Dashboard cache invalidated for org: ${orgId}`);
   } catch (error) {
-    console.error('[Cache] Error invalidating dashboard cache:', error);
   }
 }
 
@@ -42,9 +40,7 @@ export function invalidateAllDashboardCaches(): void {
         localStorage.removeItem(key);
       }
     });
-    console.log('[Cache] All dashboard caches invalidated');
   } catch (error) {
-    console.error('[Cache] Error invalidating all caches:', error);
   }
 }
 

@@ -87,7 +87,6 @@ export default function Members() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching members:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: formatErrorMessage(error),
@@ -111,7 +110,6 @@ export default function Members() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching invitations:', error);
     } else {
       setInvitations(data || []);
     }
@@ -126,7 +124,6 @@ export default function Members() {
       .eq('id', selectedMember.id);
 
     if (error) {
-      console.error('Error removing member:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: formatErrorMessage(error),
@@ -149,7 +146,6 @@ export default function Members() {
       .eq('id', selectedMember.id) as any);
 
     if (error) {
-      console.error('Error changing role:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: formatErrorMessage(error),
@@ -170,7 +166,6 @@ export default function Members() {
       .eq('id', invitationId);
 
     if (error) {
-      console.error('Error canceling invitation:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: formatErrorMessage(error),
@@ -525,7 +520,6 @@ function InviteMemberModal({
       setRole('member');
       onSuccess(invitedEmail);
     } catch (error: any) {
-      console.error('Error sending invitation:', error);
       setAlertConfig({
         title: 'Erreur',
         message: formatErrorMessage(error),

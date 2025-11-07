@@ -97,7 +97,6 @@ export function InvitationAccept() {
 
       setInvitation(invitationData);
     } catch (err) {
-      console.error('Error verifying invitation:', err);
       setError('Erreur lors de la vérification de l\'invitation.');
     } finally {
       setLoading(false);
@@ -159,7 +158,6 @@ export function InvitationAccept() {
         });
 
       if (membershipError) {
-        console.error('Error creating membership:', membershipError);
         throw new Error('Erreur lors de l\'ajout à l\'organisation.');
       }
 
@@ -173,7 +171,6 @@ export function InvitationAccept() {
         .eq('id', invitation.id);
 
       if (updateError) {
-        console.error('Error updating invitation:', updateError);
         // Non bloquant, on continue
       }
 
@@ -186,7 +183,6 @@ export function InvitationAccept() {
       }, 3000);
 
     } catch (err: any) {
-      console.error('Error creating account:', err);
       setError(err.message || 'Erreur lors de la création du compte. Veuillez réessayer.');
     } finally {
       setCreating(false);
