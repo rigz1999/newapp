@@ -464,8 +464,8 @@ export function Coupons({ organization: _organization }: CouponsProps) {
           {stats.enRetard.count > 0 && (
             <button
               onClick={() => {
-                setStatutFilter('en_retard');
-                setPeriodeFilter('all');
+                advancedFilters.clearAllFilters();
+                advancedFilters.addMultiSelectFilter('statut', 'en_retard');
               }}
               className="mt-2 text-xs text-red-600 hover:text-red-700 font-medium underline"
             >
