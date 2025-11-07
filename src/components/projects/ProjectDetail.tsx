@@ -52,6 +52,7 @@ interface Project {
 
 interface Tranche {
   id: string;
+  projet_id: string;
   tranche_name: string;
   taux_nominal: number | null;
   periodicite_coupons: string | null;
@@ -149,6 +150,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   }, [projectId]);
 
   const fetchProjectData = async () => {
+    if (!projectId) return;
+
     setLoading(true);
 
     try {
@@ -320,7 +323,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   };
 
   // 2) AJOUTÉ : toggle pour développer / réduire une tranche
-  const toggleTrancheExpand = (___trancheId: string) => {
+  const toggleTrancheExpand = (trancheId: string) => {
     const newExpanded = new Set(expandedTrancheIds);
     if (newExpanded.has(trancheId)) {
       newExpanded.delete(trancheId);
@@ -365,7 +368,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     try {
       const { error } = await supabase
         .from('projets')
-        .update(editedProject)
+        .update(editedProject as any)
         .eq('id', project!.id);
 
       if (error) throw error;
@@ -394,13 +397,13 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     if (!editingSubscription) return;
 
     try {
-      const { error } = await supabase
+      const { error} = await supabase
         .from('souscriptions')
         .update({
           montant_investi: editingSubscription.montant_investi,
           nombre_obligations: editingSubscription.nombre_obligations,
           date_souscription: editingSubscription.date_souscription,
-        })
+        } as any)
         .eq('id', editingSubscription.id);
 
       if (error) throw error;

@@ -527,34 +527,6 @@ function Investors({ organization: _organization }: InvestorsProps) {
     }
   };
 
-  const _handleDownloadRib = async (investor: InvestorWithStats) => {
-    if (!investor.rib_file_path) return;
-
-    try {
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .download(investor.rib_file_path);
-
-      if (error) throw error;
-
-      const url = window.URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `RIB_${investor.nom_raison_sociale}.${investor.rib_file_path.split('.').pop()}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch {
-      setAlertModalConfig({
-        title: 'Erreur',
-        message: 'Erreur lors du téléchargement du RIB',
-        type: 'error'
-      });
-      setShowAlertModal(true);
-    }
-  };
-
   const handleViewRib = async (investor: InvestorWithStats) => {
     if (!investor.rib_file_path) return;
 

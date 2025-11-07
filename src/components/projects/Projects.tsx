@@ -139,11 +139,11 @@ export function Projects({ organization }: ProjectsProps) {
       const tranchesData = tranchesRes.data || [];
       const subscriptionsData = subscriptionsRes.data || [];
 
-      const projectsWithStats = projectsData.map((project) => {
-        const projectTranches = tranchesData.filter(t => t.projet_id === project.id);
+      const projectsWithStats = projectsData.map((project: any) => {
+        const projectTranches = tranchesData.filter((t: any) => t.projet_id === project.id);
         const projectSubscriptions = subscriptionsData.filter((s: any) => s.tranche?.projet_id === project.id);
-        const totalLeve = projectSubscriptions.reduce((sum, sub) => sum + (Number(sub.montant_investi) || 0), 0);
-        const uniqueInvestors = new Set(projectSubscriptions.map(s => s.investisseur_id)).size;
+        const totalLeve = projectSubscriptions.reduce((sum: number, sub: any) => sum + (Number(sub.montant_investi) || 0), 0);
+        const uniqueInvestors = new Set(projectSubscriptions.map((s: any) => s.investisseur_id)).size;
 
         return {
           ...project,

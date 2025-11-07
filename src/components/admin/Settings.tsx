@@ -63,7 +63,7 @@ export default function Settings() {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .single() as any;
 
     if (error) {
       // Error is silently ignored
@@ -82,7 +82,7 @@ export default function Settings() {
       .from('user_reminder_settings')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .single() as any;
 
     if (!reminderError && reminderSettings) {
       setRemindersEnabled(reminderSettings.enabled);
@@ -112,7 +112,7 @@ export default function Settings() {
       .update({
         full_name: fullName,
         updated_at: new Date().toISOString()
-      })
+      } as any)
       .eq('id', user.id);
 
     setSaving(false);
@@ -207,7 +207,7 @@ export default function Settings() {
           remind_14_days: remind14Days,
           remind_30_days: remind30Days,
           updated_at: new Date().toISOString()
-        }, {
+        } as any, {
           onConflict: 'user_id'
         });
 

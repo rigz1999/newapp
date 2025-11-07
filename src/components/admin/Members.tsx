@@ -150,7 +150,7 @@ export default function Members() {
 
     const { error } = await supabase
       .from('memberships')
-      .update({ role: newRole as 'member' | 'admin' | 'super_admin' })
+      .update({ role: newRole as 'member' | 'admin' | 'super_admin' } as any)
       .eq('id', selectedMember.id);
 
     if (error) {

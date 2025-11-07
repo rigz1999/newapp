@@ -157,7 +157,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
   };
 
   // Perform search with retry logic
-  const _performSearchWithRetry = async (searchQuery: string, retries = 2): Promise<void> => {
+  const performSearchWithRetry = async (searchQuery: string, retries = 2): Promise<void> => {
     try {
       await performSearch(searchQuery);
     } catch (err) {
