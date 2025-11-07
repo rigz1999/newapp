@@ -48,7 +48,7 @@ interface PaymentWizardProps {
 }
 
 export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -61,7 +61,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   const [selectedTrancheId, setSelectedTrancheId] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [matches, setMatches] = useState<PaymentMatch[]>([]);
-  const [uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
+  const [_uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
   const [tempFileNames, setTempFileNames] = useState<string[]>([]);
   const [selectedMatches, setSelectedMatches] = useState<Set<number>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -224,7 +224,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             canvas.height = viewport.height;
             canvas.width = viewport.width;
 
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
+            await page.render({ canvasContext: context, viewport: viewport } as any).promise;
             
             const imageDataUrl = canvas.toDataURL('image/png');
             const compressed = await compressImage(imageDataUrl, 0.7);
@@ -336,7 +336,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       setSelectedMatches(new Set());
     } else {
       const allIndexes = new Set<number>();
-      matches.forEach((match, idx) => {
+      matches.forEach((_match, idx) => {
         allIndexes.add(idx);
       });
       setSelectedMatches(allIndexes);
@@ -352,8 +352,8 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       const validMatches = selectedMatchesList.filter(m => m.matchedSubscription);
 
       for (const match of validMatches) {
-        const { data: paymentData, error: paymentError } = await supabase
-          .from('paiements')
+        const { data: paymentData, error: paymentError } = await ((supabase
+          .from('paiements') as any)
           .insert({
             id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: 'Coupon',
@@ -365,7 +365,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             date_paiement: match.paiement.date || new Date().toISOString().split('T')[0]
           })
           .select()
-          .single();
+          .single());
 
         if (paymentError) throw paymentError;
 
@@ -388,16 +388,16 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             .from('payment-proofs')
             .getPublicUrl(permanentFileName);
 
-          const { error: proofError } = await supabase
-            .from('payment_proofs')
+          const { error: proofError } = await ((supabase
+            .from('payment_proofs') as any)
             .insert({
-              paiement_id: paymentData.id,
+              paiement_id: (paymentData as any).id,
               file_url: urlData.publicUrl,
               file_name: files[0].name,
               file_size: files[0].size,
               extracted_data: match.paiement,
               confidence: match.confiance
-            });
+            }));
 
           if (proofError) throw proofError;
         }
@@ -425,8 +425,8 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       const validMatchesList = matches.filter(m => m.statut === 'correspondance' && m.matchedSubscription);
 
       for (const match of validMatchesList) {
-        const { data: paymentData, error: paymentError } = await supabase
-          .from('paiements')
+        const { data: paymentData, error: paymentError } = await ((supabase
+          .from('paiements') as any)
           .insert({
             id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: 'Coupon',
@@ -438,7 +438,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             date_paiement: match.paiement.date || new Date().toISOString().split('T')[0]
           })
           .select()
-          .single();
+          .single());
 
         if (paymentError) throw paymentError;
 
@@ -461,16 +461,16 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             .from('payment-proofs')
             .getPublicUrl(permanentFileName);
 
-          const { error: proofError } = await supabase
-            .from('payment_proofs')
+          const { error: proofError } = await ((supabase
+            .from('payment_proofs') as any)
             .insert({
-              paiement_id: paymentData.id,
+              paiement_id: (paymentData as any).id,
               file_url: urlData.publicUrl,
               file_name: files[0].name,
               file_size: files[0].size,
               extracted_data: match.paiement,
               confidence: match.confiance
-            });
+            }));
 
           if (proofError) throw proofError;
         }
