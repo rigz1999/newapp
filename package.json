@@ -21,12 +21,12 @@
     "@sentry/vite-plugin": "^4.6.0",
     "@supabase/supabase-js": "^2.57.4",
     "dompurify": "^3.3.0",
+    "exceljs": "^4.4.0",
     "lucide-react": "^0.344.0",
     "pdfjs-dist": "^5.4.296",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.9.4",
-    "xlsx": "^0.18.5"
+    "react-router-dom": "^7.9.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

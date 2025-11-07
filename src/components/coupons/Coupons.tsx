@@ -18,7 +18,7 @@ import {
   Layers,
   Upload
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { PaymentWizard } from '../payments/PaymentWizard';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
@@ -358,7 +358,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
     setExpandedTranches(newExpanded);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const exportData = filteredCoupons.map(c => ({
       'Date Échéance': formatDate(c.date_echeance),
       'Projet': c.projet_nom,
@@ -371,10 +371,28 @@ export function Coupons({ organization: _organization }: CouponsProps) {
       'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
     }));
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Coupons');
-    XLSX.writeFile(wb, `coupons_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Coupons');
+
+    // Add headers
+    worksheet.columns = Object.keys(exportData[0] || {}).map(key => ({
+      header: key,
+      key: key,
+      width: 20
+    }));
+
+    // Add data rows
+    exportData.forEach(row => worksheet.addRow(row));
+
+    // Generate file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `coupons_${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const stats = calculateStats();

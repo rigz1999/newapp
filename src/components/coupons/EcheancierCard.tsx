@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Calendar, AlertCircle, Download } from 'lucide-react';
+import ExcelJS from 'exceljs';
 
 interface EcheancierCardProps {
   projectId: string;
@@ -159,33 +160,36 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
     const montantEnRetard = allEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date()).reduce((sum, e) => sum + Number(e.montant_coupon), 0);
     const montantAVenir = allEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date()).reduce((sum, e) => sum + Number(e.montant_coupon), 0);
 
-    const XLSX = await import('xlsx');
-    const wb = XLSX.utils.book_new();
+    const workbook = new ExcelJS.Workbook();
+
+    // Sheet 1: Synthèse
+    const wsSynthese = workbook.addWorksheet('Synthèse');
+    wsSynthese.columns = [
+      { key: 'label', width: 25 },
+      { key: 'value', width: 15 }
+    ];
 
     const synthese = [
-      ['SYNTHÈSE DE L\'ÉCHÉANCIER'],
-      [''],
+      ['SYNTHÈSE DE L\'ÉCHÉANCIER', ''],
+      ['', ''],
       ['Date d\'export', new Date().toLocaleDateString('fr-FR')],
-      [''],
-      ['STATISTIQUES GÉNÉRALES'],
+      ['', ''],
+      ['STATISTIQUES GÉNÉRALES', ''],
       ['Total des coupons', totalEcheances],
       ['Coupons payés', totalPayes],
       ['Coupons en retard', totalEnRetard],
       ['Coupons à venir', totalAVenir],
-      [''],
-      ['MONTANTS (EUR)'],
+      ['', ''],
+      ['MONTANTS (EUR)', ''],
       ['Montant total', montantTotal],
       ['Montant payé', montantPaye],
       ['Montant en retard', montantEnRetard],
       ['Montant à venir', montantAVenir],
-      [''],
-      ['PROGRESSION'],
+      ['', ''],
+      ['PROGRESSION', ''],
       ['Taux de paiement', `${Math.round((totalPayes / totalEcheances) * 100)}%`],
     ];
-
-    const wsSynthese = XLSX.utils.aoa_to_sheet(synthese);
-    wsSynthese['!cols'] = [{ wch: 25 }, { wch: 15 }];
-    XLSX.utils.book_append_sheet(wb, wsSynthese, 'Synthèse');
+    synthese.forEach(row => wsSynthese.addRow(row));
 
     const detailData = [
       ['Tranche', 'Investisseur', 'Date échéance', 'Montant (€)', 'Statut', 'Date paiement']
@@ -203,12 +207,26 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
       ]);
     });
 
-    const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
-    wsDetail['!cols'] = [
-      { wch: 20 }, { wch: 25 }, { wch: 15 },
-      { wch: 12 }, { wch: 12 }, { wch: 15 }
+    // Sheet 2: Détail des coupons
+    const wsDetail = workbook.addWorksheet('Détail des coupons');
+    wsDetail.columns = [
+      { key: 'tranche', header: 'Tranche', width: 20 },
+      { key: 'investisseur', header: 'Investisseur', width: 25 },
+      { key: 'date', header: 'Date échéance', width: 15 },
+      { key: 'montant', header: 'Montant (€)', width: 12 },
+      { key: 'statut', header: 'Statut', width: 12 },
+      { key: 'datePaiement', header: 'Date paiement', width: 15 }
     ];
-    XLSX.utils.book_append_sheet(wb, wsDetail, 'Détail des coupons');
+    detailData.slice(1).forEach(row => {
+      wsDetail.addRow({
+        tranche: row[0],
+        investisseur: row[1],
+        date: row[2],
+        montant: row[3],
+        statut: row[4],
+        datePaiement: row[5]
+      });
+    });
 
     const parTrancheData: any[] = [
       ['Tranche', 'Total coupons', 'Payés', 'En retard', 'À venir', 'Montant total (€)', 'Montant payé (€)']
@@ -233,14 +251,38 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
       ]);
     });
 
-    const wsParTranche = XLSX.utils.aoa_to_sheet(parTrancheData);
-    wsParTranche['!cols'] = [
-      { wch: 20 }, { wch: 15 }, { wch: 10 },
-      { wch: 12 }, { wch: 10 }, { wch: 18 }, { wch: 18 }
+    // Sheet 3: Par tranche
+    const wsParTranche = workbook.addWorksheet('Par tranche');
+    wsParTranche.columns = [
+      { key: 'tranche', header: 'Tranche', width: 20 },
+      { key: 'total', header: 'Total coupons', width: 15 },
+      { key: 'payes', header: 'Payés', width: 10 },
+      { key: 'enRetard', header: 'En retard', width: 12 },
+      { key: 'aVenir', header: 'À venir', width: 10 },
+      { key: 'montantTotal', header: 'Montant total (€)', width: 18 },
+      { key: 'montantPaye', header: 'Montant payé (€)', width: 18 }
     ];
-    XLSX.utils.book_append_sheet(wb, wsParTranche, 'Par tranche');
+    parTrancheData.slice(1).forEach(row => {
+      wsParTranche.addRow({
+        tranche: row[0],
+        total: row[1],
+        payes: row[2],
+        enRetard: row[3],
+        aVenir: row[4],
+        montantTotal: row[5],
+        montantPaye: row[6]
+      });
+    });
 
-    XLSX.writeFile(wb, `Echeancier_Projet_${new Date().toISOString().split('T')[0]}.xlsx`);
+    // Generate file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Echeancier_Projet_${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
   };
 
   if (loading) {
