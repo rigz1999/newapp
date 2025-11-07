@@ -100,12 +100,12 @@ export default function AdminPanel() {
           name
         )
       `)
-      .order('created_at', { ascending: false }) as any;
+      .order('created_at', { ascending: false });
 
     if (membershipsError) {
       // Error is silently ignored - user can still see other data
     } else {
-      setMemberships(membershipData || []);
+      setMemberships((membershipData || []) as Membership[]);
     }
 
     const { data: profilesData, error: profilesError } = await supabase
@@ -117,19 +117,20 @@ export default function AdminPanel() {
       // Error is silently ignored - user can still see other data
     } else {
       // Trouver tous les user_ids qui ont un membership avec une organisation
+      const memberships = (membershipData || []) as Membership[];
       const userIdsWithOrg = new Set(
-        (membershipData || [])
-          .filter(m => m.org_id !== null)
-          .map(m => m.user_id)
+        memberships
+          .filter((m: Membership) => m.org_id !== null)
+          .map((m: Membership) => m.user_id)
       );
 
       // Les utilisateurs en attente sont ceux qui:
       // 1. N'ont pas de membership avec org_id
       // 2. Ne sont pas super_admin (super admins n'ont pas d'org_id mais c'est normal)
       const superAdminIds = new Set(
-        (membershipData || [])
-          .filter(m => m.role === 'super_admin' && !m.org_id)
-          .map(m => m.user_id)
+        memberships
+          .filter((m: Membership) => m.role === 'super_admin' && !m.org_id)
+          .map((m: Membership) => m.user_id)
       );
 
       const pending = (profilesData || [])
@@ -148,13 +149,13 @@ export default function AdminPanel() {
   };
 
   const handleGrantAccess = async (userId: string, orgId: string, role: string) => {
-    const { error } = await (supabase
+    const { error } = await supabase
       .from('memberships')
       .insert({
         user_id: userId,
         org_id: orgId,
         role: role as 'member' | 'admin' | 'super_admin'
-      }) as any);
+      });
 
     if (error) {
       setAlertModalConfig({
@@ -175,11 +176,11 @@ export default function AdminPanel() {
 
     setCreating(true);
 
-    const { error } = await (supabase
+    const { error } = await supabase
       .from('organizations')
       .insert({
         name: newOrgName.trim()
-      }) as any);
+      });
 
     if (error) {
       setAlertModalConfig({
@@ -204,10 +205,10 @@ export default function AdminPanel() {
 
     setCreating(true);
 
-    const { error } = await (supabase
+    const { error } = await supabase
       .from('organizations')
       .update({ name: newOrgName.trim() })
-      .eq('id', editingOrg.id) as any);
+      .eq('id', editingOrg.id);
 
     if (error) {
       setAlertModalConfig({
