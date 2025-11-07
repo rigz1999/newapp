@@ -72,7 +72,7 @@ export function Layout({ organization }: LayoutProps) {
         .from('profiles')
         .select('full_name')
         .eq('id', user.id)
-        .single();
+        .single() as any;
 
       if (profile) {
         setUserProfile(profile);
@@ -86,31 +86,31 @@ export function Layout({ organization }: LayoutProps) {
     // Fetch profiles
     const { data: profilesData } = await supabase
       .from('profiles')
-      .select('id');
+      .select('id') as any;
 
     // Fetch memberships with org_id (users who have an organization)
     const { data: membershipsData } = await supabase
       .from('memberships')
-      .select('user_id, role, org_id');
+      .select('user_id, role, org_id') as any;
 
     if (profilesData && membershipsData) {
       // Users with organization
       const userIdsWithOrg = new Set(
         membershipsData
-          .filter(m => m.org_id !== null)
-          .map(m => m.user_id)
+          .filter((m: any) => m.org_id !== null)
+          .map((m: any) => m.user_id)
       );
-      
+
       // Super admins (they don't need org)
       const superAdminIds = new Set(
         membershipsData
-          .filter(m => m.role === 'super_admin' && !m.org_id)
-          .map(m => m.user_id)
+          .filter((m: any) => m.role === 'super_admin' && !m.org_id)
+          .map((m: any) => m.user_id)
       );
 
       // Pending users = profiles without org and not super admin
       const pending = profilesData.filter(
-        p => !userIdsWithOrg.has(p.id) && !superAdminIds.has(p.id)
+        (p: any) => !userIdsWithOrg.has(p.id) && !superAdminIds.has(p.id)
       );
       
       setPendingCount(pending.length);

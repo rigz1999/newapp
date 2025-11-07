@@ -3,6 +3,14 @@ import { supabase } from '../../lib/supabase';
 import { Calendar, AlertCircle, Download } from 'lucide-react';
 import ExcelJS from 'exceljs';
 
+interface Echeance {
+  date_echeance: string;
+  montant_coupon: number;
+  statut: string;
+  date_paiement: string | null;
+  souscription_id: string;
+}
+
 interface EcheancierCardProps {
   projectId: string;
   tranches: any[];
@@ -43,14 +51,14 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
 
           if (echeances) {
             const now = new Date();
-            const payes = echeances.filter(e => e.statut === 'paye').length;
-            const enRetard = echeances.filter(e => e.statut === 'en_attente' && new Date(e.date_echeance) < now).length;
-            const prochains = echeances.filter(e => e.statut === 'en_attente' && new Date(e.date_echeance) >= now);
-            
+            const payes = echeances.filter((e: Echeance) => e.statut === 'paye').length;
+            const enRetard = echeances.filter((e: Echeance) => e.statut === 'en_attente' && new Date(e.date_echeance) < now).length;
+            const prochains = echeances.filter((e: Echeance) => e.statut === 'en_attente' && new Date(e.date_echeance) >= now);
+
             const prochainCoupon = prochains[0];
             const totalProchainCoupon = prochains
-              .filter(e => e.date_echeance === prochainCoupon?.date_echeance)
-              .reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+              .filter((e: Echeance) => e.date_echeance === prochainCoupon?.date_echeance)
+              .reduce((sum: number, e: Echeance) => sum + Number(e.montant_coupon), 0);
 
             statsMap.set(tranche.id, {
               payes,
@@ -58,7 +66,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
               prochainCoupon: prochainCoupon ? {
                 date: prochainCoupon.date_echeance,
                 montant: totalProchainCoupon,
-                nb_investisseurs: prochains.filter(e => e.date_echeance === prochainCoupon?.date_echeance).length
+                nb_investisseurs: prochains.filter((e: Echeance) => e.date_echeance === prochainCoupon?.date_echeance).length
               } : null,
               totalEcheances: echeances.length
             });

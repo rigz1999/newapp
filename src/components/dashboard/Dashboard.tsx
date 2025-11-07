@@ -266,11 +266,11 @@ export function Dashboard({ organization }: DashboardProps) {
       in90Days.setDate(today.getDate() + 90);
 
       const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes, chartSubsRes] = await Promise.all([
-        supabase.from('projets').select('id'),
-        supabase.from('tranches').select('id, projet_id'),
-        supabase.from('souscriptions').select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
-        supabase.from('paiements').select('montant, statut').eq('statut', 'payé').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
-        supabase.from('souscriptions').select('montant_investi, date_souscription')
+        supabase.from('projets').select('id') as any,
+        supabase.from('tranches').select('id, projet_id') as any,
+        supabase.from('souscriptions').select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription') as any,
+        supabase.from('paiements').select('montant, statut').eq('statut', 'payé').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]) as any,
+        supabase.from('souscriptions').select('montant_investi, date_souscription') as any
       ]);
 
       // Check for critical errors
@@ -301,12 +301,12 @@ export function Dashboard({ organization }: DashboardProps) {
       const monthPayments = monthPaymentsRes.data || [];
       const chartSubscriptions = chartSubsRes.data || [];
 
-      const trancheIds = tranches.map((t) => t.id);
+      const trancheIds = tranches.map((t: any) => t.id);
 
-      const totalInvested = subscriptions.reduce((sum, s) => sum + parseFloat(s.montant_investi?.toString() || '0'), 0);
-      const couponsPaidThisMonth = monthPayments.reduce((sum, p) => sum + parseFloat(p.montant?.toString() || '0'), 0);
+      const totalInvested = subscriptions.reduce((sum: number, s: any) => sum + parseFloat(s.montant_investi?.toString() || '0'), 0);
+      const couponsPaidThisMonth = monthPayments.reduce((sum: number, p: any) => sum + parseFloat(p.montant?.toString() || '0'), 0);
       const upcomingCount = subscriptions.filter(
-        s => s.prochaine_date_coupon &&
+        (s: any) => s.prochaine_date_coupon &&
              s.prochaine_date_coupon >= today.toISOString().split('T')[0] &&
              s.prochaine_date_coupon <= in90Days.toISOString().split('T')[0]
       ).length;
@@ -996,9 +996,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
                   const { data, error } = await supabase
                     .from('projets')
-                    .insert([projectToCreate])
+                    .insert([projectToCreate] as any)
                     .select()
-                    .single();
+                    .single() as any;
 
                   if (error) throw error;
 
@@ -1169,7 +1169,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         }}
                         onPaste={(e) => {
                           e.preventDefault();
-                          const clipboardData = e.clipboardData || (window as ClipboardEvent).clipboardData;
+                          const clipboardData = e.clipboardData || (window as any).clipboardData;
                           const text = clipboardData?.getData('text') || '';
                           const digits = text.replace(/\D/g, '');
                           setNewProjectData(prev => ({

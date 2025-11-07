@@ -29,21 +29,21 @@ export interface Database {
       memberships: {
         Row: {
           id: string
-          org_id: string | null
+          org_id: string
           user_id: string
           role: 'member' | 'admin' | 'super_admin'
           created_at: string
         }
         Insert: {
           id?: string
-          org_id?: string | null
+          org_id: string
           user_id: string
           role?: 'member' | 'admin' | 'super_admin'
           created_at?: string
         }
         Update: {
           id?: string
-          org_id?: string | null
+          org_id?: string
           user_id?: string
           role?: 'member' | 'admin' | 'super_admin'
           created_at?: string
@@ -115,11 +115,11 @@ export interface Database {
           accepted_at?: string | null
         }
       }
-      projects: {
+      projets: {
         Row: {
           id: string
           org_id: string
-          project_name: string
+          projet: string
           emetteur: string
           representant_masse: string | null
           rep_masse_email: string | null
@@ -130,7 +130,7 @@ export interface Database {
         Insert: {
           id?: string
           org_id: string
-          project_name: string
+          projet: string
           emetteur: string
           representant_masse?: string | null
           rep_masse_email?: string | null
@@ -141,7 +141,7 @@ export interface Database {
         Update: {
           id?: string
           org_id?: string
-          project_name?: string
+          projet?: string
           emetteur?: string
           representant_masse?: string | null
           rep_masse_email?: string | null
@@ -153,13 +153,14 @@ export interface Database {
       tranches: {
         Row: {
           id: string
-          project_id: string
+          projet_id: string
           tranche_name: string
           frequence: 'annuel' | 'semestriel' | 'trimestriel'
+          taux_nominal: number | null
           taux_interet: number
           maturite_mois: number
           date_emission: string | null
-          date_echeance: string | null
+          date_echeance_finale: string | null
           cgp_nom: string | null
           cgp_email: string | null
           transfert_fonds_date: string | null
@@ -167,13 +168,14 @@ export interface Database {
         }
         Insert: {
           id?: string
-          project_id: string
+          projet_id: string
           tranche_name: string
           frequence: 'annuel' | 'semestriel' | 'trimestriel'
+          taux_nominal?: number | null
           taux_interet: number
           maturite_mois: number
           date_emission?: string | null
-          date_echeance?: string | null
+          date_echeance_finale?: string | null
           cgp_nom?: string | null
           cgp_email?: string | null
           transfert_fonds_date?: string | null
@@ -181,26 +183,27 @@ export interface Database {
         }
         Update: {
           id?: string
-          project_id?: string
+          projet_id?: string
           tranche_name?: string
           frequence?: 'annuel' | 'semestriel' | 'trimestriel'
+          taux_nominal?: number | null
           taux_interet?: number
           maturite_mois?: number
           date_emission?: string | null
-          date_echeance?: string | null
+          date_echeance_finale?: string | null
           cgp_nom?: string | null
           cgp_email?: string | null
           transfert_fonds_date?: string | null
           created_at?: string
         }
       }
-      investors: {
+      investisseurs: {
         Row: {
           id: string
           org_id: string
-          investor_type: 'physique' | 'morale'
-          investisseur_nom: string | null
-          raison_sociale: string | null
+          type: 'physique' | 'morale'
+          nom_raison_sociale: string
+          prenom: string | null
           representant_legal: string | null
           nom_jeune_fille: string | null
           departement_naissance: string | null
@@ -209,14 +212,19 @@ export interface Database {
           email: string | null
           telephone: string | null
           residence_fiscale: string | null
+          cgp_nom: string | null
+          cgp_email: string | null
+          rib_file_path: string | null
+          rib_uploaded_at: string | null
+          rib_status: string | null
           created_at: string
         }
         Insert: {
           id?: string
           org_id: string
-          investor_type: 'physique' | 'morale'
-          investisseur_nom?: string | null
-          raison_sociale?: string | null
+          type: 'physique' | 'morale'
+          nom_raison_sociale: string
+          prenom?: string | null
           representant_legal?: string | null
           nom_jeune_fille?: string | null
           departement_naissance?: string | null
@@ -225,14 +233,19 @@ export interface Database {
           email?: string | null
           telephone?: string | null
           residence_fiscale?: string | null
+          cgp_nom?: string | null
+          cgp_email?: string | null
+          rib_file_path?: string | null
+          rib_uploaded_at?: string | null
+          rib_status?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           org_id?: string
-          investor_type?: 'physique' | 'morale'
-          investisseur_nom?: string | null
-          raison_sociale?: string | null
+          type?: 'physique' | 'morale'
+          nom_raison_sociale?: string
+          prenom?: string | null
           representant_legal?: string | null
           nom_jeune_fille?: string | null
           departement_naissance?: string | null
@@ -241,16 +254,22 @@ export interface Database {
           email?: string | null
           telephone?: string | null
           residence_fiscale?: string | null
+          cgp_nom?: string | null
+          cgp_email?: string | null
+          rib_file_path?: string | null
+          rib_uploaded_at?: string | null
+          rib_status?: string | null
           created_at?: string
         }
       }
-      subscriptions: {
+      souscriptions: {
         Row: {
           id: string
           tranche_id: string
-          investor_id: string
+          investisseur_id: string
+          id_souscription: string | null
           date_souscription: string
-          nbr_obligations: number
+          nombre_obligations: number
           montant_investi: number
           coupon_brut: number
           coupon_net: number
@@ -260,9 +279,10 @@ export interface Database {
         Insert: {
           id?: string
           tranche_id: string
-          investor_id: string
+          investisseur_id: string
+          id_souscription?: string | null
           date_souscription: string
-          nbr_obligations: number
+          nombre_obligations: number
           montant_investi: number
           coupon_brut?: number
           coupon_net?: number
@@ -272,13 +292,90 @@ export interface Database {
         Update: {
           id?: string
           tranche_id?: string
-          investor_id?: string
+          investisseur_id?: string
+          id_souscription?: string | null
           date_souscription?: string
-          nbr_obligations?: number
+          nombre_obligations?: number
           montant_investi?: number
           coupon_brut?: number
           coupon_net?: number
           prochaine_date_coupon?: string | null
+          created_at?: string
+        }
+      }
+      paiements: {
+        Row: {
+          id: string
+          id_paiement: string
+          type: string
+          projet_id: string
+          tranche_id: string
+          investisseur_id: string
+          souscription_id: string
+          montant: number
+          date_paiement: string
+          statut_paiement: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          id_paiement: string
+          type: string
+          projet_id: string
+          tranche_id: string
+          investisseur_id: string
+          souscription_id: string
+          montant: number
+          date_paiement: string
+          statut_paiement?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          id_paiement?: string
+          type?: string
+          projet_id?: string
+          tranche_id?: string
+          investisseur_id?: string
+          souscription_id?: string
+          montant?: number
+          date_paiement?: string
+          statut_paiement?: string | null
+          created_at?: string
+        }
+      }
+      coupons: {
+        Row: {
+          id: string
+          souscription_id: string
+          tranche_id: string
+          date_echeance: string
+          montant_coupon: number
+          statut: 'à venir' | 'payé' | 'en retard'
+          date_paiement: string | null
+          jours_retard: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          souscription_id: string
+          tranche_id: string
+          date_echeance: string
+          montant_coupon: number
+          statut?: 'à venir' | 'payé' | 'en retard'
+          date_paiement?: string | null
+          jours_retard?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          souscription_id?: string
+          tranche_id?: string
+          date_echeance?: string
+          montant_coupon?: number
+          statut?: 'à venir' | 'payé' | 'en retard'
+          date_paiement?: string | null
+          jours_retard?: number | null
           created_at?: string
         }
       }
@@ -291,7 +388,7 @@ export interface Database {
           file_size: number | null
           extracted_data: Json | null
           confidence: number | null
-          validated_at: string
+          validated_at: string | null
           created_at: string
         }
         Insert: {
@@ -302,7 +399,7 @@ export interface Database {
           file_size?: number | null
           extracted_data?: Json | null
           confidence?: number | null
-          validated_at?: string
+          validated_at?: string | null
           created_at?: string
         }
         Update: {
@@ -313,8 +410,40 @@ export interface Database {
           file_size?: number | null
           extracted_data?: Json | null
           confidence?: number | null
-          validated_at?: string
+          validated_at?: string | null
           created_at?: string
+        }
+      }
+      reminder_settings: {
+        Row: {
+          id: string
+          user_id: string
+          enabled: boolean
+          remind_7_days: boolean
+          remind_14_days: boolean
+          remind_30_days: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          enabled?: boolean
+          remind_7_days?: boolean
+          remind_14_days?: boolean
+          remind_30_days?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          enabled?: boolean
+          remind_7_days?: boolean
+          remind_14_days?: boolean
+          remind_30_days?: boolean
+          created_at?: string
+          updated_at?: string
         }
       }
     }

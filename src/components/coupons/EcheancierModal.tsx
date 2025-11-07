@@ -76,12 +76,12 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
           investisseur:investisseurs(nom_raison_sociale, type),
           tranche:tranches(tranche_name, date_echeance_finale)
         `)
-        .eq('projet_id', projectId);
+        .eq('projet_id', projectId) as any;
 
       if (subsError) throw subsError;
 
-      const subscriptionIds = subscriptionsData?.map(s => s.id) || [];
-      
+      const subscriptionIds = subscriptionsData?.map((s: any) => s.id) || [];
+
       if (subscriptionIds.length === 0) {
         setEcheances([]);
         setLoading(false);
@@ -92,12 +92,12 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
         .from('coupons_echeances')
         .select('*')
         .in('souscription_id', subscriptionIds)
-        .order('date_echeance', { ascending: true });
+        .order('date_echeance', { ascending: true }) as any;
 
       if (echError) throw echError;
 
-      const enrichedEcheances = (echeancesData || []).map(ech => {
-        const sub = subscriptionsData?.find(s => s.id === ech.souscription_id);
+      const enrichedEcheances = (echeancesData || []).map((ech: any) => {
+        const sub = subscriptionsData?.find((s: any) => s.id === ech.souscription_id);
         const isLastEcheance = sub?.tranche?.date_echeance_finale === ech.date_echeance;
         
         return {

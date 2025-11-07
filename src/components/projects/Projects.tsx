@@ -8,6 +8,7 @@ import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
+import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
 
 interface ProjectWithStats {
   id: string;
@@ -139,11 +140,11 @@ export function Projects({ organization }: ProjectsProps) {
       const tranchesData = tranchesRes.data || [];
       const subscriptionsData = subscriptionsRes.data || [];
 
-      const projectsWithStats = projectsData.map((project) => {
-        const projectTranches = tranchesData.filter(t => t.projet_id === project.id);
+      const projectsWithStats = projectsData.map((project: any) => {
+        const projectTranches = tranchesData.filter((t: any) => t.projet_id === project.id);
         const projectSubscriptions = subscriptionsData.filter((s: any) => s.tranche?.projet_id === project.id);
-        const totalLeve = projectSubscriptions.reduce((sum, sub) => sum + (Number(sub.montant_investi) || 0), 0);
-        const uniqueInvestors = new Set(projectSubscriptions.map(s => s.investisseur_id)).size;
+        const totalLeve = projectSubscriptions.reduce((sum: number, sub: any) => sum + (Number(sub.montant_investi) || 0), 0);
+        const uniqueInvestors = new Set(projectSubscriptions.map((s: any) => s.investisseur_id)).size;
 
         return {
           ...project,
@@ -205,7 +206,7 @@ export function Projects({ organization }: ProjectsProps) {
 
       const { data: _data, error } = await supabase
         .from('projets')
-        .insert([projectToCreate])
+        .insert([projectToCreate] as never)
         .select()
         .single();
 
@@ -621,7 +622,7 @@ export function Projects({ organization }: ProjectsProps) {
                         }}
                         onPaste={(e) => {
                           e.preventDefault();
-                          const clipboardData = e.clipboardData || (window as ClipboardEvent).clipboardData;
+                          const clipboardData = e.clipboardData || (window as any).clipboardData;
                           const text = clipboardData?.getData('text') || '';
                           const digits = text.replace(/\D/g, '');
                           setNewProjectData(prev => ({

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Eye, Filter, X, AlertCircle } from 'lucide-react';
+import { Download, Search, DollarSign, CheckCircle2, Eye, Filter, X, AlertCircle } from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
@@ -33,7 +33,6 @@ interface Payment {
   } | null;
 }
 
-type _StatusFilter = 'all' | 'paid' | 'pending' | 'late';
 type SortOrder = 'desc' | 'asc';
 
 export function Payments({ organization }: PaymentsProps) {
@@ -55,7 +54,6 @@ export function Payments({ organization }: PaymentsProps) {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
-  const [totalCount, setTotalCount] = useState(0);
 
   // Advanced filtering
   const advancedFilters = useAdvancedFilters({
@@ -216,22 +214,6 @@ export function Payments({ organization }: PaymentsProps) {
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('fr-FR');
-  };
-
-  const _getStatusIcon = (status: string) => {
-    const s = status?.toLowerCase();
-    if (s === 'paid' || s === 'payé') return <CheckCircle2 className="w-4 h-4 text-green-600" />;
-    if (s === 'pending' || s === 'en attente') return <Clock className="w-4 h-4 text-yellow-600" />;
-    if (s === 'late' || s === 'en retard') return <XCircle className="w-4 h-4 text-red-600" />;
-    return <Clock className="w-4 h-4 text-slate-600" />;
-  };
-
-  const _getStatusBadgeClass = (status: string) => {
-    const s = status?.toLowerCase();
-    if (s === 'paid' || s === 'payé') return 'bg-green-100 text-green-700';
-    if (s === 'pending' || s === 'en attente') return 'bg-yellow-100 text-yellow-700';
-    if (s === 'late' || s === 'en retard') return 'bg-red-100 text-red-700';
-    return 'bg-slate-100 text-slate-700';
   };
 
   const exportToCSV = () => {

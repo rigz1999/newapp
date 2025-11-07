@@ -52,6 +52,7 @@ interface Project {
 
 interface Tranche {
   id: string;
+  projet_id: string;
   tranche_name: string;
   taux_nominal: number | null;
   periodicite_coupons: string | null;
@@ -149,20 +150,22 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   }, [projectId]);
 
   const fetchProjectData = async () => {
+    if (!projectId) return;
+
     setLoading(true);
 
     try {
       const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
-        supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
-        supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }),
+        supabase.from('projets').select('*').eq('id', projectId).maybeSingle() as any,
+        supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }) as any,
         supabase.from('souscriptions').select(`
           id, id_souscription, date_souscription, nombre_obligations, montant_investi,
           coupon_net, investisseur_id, cgp,
           investisseur:investisseurs(nom_raison_sociale, cgp),
           tranche:tranches(tranche_name, date_emission)
-        `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
-        supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }),
-        supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut')
+        `).eq('projet_id', projectId).order('date_souscription', { ascending: false }) as any,
+        supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }) as any,
+        supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut') as any
       ]);
 
       // Vérifier les erreurs
@@ -320,7 +323,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   };
 
   // 2) AJOUTÉ : toggle pour développer / réduire une tranche
-  const toggleTrancheExpand = (___trancheId: string) => {
+  const toggleTrancheExpand = (trancheId: string) => {
     const newExpanded = new Set(expandedTrancheIds);
     if (newExpanded.has(trancheId)) {
       newExpanded.delete(trancheId);
@@ -365,7 +368,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     try {
       const { error } = await supabase
         .from('projets')
-        .update(editedProject)
+        .update(editedProject as never)
         .eq('id', project!.id);
 
       if (error) throw error;
@@ -394,13 +397,13 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     if (!editingSubscription) return;
 
     try {
-      const { error } = await supabase
+      const { error} = await supabase
         .from('souscriptions')
         .update({
           montant_investi: editingSubscription.montant_investi,
           nombre_obligations: editingSubscription.nombre_obligations,
           date_souscription: editingSubscription.date_souscription,
-        })
+        } as never)
         .eq('id', editingSubscription.id);
 
       if (error) throw error;

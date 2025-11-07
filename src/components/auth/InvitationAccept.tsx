@@ -57,8 +57,8 @@ export function InvitationAccept() {
           *,
           organizations:organizations(name)
         `)
-        .eq('token', token)
-        .single();
+        .eq('token', token!)
+        .single() as any;
 
       if (invitationError || !invitationData) {
         setError('Invitation introuvable. Le lien est peut-être invalide.');
@@ -87,7 +87,7 @@ export function InvitationAccept() {
         // Marquer comme expirée
         await supabase
           .from('invitations')
-          .update({ status: 'expired' })
+          .update({ status: 'expired' } as never)
           .eq('id', invitationData.id);
 
         setError('Cette invitation a expiré.');
@@ -155,7 +155,7 @@ export function InvitationAccept() {
           user_id: authData.user.id,
           org_id: invitation.org_id,
           role: invitation.role,
-        });
+        } as any);
 
       if (membershipError) {
         throw new Error('Erreur lors de l\'ajout à l\'organisation.');
@@ -167,7 +167,7 @@ export function InvitationAccept() {
         .update({
           status: 'accepted',
           accepted_at: new Date().toISOString(),
-        })
+        } as never)
         .eq('id', invitation.id);
 
       if (updateError) {

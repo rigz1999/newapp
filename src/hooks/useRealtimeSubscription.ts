@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { features } from '../config';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
 

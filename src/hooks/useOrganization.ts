@@ -120,7 +120,7 @@ export function useOrganization(userId: string | undefined) {
           setOrganization(null);
         }
       } catch (error) {
-        logger.error('useOrganization - Unexpected error:', error);
+        logger.error('useOrganization - Unexpected error:', error as any);
         setOrganization(null);
       } finally {
         setLoading(false);

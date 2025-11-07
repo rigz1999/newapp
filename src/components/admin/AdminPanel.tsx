@@ -111,7 +111,7 @@ export default function AdminPanel() {
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) as any;
 
     if (profilesError) {
       // Error is silently ignored - user can still see other data
@@ -134,8 +134,8 @@ export default function AdminPanel() {
       );
 
       const pending = (profilesData || [])
-        .filter(profile => !userIdsWithOrg.has(profile.id) && !superAdminIds.has(profile.id))
-        .map(profile => ({
+        .filter((profile: any) => !userIdsWithOrg.has(profile.id) && !superAdminIds.has(profile.id))
+        .map((profile: any) => ({
           user_id: profile.id,
           email: profile.email || 'N/A',
           created_at: profile.created_at,
@@ -155,7 +155,7 @@ export default function AdminPanel() {
         user_id: userId,
         org_id: orgId,
         role: role as 'member' | 'admin' | 'super_admin'
-      });
+      } as any);
 
     if (error) {
       setAlertModalConfig({
@@ -180,7 +180,7 @@ export default function AdminPanel() {
       .from('organizations')
       .insert({
         name: newOrgName.trim()
-      });
+      } as any);
 
     if (error) {
       setAlertModalConfig({
@@ -207,7 +207,7 @@ export default function AdminPanel() {
 
     const { error } = await supabase
       .from('organizations')
-      .update({ name: newOrgName.trim() })
+      .update({ name: newOrgName.trim() } as never)
       .eq('id', editingOrg.id);
 
     if (error) {
