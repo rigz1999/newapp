@@ -180,7 +180,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           coupon_brut: editFormData.coupon_brut,
           coupon_net: editFormData.coupon_net,
           prochaine_date_coupon: editFormData.prochaine_date_coupon || null,
-        })
+        } as never)
         .eq('id', editingSubscription.id);
 
       if (error) throw error;

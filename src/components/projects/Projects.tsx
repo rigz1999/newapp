@@ -206,7 +206,7 @@ export function Projects({ organization }: ProjectsProps) {
 
       const { data: _data, error } = await supabase
         .from('projets')
-        .insert([projectToCreate])
+        .insert([projectToCreate] as never)
         .select()
         .single();
 
@@ -622,7 +622,7 @@ export function Projects({ organization }: ProjectsProps) {
                         }}
                         onPaste={(e) => {
                           e.preventDefault();
-                          const clipboardData = e.clipboardData || (window as ClipboardEvent).clipboardData;
+                          const clipboardData = e.clipboardData || (window as any).clipboardData;
                           const text = clipboardData?.getData('text') || '';
                           const digits = text.replace(/\D/g, '');
                           setNewProjectData(prev => ({

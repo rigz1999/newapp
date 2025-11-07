@@ -88,7 +88,7 @@ export function TrancheWizard({
       .from("projets")
       .select("projet")
       .eq("id", projectId)
-      .single();
+      .single() as any;
 
     const { count } = await supabase
       .from("tranches")
@@ -140,7 +140,7 @@ export function TrancheWizard({
           date_emission: dateEmission || null,
           date_echeance_finale: dateEcheanceFinale || null,
           duree_mois: dureeMois ? parseInt(dureeMois) : null,
-        })
+        } as never)
         .eq("id", editingTranche.id);
 
       if (updateError) throw updateError;
