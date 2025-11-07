@@ -85,7 +85,7 @@ const formatType = (type: string | null | undefined): string => {
   return isMorale(type) ? 'Personne Morale' : 'Personne Physique';
 };
 
-export function Investors({ organization }: InvestorsProps) {
+function Investors({ organization }: InvestorsProps) {
   const [investors, setInvestors] = useState<InvestorWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
