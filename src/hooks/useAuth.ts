@@ -48,16 +48,16 @@ export function useAuth() {
         .eq('user_id', userId) as any);
 
       const superAdmin = memberships?.some(
-        m => m.role === 'super_admin' && m.org_id === null
+        (m: any) => m.role === 'super_admin' && m.org_id === null
       ) ?? false;
 
       // Check if user is an org admin (has admin role in an organization)
       const orgAdminMembership = memberships?.find(
-        m => m.role === 'admin' && m.org_id !== null
+        (m: any) => m.role === 'admin' && m.org_id !== null
       );
 
       // Get user's role in their organization (not super_admin)
-      const orgMembership = memberships?.find(m => m.org_id !== null);
+      const orgMembership = memberships?.find((m: any) => m.org_id !== null);
 
       setIsSuperAdmin(superAdmin);
       setIsOrgAdmin(!!orgAdminMembership);
