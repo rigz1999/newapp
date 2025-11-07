@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Eye, Filter, X } from 'lucide-react';
+import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Eye, Filter, X, AlertCircle } from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
@@ -8,6 +8,8 @@ import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { DateRangePicker } from '../filters/DateRangePicker';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
+import { logger } from '../../utils/logger';
+import { formatErrorMessage } from '../../utils/errorMessages';
 
 interface PaymentsProps {
   organization: { id: string; name: string; role: string };
@@ -38,6 +40,7 @@ export function Payments({ organization }: PaymentsProps) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [viewingProofs, setViewingProofs] = useState<Payment | null>(null);
@@ -125,8 +128,13 @@ export function Payments({ organization }: PaymentsProps) {
         paymentsCount: paymentsData.length,
       });
 
-    } catch {
-      // Error already handled
+    } catch (err) {
+      const errorMessage = formatErrorMessage(err);
+      setError(errorMessage);
+      logger.error(err instanceof Error ? err : new Error(errorMessage), {
+        context: 'fetchPayments',
+        organizationId: organization.id,
+      });
     } finally {
       setLoading(false);
     }
@@ -255,6 +263,26 @@ export function Payments({ organization }: PaymentsProps) {
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
+      {/* Error Banner */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-semibold text-red-900 mb-1">Erreur de chargement</h3>
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+          <button
+            onClick={() => {
+              setError(null);
+              fetchPayments();
+            }}
+            className="text-red-600 hover:text-red-800 text-sm font-medium"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Historique des Paiements</h2>

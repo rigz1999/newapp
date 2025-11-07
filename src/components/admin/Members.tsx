@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { AlertModal } from '../common/Modals';
+import { logger } from '../../utils/logger';
 import { TableSkeleton } from '../common/Skeleton';
 
 interface Member {
@@ -110,7 +111,12 @@ export default function Members() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      // Error is silently ignored - user can still see other data
+      // Log error but don't block the UI - invitations are not critical
+      logger.error(error, {
+        context: 'fetchInvitations',
+        organizationId: organization.id,
+      });
+      // User can still see members even if invitations fail
     } else {
       setInvitations(data || []);
     }
