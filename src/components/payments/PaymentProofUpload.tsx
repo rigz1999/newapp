@@ -88,13 +88,11 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
       // Process all files (convert PDFs to images, upload images directly)
       for (const file of files) {
         if (file.type === 'application/pdf') {
-          console.log('Conversion PDF → Images:', file.name);
 
           const arrayBuffer = await file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
           const numPages = pdf.numPages;
 
-          console.log(`PDF de ${numPages} page(s) détecté`);
 
           // Convert each page
           for (let pageNum = 1; pageNum <= numPages; pageNum++) {
@@ -118,7 +116,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
             const fileName = `${Date.now()}_${file.name.replace('.pdf', '')}_page${pageNum}.png`;
 
-            console.log(`Upload page ${pageNum}:`, fileName);
 
             // Upload to temp storage
             const { data: uploadData, error: uploadError } = await supabase.storage
@@ -129,29 +126,24 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
               });
 
             if (uploadError) {
-              console.error('Erreur upload:', uploadError);
               throw uploadError;
             }
 
-            console.log('Upload réussi:', uploadData);
 
             // Get public URL
             const { data: urlData } = supabase.storage
               .from('payment-proofs-temp')
               .getPublicUrl(fileName);
 
-            console.log('URL générée:', urlData.publicUrl);
 
             uploadedUrls.push(urlData.publicUrl);
             tempFileNames.push(fileName);
 
-            console.log(`Page ${pageNum}/${numPages} convertie et uploadée`);
           }
         } else {
           // Upload image directly
           const fileName = `${Date.now()}_${file.name}`;
 
-          console.log('Upload image:', fileName);
 
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('payment-proofs-temp')
@@ -161,17 +153,14 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
             });
 
           if (uploadError) {
-            console.error('Erreur upload:', uploadError);
             throw uploadError;
           }
 
-          console.log('Upload réussi:', uploadData);
 
           const { data: urlData } = supabase.storage
             .from('payment-proofs-temp')
             .getPublicUrl(fileName);
 
-          console.log('URL générée:', urlData.publicUrl);
 
           uploadedUrls.push(urlData.publicUrl);
           tempFileNames.push(fileName);
@@ -183,7 +172,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
         throw new Error('Aucune URL de fichier générée - problème d\'upload');
       }
 
-      console.log('=== APPEL EDGE FUNCTION ===');
 
       let data, funcError;
 
@@ -200,7 +188,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           expectedPayments
         };
 
-        console.log('Body envoyé (batch):', requestBody);
 
         const response = await supabase.functions.invoke('analyze-payment-batch', {
           body: requestBody
@@ -222,7 +209,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           investorName: payment!.investisseur?.nom_raison_sociale || ''
         };
 
-        console.log('Body envoyé (single):', requestBody);
 
         const response = await supabase.functions.invoke('analyze-payment', {
           body: requestBody
@@ -232,9 +218,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
         funcError = response.error;
       }
 
-      console.log('=== RÉPONSE EDGE FUNCTION ===');
-      console.log('Data:', data);
-      console.log('Error:', funcError);
 
       if (funcError) {
         // Check if the function doesn't exist
@@ -252,9 +235,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
       });
 
     } catch (err: any) {
-      console.error('=== ERREUR COMPLÈTE ===');
-      console.error('Erreur analyse:', err);
-      console.error('Stack:', err.stack);
       setError(err.message || 'Erreur lors de l\'analyse');
     } finally {
       setAnalyzing(false);
@@ -369,7 +349,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
       onClose();
 
     } catch (err: any) {
-      console.error('Erreur confirmation:', err);
       setError(err.message || 'Erreur lors de la confirmation');
     }
   };

@@ -157,7 +157,6 @@ export function Projects({ organization }: ProjectsProps) {
 
       setProjects(projectsWithStats);
     } catch (error) {
-      console.error('Projects: Error', error);
     } finally {
       setLoading(false);
     }
@@ -221,7 +220,6 @@ export function Projects({ organization }: ProjectsProps) {
       resetNewProjectForm();
       fetchProjects(); // Refresh la liste
     } catch (err: any) {
-      console.error('Error creating project:', err);
       alert('Erreur lors de la création du projet: ' + err.message);
     } finally {
       setCreatingProject(false);

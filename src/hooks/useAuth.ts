@@ -65,7 +65,6 @@ export function useAuth() {
       setUserRole(orgMembership?.role || null);
       setLoading(false);
     } catch (error) {
-      console.error('Error checking admin status:', error);
       setIsAdmin(false);
       setIsSuperAdmin(false);
       setIsOrgAdmin(false);

@@ -120,7 +120,6 @@ export function useAdvancedFilters(
         try {
           setPresets(JSON.parse(saved));
         } catch (e) {
-          console.error('Failed to load filter presets:', e);
         }
       }
     }
@@ -134,7 +133,6 @@ export function useAdvancedFilters(
         try {
           setRecentFilters(JSON.parse(saved));
         } catch (e) {
-          console.error('Failed to load recent filters:', e);
         }
       }
     }
@@ -148,7 +146,6 @@ export function useAdvancedFilters(
         try {
           setAnalytics(JSON.parse(saved));
         } catch (e) {
-          console.error('Failed to load filter analytics:', e);
         }
       }
     }

@@ -87,7 +87,6 @@ export function Payments({ organization }: PaymentsProps) {
     setLoading(true);
 
     try {
-      console.log('Payments: Fetching data...');
 
       const { data, error } = await supabase
         .from('paiements')
@@ -112,7 +111,6 @@ export function Payments({ organization }: PaymentsProps) {
 
       if (error) throw error;
 
-      console.log('Payments: Data fetched', { count: data?.length });
 
       const paymentsData = (data || []) as Payment[];
       setPayments(paymentsData);
@@ -127,9 +125,7 @@ export function Payments({ organization }: PaymentsProps) {
         paymentsCount: paymentsData.length,
       });
 
-      console.log('Payments: Complete');
     } catch (error) {
-      console.error('Payments: Error', error);
     } finally {
       setLoading(false);
     }

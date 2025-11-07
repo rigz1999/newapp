@@ -50,25 +50,21 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
       const pathMatch = fileUrl.match(/payment-proofs\/(.+)$/);
       if (pathMatch) {
         const filePath = pathMatch[1];
-        console.log('Deleting file from storage:', filePath);
 
         const { error: storageError } = await supabase.storage
           .from('payment-proofs')
           .remove([filePath]);
 
         if (storageError) {
-          console.error('Storage deletion error:', storageError);
         }
       }
 
-      console.log('Deleting proof from database:', proofId);
       const { error: dbError } = await supabase
         .from('payment_proofs')
         .delete()
         .eq('id', proofId);
 
       if (dbError) {
-        console.error('Database deletion error:', dbError);
         throw dbError;
       }
 
@@ -79,7 +75,6 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
         const diffDays = Math.ceil((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
         const newStatus = diffDays > 7 ? 'En retard' : 'En attente';
 
-        console.log('No more proofs, updating payment status to:', newStatus);
         await supabase
           .from('paiements')
           .update({ statut: newStatus })
@@ -91,7 +86,6 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
         onClose();
       }
     } catch (err: any) {
-      console.error('Error deleting proof:', err);
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors de la suppression du justificatif: ' + err.message,

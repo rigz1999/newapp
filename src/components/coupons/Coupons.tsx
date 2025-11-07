@@ -172,7 +172,6 @@ export function Coupons({ organization }: CouponsProps) {
 
       setCoupons(processedCoupons);
     } catch (error) {
-      console.error('Error fetching coupons:', error);
     } finally {
       setLoading(false);
     }

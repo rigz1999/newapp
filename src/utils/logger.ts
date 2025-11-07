@@ -10,7 +10,6 @@ export const logger = {
     if (isDev) console.log('[App]', ...args);
   },
   error: (...args: any[]) => {
-    console.error('[Error]', ...args);
   },
   warn: (...args: any[]) => {
     if (isDev) console.warn('[Warning]', ...args);

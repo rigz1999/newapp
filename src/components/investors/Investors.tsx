@@ -377,7 +377,6 @@ function Investors({ organization }: InvestorsProps) {
       .eq('id', selectedInvestor.id);
 
     if (error) {
-      console.error('Error updating investor:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors de la mise à jour',
@@ -405,7 +404,6 @@ function Investors({ organization }: InvestorsProps) {
       .eq('id', selectedInvestor.id);
 
     if (error) {
-      console.error('Error deleting investor:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors de la suppression',
@@ -509,7 +507,6 @@ function Investors({ organization }: InvestorsProps) {
       }, 2000);
 
     } catch (error: any) {
-      console.error('Erreur upload RIB:', error);
       setUploadError(error.message || 'Erreur lors de l\'upload du RIB');
       setUploadingRib(false);
       setUploadProgress(0);
@@ -535,7 +532,6 @@ function Investors({ organization }: InvestorsProps) {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Erreur téléchargement RIB:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors du téléchargement du RIB',
@@ -562,7 +558,6 @@ function Investors({ organization }: InvestorsProps) {
       const url = window.URL.createObjectURL(data);
       setRibViewUrl(url);
     } catch (error) {
-      console.error('Erreur chargement RIB:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors du chargement du RIB',
@@ -629,7 +624,6 @@ function Investors({ organization }: InvestorsProps) {
           setShowAlertModal(true);
           fetchInvestors();
         } catch (error) {
-          console.error('Erreur suppression RIB:', error);
           setAlertModalConfig({
             title: 'Erreur',
             message: 'Erreur lors de la suppression du RIB',

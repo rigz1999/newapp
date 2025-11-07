@@ -86,7 +86,6 @@ export default function AdminPanel() {
       .order('created_at', { ascending: false });
 
     if (orgsError) {
-      console.error('Error fetching organizations:', orgsError);
     } else {
       setOrganizations(orgs || []);
     }
@@ -102,7 +101,6 @@ export default function AdminPanel() {
       .order('created_at', { ascending: false }) as any;
 
     if (membershipsError) {
-      console.error('Error fetching memberships:', membershipsError);
     } else {
       setMemberships(membershipData || []);
     }
@@ -113,7 +111,6 @@ export default function AdminPanel() {
       .order('created_at', { ascending: false });
 
     if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
     } else {
       // Trouver tous les user_ids qui ont un membership avec une organisation
       const userIdsWithOrg = new Set(
@@ -156,7 +153,6 @@ export default function AdminPanel() {
       }) as any);
 
     if (error) {
-      console.error('Error granting access:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors de l\'attribution de l\'accès: ' + error.message,
@@ -182,7 +178,6 @@ export default function AdminPanel() {
       }) as any);
 
     if (error) {
-      console.error('Error creating organization:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur: ' + error.message,
@@ -211,7 +206,6 @@ export default function AdminPanel() {
       .eq('id', editingOrg.id) as any);
 
     if (error) {
-      console.error('Error updating organization:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur: ' + error.message,
@@ -254,7 +248,6 @@ export default function AdminPanel() {
       .eq('id', deletingItem.id);
 
     if (error) {
-      console.error('Error deleting organization:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur: ' + error.message,
@@ -282,7 +275,6 @@ export default function AdminPanel() {
       .eq('id', deletingItem.id);
 
     if (error) {
-      console.error('Error removing member:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur: ' + error.message,

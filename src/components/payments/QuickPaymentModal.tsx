@@ -76,7 +76,6 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
       if (error) throw error;
       setProjects(data || []);
     } catch (err) {
-      console.error('Error fetching projects:', err);
     } finally {
       setLoading(false);
     }
@@ -101,7 +100,6 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
             .eq('tranche_id', tranche.id);
 
           if (subsError) {
-            console.error('Error fetching subscription stats:', subsError);
             return {
               ...tranche,
               subscription_count: 0,
@@ -121,7 +119,6 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
 
       setTranches(tranchesWithStats);
     } catch (err) {
-      console.error('Error fetching tranches:', err);
     } finally {
       setLoading(false);
     }
@@ -145,7 +142,6 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
       if (error) throw error;
       setSubscriptions((data || []) as Subscription[]);
     } catch (err) {
-      console.error('Error fetching subscriptions:', err);
     } finally {
       setLoading(false);
     }

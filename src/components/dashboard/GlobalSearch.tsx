@@ -76,7 +76,6 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       try {
         setRecentSearches(JSON.parse(saved).slice(0, 5));
       } catch (e) {
-        console.error('Failed to load recent searches', e);
       }
     }
   }, []);
@@ -163,7 +162,6 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       await performSearch(searchQuery);
     } catch (err) {
       if (retries > 0) {
-        console.log(`Retrying search... (${retries} attempts left)`);
         await new Promise(r => setTimeout(r, 1000));
         return performSearchWithRetry(searchQuery, retries - 1);
       }
@@ -376,10 +374,8 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       }
 
       // Log search analytics
-      console.log(`Search "${searchQuery}": ${totalResults} results (Projects: ${projects.length}, Investors: ${investors.length}, Tranches: ${tranches.length}, Subscriptions: ${subscriptions.length}, Payments: ${payments.length}, Coupons: ${coupons.length})`);
 
     } catch (err) {
-      console.error('Error searching:', err);
       setError('Une erreur est survenue lors de la recherche. Veuillez réessayer.');
     } finally {
       setLoading(false);
