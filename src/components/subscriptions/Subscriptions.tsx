@@ -192,7 +192,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       setShowConfirmModal(false);
       setShowEditModal(false);
       setEditingSubscription(null);
-    } catch (error) {
+    } catch {
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors de la mise à jour',
@@ -238,7 +238,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       // Close modal
       setShowDeleteModal(false);
       setDeletingSubscription(null);
-    } catch (error) {
+    } catch {
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors de la suppression',

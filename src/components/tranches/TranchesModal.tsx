@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { X, Search, Edit, Trash2, ArrowUpDown, Calendar, Coins, Users } from 'lucide-react';
 
 interface TranchesModalProps {
   tranches: any[];
@@ -62,7 +61,7 @@ export function TranchesModal({
     return result;
   }, [enrichedTranches, searchTerm, sortBy, sortOrder]);
 
-  const toggleSort = (field: 'date' | 'montant' | 'nom') => {
+  const _toggleSort = (field: 'date' | 'montant' | 'nom') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {

@@ -56,6 +56,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
           .remove([filePath]);
 
         if (storageError) {
+          // Silently ignore storage errors
         }
       }
 

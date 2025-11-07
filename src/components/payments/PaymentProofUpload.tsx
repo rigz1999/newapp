@@ -118,7 +118,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
 
             // Upload to temp storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
+            const { data: _uploadData, error: uploadError } = await supabase.storage
               .from('payment-proofs-temp')
               .upload(fileName, blob, {
                 contentType: 'image/png',
@@ -145,7 +145,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           const fileName = `${Date.now()}_${file.name}`;
 
 
-          const { data: uploadData, error: uploadError } = await supabase.storage
+          const { data: _uploadData, error: uploadError } = await supabase.storage
             .from('payment-proofs-temp')
             .upload(fileName, file, {
               contentType: file.type,

@@ -164,7 +164,7 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
           message: result.error || 'Erreur lors de l\'import',
         });
       }
-    } catch (error) {
+    } catch {
       setUploadResult({
         success: false,
         message: 'Erreur de connexion au serveur',

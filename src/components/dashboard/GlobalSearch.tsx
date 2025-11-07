@@ -7,7 +7,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, X, Folder, Users, Layers, FileText, DollarSign, Receipt, TrendingUp, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { cachedQuery, queryCache } from '../../utils/queryOptimization';
 
 interface SearchResult {
   type: 'project' | 'investor' | 'tranche' | 'subscription' | 'payment' | 'coupon';
@@ -75,7 +74,8 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
     if (saved) {
       try {
         setRecentSearches(JSON.parse(saved).slice(0, 5));
-      } catch (e) {
+      } catch {
+        // Silently ignore parse errors
       }
     }
   }, []);
@@ -157,7 +157,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
   };
 
   // Perform search with retry logic
-  const performSearchWithRetry = async (searchQuery: string, retries = 2): Promise<void> => {
+  const _performSearchWithRetry = async (searchQuery: string, retries = 2): Promise<void> => {
     try {
       await performSearch(searchQuery);
     } catch (err) {
@@ -375,7 +375,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
       // Log search analytics
 
-    } catch (err) {
+    } catch {
       setError('Une erreur est survenue lors de la recherche. Veuillez réessayer.');
     } finally {
       setLoading(false);

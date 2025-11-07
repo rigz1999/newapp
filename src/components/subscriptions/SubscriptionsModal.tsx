@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { X, Search, Filter, Download, Edit, Trash2, ArrowUpDown } from 'lucide-react';
 
 interface SubscriptionsModalProps {
   subscriptions: any[];
@@ -87,7 +86,7 @@ export function SubscriptionsModal({
     link.click();
   };
 
-  const toggleSort = (field: 'date' | 'montant' | 'investisseur') => {
+  const _toggleSort = (field: 'date' | 'montant' | 'investisseur') => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -146,7 +145,7 @@ export function SubscriptionsModal({
             {/* Filtre CGP */}
             <select
               value={filterCGP}
-              onChange={(e) => setFilterCGP(e.target.value)}
+              onChange={() => setFilterCGP(e.target.value)}
               className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">Tous les CGP</option>

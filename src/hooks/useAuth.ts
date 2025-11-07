@@ -64,7 +64,7 @@ export function useAuth() {
       setIsAdmin(superAdmin); // Keep for backward compatibility
       setUserRole(orgMembership?.role || null);
       setLoading(false);
-    } catch (error) {
+    } catch {
       setIsAdmin(false);
       setIsSuperAdmin(false);
       setIsOrgAdmin(false);
