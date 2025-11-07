@@ -82,8 +82,8 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
     setError(null);
 
     try {
-      let uploadedUrls: string[] = [];
-      let tempFileNames: string[] = [];
+      const uploadedUrls: string[] = [];
+      const tempFileNames: string[] = [];
 
       // Process all files (convert PDFs to images, upload images directly)
       for (const file of files) {

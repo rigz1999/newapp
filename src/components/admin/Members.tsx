@@ -110,6 +110,7 @@ export default function Members() {
       .order('created_at', { ascending: false });
 
     if (error) {
+      // Error is silently ignored - user can still see other data
     } else {
       setInvitations(data || []);
     }

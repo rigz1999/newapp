@@ -11,7 +11,6 @@ import {
   X,
   User,
   Building2,
-  RefreshCw,
   Filter,
   ChevronDown,
   ChevronRight,
@@ -73,7 +72,7 @@ const formatDate = (dateString: string) => {
   });
 };
 
-export function Coupons({ organization }: CouponsProps) {
+export function Coupons({ organization: _organization }: CouponsProps) {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -171,7 +170,8 @@ export function Coupons({ organization }: CouponsProps) {
       });
 
       setCoupons(processedCoupons);
-    } catch (error) {
+    } catch {
+      // Error is silently ignored
     } finally {
       setLoading(false);
     }

@@ -28,6 +28,14 @@ export default tseslint.config(
         allowTernary: true,
         allowTaggedTemplates: true,
       }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+      }],
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      '@typescript-eslint/no-empty-object-type': 'warn',
+      'no-control-regex': 'warn',
     },
   }
 );

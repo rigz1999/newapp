@@ -6,7 +6,7 @@ import { PaymentWizard } from '../payments/PaymentWizard';
 import { getDashboardCacheKey, onCacheInvalidated } from '../../utils/cacheManager';
 import { AlertModal } from '../common/Modals';
 import { DashboardSkeleton } from '../common/Skeleton';
-import { formatCurrency, formatDate, getRelativeDate, formatMontantDisplay, groupDigitsWithSpaces } from '../../utils/formatters';
+import { formatCurrency, formatDate, getRelativeDate, formatMontantDisplay } from '../../utils/formatters';
 import { isValidSIREN } from '../../utils/validators';
 import { generateAlerts, type Alert, type Payment, type UpcomingCoupon } from '../../utils/dashboardAlerts';
 import {
@@ -159,7 +159,9 @@ export function Dashboard({ organization }: DashboardProps) {
   const setCachedData = (data: any) => {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
-    } catch {}
+    } catch {
+      // Silently ignore localStorage errors
+    }
   };
 
   // Mask caret before " €"
@@ -461,7 +463,7 @@ export function Dashboard({ organization }: DashboardProps) {
   useEffect(() => {
     const data = processMonthlyData(chartSubscriptionsAll, selectedYear, startMonth, endMonth);
     setMonthlyData(data);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [selectedYear, startMonth, endMonth, chartSubscriptionsAll]);
 
   // Chart max computed once

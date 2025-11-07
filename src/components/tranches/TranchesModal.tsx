@@ -43,7 +43,7 @@ export function TranchesModal({
 
   // Filtrer et trier
   const filteredTranches = useMemo(() => {
-    let result = enrichedTranches.filter(tranche =>
+    const result = enrichedTranches.filter(tranche =>
       tranche.tranche_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
