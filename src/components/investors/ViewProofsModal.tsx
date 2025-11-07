@@ -78,7 +78,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
 
         await supabase
           .from('paiements')
-          .update({ statut: newStatus })
+          .update({ statut: newStatus } as never)
           .eq('id', payment.id);
       }
 

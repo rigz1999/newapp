@@ -21,8 +21,8 @@ export function TranchesModal({
   formatDate,
 }: TranchesModalProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'date' | 'montant' | 'nom'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortBy] = useState<'date' | 'montant' | 'nom'>('date');
+  const [sortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Enrichir les tranches avec les stats de souscriptions
   const enrichedTranches = useMemo(() => {
@@ -61,15 +61,6 @@ export function TranchesModal({
 
     return result;
   }, [enrichedTranches, searchTerm, sortBy, sortOrder]);
-
-  const _toggleSort = (field: 'date' | 'montant' | 'nom') => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('desc');
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Download, Search, DollarSign, CheckCircle2, Clock, XCircle, Eye, Filter, X, AlertCircle } from 'lucide-react';
+import { Download, Search, DollarSign, CheckCircle2, Eye, Filter, X, AlertCircle } from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';

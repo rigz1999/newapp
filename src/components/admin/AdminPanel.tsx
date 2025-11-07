@@ -207,7 +207,7 @@ export default function AdminPanel() {
 
     const { error } = await supabase
       .from('organizations')
-      .update({ name: newOrgName.trim() } as any)
+      .update({ name: newOrgName.trim() } as never)
       .eq('id', editingOrg.id);
 
     if (error) {

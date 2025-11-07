@@ -8,6 +8,7 @@ import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
+import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
 
 interface ProjectWithStats {
   id: string;

@@ -87,7 +87,7 @@ export function InvitationAccept() {
         // Marquer comme expirée
         await supabase
           .from('invitations')
-          .update({ status: 'expired' } as any)
+          .update({ status: 'expired' } as never)
           .eq('id', invitationData.id);
 
         setError('Cette invitation a expiré.');
@@ -167,7 +167,7 @@ export function InvitationAccept() {
         .update({
           status: 'accepted',
           accepted_at: new Date().toISOString(),
-        } as any)
+        } as never)
         .eq('id', invitation.id);
 
       if (updateError) {

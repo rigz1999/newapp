@@ -112,7 +112,7 @@ export default function Settings() {
       .update({
         full_name: fullName,
         updated_at: new Date().toISOString()
-      } as any)
+      } as never)
       .eq('id', user.id);
 
     setSaving(false);
