@@ -94,6 +94,12 @@ JOIN tranches t ON (t.id = s.tranche_id)
 JOIN projets p ON (p.id = t.projet_id)
 LEFT JOIN v_prochains_coupons nx ON (nx.souscription_id = s.id);
 
+-- Set all views to use SECURITY INVOKER (enforces RLS policies of querying user)
+ALTER VIEW v_coupons_stats SET (security_invoker = true);
+ALTER VIEW v_souscriptions_with_cgp SET (security_invoker = true);
+ALTER VIEW v_prochains_coupons SET (security_invoker = true);
+ALTER VIEW v_souscriptions_with_next SET (security_invoker = true);
+
 -- Add comments
 COMMENT ON VIEW v_coupons_stats IS 'Coupon statistics per subscription - uses SECURITY INVOKER to enforce RLS';
 COMMENT ON VIEW v_souscriptions_with_cgp IS 'Subscriptions with CGP information - uses SECURITY INVOKER to enforce RLS';
