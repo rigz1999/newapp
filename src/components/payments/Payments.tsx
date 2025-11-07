@@ -55,6 +55,7 @@ export function Payments({ organization }: PaymentsProps) {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Advanced filtering
   const advancedFilters = useAdvancedFilters({

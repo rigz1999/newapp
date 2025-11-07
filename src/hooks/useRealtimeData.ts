@@ -45,7 +45,8 @@ export function useRealtimePayments(
           tranche:tranches(tranche_name),
           investisseur:investisseurs(nom_raison_sociale)
         `)
-        .order('date_paiement', { ascending: false });
+        .order('date_paiement', { ascending: false })
+        .limit(1000); // Limit to prevent loading too many records
 
       if (fetchError) throw fetchError;
       setData(payments || []);
@@ -98,7 +99,8 @@ export function useRealtimeInvestors(
       const { data: investors, error: fetchError } = await supabase
         .from('investisseurs')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1000); // Limit to prevent loading too many records
 
       if (fetchError) throw fetchError;
       setData(investors || []);
@@ -151,7 +153,8 @@ export function useRealtimeProjects(
       const { data: projects, error: fetchError } = await supabase
         .from('projets')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(500); // Limit to prevent loading too many records
 
       if (fetchError) throw fetchError;
       setData(projects || []);
@@ -208,7 +211,8 @@ export function useRealtimeSubscriptions(
           investisseur:investisseurs(nom_raison_sociale),
           tranche:tranches(tranche_name)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1000); // Limit to prevent loading too many records
 
       if (fetchError) throw fetchError;
       setData(subscriptions || []);
