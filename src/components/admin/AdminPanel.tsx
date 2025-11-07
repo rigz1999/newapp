@@ -55,10 +55,11 @@ export default function AdminPanel() {
   const [showEditOrgModal, setShowEditOrgModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRemoveUserModal, setShowRemoveUserModal] = useState(false);
+  const [showDeletePendingUserModal, setShowDeletePendingUserModal] = useState(false);
   const [showUserDetailModal, setShowUserDetailModal] = useState(false);
   
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
-  const [deletingItem, setDeletingItem] = useState<{ type: 'org' | 'user'; id: string; name: string } | null>(null);
+  const [deletingItem, setDeletingItem] = useState<{ type: 'org' | 'user' | 'pending_user'; id: string; name: string } | null>(null);
   const [selectedUserDetail, setSelectedUserDetail] = useState<UserDetail | null>(null);
   const [newOrgName, setNewOrgName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -288,6 +289,40 @@ export default function AdminPanel() {
     }
   };
 
+  const confirmDeletePendingUser = (userId: string, userName: string) => {
+    setDeletingItem({ type: 'pending_user', id: userId, name: userName });
+    setShowDeletePendingUserModal(true);
+  };
+
+  const handleDeletePendingUser = async () => {
+    if (!deletingItem || deletingItem.type !== 'pending_user') return;
+
+    // Delete the user profile
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', deletingItem.id);
+
+    if (error) {
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de la suppression: ' + error.message,
+        type: 'error'
+      });
+      setShowAlertModal(true);
+    } else {
+      setAlertModalConfig({
+        title: 'Succès',
+        message: 'Utilisateur supprimé avec succès',
+        type: 'success'
+      });
+      setShowAlertModal(true);
+      setShowDeletePendingUserModal(false);
+      setDeletingItem(null);
+      fetchData();
+    }
+  };
+
   const showUserDetail = async (userId: string) => {
     // Find user in pending or memberships
     const pendingUser = pendingUsers.find(u => u.user_id === userId);
@@ -481,6 +516,7 @@ export default function AdminPanel() {
                   organizations={organizations}
                   onGrantAccess={handleGrantAccess}
                   onViewDetail={showUserDetail}
+                  onDelete={confirmDeletePendingUser}
                 />
               ))}
             </div>
@@ -643,6 +679,17 @@ export default function AdminPanel() {
         message="Êtes-vous sûr de vouloir retirer cet utilisateur de l'organisation ? Il perdra l'accès immédiatement."
       />
 
+      <DeleteConfirmModal
+        isOpen={showDeletePendingUserModal}
+        onClose={() => {
+          setShowDeletePendingUserModal(false);
+          setDeletingItem(null);
+        }}
+        onConfirm={handleDeletePendingUser}
+        title="Supprimer l'utilisateur en attente"
+        message={`Êtes-vous sûr de vouloir supprimer l'utilisateur "${deletingItem?.name}" ? Cette action est irréversible et supprimera définitivement le compte.`}
+      />
+
       <UserDetailModal
         isOpen={showUserDetailModal}
         onClose={() => {
@@ -665,16 +712,18 @@ export default function AdminPanel() {
 }
 
 // Pending User Row Component
-function PendingUserRow({ 
-  user, 
+function PendingUserRow({
+  user,
   organizations,
   onGrantAccess,
-  onViewDetail
-}: { 
+  onViewDetail,
+  onDelete
+}: {
   user: PendingUser;
   organizations: Organization[];
   onGrantAccess: (userId: string, orgId: string, role: string) => void;
   onViewDetail: (userId: string) => void;
+  onDelete: (userId: string, userName: string) => void;
 }) {
   const [selectedOrg, setSelectedOrg] = useState('');
   const [selectedRole, setSelectedRole] = useState('member');
@@ -746,6 +795,14 @@ function PendingUserRow({
           >
             <UserPlus className="w-4 h-4" />
             Valider
+          </button>
+
+          <button
+            onClick={() => onDelete(user.user_id, user.full_name || user.email)}
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            title="Supprimer l'utilisateur"
+          >
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
