@@ -185,6 +185,23 @@ function Investors({ organization }: InvestorsProps) {
     { value: 'without-rib', label: 'Sans RIB' },
   ], []);
 
+  // Sort function - defined before use
+  const sortInvestors = (data: InvestorWithStats[], field: SortField, direction: SortDirection) => {
+    return [...data].sort((a, b) => {
+      let aValue: any = a[field];
+      let bValue: any = b[field];
+
+      if (field === 'nom_raison_sociale' || field === 'id_investisseur' || field === 'cgp' || field === 'type') {
+        aValue = (aValue || '').toLowerCase();
+        bValue = (bValue || '').toLowerCase();
+      }
+
+      if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
   // Apply filters and sorting
   const filteredInvestors = useMemo(() => {
     let filtered = [...investors];
@@ -320,22 +337,6 @@ function Investors({ organization }: InvestorsProps) {
 
     setInvestors(investorsWithStats);
     setLoading(false);
-  };
-
-  const sortInvestors = (data: InvestorWithStats[], field: SortField, direction: SortDirection) => {
-    return [...data].sort((a, b) => {
-      let aValue: any = a[field];
-      let bValue: any = b[field];
-
-      if (field === 'nom_raison_sociale' || field === 'id_investisseur' || field === 'cgp' || field === 'type') {
-        aValue = (aValue || '').toLowerCase();
-        bValue = (bValue || '').toLowerCase();
-      }
-
-      if (aValue < bValue) return direction === 'asc' ? -1 : 1;
-      if (aValue > bValue) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
   };
 
   const handleSort = (field: SortField) => {
