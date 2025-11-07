@@ -3,7 +3,7 @@
 // Path: src/components/Modals.tsx
 // ============================================
 
-import { X, AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 
 interface BaseModalProps {
   isOpen: boolean;

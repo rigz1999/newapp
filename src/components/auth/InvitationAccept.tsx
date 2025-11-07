@@ -96,7 +96,7 @@ export function InvitationAccept() {
       }
 
       setInvitation(invitationData);
-    } catch (err) {
+    } catch {
       setError('Erreur lors de la vérification de l\'invitation.');
     } finally {
       setLoading(false);

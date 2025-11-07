@@ -41,7 +41,7 @@ export function SubscriptionsModal({
 
   // Filtrer et trier
   const filteredSubs = useMemo(() => {
-    let result = subscriptions.filter(sub => {
+    const result = subscriptions.filter(sub => {
       const matchesSearch = sub.investisseur.nom_raison_sociale
         .toLowerCase()
         .includes(searchTerm.toLowerCase());

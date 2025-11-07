@@ -25,7 +25,8 @@ export function invalidateDashboardCache(orgId: string): void {
   try {
     const cacheKey = getDashboardCacheKey(orgId);
     localStorage.removeItem(cacheKey);
-  } catch (error) {
+  } catch {
+    // Silently ignore localStorage errors
   }
 }
 
@@ -40,7 +41,8 @@ export function invalidateAllDashboardCaches(): void {
         localStorage.removeItem(key);
       }
     });
-  } catch (error) {
+  } catch {
+    // Silently ignore localStorage errors
   }
 }
 
@@ -49,7 +51,7 @@ export function invalidateAllDashboardCaches(): void {
  * Components can call this to be notified when cache is invalidated
  */
 export function onCacheInvalidated(callback: () => void): () => void {
-  const handleInvalidation = (event: CustomEvent) => {
+  const handleInvalidation = (_event: CustomEvent) => {
     callback();
   };
 

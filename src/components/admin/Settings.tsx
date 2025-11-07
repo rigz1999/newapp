@@ -66,6 +66,7 @@ export default function Settings() {
       .single() as any);
 
     if (error) {
+      // Error is silently ignored
     } else if (profile) {
       setEmail(profile.email || '');
       // Split full_name into first and last

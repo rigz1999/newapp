@@ -9,7 +9,8 @@ export const logger = {
   log: (...args: any[]) => {
     if (isDev) console.log('[App]', ...args);
   },
-  error: (...args: any[]) => {
+  error: (..._args: any[]) => {
+    // Errors silently ignored in production
   },
   warn: (...args: any[]) => {
     if (isDev) console.warn('[Warning]', ...args);
