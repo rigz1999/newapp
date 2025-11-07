@@ -15,6 +15,7 @@ import { formatErrorMessage } from '../../utils/errorMessages';
 import { AlertModal } from '../common/Modals';
 import { logger } from '../../utils/logger';
 import { TableSkeleton } from '../common/Skeleton';
+import { isValidEmail } from '../../utils/validators';
 
 interface Member {
   id: string;
@@ -470,6 +471,17 @@ function InviteMemberModal({
         title: 'Champs manquants',
         message: 'Veuillez remplir tous les champs',
         type: 'warning'
+      });
+      setShowAlert(true);
+      return;
+    }
+
+    // Validate email format
+    if (!isValidEmail(email)) {
+      setAlertConfig({
+        title: 'Email invalide',
+        message: 'Veuillez entrer une adresse email valide (ex: nom@exemple.com)',
+        type: 'error'
       });
       setShowAlert(true);
       return;
