@@ -68,6 +68,15 @@ export function formatErrorMessage(error: any): string {
     return 'Accès refusé. Vous n\'avez pas les droits nécessaires';
   }
 
+  // Edge Function errors
+  if (message.includes('not found') || message.includes('FunctionsRelayError') || message.includes('Function not found')) {
+    return 'Service indisponible. La fonction demandée n\'est pas déployée. Veuillez contacter l\'administrateur';
+  }
+
+  if (message.includes('FunctionsHttpError')) {
+    return 'Erreur du service. Veuillez réessayer ou contacter le support';
+  }
+
   // Network errors
   if (message.includes('Failed to fetch') || message.includes('Network request failed')) {
     return 'Erreur de connexion. Vérifiez votre connexion internet';

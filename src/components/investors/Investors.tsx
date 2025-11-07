@@ -1454,7 +1454,7 @@ function Investors({ organization }: InvestorsProps) {
                   if (file) {
                     const fakeEvent = {
                       target: { files: [file] }
-                    } as any;
+                    } as React.ChangeEvent<HTMLInputElement>;
                     handleFileChange(fakeEvent);
                   }
                 }}

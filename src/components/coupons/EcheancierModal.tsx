@@ -114,7 +114,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
         };
       });
 
-      setEcheances(enrichedEcheances as any);
+      setEcheances(enrichedEcheances);
     } catch (err) {
       console.error('Error fetching echeances:', err);
       setEcheances([]);

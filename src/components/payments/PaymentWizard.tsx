@@ -138,7 +138,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       `)
       .eq('tranche_id', trancheId);
 
-    setSubscriptions(data as any || []);
+    setSubscriptions((data || []) as Subscription[]);
     setLoading(false);
   };
 
@@ -270,16 +270,22 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       console.time('🤖 Analyse IA');
 
       const { data, error: funcError } = await supabase.functions.invoke('analyze-payment-batch', {
-        body: { 
+        body: {
           base64Images: base64Images,
-          expectedPayments: expectedPayments 
+          expectedPayments: expectedPayments
         }
       });
 
       console.timeEnd('🤖 Analyse IA');
 
-      if (funcError) throw funcError;
-      if (!data.succes) throw new Error(data.erreur);
+      if (funcError) {
+        // Check if the function doesn't exist
+        if (funcError.message?.includes('not found') || funcError.message?.includes('FunctionsRelayError')) {
+          throw new Error('La fonction d\'analyse des paiements n\'est pas disponible. Veuillez contacter l\'administrateur pour déployer la fonction Edge "analyze-payment-batch".');
+        }
+        throw funcError;
+      }
+      if (!data?.succes) throw new Error(data?.erreur || 'Erreur lors de l\'analyse des paiements');
 
       const enrichedMatches = data.correspondances.map((match: any) => {
         const subscription = subscriptions.find(

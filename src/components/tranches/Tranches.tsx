@@ -379,7 +379,7 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
                 disabled={uploading}
                 onFileSelect={(files) => {
                   if (files && files.length > 0) {
-                    handleFileUpload({ target: { files } } as any);
+                    handleFileUpload({ target: { files } } as React.ChangeEvent<HTMLInputElement>);
                     setShowImportModal(false);
                   }
                 }}

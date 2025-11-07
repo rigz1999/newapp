@@ -92,6 +92,7 @@ export function Dashboard({ organization }: DashboardProps) {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Chart state + cache of raw subs for local filtering
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
@@ -270,11 +271,27 @@ export function Dashboard({ organization }: DashboardProps) {
         supabase.from('souscriptions').select('montant_investi, date_souscription')
       ]);
 
-      if (projectsRes.error) console.warn('Supabase error projets:', projectsRes.error);
-      if (tranchesRes.error) console.warn('Supabase error tranches:', tranchesRes.error);
-      if (subscriptionsRes.error) console.warn('Supabase error souscriptions:', subscriptionsRes.error);
-      if (monthPaymentsRes.error) console.warn('Supabase error paiements:', monthPaymentsRes.error);
-      if (chartSubsRes.error) console.warn('Supabase error chart souscriptions:', chartSubsRes.error);
+      // Check for critical errors
+      const errors = [
+        projectsRes.error && 'Erreur lors du chargement des projets',
+        tranchesRes.error && 'Erreur lors du chargement des tranches',
+        subscriptionsRes.error && 'Erreur lors du chargement des souscriptions',
+        monthPaymentsRes.error && 'Erreur lors du chargement des paiements',
+        chartSubsRes.error && 'Erreur lors du chargement des données graphiques'
+      ].filter(Boolean);
+
+      if (errors.length > 0) {
+        console.warn('Dashboard data errors:', {
+          projects: projectsRes.error,
+          tranches: tranchesRes.error,
+          subscriptions: subscriptionsRes.error,
+          payments: monthPaymentsRes.error,
+          chart: chartSubsRes.error
+        });
+        setError(errors.join(', '));
+      } else {
+        setError(null);
+      }
 
       const projects = projectsRes.data || [];
       const tranches = tranchesRes.data || [];
@@ -362,10 +379,10 @@ export function Dashboard({ organization }: DashboardProps) {
         monthlyData: monthlyDataResult,
         chartSubscriptionsAll: chartSubscriptions
       };
-      setRecentPayments(recentPaymentsData as any);
+      setRecentPayments(recentPaymentsData);
       setUpcomingCoupons(groupedCoupons.slice(0, 5));
       // Générer les alertes dynamiques
-     const dynamicAlerts = generateAlerts(groupedCoupons.slice(0, 5), recentPaymentsData as any, ribManquantsCount);
+      const dynamicAlerts = generateAlerts(groupedCoupons.slice(0, 5), recentPaymentsData, ribManquantsCount);
       setAlerts(dynamicAlerts);
       setCachedData(cacheData);
 
@@ -495,6 +512,33 @@ export function Dashboard({ organization }: DashboardProps) {
           <span>Actualiser</span>
         </button>
       </div>
+
+      {error && !loading && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-red-900 mb-1">Erreur de chargement</h3>
+              <p className="text-sm text-red-800">{error}</p>
+              <button
+                onClick={() => {
+                  setError(null);
+                  handleRefresh();
+                }}
+                className="mt-2 text-sm text-red-700 hover:text-red-900 underline font-medium"
+              >
+                Réessayer
+              </button>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-600 hover:text-red-800 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <DashboardSkeleton />
@@ -843,7 +887,7 @@ export function Dashboard({ organization }: DashboardProps) {
                           </p>
                           <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
                             <Users className="w-3 h-3" />
-                            <span>{(coupon as any).investor_count || 1} investisseur{((coupon as any).investor_count || 1) > 1 ? 's' : ''}</span>
+                            <span>{coupon.investor_count || 1} investisseur{(coupon.investor_count || 1) > 1 ? 's' : ''}</span>
                           </div>
                         </div>
                         <div className="text-right">
@@ -1123,8 +1167,9 @@ export function Dashboard({ organization }: DashboardProps) {
                         }}
                         onPaste={(e) => {
                           e.preventDefault();
-                          const text = (e.clipboardData || (window as any).clipboardData).getData('text');
-                          const digits = (text || '').replace(/\D/g, '');
+                          const clipboardData = e.clipboardData || (window as ClipboardEvent).clipboardData;
+                          const text = clipboardData?.getData('text') || '';
+                          const digits = text.replace(/\D/g, '');
                           setNewProjectData(prev => ({
                             ...prev,
                             montant_global_eur: digits
