@@ -85,7 +85,7 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
     ];
 
     const example = [
-      organizationId,
+      organization.id,
       projectName,
       'Exemple SA',
       'Jean Dupont',

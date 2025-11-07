@@ -6,14 +6,14 @@
 // Auto-subscribes/unsubscribes to table changes
 // ============================================
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { features } from '../config';
 
 export type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
 
-interface UseRealtimeSubscriptionOptions<T> {
+interface UseRealtimeSubscriptionOptions<T extends { [key: string]: any } = any> {
   table: string;
   event?: RealtimeEvent;
   filter?: string; // e.g., "project_id=eq.123"
@@ -30,7 +30,7 @@ interface UseRealtimeSubscriptionReturn {
   error: Error | null;
 }
 
-export function useRealtimeSubscription<T = any>(
+export function useRealtimeSubscription<T extends { [key: string]: any } = any>(
   options: UseRealtimeSubscriptionOptions<T>
 ): UseRealtimeSubscriptionReturn {
   const {
@@ -47,7 +47,6 @@ export function useRealtimeSubscription<T = any>(
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
 
   useEffect(() => {
     // Check if realtime is enabled in config
@@ -105,8 +104,6 @@ export function useRealtimeSubscription<T = any>(
         setError(new Error('Channel subscription error'));
       }
     });
-
-    setChannel(newChannel);
 
     // Cleanup on unmount
     return () => {

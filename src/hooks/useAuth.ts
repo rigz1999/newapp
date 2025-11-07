@@ -42,10 +42,10 @@ export function useAuth() {
 
   const checkAdminStatus = async (userId: string) => {
     try {
-      const { data: memberships } = await supabase
+      const { data: memberships } = await (supabase
         .from('memberships')
         .select('role, org_id')
-        .eq('user_id', userId);
+        .eq('user_id', userId) as any);
 
       const superAdmin = memberships?.some(
         m => m.role === 'super_admin' && m.org_id === null

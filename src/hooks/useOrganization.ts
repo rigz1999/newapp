@@ -49,10 +49,10 @@ export function useOrganization(userId: string | undefined) {
 
       try {
         // Fetch ALL memberships (not just one)
-        const { data: memberships, error } = await supabase
+        const { data: memberships, error } = await (supabase
           .from('memberships')
           .select('org_id, role, organizations(id, name)')
-          .eq('user_id', userId);
+          .eq('user_id', userId) as any);
 
         logger.log('useOrganization - Memberships result:', { memberships, error });
 

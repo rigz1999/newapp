@@ -59,11 +59,11 @@ export default function Settings() {
     setLoading(true);
 
     // Get user profile
-    const { data: profile, error } = await supabase
+    const { data: profile, error } = await (supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .single() as any);
 
     if (error) {
       console.error('Error fetching profile:', error);
@@ -78,11 +78,11 @@ export default function Settings() {
     }
 
     // Get reminder settings
-    const { data: reminderSettings, error: reminderError } = await supabase
+    const { data: reminderSettings, error: reminderError } = await (supabase
       .from('user_reminder_settings')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .single() as any);
 
     if (!reminderError && reminderSettings) {
       setRemindersEnabled(reminderSettings.enabled);
@@ -107,13 +107,13 @@ export default function Settings() {
 
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
 
-    const { error } = await supabase
+    const { error } = await (supabase
       .from('profiles')
       .update({
         full_name: fullName,
         updated_at: new Date().toISOString()
       })
-      .eq('id', user.id);
+      .eq('id', user.id) as any);
 
     setSaving(false);
 
@@ -198,7 +198,7 @@ export default function Settings() {
 
     try {
       // Upsert reminder settings
-      const { error } = await supabase
+      const { error } = await (supabase
         .from('user_reminder_settings')
         .upsert({
           user_id: user.id,
@@ -209,7 +209,7 @@ export default function Settings() {
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
-        });
+        }) as any);
 
       setSaving(false);
 

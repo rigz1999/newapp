@@ -57,7 +57,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
               prochainCoupon: prochainCoupon ? {
                 date: prochainCoupon.date_echeance,
                 montant: totalProchainCoupon,
-                nb_investisseurs: prochains.filter(e => e.date_echeance === prochainCoupon.date_echeance).length
+                nb_investisseurs: prochains.filter(e => e.date_echeance === prochainCoupon?.date_echeance).length
               } : null,
               totalEcheances: echeances.length
             });

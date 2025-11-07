@@ -540,7 +540,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
             <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">Aucune souscription</h3>
             <p className="text-slate-600">
-              {searchTerm ? 'Aucun résultat pour cette recherche' : 'Importez des tranches pour voir les souscriptions'}
+              {advancedFilters.filters.search ? 'Aucun résultat pour cette recherche' : 'Importez des tranches pour voir les souscriptions'}
             </p>
           </div>
         ) : (

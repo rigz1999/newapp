@@ -6,9 +6,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
-  Users, Building2, UserPlus, Shield, RefreshCw,
-  CheckCircle, Trash2, Plus, AlertCircle,
-  Search, UserX, ChevronDown, ChevronUp, Edit2, Clock, Eye, X, Mail, Calendar
+  Users, Building2, UserPlus, Shield,
+  Trash2, Plus, AlertCircle,
+  Search, ChevronDown, ChevronUp, Edit2, Clock, Eye, X, Mail, Calendar
 } from 'lucide-react';
 import { AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
@@ -99,7 +99,7 @@ export default function AdminPanel() {
           name
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) as any;
 
     if (membershipsError) {
       console.error('Error fetching memberships:', membershipsError);
@@ -147,13 +147,13 @@ export default function AdminPanel() {
   };
 
   const handleGrantAccess = async (userId: string, orgId: string, role: string) => {
-    const { error } = await supabase
+    const { error } = await (supabase
       .from('memberships')
       .insert({
         user_id: userId,
         org_id: orgId,
-        role: role
-      });
+        role: role as 'member' | 'admin' | 'super_admin'
+      }) as any);
 
     if (error) {
       console.error('Error granting access:', error);
@@ -175,12 +175,11 @@ export default function AdminPanel() {
 
     setCreating(true);
 
-    const { error } = await supabase
+    const { error } = await (supabase
       .from('organizations')
       .insert({
-        name: newOrgName.trim(),
-        owner_id: null
-      });
+        name: newOrgName.trim()
+      }) as any);
 
     if (error) {
       console.error('Error creating organization:', error);
@@ -206,10 +205,10 @@ export default function AdminPanel() {
 
     setCreating(true);
 
-    const { error } = await supabase
+    const { error } = await (supabase
       .from('organizations')
       .update({ name: newOrgName.trim() })
-      .eq('id', editingOrg.id);
+      .eq('id', editingOrg.id) as any);
 
     if (error) {
       console.error('Error updating organization:', error);
@@ -313,11 +312,11 @@ export default function AdminPanel() {
 
     const membership = memberships.find(m => m.user_id === userId);
     if (membership) {
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .single() as any);
 
       const org = organizations.find(o => o.id === membership.org_id);
 
