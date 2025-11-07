@@ -87,6 +87,7 @@ export default function AdminPanel() {
       .order('created_at', { ascending: false });
 
     if (orgsError) {
+      // Error is silently ignored - user can still see other data
     } else {
       setOrganizations(orgs || []);
     }
@@ -102,6 +103,7 @@ export default function AdminPanel() {
       .order('created_at', { ascending: false }) as any;
 
     if (membershipsError) {
+      // Error is silently ignored - user can still see other data
     } else {
       setMemberships(membershipData || []);
     }
@@ -112,6 +114,7 @@ export default function AdminPanel() {
       .order('created_at', { ascending: false });
 
     if (profilesError) {
+      // Error is silently ignored - user can still see other data
     } else {
       // Trouver tous les user_ids qui ont un membership avec une organisation
       const userIdsWithOrg = new Set(

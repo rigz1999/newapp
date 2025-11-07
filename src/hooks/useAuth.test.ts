@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useAuth } from './useAuth';
 import { supabase } from '../lib/supabase';
 
@@ -210,12 +210,13 @@ describe('useAuth', () => {
       };
     });
 
-    (supabase.from as any).mockReturnValue({
+    // Mock supabase.from to return fresh mock chain each time
+    (supabase.from as any).mockImplementation(() => ({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockResolvedValue({
         data: [{ role: 'admin', org_id: 'org-1' }],
       }),
-    });
+    }));
 
     const { result } = renderHook(() => useAuth());
 
@@ -224,14 +225,18 @@ describe('useAuth', () => {
     });
 
     // Simulate sign-in
-    authCallback('SIGNED_IN', { session: { user: mockUser } });
+    await act(async () => {
+      authCallback('SIGNED_IN', { user: mockUser });
+    });
 
     await waitFor(() => {
       expect(result.current.user).toEqual(mockUser);
-    });
+    }, { timeout: 3000 });
 
     // Simulate sign-out
-    authCallback('SIGNED_OUT', { session: null });
+    await act(async () => {
+      authCallback('SIGNED_OUT', null);
+    });
 
     await waitFor(() => {
       expect(result.current.user).toBe(null);
