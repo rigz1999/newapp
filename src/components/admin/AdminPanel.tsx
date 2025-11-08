@@ -127,10 +127,12 @@ export default function AdminPanel() {
       // Les utilisateurs en attente sont ceux qui:
       // 1. N'ont pas de membership avec org_id
       // 2. Ne sont pas super_admin (super admins n'ont pas d'org_id mais c'est normal)
+      // Super admin is identified by email, not by membership role
+      const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL;
       const superAdminIds = new Set(
-        memberships
-          .filter((m: Membership) => m.role === 'super_admin' && !m.org_id)
-          .map((m: Membership) => m.user_id)
+        (profilesData || [])
+          .filter((profile: any) => profile.email === superAdminEmail)
+          .map((profile: any) => profile.id)
       );
 
       const pending = (profilesData || [])
@@ -396,8 +398,9 @@ export default function AdminPanel() {
     org.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const superAdmins = memberships.filter(m => m.role === 'super_admin' && !m.org_id);
-  const regularMemberships = memberships.filter(m => !(m.role === 'super_admin' && !m.org_id));
+  // Super admin count (always 1 - the email defined in env)
+  const superAdminCount = 1; // There is only one super admin
+  const regularMemberships = memberships; // All memberships are regular (admin/member roles only)
 
   if (loading) {
     return (
@@ -463,7 +466,7 @@ export default function AdminPanel() {
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Super Admins</p>
-            <p className="text-2xl font-bold text-purple-600">{superAdmins.length}</p>
+            <p className="text-2xl font-bold text-purple-600">{superAdminCount}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Utilisateurs</p>
@@ -541,40 +544,31 @@ export default function AdminPanel() {
             )}
             <Shield className="w-6 h-6 text-purple-600" />
             <h2 className="text-xl font-bold text-slate-900">
-              Super Administrateurs ({superAdmins.length})
+              Super Administrateur ({superAdminCount})
             </h2>
           </div>
         </button>
         
         {expandedSections.has('super-admins') && (
           <div className="divide-y divide-slate-200">
-            {superAdmins.map(membership => (
-              <div key={membership.id} className="p-6 bg-purple-50/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">User ID: {membership.user_id.substring(0, 8)}...</p>
-                      <p className="text-sm text-slate-600">Créé le {new Date(membership.created_at).toLocaleDateString('fr-FR')}</p>
-                    </div>
+            <div className="p-6 bg-purple-50/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-purple-600" />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
-                      Super Admin - Accès Total
-                    </div>
-                    <button
-                      onClick={() => showUserDetail(membership.user_id)}
-                      className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
-                      title="Voir détails"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
+                  <div>
+                    <p className="font-medium text-slate-900">{import.meta.env.VITE_SUPER_ADMIN_EMAIL}</p>
+                    <p className="text-sm text-slate-600">Super administrateur système</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+                    Super Admin - Accès Total
                   </div>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         )}
       </div>
@@ -1074,7 +1068,8 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
   if (!isOpen || !user) return null;
 
   // Déterminer le statut de l'utilisateur
-  const isSuperAdmin = user.role === 'super_admin';
+  const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = user.email === superAdminEmail;
   const hasOrganization = !!user.org_name;
   const isPending = !hasOrganization && !isSuperAdmin;
 
