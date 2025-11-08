@@ -6,6 +6,7 @@
 -- This migration:
 -- 1. Wraps auth.uid() in (select ...) to prevent per-row re-evaluation
 -- 2. Consolidates duplicate permissive policies
+-- 3. Corrected based on actual schema (role is 'admin'/'member', not 'owner')
 -- ============================================
 
 -- ============================================
@@ -35,9 +36,13 @@ CREATE POLICY "Admins can create memberships"
   TO authenticated
   WITH CHECK (
     org_id IN (
+      SELECT id FROM organizations WHERE owner_id = (select auth.uid())
+    )
+    OR
+    org_id IN (
       SELECT org_id FROM memberships
       WHERE user_id = (select auth.uid())
-      AND role IN ('owner', 'admin')
+      AND role = 'admin'
     )
   );
 
@@ -47,16 +52,24 @@ CREATE POLICY "Admins can update memberships"
   TO authenticated
   USING (
     org_id IN (
+      SELECT id FROM organizations WHERE owner_id = (select auth.uid())
+    )
+    OR
+    org_id IN (
       SELECT org_id FROM memberships
       WHERE user_id = (select auth.uid())
-      AND role IN ('owner', 'admin')
+      AND role = 'admin'
     )
   )
   WITH CHECK (
     org_id IN (
+      SELECT id FROM organizations WHERE owner_id = (select auth.uid())
+    )
+    OR
+    org_id IN (
       SELECT org_id FROM memberships
       WHERE user_id = (select auth.uid())
-      AND role IN ('owner', 'admin')
+      AND role = 'admin'
     )
   );
 
@@ -66,9 +79,13 @@ CREATE POLICY "Admins can delete memberships"
   TO authenticated
   USING (
     org_id IN (
+      SELECT id FROM organizations WHERE owner_id = (select auth.uid())
+    )
+    OR
+    org_id IN (
       SELECT org_id FROM memberships
       WHERE user_id = (select auth.uid())
-      AND role IN ('owner', 'admin')
+      AND role = 'admin'
     )
   );
 
@@ -104,17 +121,21 @@ CREATE POLICY "Admins can update organizations"
   FOR UPDATE
   TO authenticated
   USING (
+    owner_id = (select auth.uid())
+    OR
     id IN (
       SELECT org_id FROM memberships
       WHERE user_id = (select auth.uid())
-      AND role IN ('owner', 'admin')
+      AND role = 'admin'
     )
   )
   WITH CHECK (
+    owner_id = (select auth.uid())
+    OR
     id IN (
       SELECT org_id FROM memberships
       WHERE user_id = (select auth.uid())
-      AND role IN ('owner', 'admin')
+      AND role = 'admin'
     )
   );
 
@@ -310,6 +331,7 @@ CREATE POLICY "Users can manage their org coupons"
 
 -- ============================================
 -- PAIEMENTS TABLE
+-- Note: paiements has org_id directly, so we can use that
 -- ============================================
 
 DROP POLICY IF EXISTS "Users can view their org paiements" ON paiements;
@@ -320,12 +342,8 @@ CREATE POLICY "Users can view their org paiements"
   FOR SELECT
   TO authenticated
   USING (
-    echeance_id IN (
-      SELECT ce.id FROM coupons_echeances ce
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN projets p ON p.id = s.projet_id
-      JOIN memberships m ON m.org_id = p.org_id
-      WHERE m.user_id = (select auth.uid())
+    org_id IN (
+      SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
   );
 
@@ -334,21 +352,13 @@ CREATE POLICY "Users can manage their org paiements"
   FOR ALL
   TO authenticated
   USING (
-    echeance_id IN (
-      SELECT ce.id FROM coupons_echeances ce
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN projets p ON p.id = s.projet_id
-      JOIN memberships m ON m.org_id = p.org_id
-      WHERE m.user_id = (select auth.uid())
+    org_id IN (
+      SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
   )
   WITH CHECK (
-    echeance_id IN (
-      SELECT ce.id FROM coupons_echeances ce
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN projets p ON p.id = s.projet_id
-      JOIN memberships m ON m.org_id = p.org_id
-      WHERE m.user_id = (select auth.uid())
+    org_id IN (
+      SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
   );
 
@@ -366,10 +376,7 @@ CREATE POLICY "Users can view payment proofs"
   USING (
     paiement_id IN (
       SELECT pa.id FROM paiements pa
-      JOIN coupons_echeances ce ON ce.id = pa.echeance_id
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN projets p ON p.id = s.projet_id
-      JOIN memberships m ON m.org_id = p.org_id
+      JOIN memberships m ON m.org_id = pa.org_id
       WHERE m.user_id = (select auth.uid())
     )
   );
@@ -381,20 +388,14 @@ CREATE POLICY "Users can manage payment proofs"
   USING (
     paiement_id IN (
       SELECT pa.id FROM paiements pa
-      JOIN coupons_echeances ce ON ce.id = pa.echeance_id
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN projets p ON p.id = s.projet_id
-      JOIN memberships m ON m.org_id = p.org_id
+      JOIN memberships m ON m.org_id = pa.org_id
       WHERE m.user_id = (select auth.uid())
     )
   )
   WITH CHECK (
     paiement_id IN (
       SELECT pa.id FROM paiements pa
-      JOIN coupons_echeances ce ON ce.id = pa.echeance_id
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN projets p ON p.id = s.projet_id
-      JOIN memberships m ON m.org_id = p.org_id
+      JOIN memberships m ON m.org_id = pa.org_id
       WHERE m.user_id = (select auth.uid())
     )
   );
@@ -402,6 +403,8 @@ CREATE POLICY "Users can manage payment proofs"
 -- ============================================
 -- INVITATIONS TABLE
 -- Consolidate super admin + org owner policies
+-- Note: role is 'admin' or 'member', not 'owner'
+-- Check organizations.owner_id for ownership
 -- ============================================
 
 DROP POLICY IF EXISTS "Org owners can manage their invitations" ON invitations;
@@ -414,18 +417,88 @@ CREATE POLICY "Admins can manage invitations"
   TO authenticated
   USING (
     org_id IN (
+      SELECT id FROM organizations WHERE owner_id = (select auth.uid())
+    )
+    OR
+    org_id IN (
       SELECT org_id FROM memberships
       WHERE user_id = (select auth.uid())
-      AND role IN ('owner', 'admin')
+      AND role = 'admin'
     )
   )
   WITH CHECK (
     org_id IN (
+      SELECT id FROM organizations WHERE owner_id = (select auth.uid())
+    )
+    OR
+    org_id IN (
       SELECT org_id FROM memberships
       WHERE user_id = (select auth.uid())
-      AND role IN ('owner', 'admin')
+      AND role = 'admin'
     )
   );
+
+-- ============================================
+-- USER_REMINDER_SETTINGS TABLE
+-- Note: user_id references auth.users(id) directly
+-- ============================================
+
+DROP POLICY IF EXISTS "Users can view their own reminder settings" ON user_reminder_settings;
+DROP POLICY IF EXISTS "Users can insert their own reminder settings" ON user_reminder_settings;
+DROP POLICY IF EXISTS "Users can update their own reminder settings" ON user_reminder_settings;
+DROP POLICY IF EXISTS "Users can delete their own reminder settings" ON user_reminder_settings;
+
+CREATE POLICY "Users can view their own reminder settings"
+  ON user_reminder_settings
+  FOR SELECT
+  TO authenticated
+  USING (user_id = (select auth.uid()));
+
+CREATE POLICY "Users can insert their own reminder settings"
+  ON user_reminder_settings
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (user_id = (select auth.uid()));
+
+CREATE POLICY "Users can update their own reminder settings"
+  ON user_reminder_settings
+  FOR UPDATE
+  TO authenticated
+  USING (user_id = (select auth.uid()))
+  WITH CHECK (user_id = (select auth.uid()));
+
+CREATE POLICY "Users can delete their own reminder settings"
+  ON user_reminder_settings
+  FOR DELETE
+  TO authenticated
+  USING (user_id = (select auth.uid()));
+
+-- ============================================
+-- PROFILES TABLE
+-- ============================================
+
+DROP POLICY IF EXISTS "Users can view all profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+
+CREATE POLICY "Users can view all profiles"
+  ON public.profiles
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+CREATE POLICY "Users can update own profile"
+  ON public.profiles
+  FOR UPDATE
+  TO authenticated
+  USING (id = (select auth.uid()))
+  WITH CHECK (id = (select auth.uid()));
+
+CREATE POLICY "Users can insert own profile"
+  ON public.profiles
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (id = (select auth.uid()));
 
 -- ============================================
 -- Add comments for documentation
@@ -435,7 +508,7 @@ COMMENT ON POLICY "Users can view memberships" ON memberships IS
   'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation';
 
 COMMENT ON POLICY "Admins can create memberships" ON memberships IS
-  'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation';
+  'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation. Checks owner_id OR admin role.';
 
 COMMENT ON POLICY "Users can view their organizations" ON organizations IS
   'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation';
@@ -444,4 +517,7 @@ COMMENT ON POLICY "Users can view their org projets" ON projets IS
   'Optimized: Consolidated duplicate SELECT policies';
 
 COMMENT ON POLICY "Admins can manage invitations" ON invitations IS
-  'Optimized: Consolidated super admin + org owner policies into single policy';
+  'Optimized: Consolidated policies. Checks owner_id OR admin role.';
+
+COMMENT ON POLICY "Users can view their org paiements" ON paiements IS
+  'Optimized: Simplified using org_id column directly';
