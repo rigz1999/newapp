@@ -6,6 +6,7 @@ import { PaymentWizard } from '../payments/PaymentWizard';
 import { getDashboardCacheKey, onCacheInvalidated } from '../../utils/cacheManager';
 import { AlertModal } from '../common/Modals';
 import { DashboardSkeleton } from '../common/Skeleton';
+import { ExportModal } from './ExportModal';
 import { formatCurrency, formatDate, getRelativeDate, formatMontantDisplay } from '../../utils/formatters';
 import { isValidSIREN } from '../../utils/validators';
 import { generateAlerts, type Alert, type Payment, type UpcomingCoupon } from '../../utils/dashboardAlerts';
@@ -105,6 +106,7 @@ export function Dashboard({ organization }: DashboardProps) {
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
   const [showQuickPayment, setShowQuickPayment] = useState(false);
   const [showNewProject, setShowNewProject] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   const [newProjectData, setNewProjectData] = useState({
     projet: '',
@@ -199,12 +201,12 @@ export function Dashboard({ organization }: DashboardProps) {
 
   // Body scroll lock when modal open
   useEffect(() => {
-    if (showNewProject || showTrancheWizard || showQuickPayment) {
+    if (showNewProject || showTrancheWizard || showQuickPayment || showExportModal) {
       const original = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => { document.body.style.overflow = original; };
     }
-  }, [showNewProject, showTrancheWizard, showQuickPayment]);
+  }, [showNewProject, showTrancheWizard, showQuickPayment, showExportModal]);
 
   // Focus trap + Escape close for New Project modal
   useEffect(() => {
@@ -655,14 +657,7 @@ export function Dashboard({ organization }: DashboardProps) {
               </button>
 
               <button
-                onClick={() => {
-                  setAlertModalConfig({
-                    title: 'En développement',
-                    message: 'Export en cours de développement',
-                    type: 'info'
-                  });
-                  setShowAlertModal(true);
-                }}
+                onClick={() => setShowExportModal(true)}
                 className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
               >
                 <div className="bg-slate-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -1378,6 +1373,19 @@ export function Dashboard({ organization }: DashboardProps) {
         title={alertModalConfig.title}
         message={alertModalConfig.message}
         type={alertModalConfig.type}
+      />
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        dashboardData={{
+          stats,
+          recentPayments,
+          upcomingCoupons,
+          alerts,
+          monthlyData,
+        }}
       />
     </div>
   );
