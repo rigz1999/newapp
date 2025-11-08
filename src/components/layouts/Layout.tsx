@@ -102,7 +102,7 @@ export function Layout({ organization }: LayoutProps) {
       );
 
       // Super admin is identified by email
-      const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL;
+      const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL || 'zrig.ayman@gmail.com';
       const superAdminIds = new Set(
         profilesData
           .filter((p: any) => p.email === superAdminEmail)
