@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, FileText, DollarSign, Calendar, AlertTriangle, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import ExcelJS from 'exceljs';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
