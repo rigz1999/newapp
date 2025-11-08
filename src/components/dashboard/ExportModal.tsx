@@ -6,9 +6,11 @@ import jsPDF from 'jspdf';
 // @ts-ignore
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { supabase } from '../../lib/supabase';
 
 type ExportPreset = 'complet' | 'paiements' | 'coupons' | 'alertes' | 'custom';
 type ExportFormat = 'excel' | 'pdf';
+type DateRangePreset = 'all' | 'this_month' | 'last_3_months' | 'last_6_months' | 'this_year' | 'custom';
 
 interface ExportOptions {
   includeStats: boolean;
@@ -21,11 +23,18 @@ interface ExportOptions {
   includeProjects: boolean;
   includeInvestorDetails: boolean;
   includeVisuals: boolean;
+  paymentsDateRange: DateRangePreset;
+  paymentsStartDate: string;
+  paymentsEndDate: string;
+  couponsDateRange: DateRangePreset;
+  couponsStartDate: string;
+  couponsEndDate: string;
 }
 
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  organizationId: string;
   dashboardData: {
     stats: {
       totalInvested: number;
@@ -81,6 +90,13 @@ const PRESET_CONFIGS: Record<ExportPreset, Partial<ExportOptions>> = {
   custom: {},
 };
 
+const getTodayString = () => new Date().toISOString().split('T')[0];
+const getMonthAgoString = (months: number) => {
+  const date = new Date();
+  date.setMonth(date.getMonth() - months);
+  return date.toISOString().split('T')[0];
+};
+
 const DEFAULT_OPTIONS: ExportOptions = {
   includeStats: true,
   includePayments: true,
@@ -92,9 +108,15 @@ const DEFAULT_OPTIONS: ExportOptions = {
   includeProjects: false,
   includeInvestorDetails: false,
   includeVisuals: false,
+  paymentsDateRange: 'last_3_months',
+  paymentsStartDate: getMonthAgoString(3),
+  paymentsEndDate: getTodayString(),
+  couponsDateRange: 'all',
+  couponsStartDate: '',
+  couponsEndDate: '',
 };
 
-export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps) {
+export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: ExportModalProps) {
   const [selectedPreset, setSelectedPreset] = useState<ExportPreset>('complet');
   const [format, setFormat] = useState<ExportFormat>('excel');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -130,6 +152,135 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
     setSelectedPreset(preset);
   };
 
+  const calculateDateRange = (preset: DateRangePreset): { start: string; end: string } => {
+    const today = new Date();
+    const end = today.toISOString().split('T')[0];
+
+    switch (preset) {
+      case 'this_month': {
+        const start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        return { start, end };
+      }
+      case 'last_3_months': {
+        const start = new Date(today);
+        start.setMonth(start.getMonth() - 3);
+        return { start: start.toISOString().split('T')[0], end };
+      }
+      case 'last_6_months': {
+        const start = new Date(today);
+        start.setMonth(start.getMonth() - 6);
+        return { start: start.toISOString().split('T')[0], end };
+      }
+      case 'this_year': {
+        const start = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+        return { start, end };
+      }
+      case 'all':
+        return { start: '', end: '' };
+      case 'custom':
+      default:
+        return { start: options.paymentsStartDate, end: options.paymentsEndDate };
+    }
+  };
+
+  const handleDateRangeChange = (type: 'payments' | 'coupons', preset: DateRangePreset) => {
+    const { start, end } = calculateDateRange(preset);
+
+    if (type === 'payments') {
+      setOptions({
+        ...options,
+        paymentsDateRange: preset,
+        paymentsStartDate: start,
+        paymentsEndDate: end,
+      });
+    } else {
+      setOptions({
+        ...options,
+        couponsDateRange: preset,
+        couponsStartDate: start,
+        couponsEndDate: end,
+      });
+    }
+  };
+
+  const fetchFilteredData = async () => {
+    let payments: any[] = [];
+    let coupons: any[] = [];
+
+    // Fetch filtered payments
+    if (options.includePayments) {
+      let query = supabase
+        .from('paiements')
+        .select(`
+          id, id_paiement, montant, date_paiement, statut,
+          tranche:tranches(tranche_name, projet_id)
+        `)
+        .order('date_paiement', { ascending: false });
+
+      if (options.paymentsStartDate && options.paymentsDateRange !== 'all') {
+        query = query.gte('date_paiement', options.paymentsStartDate);
+      }
+      if (options.paymentsEndDate && options.paymentsDateRange !== 'all') {
+        query = query.lte('date_paiement', options.paymentsEndDate);
+      }
+      if (options.paymentsLimit > 0) {
+        query = query.limit(options.paymentsLimit);
+      }
+
+      const { data, error } = await query;
+      if (!error && data) payments = data;
+    }
+
+    // Fetch filtered coupons
+    if (options.includeCoupons) {
+      let query = supabase
+        .from('souscriptions')
+        .select(`
+          id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
+          tranche:tranches(
+            tranche_name, projet_id,
+            projet:projets(projet)
+          )
+        `)
+        .order('prochaine_date_coupon', { ascending: true });
+
+      if (options.couponsStartDate && options.couponsDateRange !== 'all') {
+        query = query.gte('prochaine_date_coupon', options.couponsStartDate);
+      }
+      if (options.couponsEndDate && options.couponsDateRange !== 'all') {
+        query = query.lte('prochaine_date_coupon', options.couponsEndDate);
+      } else if (options.couponsDateRange === 'all') {
+        // For 'all', only get future coupons
+        query = query.gte('prochaine_date_coupon', getTodayString());
+      }
+
+      const { data, error } = await query;
+      if (!error && data) {
+        // Group by tranche and date
+        const grouped = data.reduce((acc: any[], coupon: any) => {
+          const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
+          const existing = acc.find((c) => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
+
+          if (existing) {
+            existing.investor_count += 1;
+            existing.coupon_brut = parseFloat(existing.coupon_brut) + parseFloat(coupon.coupon_brut);
+          } else {
+            acc.push({ ...coupon, investor_count: 1 });
+          }
+          return acc;
+        }, []);
+
+        if (options.couponsLimit > 0) {
+          coupons = grouped.slice(0, options.couponsLimit);
+        } else {
+          coupons = grouped;
+        }
+      }
+    }
+
+    return { payments, coupons };
+  };
+
   const handleExport = async () => {
     setExporting(true);
     try {
@@ -153,6 +304,8 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
   };
 
   const exportToExcel = async () => {
+    const { payments, coupons } = await fetchFilteredData();
+
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Dashboard';
     workbook.created = new Date();
@@ -183,7 +336,7 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
     }
 
     // Payments sheet
-    if (options.includePayments && dashboardData.recentPayments.length > 0) {
+    if (options.includePayments && payments.length > 0) {
       const paymentsSheet = workbook.addWorksheet('Paiements');
       paymentsSheet.columns = [
         { header: 'ID', key: 'id', width: 15 },
@@ -192,10 +345,6 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
         { header: 'Date', key: 'date', width: 15 },
         { header: 'Statut', key: 'statut', width: 15 },
       ];
-
-      const payments = options.paymentsLimit > 0
-        ? dashboardData.recentPayments.slice(0, options.paymentsLimit)
-        : dashboardData.recentPayments;
 
       payments.forEach((payment) => {
         paymentsSheet.addRow({
@@ -218,7 +367,7 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
     }
 
     // Coupons sheet
-    if (options.includeCoupons && dashboardData.upcomingCoupons.length > 0) {
+    if (options.includeCoupons && coupons.length > 0) {
       const couponsSheet = workbook.addWorksheet('Coupons à venir');
       couponsSheet.columns = [
         { header: 'Projet', key: 'projet', width: 25 },
@@ -228,10 +377,6 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
         { header: 'Investisseurs', key: 'investors', width: 15 },
         { header: 'Jours restants', key: 'days', width: 15 },
       ];
-
-      const coupons = options.couponsLimit > 0
-        ? dashboardData.upcomingCoupons.slice(0, options.couponsLimit)
-        : dashboardData.upcomingCoupons;
 
       coupons.forEach((coupon) => {
         const daysUntil = Math.ceil(
@@ -324,6 +469,8 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
   };
 
   const exportToPDF = async () => {
+    const { payments, coupons } = await fetchFilteredData();
+
     const doc = new jsPDF();
     let yPos = 20;
 
@@ -362,7 +509,7 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
     }
 
     // Payments
-    if (options.includePayments && dashboardData.recentPayments.length > 0) {
+    if (options.includePayments && payments.length > 0) {
       if (yPos > 250) {
         doc.addPage();
         yPos = 20;
@@ -370,12 +517,8 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
 
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('Derniers Paiements', 15, yPos);
+      doc.text('Paiements', 15, yPos);
       yPos += 10;
-
-      const payments = options.paymentsLimit > 0
-        ? dashboardData.recentPayments.slice(0, options.paymentsLimit)
-        : dashboardData.recentPayments;
 
       autoTable(doc, {
         startY: yPos,
@@ -395,7 +538,7 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
     }
 
     // Coupons
-    if (options.includeCoupons && dashboardData.upcomingCoupons.length > 0) {
+    if (options.includeCoupons && coupons.length > 0) {
       if (yPos > 250) {
         doc.addPage();
         yPos = 20;
@@ -405,10 +548,6 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
       doc.setFont('helvetica', 'bold');
       doc.text('Coupons à Venir', 15, yPos);
       yPos += 10;
-
-      const coupons = options.couponsLimit > 0
-        ? dashboardData.upcomingCoupons.slice(0, options.couponsLimit)
-        : dashboardData.upcomingCoupons;
 
       autoTable(doc, {
         startY: yPos,
@@ -617,20 +756,52 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
                     className="rounded"
                   />
                   <label htmlFor="payments" className="text-sm text-slate-900">
-                    Derniers paiements
+                    Paiements
                   </label>
                 </div>
                 {options.includePayments && (
-                  <select
-                    value={options.paymentsLimit}
-                    onChange={(e) => setOptions({ ...options, paymentsLimit: parseInt(e.target.value) })}
-                    className="ml-6 text-sm px-3 py-1 border border-slate-300 rounded"
-                  >
-                    <option value="5">5 derniers</option>
-                    <option value="10">10 derniers</option>
-                    <option value="20">20 derniers</option>
-                    <option value="0">Tous</option>
-                  </select>
+                  <div className="ml-6 space-y-2">
+                    <select
+                      value={options.paymentsDateRange}
+                      onChange={(e) => handleDateRangeChange('payments', e.target.value as DateRangePreset)}
+                      className="text-sm px-3 py-1 border border-slate-300 rounded w-full"
+                    >
+                      <option value="all">Toutes les périodes</option>
+                      <option value="this_month">Ce mois</option>
+                      <option value="last_3_months">3 derniers mois</option>
+                      <option value="last_6_months">6 derniers mois</option>
+                      <option value="this_year">Cette année</option>
+                      <option value="custom">Personnalisé</option>
+                    </select>
+                    {options.paymentsDateRange === 'custom' && (
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          value={options.paymentsStartDate}
+                          onChange={(e) => setOptions({ ...options, paymentsStartDate: e.target.value })}
+                          className="text-xs px-2 py-1 border border-slate-300 rounded flex-1"
+                          placeholder="Du"
+                        />
+                        <input
+                          type="date"
+                          value={options.paymentsEndDate}
+                          onChange={(e) => setOptions({ ...options, paymentsEndDate: e.target.value })}
+                          className="text-xs px-2 py-1 border border-slate-300 rounded flex-1"
+                          placeholder="Au"
+                        />
+                      </div>
+                    )}
+                    <select
+                      value={options.paymentsLimit}
+                      onChange={(e) => setOptions({ ...options, paymentsLimit: parseInt(e.target.value) })}
+                      className="text-sm px-3 py-1 border border-slate-300 rounded w-full"
+                    >
+                      <option value="0">Tous les paiements</option>
+                      <option value="10">10 derniers</option>
+                      <option value="20">20 derniers</option>
+                      <option value="50">50 derniers</option>
+                    </select>
+                  </div>
                 )}
               </div>
 
@@ -648,16 +819,48 @@ export function ExportModal({ isOpen, onClose, dashboardData }: ExportModalProps
                   </label>
                 </div>
                 {options.includeCoupons && (
-                  <select
-                    value={options.couponsLimit}
-                    onChange={(e) => setOptions({ ...options, couponsLimit: parseInt(e.target.value) })}
-                    className="ml-6 text-sm px-3 py-1 border border-slate-300 rounded"
-                  >
-                    <option value="5">5 prochains</option>
-                    <option value="10">10 prochains</option>
-                    <option value="20">20 prochains</option>
-                    <option value="0">Tous</option>
-                  </select>
+                  <div className="ml-6 space-y-2">
+                    <select
+                      value={options.couponsDateRange}
+                      onChange={(e) => handleDateRangeChange('coupons', e.target.value as DateRangePreset)}
+                      className="text-sm px-3 py-1 border border-slate-300 rounded w-full"
+                    >
+                      <option value="all">Tous les coupons à venir</option>
+                      <option value="this_month">Ce mois</option>
+                      <option value="last_3_months">3 prochains mois</option>
+                      <option value="last_6_months">6 prochains mois</option>
+                      <option value="this_year">Cette année</option>
+                      <option value="custom">Personnalisé</option>
+                    </select>
+                    {options.couponsDateRange === 'custom' && (
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          value={options.couponsStartDate}
+                          onChange={(e) => setOptions({ ...options, couponsStartDate: e.target.value })}
+                          className="text-xs px-2 py-1 border border-slate-300 rounded flex-1"
+                          placeholder="Du"
+                        />
+                        <input
+                          type="date"
+                          value={options.couponsEndDate}
+                          onChange={(e) => setOptions({ ...options, couponsEndDate: e.target.value })}
+                          className="text-xs px-2 py-1 border border-slate-300 rounded flex-1"
+                          placeholder="Au"
+                        />
+                      </div>
+                    )}
+                    <select
+                      value={options.couponsLimit}
+                      onChange={(e) => setOptions({ ...options, couponsLimit: parseInt(e.target.value) })}
+                      className="text-sm px-3 py-1 border border-slate-300 rounded w-full"
+                    >
+                      <option value="0">Tous les coupons</option>
+                      <option value="10">10 prochains</option>
+                      <option value="20">20 prochains</option>
+                      <option value="50">50 prochains</option>
+                    </select>
+                  </div>
                 )}
               </div>
 
