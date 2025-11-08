@@ -101,11 +101,12 @@ export function Layout({ organization }: LayoutProps) {
           .map((m: any) => m.user_id)
       );
 
-      // Super admins (they don't need org)
+      // Super admin is identified by email
+      const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL;
       const superAdminIds = new Set(
-        membershipsData
-          .filter((m: any) => m.role === 'super_admin' && !m.org_id)
-          .map((m: any) => m.user_id)
+        profilesData
+          .filter((p: any) => p.email === superAdminEmail)
+          .map((p: any) => p.id)
       );
 
       // Pending users = profiles without org and not super admin
