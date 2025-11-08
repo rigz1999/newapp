@@ -42,26 +42,27 @@ export function useAuth() {
 
   const checkAdminStatus = async (userId: string) => {
     try {
+      // Check if user is THE super admin (by email)
+      const { data: userData } = await supabase.auth.getUser();
+      const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL;
+      const isSuperAdminUser = userData?.user?.email === superAdminEmail;
+
       const { data: memberships } = await (supabase
         .from('memberships')
         .select('role, org_id')
         .eq('user_id', userId) as any);
-
-      const superAdmin = memberships?.some(
-        (m: any) => m.role === 'super_admin' && m.org_id === null
-      ) ?? false;
 
       // Check if user is an org admin (has admin role in an organization)
       const orgAdminMembership = memberships?.find(
         (m: any) => m.role === 'admin' && m.org_id !== null
       );
 
-      // Get user's role in their organization (not super_admin)
+      // Get user's role in their organization
       const orgMembership = memberships?.find((m: any) => m.org_id !== null);
 
-      setIsSuperAdmin(superAdmin);
+      setIsSuperAdmin(isSuperAdminUser);
       setIsOrgAdmin(!!orgAdminMembership);
-      setIsAdmin(superAdmin); // Keep for backward compatibility
+      setIsAdmin(isSuperAdminUser); // Keep for backward compatibility
       setUserRole(orgMembership?.role || null);
       setLoading(false);
     } catch {

@@ -4,7 +4,7 @@
 -- Purpose: Fix auth_rls_initplan warnings and consolidate multiple permissive policies
 --
 -- Issues addressed:
--- 1. Wrap auth.uid() and auth.jwt() in (select ...) to prevent re-evaluation per row
+-- 1. Wrap auth.uid() in (select ...) to prevent re-evaluation per row
 -- 2. Consolidate multiple permissive policies for better performance
 -- ============================================
 
@@ -12,25 +12,19 @@
 -- PROFILES TABLE
 -- ============================================
 
--- Drop existing policies
+-- Drop ALL existing policies (including ones that might exist in Supabase)
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Super admins can view all profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Users can view all profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 
--- Recreate with optimized policies (consolidated SELECT policies)
-CREATE POLICY "Users can view profiles"
+-- Recreate with optimized policies
+CREATE POLICY "Users can view all profiles"
   ON public.profiles
   FOR SELECT
   TO authenticated
-  USING (
-    -- Users can view their own profile
-    id = (select auth.uid())
-    OR
-    -- All authenticated users can view all profiles (needed for admin panel)
-    true
-  );
+  USING (true);
 
 CREATE POLICY "Users can update own profile"
   ON public.profiles
@@ -49,13 +43,11 @@ CREATE POLICY "Users can insert own profile"
 -- USER_REMINDER_SETTINGS TABLE
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their own reminder settings" ON user_reminder_settings;
 DROP POLICY IF EXISTS "Users can insert their own reminder settings" ON user_reminder_settings;
 DROP POLICY IF EXISTS "Users can update their own reminder settings" ON user_reminder_settings;
 DROP POLICY IF EXISTS "Users can delete their own reminder settings" ON user_reminder_settings;
 
--- Recreate with optimized policies
 CREATE POLICY "Users can view their own reminder settings"
   ON user_reminder_settings
   FOR SELECT
@@ -81,7 +73,6 @@ CREATE POLICY "Users can delete their own reminder settings"
 -- ORGANIZATIONS TABLE
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view organizations they are members of" ON organizations;
 DROP POLICY IF EXISTS "Users can view their organizations" ON organizations;
 DROP POLICY IF EXISTS "Super admins can manage all organizations" ON organizations;
@@ -90,13 +81,12 @@ DROP POLICY IF EXISTS "Users can create their own organization" ON organizations
 DROP POLICY IF EXISTS "Organization owners can update their organizations" ON organizations;
 DROP POLICY IF EXISTS "Organization owners can delete their organizations" ON organizations;
 
--- Recreate with optimized policies (consolidated SELECT, INSERT policies)
-CREATE POLICY "Users can view their organizations"
+-- Recreate with optimized policies
+CREATE POLICY "Users can view organizations they are members of"
   ON organizations
   FOR SELECT
   TO authenticated
   USING (
-    -- User is member of the organization
     id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
@@ -125,7 +115,6 @@ CREATE POLICY "Organization owners can delete their organizations"
 -- MEMBERSHIPS TABLE
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their memberships" ON memberships;
 DROP POLICY IF EXISTS "Users can view their own memberships" ON memberships;
 DROP POLICY IF EXISTS "Super admins can manage all memberships" ON memberships;
@@ -134,15 +123,12 @@ DROP POLICY IF EXISTS "Users can create their own membership" ON memberships;
 DROP POLICY IF EXISTS "Organization owners can update memberships" ON memberships;
 DROP POLICY IF EXISTS "Organization owners can delete memberships" ON memberships;
 
--- Recreate with optimized policies (consolidated)
+-- Recreate with optimized policies
 CREATE POLICY "Users can view their memberships"
   ON memberships
   FOR SELECT
   TO authenticated
-  USING (
-    -- User can view their own memberships
-    user_id = (select auth.uid())
-  );
+  USING (user_id = (select auth.uid()));
 
 CREATE POLICY "Organization owners can create memberships"
   ON memberships
@@ -181,15 +167,13 @@ CREATE POLICY "Organization owners can delete memberships"
 
 -- ============================================
 -- INVITATIONS TABLE
--- Fix auth_rls_initplan issues
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view org invitations" ON invitations;
 DROP POLICY IF EXISTS "Admins can create invitations" ON invitations;
 DROP POLICY IF EXISTS "Admins can delete invitations" ON invitations;
+DROP POLICY IF EXISTS "Admins can update invitations" ON invitations;
 
--- Recreate with optimized policies
 CREATE POLICY "Users can view org invitations"
   ON invitations
   FOR SELECT
@@ -224,14 +208,15 @@ CREATE POLICY "Admins can delete invitations"
 
 -- ============================================
 -- PROJETS TABLE
--- Fix auth_rls_initplan and consolidate multiple permissive policies
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their org projets" ON projets;
 DROP POLICY IF EXISTS "Users can manage their org projets" ON projets;
+DROP POLICY IF EXISTS "Users can insert projets" ON projets;
+DROP POLICY IF EXISTS "Users can update projets" ON projets;
+DROP POLICY IF EXISTS "Users can delete projets" ON projets;
 
--- Recreate consolidated policy
+-- Single consolidated SELECT policy
 CREATE POLICY "Users can view their org projets"
   ON projets
   FOR SELECT
@@ -242,6 +227,7 @@ CREATE POLICY "Users can view their org projets"
     )
   );
 
+-- Single consolidated policy for INSERT/UPDATE/DELETE
 CREATE POLICY "Users can manage their org projets"
   ON projets
   FOR ALL
@@ -259,14 +245,14 @@ CREATE POLICY "Users can manage their org projets"
 
 -- ============================================
 -- INVESTISSEURS TABLE
--- Fix auth_rls_initplan and consolidate multiple permissive policies
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their org investisseurs" ON investisseurs;
 DROP POLICY IF EXISTS "Users can manage their org investisseurs" ON investisseurs;
+DROP POLICY IF EXISTS "Users can insert investisseurs" ON investisseurs;
+DROP POLICY IF EXISTS "Users can update investisseurs" ON investisseurs;
+DROP POLICY IF EXISTS "Users can delete investisseurs" ON investisseurs;
 
--- Recreate consolidated policy
 CREATE POLICY "Users can view their org investisseurs"
   ON investisseurs
   FOR SELECT
@@ -294,14 +280,14 @@ CREATE POLICY "Users can manage their org investisseurs"
 
 -- ============================================
 -- TRANCHES TABLE
--- Fix auth_rls_initplan and consolidate multiple permissive policies
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their org tranches" ON tranches;
 DROP POLICY IF EXISTS "Users can manage their org tranches" ON tranches;
+DROP POLICY IF EXISTS "Users can insert tranches" ON tranches;
+DROP POLICY IF EXISTS "Users can update tranches" ON tranches;
+DROP POLICY IF EXISTS "Users can delete tranches" ON tranches;
 
--- Recreate consolidated policy
 CREATE POLICY "Users can view their org tranches"
   ON tranches
   FOR SELECT
@@ -335,14 +321,14 @@ CREATE POLICY "Users can manage their org tranches"
 
 -- ============================================
 -- SOUSCRIPTIONS TABLE
--- Fix auth_rls_initplan and consolidate multiple permissive policies
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their org souscriptions" ON souscriptions;
 DROP POLICY IF EXISTS "Users can manage their org souscriptions" ON souscriptions;
+DROP POLICY IF EXISTS "Users can insert souscriptions" ON souscriptions;
+DROP POLICY IF EXISTS "Users can update souscriptions" ON souscriptions;
+DROP POLICY IF EXISTS "Users can delete souscriptions" ON souscriptions;
 
--- Recreate consolidated policy
 CREATE POLICY "Users can view their org souscriptions"
   ON souscriptions
   FOR SELECT
@@ -376,14 +362,14 @@ CREATE POLICY "Users can manage their org souscriptions"
 
 -- ============================================
 -- COUPONS_ECHEANCES TABLE
--- Fix auth_rls_initplan and consolidate multiple permissive policies
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their org coupons" ON coupons_echeances;
 DROP POLICY IF EXISTS "Users can manage their org coupons" ON coupons_echeances;
+DROP POLICY IF EXISTS "Users can insert coupons" ON coupons_echeances;
+DROP POLICY IF EXISTS "Users can update coupons" ON coupons_echeances;
+DROP POLICY IF EXISTS "Users can delete coupons" ON coupons_echeances;
 
--- Recreate consolidated policy
 CREATE POLICY "Users can view their org coupons"
   ON coupons_echeances
   FOR SELECT
@@ -420,14 +406,14 @@ CREATE POLICY "Users can manage their org coupons"
 
 -- ============================================
 -- PAIEMENTS TABLE
--- Fix auth_rls_initplan and consolidate multiple permissive policies
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view their org paiements" ON paiements;
 DROP POLICY IF EXISTS "Users can manage their org paiements" ON paiements;
+DROP POLICY IF EXISTS "Users can insert paiements" ON paiements;
+DROP POLICY IF EXISTS "Users can update paiements" ON paiements;
+DROP POLICY IF EXISTS "Users can delete paiements" ON paiements;
 
--- Recreate consolidated policy
 CREATE POLICY "Users can view their org paiements"
   ON paiements
   FOR SELECT
@@ -467,15 +453,15 @@ CREATE POLICY "Users can manage their org paiements"
 
 -- ============================================
 -- PAYMENT_PROOFS TABLE
--- Fix auth_rls_initplan and consolidate multiple permissive policies
 -- ============================================
 
--- Drop existing policies
 DROP POLICY IF EXISTS "Users can view payment proofs" ON payment_proofs;
 DROP POLICY IF EXISTS "Users can manage payment proofs" ON payment_proofs;
 DROP POLICY IF EXISTS "Allow all operations on payment_proofs" ON payment_proofs;
+DROP POLICY IF EXISTS "Users can insert payment_proofs" ON payment_proofs;
+DROP POLICY IF EXISTS "Users can update payment_proofs" ON payment_proofs;
+DROP POLICY IF EXISTS "Users can delete payment_proofs" ON payment_proofs;
 
--- Recreate consolidated policy
 CREATE POLICY "Users can view payment proofs"
   ON payment_proofs
   FOR SELECT
@@ -516,14 +502,12 @@ CREATE POLICY "Users can manage payment proofs"
     )
   );
 
--- ============================================
 -- Add comments for documentation
--- ============================================
-COMMENT ON POLICY "Users can view profiles" ON public.profiles IS
-  'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation';
+COMMENT ON POLICY "Users can view all profiles" ON public.profiles IS
+  'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation. Allows all authenticated users to view profiles for admin functionality.';
 
-COMMENT ON POLICY "Users can view their organizations" ON organizations IS
-  'Optimized: Uses (select auth.uid()) and consolidated multiple SELECT policies';
+COMMENT ON POLICY "Users can view organizations they are members of" ON organizations IS
+  'Optimized: Uses (select auth.uid()) and consolidates org viewing policies';
 
 COMMENT ON POLICY "Users can view their memberships" ON memberships IS
-  'Optimized: Uses (select auth.uid()) and consolidated multiple SELECT policies';
+  'Optimized: Uses (select auth.uid()) and consolidates membership viewing policies';
