@@ -8,6 +8,11 @@ import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { supabase } from '../../lib/supabase';
 
+// Format currency for PDF (replaces non-breaking spaces with regular spaces)
+const formatCurrencyForPDF = (amount: number): string => {
+  return formatCurrency(amount).replace(/\u00A0/g, ' ');
+};
+
 type ExportPreset = 'complet' | 'paiements' | 'coupons' | 'alertes' | 'custom';
 type ExportFormat = 'excel' | 'pdf';
 type DateRangePreset = 'all' | 'this_month' | 'last_3_months' | 'last_6_months' | 'this_year' | 'custom';
@@ -496,8 +501,8 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         startY: yPos,
         head: [['Métrique', 'Valeur']],
         body: [
-          ['Montant total investi', formatCurrency(dashboardData.stats.totalInvested)],
-          ['Coupons payés ce mois', formatCurrency(dashboardData.stats.couponsPaidThisMonth)],
+          ['Montant total investi', formatCurrencyForPDF(dashboardData.stats.totalInvested)],
+          ['Coupons payés ce mois', formatCurrencyForPDF(dashboardData.stats.couponsPaidThisMonth)],
           ['Projets actifs', dashboardData.stats.activeProjects.toString()],
           ['Coupons à venir (90j)', dashboardData.stats.upcomingCoupons.toString()],
         ],
@@ -526,7 +531,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         body: payments.map((p) => [
           p.id_paiement || p.id,
           p.tranche?.tranche_name || 'N/A',
-          formatCurrency(p.montant),
+          formatCurrencyForPDF(p.montant),
           formatDate(p.date_paiement),
           p.statut,
         ]),
@@ -559,7 +564,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           return [
             c.tranche?.projet?.projet || 'N/A',
             c.tranche?.tranche_name || 'N/A',
-            formatCurrency(parseFloat(c.coupon_brut.toString())),
+            formatCurrencyForPDF(parseFloat(c.coupon_brut.toString())),
             formatDate(c.prochaine_date_coupon),
             daysUntil.toString(),
           ];
