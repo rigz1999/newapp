@@ -1379,6 +1379,7 @@ export function Dashboard({ organization }: DashboardProps) {
       <ExportModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
+        organizationId={organization.id}
         dashboardData={{
           stats,
           recentPayments,
