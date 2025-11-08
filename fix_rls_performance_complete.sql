@@ -1,19 +1,18 @@
 -- ============================================
--- Fix ALL RLS Performance Issues
+-- Fix ALL RLS Performance Issues WITH SUPER ADMIN
 -- Created: 2025-11-08
--- Purpose: Fix auth_rls_initplan and multiple_permissive_policies warnings
+-- Super Admin: zrig.ayman@gmail.com
 --
 -- This migration:
 -- 1. Wraps auth.uid() in (select ...) to prevent per-row re-evaluation
 -- 2. Consolidates duplicate permissive policies
--- 3. Corrected based on actual schema (role is 'admin'/'member', not 'owner')
+-- 3. PRESERVES super admin access for zrig.ayman@gmail.com
 -- ============================================
 
 -- ============================================
 -- MEMBERSHIPS TABLE
 -- ============================================
 
--- Drop ALL existing policies
 DROP POLICY IF EXISTS "Admins can create memberships" ON memberships;
 DROP POLICY IF EXISTS "Admins can update memberships" ON memberships;
 DROP POLICY IF EXISTS "Admins can delete memberships" ON memberships;
@@ -23,18 +22,23 @@ DROP POLICY IF EXISTS "Organization owners can create memberships" ON membership
 DROP POLICY IF EXISTS "Organization owners can update memberships" ON memberships;
 DROP POLICY IF EXISTS "Organization owners can delete memberships" ON memberships;
 
--- Recreate with optimized policies
 CREATE POLICY "Users can view memberships"
   ON memberships
   FOR SELECT
   TO authenticated
-  USING (user_id = (select auth.uid()));
+  USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
+    user_id = (select auth.uid())
+  );
 
 CREATE POLICY "Admins can create memberships"
   ON memberships
   FOR INSERT
   TO authenticated
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT id FROM organizations WHERE owner_id = (select auth.uid())
     )
@@ -51,6 +55,8 @@ CREATE POLICY "Admins can update memberships"
   FOR UPDATE
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT id FROM organizations WHERE owner_id = (select auth.uid())
     )
@@ -62,6 +68,8 @@ CREATE POLICY "Admins can update memberships"
     )
   )
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT id FROM organizations WHERE owner_id = (select auth.uid())
     )
@@ -78,6 +86,8 @@ CREATE POLICY "Admins can delete memberships"
   FOR DELETE
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT id FROM organizations WHERE owner_id = (select auth.uid())
     )
@@ -105,6 +115,8 @@ CREATE POLICY "Users can view their organizations"
   FOR SELECT
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
@@ -121,6 +133,8 @@ CREATE POLICY "Admins can update organizations"
   FOR UPDATE
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     owner_id = (select auth.uid())
     OR
     id IN (
@@ -130,6 +144,8 @@ CREATE POLICY "Admins can update organizations"
     )
   )
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     owner_id = (select auth.uid())
     OR
     id IN (
@@ -143,38 +159,45 @@ CREATE POLICY "Organization owners can delete their organizations"
   ON organizations
   FOR DELETE
   TO authenticated
-  USING (owner_id = (select auth.uid()));
+  USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
+    owner_id = (select auth.uid())
+  );
 
 -- ============================================
 -- PROJETS TABLE
--- Consolidate view + manage into single SELECT policy
 -- ============================================
 
 DROP POLICY IF EXISTS "Users can view their org projets" ON projets;
 DROP POLICY IF EXISTS "Users can manage their org projets" ON projets;
 
--- Single SELECT policy (consolidates duplicate permissive policies)
 CREATE POLICY "Users can view their org projets"
   ON projets
   FOR SELECT
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
   );
 
--- Separate policy for modifications
 CREATE POLICY "Users can manage their org projets"
   ON projets
   FOR ALL
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
   )
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
@@ -192,6 +215,8 @@ CREATE POLICY "Users can view their org investisseurs"
   FOR SELECT
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
@@ -202,11 +227,15 @@ CREATE POLICY "Users can manage their org investisseurs"
   FOR ALL
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
   )
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
@@ -224,6 +253,8 @@ CREATE POLICY "Users can view their org tranches"
   FOR SELECT
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     projet_id IN (
       SELECT p.id FROM projets p
       JOIN memberships m ON m.org_id = p.org_id
@@ -236,6 +267,8 @@ CREATE POLICY "Users can manage their org tranches"
   FOR ALL
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     projet_id IN (
       SELECT p.id FROM projets p
       JOIN memberships m ON m.org_id = p.org_id
@@ -243,6 +276,8 @@ CREATE POLICY "Users can manage their org tranches"
     )
   )
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     projet_id IN (
       SELECT p.id FROM projets p
       JOIN memberships m ON m.org_id = p.org_id
@@ -262,6 +297,8 @@ CREATE POLICY "Users can view their org souscriptions"
   FOR SELECT
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     projet_id IN (
       SELECT p.id FROM projets p
       JOIN memberships m ON m.org_id = p.org_id
@@ -274,6 +311,8 @@ CREATE POLICY "Users can manage their org souscriptions"
   FOR ALL
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     projet_id IN (
       SELECT p.id FROM projets p
       JOIN memberships m ON m.org_id = p.org_id
@@ -281,6 +320,8 @@ CREATE POLICY "Users can manage their org souscriptions"
     )
   )
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     projet_id IN (
       SELECT p.id FROM projets p
       JOIN memberships m ON m.org_id = p.org_id
@@ -300,6 +341,8 @@ CREATE POLICY "Users can view their org coupons"
   FOR SELECT
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     souscription_id IN (
       SELECT s.id FROM souscriptions s
       JOIN projets p ON p.id = s.projet_id
@@ -313,6 +356,8 @@ CREATE POLICY "Users can manage their org coupons"
   FOR ALL
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     souscription_id IN (
       SELECT s.id FROM souscriptions s
       JOIN projets p ON p.id = s.projet_id
@@ -321,6 +366,8 @@ CREATE POLICY "Users can manage their org coupons"
     )
   )
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     souscription_id IN (
       SELECT s.id FROM souscriptions s
       JOIN projets p ON p.id = s.projet_id
@@ -331,7 +378,6 @@ CREATE POLICY "Users can manage their org coupons"
 
 -- ============================================
 -- PAIEMENTS TABLE
--- Note: paiements has org_id directly, so we can use that
 -- ============================================
 
 DROP POLICY IF EXISTS "Users can view their org paiements" ON paiements;
@@ -342,6 +388,8 @@ CREATE POLICY "Users can view their org paiements"
   FOR SELECT
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
@@ -352,11 +400,15 @@ CREATE POLICY "Users can manage their org paiements"
   FOR ALL
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
   )
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT org_id FROM memberships WHERE user_id = (select auth.uid())
     )
@@ -374,6 +426,8 @@ CREATE POLICY "Users can view payment proofs"
   FOR SELECT
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     paiement_id IN (
       SELECT pa.id FROM paiements pa
       JOIN memberships m ON m.org_id = pa.org_id
@@ -386,6 +440,8 @@ CREATE POLICY "Users can manage payment proofs"
   FOR ALL
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     paiement_id IN (
       SELECT pa.id FROM paiements pa
       JOIN memberships m ON m.org_id = pa.org_id
@@ -393,6 +449,8 @@ CREATE POLICY "Users can manage payment proofs"
     )
   )
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     paiement_id IN (
       SELECT pa.id FROM paiements pa
       JOIN memberships m ON m.org_id = pa.org_id
@@ -402,20 +460,19 @@ CREATE POLICY "Users can manage payment proofs"
 
 -- ============================================
 -- INVITATIONS TABLE
--- Consolidate super admin + org owner policies
--- Note: role is 'admin' or 'member', not 'owner'
--- Check organizations.owner_id for ownership
 -- ============================================
 
 DROP POLICY IF EXISTS "Org owners can manage their invitations" ON invitations;
 DROP POLICY IF EXISTS "Super admin can manage all invitations" ON invitations;
+DROP POLICY IF EXISTS "Admins can manage invitations" ON invitations;
 
--- Single consolidated policy for all operations
 CREATE POLICY "Admins can manage invitations"
   ON invitations
   FOR ALL
   TO authenticated
   USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT id FROM organizations WHERE owner_id = (select auth.uid())
     )
@@ -427,6 +484,8 @@ CREATE POLICY "Admins can manage invitations"
     )
   )
   WITH CHECK (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
     org_id IN (
       SELECT id FROM organizations WHERE owner_id = (select auth.uid())
     )
@@ -440,7 +499,6 @@ CREATE POLICY "Admins can manage invitations"
 
 -- ============================================
 -- USER_REMINDER_SETTINGS TABLE
--- Note: user_id references auth.users(id) directly
 -- ============================================
 
 DROP POLICY IF EXISTS "Users can view their own reminder settings" ON user_reminder_settings;
@@ -452,7 +510,11 @@ CREATE POLICY "Users can view their own reminder settings"
   ON user_reminder_settings
   FOR SELECT
   TO authenticated
-  USING (user_id = (select auth.uid()));
+  USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
+    user_id = (select auth.uid())
+  );
 
 CREATE POLICY "Users can insert their own reminder settings"
   ON user_reminder_settings
@@ -464,14 +526,22 @@ CREATE POLICY "Users can update their own reminder settings"
   ON user_reminder_settings
   FOR UPDATE
   TO authenticated
-  USING (user_id = (select auth.uid()))
+  USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
+    user_id = (select auth.uid())
+  )
   WITH CHECK (user_id = (select auth.uid()));
 
 CREATE POLICY "Users can delete their own reminder settings"
   ON user_reminder_settings
   FOR DELETE
   TO authenticated
-  USING (user_id = (select auth.uid()));
+  USING (
+    (SELECT id FROM auth.users WHERE email = 'zrig.ayman@gmail.com') = (select auth.uid())
+    OR
+    user_id = (select auth.uid())
+  );
 
 -- ============================================
 -- PROFILES TABLE
@@ -505,19 +575,16 @@ CREATE POLICY "Users can insert own profile"
 -- ============================================
 
 COMMENT ON POLICY "Users can view memberships" ON memberships IS
-  'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation';
-
-COMMENT ON POLICY "Admins can create memberships" ON memberships IS
-  'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation. Checks owner_id OR admin role.';
+  'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation. Super admin zrig.ayman@gmail.com has full access.';
 
 COMMENT ON POLICY "Users can view their organizations" ON organizations IS
-  'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation';
+  'Optimized: Uses (select auth.uid()) to prevent per-row re-evaluation. Super admin has full access.';
 
 COMMENT ON POLICY "Users can view their org projets" ON projets IS
-  'Optimized: Consolidated duplicate SELECT policies';
+  'Optimized: Consolidated duplicate SELECT policies. Super admin has full access.';
 
 COMMENT ON POLICY "Admins can manage invitations" ON invitations IS
-  'Optimized: Consolidated policies. Checks owner_id OR admin role.';
+  'Optimized: Consolidated policies. Checks owner_id OR admin role. Super admin has full access.';
 
 COMMENT ON POLICY "Users can view their org paiements" ON paiements IS
-  'Optimized: Simplified using org_id column directly';
+  'Optimized: Simplified using org_id column directly. Super admin has full access.';
