@@ -16,7 +16,7 @@ ALTER FUNCTION public.update_user_reminder_settings_updated_at() SET search_path
 ALTER FUNCTION public.recalculate_coupons_on_date_emission_change() SET search_path = public;
 ALTER FUNCTION public.handle_new_user() SET search_path = public;
 ALTER FUNCTION public.set_date_emission() SET search_path = public;
-ALTER FUNCTION public.generate_coupon_schedule(uuid, numeric, text, date, date, integer) SET search_path = public;
+ALTER FUNCTION public.generate_coupon_schedule(p_souscription_id uuid, p_date_emission date, p_date_fin date, p_periodicite text, p_montant_coupon numeric) SET search_path = public;
 ALTER FUNCTION public.update_coupon_statut() SET search_path = public;
 ALTER FUNCTION public.mark_coupon_paid(uuid) SET search_path = public;
 ALTER FUNCTION public.generate_investisseur_id() SET search_path = public;
