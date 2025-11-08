@@ -86,7 +86,7 @@ export function Layout({ organization }: LayoutProps) {
     // Fetch profiles
     const { data: profilesData } = await supabase
       .from('profiles')
-      .select('id') as any;
+      .select('id, email') as any;
 
     // Fetch memberships with org_id (users who have an organization)
     const { data: membershipsData } = await supabase
