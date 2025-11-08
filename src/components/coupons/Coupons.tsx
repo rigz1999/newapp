@@ -26,6 +26,9 @@ import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
 import { DateRangePicker } from '../filters/DateRangePicker';
+import PaymentRemindersCard from './PaymentRemindersCard';
+import PaymentRemindersModal from './PaymentRemindersModal';
+import { useAuth } from '../../hooks/useAuth';
 
 interface Coupon {
   id: string;
@@ -73,6 +76,7 @@ const formatDate = (dateString: string) => {
 };
 
 export function Coupons({ organization: _organization }: CouponsProps) {
+  const { user } = useAuth();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -89,6 +93,13 @@ export function Coupons({ organization: _organization }: CouponsProps) {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+  const [showRemindersModal, setShowRemindersModal] = useState(false);
+
+  // Payment reminders state
+  const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [remind7Days, setRemind7Days] = useState(false);
+  const [remind14Days, setRemind14Days] = useState(false);
+  const [remind30Days, setRemind30Days] = useState(false);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,6 +108,12 @@ export function Coupons({ organization: _organization }: CouponsProps) {
   useEffect(() => {
     fetchCoupons();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchReminderSettings();
+    }
+  }, [user]);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -174,6 +191,27 @@ export function Coupons({ organization: _organization }: CouponsProps) {
       // Error is silently ignored
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReminderSettings = async () => {
+    if (!user) return;
+
+    try {
+      const { data: reminderSettings, error } = await supabase
+        .from('user_reminder_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single() as any;
+
+      if (!error && reminderSettings) {
+        setRemindersEnabled(reminderSettings.enabled);
+        setRemind7Days(reminderSettings.remind_7_days);
+        setRemind14Days(reminderSettings.remind_14_days);
+        setRemind30Days(reminderSettings.remind_30_days);
+      }
+    } catch {
+      // Error is silently ignored
     }
   };
 
@@ -443,7 +481,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
       {/* ✅ SUPPRIMÉ : Sélecteur de période KPI (plus nécessaire) */}
 
       {/* Stats Cards - ✅ MODIFIÉ : Affiche TOUS les coupons */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-2">
             <Clock className="w-8 h-8 text-yellow-600" />
@@ -477,7 +515,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enRetard.total)}</h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enRetard.count} coupons</p>
-          
+
           {/* ✅ AJOUT : Bouton pour afficher les retards */}
           {stats.enRetard.count > 0 && (
             <button
@@ -491,6 +529,15 @@ export function Coupons({ organization: _organization }: CouponsProps) {
             </button>
           )}
         </div>
+
+        {/* Payment Reminders Card */}
+        <PaymentRemindersCard
+          enabled={remindersEnabled}
+          remind7Days={remind7Days}
+          remind14Days={remind14Days}
+          remind30Days={remind30Days}
+          onClick={() => setShowRemindersModal(true)}
+        />
       </div>
 
       {/* Filters */}
@@ -887,6 +934,13 @@ export function Coupons({ organization: _organization }: CouponsProps) {
           }}
         />
       )}
+
+      {/* Payment Reminders Modal */}
+      <PaymentRemindersModal
+        isOpen={showRemindersModal}
+        onClose={() => setShowRemindersModal(false)}
+        onSettingsUpdated={fetchReminderSettings}
+      />
     </div>
   );
 }
