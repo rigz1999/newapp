@@ -16,7 +16,9 @@ export function Login() {
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [fullName, setFullName] = useState('');
-  
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+
   // Check if user is logged in and has access
   const [user, setUser] = useState<any>(null);
   const [hasAccess, setHasAccess] = useState(false);
@@ -113,6 +115,24 @@ export function Login() {
     setLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) {
+      setError(formatErrorMessage(error));
+      setLoading(false);
+    } else {
+      setResetEmailSent(true);
+      setLoading(false);
+    }
+  };
+
   const handleRefresh = () => {
     if (user) {
       checkUserAccess(user.id);
@@ -191,6 +211,95 @@ export function Login() {
     );
   }
 
+  // Forgot password form
+  if (isForgotPassword) {
+    return (
+      <div className="min-h-screen bg-finixar-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <div className="flex items-center justify-center mb-8">
+              <div className="bg-finixar-deep-blue p-3 rounded-xl">
+                <LogIn className="w-8 h-8 text-white" />
+              </div>
+            </div>
+
+            <h1 className="text-2xl font-bold text-center text-finixar-text mb-2">
+              Mot de passe oublié
+            </h1>
+            <p className="text-center text-slate-600 mb-8">
+              {resetEmailSent
+                ? "Un email de réinitialisation a été envoyé"
+                : "Entrez votre email pour réinitialiser votre mot de passe"}
+            </p>
+
+            {resetEmailSent ? (
+              <div>
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-6">
+                  Un email avec un lien de réinitialisation a été envoyé à <strong>{email}</strong>. Vérifiez votre boîte de réception.
+                </div>
+                <button
+                  onClick={() => {
+                    setIsForgotPassword(false);
+                    setResetEmailSent(false);
+                    setEmail('');
+                    setError('');
+                  }}
+                  className="w-full bg-finixar-action-process text-white py-3 rounded-lg font-medium hover:bg-finixar-action-process-hover transition-colors"
+                >
+                  Retour à la connexion
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-6">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
+                    Adresse email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent transition-all"
+                    placeholder="votre@email.fr"
+                  />
+                </div>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-finixar-action-process text-white py-3 rounded-lg font-medium hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Envoi...' : 'Envoyer le lien de réinitialisation'}
+                </button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(false);
+                      setError('');
+                    }}
+                    className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors"
+                  >
+                    Retour à la connexion
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Normal login/signup form
   return (
     <div className="min-h-screen bg-finixar-background flex items-center justify-center p-4">
@@ -247,9 +356,20 @@ export function Login() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
-                Mot de passe
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+                  Mot de passe
+                </label>
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(true)}
+                    className="text-xs text-finixar-brand-blue hover:underline transition-colors"
+                  >
+                    Mot de passe oublié?
+                  </button>
+                )}
+              </div>
               <input
                 id="password"
                 type="password"
