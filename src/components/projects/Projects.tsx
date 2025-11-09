@@ -269,10 +269,15 @@ export function Projects({ organization }: ProjectsProps) {
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Tous les Projets</h2>
-          <p className="text-slate-600 mt-1">{projects.length} projet{projects.length > 1 ? 's' : ''}</p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-100 rounded-xl">
+            <FolderOpen className="w-8 h-8 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Tous les Projets</h1>
+            <p className="text-slate-600">{projects.length} projet{projects.length > 1 ? 's' : ''}</p>
+          </div>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}

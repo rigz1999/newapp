@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Sidebar } from '../layouts/Sidebar';
-import { ArrowLeft, Upload, Download, Layers, AlertCircle, X } from 'lucide-react';
+import { ArrowLeft, Upload, Download, Layers, AlertCircle, X, FileText } from 'lucide-react';
 import { FileUpload } from '../investors/FileUpload';
 
 interface Tranche {
@@ -209,8 +209,15 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
             <span>Retour aux projets</span>
           </button>
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-slate-900">Tranches</h1>
-            <p className="text-slate-600 mt-1">{projectName}</p>
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <FileText className="w-8 h-8 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">Tranches</h1>
+                <p className="text-slate-600">{projectName}</p>
+              </div>
+            </div>
           </div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-2xl font-bold text-slate-900">Gérer les tranches</h2>

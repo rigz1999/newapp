@@ -645,7 +645,7 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowQuickPayment(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all group border border-purple-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
               >
                 <div className="bg-finixar-action-process p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <DollarSign className="w-5 h-5 text-white" />

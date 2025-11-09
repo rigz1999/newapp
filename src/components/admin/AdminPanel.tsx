@@ -445,8 +445,8 @@ export default function AdminPanel() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-slate-900 rounded-xl">
-              <Shield className="w-8 h-8 text-white" />
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <Shield className="w-8 h-8 text-blue-600" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-slate-900">Admin Panel</h1>

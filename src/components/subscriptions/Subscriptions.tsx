@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2, Filter, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
@@ -404,10 +404,16 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-2xl font-bold text-slate-900">
-            Toutes les souscriptions ({filteredSubscriptions.length})
-          </h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <FileText className="w-8 h-8 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Toutes les souscriptions</h1>
+              <p className="text-slate-600">{filteredSubscriptions.length} souscription{filteredSubscriptions.length > 1 ? 's' : ''}</p>
+            </div>
+          </div>
           <button
             onClick={exportToCSV}
             disabled={filteredSubscriptions.length === 0}
