@@ -565,28 +565,49 @@ export default function AdminPanel() {
       </div>
 
       {/* Invitations Section */}
-      {invitations.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+        <button
+          onClick={() => toggleSection('invitations')}
+          className="w-full p-6 bg-blue-50 flex items-center justify-between hover:bg-blue-100 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            {expandedSections.has('invitations') ? (
+              <ChevronUp className="w-5 h-5 text-slate-600" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-slate-600" />
+            )}
+            <Send className="w-6 h-6 text-blue-600" />
+            <h2 className="text-xl font-bold text-slate-900">
+              Invitations en attente ({invitations.length})
+            </h2>
+          </div>
           <button
-            onClick={() => toggleSection('invitations')}
-            className="w-full p-6 bg-blue-50 flex items-center justify-between hover:bg-blue-100 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              fetchInvitations();
+            }}
+            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+            title="Rafraîchir"
           >
-            <div className="flex items-center gap-2">
-              {expandedSections.has('invitations') ? (
-                <ChevronUp className="w-5 h-5 text-slate-600" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-slate-600" />
-              )}
-              <Send className="w-6 h-6 text-blue-600" />
-              <h2 className="text-xl font-bold text-slate-900">
-                Invitations en attente ({invitations.length})
-              </h2>
-            </div>
+            <RefreshCw className="w-4 h-4" />
           </button>
+        </button>
 
-          {expandedSections.has('invitations') && (
-            <div className="divide-y divide-slate-200">
-              {invitations.map(invitation => (
+        {expandedSections.has('invitations') && (
+          <div className="divide-y divide-slate-200">
+            {invitations.length === 0 ? (
+              <div className="p-12 text-center">
+                <Send className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-600 mb-2">Aucune invitation en attente</p>
+                <button
+                  onClick={() => setShowInviteModal(true)}
+                  className="text-blue-900 hover:underline text-sm"
+                >
+                  Inviter un membre
+                </button>
+              </div>
+            ) : (
+              invitations.map(invitation => (
                 <div key={invitation.id} className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -620,11 +641,11 @@ export default function AdminPanel() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+              ))
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Pending Users Section */}
       {pendingUsers.length > 0 && (
