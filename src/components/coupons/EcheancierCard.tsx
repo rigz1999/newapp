@@ -320,7 +320,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
         </div>
         <button
           onClick={handleDownloadSynthese}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 active:bg-slate-800 transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors shadow-sm"
         >
           <Download className="w-4 h-4" />
           Télécharger synthèse
@@ -389,7 +389,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
                         e.stopPropagation();
                         onPaymentClick(tranche.id);
                       }}
-                      className="flex-shrink-0 px-4 py-1.5 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 active:bg-amber-800 transition-colors"
+                      className="flex-shrink-0 px-4 py-1.5 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors"
                     >
                       Enregistrer paiement
                     </button>

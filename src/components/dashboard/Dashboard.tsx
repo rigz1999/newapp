@@ -653,9 +653,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowQuickPayment(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 rounded-lg transition-all group border border-amber-200"
               >
-                <div className="bg-slate-700 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-amber-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -666,9 +666,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowExportModal(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 rounded-lg transition-all group border border-indigo-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
               >
-                <div className="bg-indigo-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-slate-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Download className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
