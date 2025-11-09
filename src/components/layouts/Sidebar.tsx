@@ -15,7 +15,7 @@ export function Sidebar({ organization, activePage, onNavigate, onLogout }: Side
           <div className="bg-finixar-teal p-2 rounded-lg">
             <TrendingUp className="w-6 h-6" />
           </div>
-          <span className="text-xl font-bold">InvestFlow</span>
+          <span className="text-xl font-bold">Finixar</span>
         </div>
 
         <nav className="space-y-2">

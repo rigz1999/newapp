@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const APP_URL = Deno.env.get('APP_URL') || 'http://localhost:5173'
+const APP_URL = Deno.env.get('APP_URL') || 'https://finixar.com'
 
 interface InvitationRequest {
   email: string
@@ -295,7 +295,7 @@ serve(async (req) => {
               <div class="container">
                 <!-- Header -->
                 <div class="header">
-                  <h1>Bienvenue sur InvestFlow</h1>
+                  <h1>Bienvenue sur Finixar</h1>
                   <p>Invitation à rejoindre une organisation</p>
                 </div>
 
@@ -306,7 +306,7 @@ serve(async (req) => {
                   </div>
 
                   <div class="message">
-                    Vous avez été invité(e) à rejoindre <strong>${orgName}</strong> sur la plateforme InvestFlow avec le rôle de<span class="role-badge">${role === 'admin' ? 'Administrateur' : 'Membre'}</span>
+                    Vous avez été invité(e) à rejoindre <strong>${orgName}</strong> sur la plateforme Finixar avec le rôle de<span class="role-badge">${role === 'admin' ? 'Administrateur' : 'Membre'}</span>
                   </div>
 
                   <!-- Info Card -->
@@ -366,7 +366,7 @@ serve(async (req) => {
 
                 <!-- Footer -->
                 <div class="footer">
-                  <div class="footer-logo">InvestFlow</div>
+                  <div class="footer-logo">Finixar</div>
                   <p>Plateforme de gestion d'investissements</p>
                   <p style="margin-top: 18px; color: #94a3b8;">Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email en toute sécurité.</p>
                 </div>
