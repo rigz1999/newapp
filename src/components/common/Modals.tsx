@@ -59,7 +59,7 @@ export function ConfirmModal({
         return {
           icon: <Info className="w-12 h-12 text-blue-600" />,
           bgColor: 'bg-blue-100',
-          buttonColor: 'bg-blue-600 hover:bg-blue-700'
+          buttonColor: 'bg-finxar-cta hover:bg-finxar-accent'
         };
       default:
         return {
@@ -160,13 +160,13 @@ export function AlertModal({
         return {
           icon: <Info className="w-12 h-12 text-blue-600" />,
           bgColor: 'bg-blue-100',
-          buttonColor: 'bg-blue-600 hover:bg-blue-700'
+          buttonColor: 'bg-finxar-cta hover:bg-finxar-accent'
         };
       default:
         return {
           icon: <Info className="w-12 h-12 text-blue-600" />,
           bgColor: 'bg-blue-100',
-          buttonColor: 'bg-blue-600 hover:bg-blue-700'
+          buttonColor: 'bg-finxar-cta hover:bg-finxar-accent'
         };
     }
   };

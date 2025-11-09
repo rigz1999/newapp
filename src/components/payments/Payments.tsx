@@ -309,14 +309,14 @@ export function Payments({ organization }: PaymentsProps) {
               placeholder="Rechercher par projet, tranche, investisseur..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
             />
           </div>
 
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-            className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
           >
             <option value="desc">Plus récents</option>
             <option value="asc">Plus anciens</option>
@@ -326,7 +326,7 @@ export function Payments({ organization }: PaymentsProps) {
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
             className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
               showAdvancedFilters || hasActiveFilters
-                ? 'bg-blue-600 text-white border-blue-600'
+                ? 'bg-finxar-cta text-white border-blue-600'
                 : 'border-slate-300 text-slate-700 hover:bg-slate-50'
             }`}
           >

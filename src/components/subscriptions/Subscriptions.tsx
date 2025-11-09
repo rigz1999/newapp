@@ -429,7 +429,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                 placeholder="Rechercher par projet, tranche, investisseur..."
                 value={advancedFilters.filters.search}
                 onChange={(e) => advancedFilters.setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
               />
             </div>
 
@@ -444,7 +444,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
               <Filter className="w-5 h-5" />
               <span className="font-medium">Filtres avancés</span>
               {activeFiltersCount > 0 && (
-                <span className="bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="bg-finxar-cta text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {activeFiltersCount}
                 </span>
               )}
@@ -679,7 +679,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       type="date"
                       value={editFormData.date_souscription}
                       onChange={(e) => setEditFormData({ ...editFormData, date_souscription: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                     />
                   </div>
 
@@ -691,7 +691,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       type="number"
                       value={editFormData.nombre_obligations}
                       onChange={(e) => setEditFormData({ ...editFormData, nombre_obligations: parseInt(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                     />
                   </div>
                 </div>
@@ -706,7 +706,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       step="0.01"
                       value={editFormData.montant_investi}
                       onChange={(e) => setEditFormData({ ...editFormData, montant_investi: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                     />
                   </div>
 
@@ -718,7 +718,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       type="date"
                       value={editFormData.prochaine_date_coupon}
                       onChange={(e) => setEditFormData({ ...editFormData, prochaine_date_coupon: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                     />
                   </div>
                 </div>
@@ -733,7 +733,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       step="0.01"
                       value={editFormData.coupon_brut}
                       onChange={(e) => setEditFormData({ ...editFormData, coupon_brut: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                     />
                   </div>
 
@@ -746,7 +746,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       step="0.01"
                       value={editFormData.coupon_net}
                       onChange={(e) => setEditFormData({ ...editFormData, coupon_net: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                     />
                   </div>
                 </div>
@@ -770,7 +770,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                 </button>
                 <button
                   onClick={handleSaveClick}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors"
                 >
                   Enregistrer
                 </button>
@@ -812,7 +812,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                 <button
                   onClick={handleConfirmSave}
                   disabled={saving}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {saving ? (
                     <>
