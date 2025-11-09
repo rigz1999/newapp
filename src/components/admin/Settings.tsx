@@ -503,13 +503,23 @@ export default function Settings() {
                   placeholder="••••••••"
                 />
               </div>
+
+              {/* Password Match Indicator */}
+              {confirmPassword && (
+                <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <PasswordRequirement
+                    met={newPassword === confirmPassword}
+                    text="Les mots de passe correspondent"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Change Password Button */}
             <div className="pt-4">
               <button
                 onClick={handleChangePassword}
-                disabled={saving || (newPassword && !isPasswordValid)}
+                disabled={saving || (newPassword && !isPasswordValid) || (confirmPassword && newPassword !== confirmPassword)}
                 className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {saving ? (
