@@ -104,7 +104,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'InvestFlow <onboarding@resend.dev>', // Change this to your verified domain
+        from: 'Finixar <support@finixar.com>',
         to: [email],
         subject: `Invitation à rejoindre ${orgName}`,
         html: `
