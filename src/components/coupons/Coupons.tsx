@@ -463,7 +463,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
         <div className="flex gap-2">
           <button
             onClick={() => setShowPaymentWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors"
           >
             <Upload className="w-4 h-4" />
             Enregistrer Paiement
@@ -552,7 +552,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
               placeholder="Rechercher par investisseur, projet, tranche..."
               value={advancedFilters.filters.search}
               onChange={(e) => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
             />
           </div>
 
@@ -567,7 +567,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
             <Filter className="w-5 h-5" />
             <span className="font-medium">Filtres avancés</span>
             {activeFiltersCount > 0 && (
-              <span className="bg-finxar-cta text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-finixar-cta text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}
@@ -746,7 +746,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
                                   e.stopPropagation();
                                   setShowPaymentWizard(true);
                                 }}
-                                className="px-3 py-1.5 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors flex items-center gap-1.5 text-xs font-medium"
+                                className="px-3 py-1.5 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors flex items-center gap-1.5 text-xs font-medium"
                               >
                                 <Upload className="w-3.5 h-3.5" />
                                 Enregistrer Paiement

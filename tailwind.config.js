@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        finxar: {
+        finixar: {
           background: '#F9FAFB',
           sidebar: '#0B1F3A',
           cta: '#00B894',

@@ -491,7 +491,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
               <button
                 onClick={handleAnalyze}
                 disabled={files.length === 0 || analyzing}
-                className="w-full bg-finxar-cta text-white py-3 rounded-lg font-medium hover:bg-finxar-accent disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-accent disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
               >
                 {analyzing ? 'Analyse en cours...' : 'Analyser le justificatif'}
               </button>

@@ -111,7 +111,7 @@ export function Pagination({
                 onClick={() => onPageChange(page as number)}
                 className={`min-w-[40px] px-3 py-2 rounded-lg font-medium transition-colors ${
                   currentPage === page
-                    ? 'bg-finxar-cta text-white'
+                    ? 'bg-finixar-cta text-white'
                     : 'border border-slate-300 hover:bg-slate-50'
                 }`}
               >

@@ -185,7 +185,7 @@ describe('Pagination Component', () => {
     );
 
     const page3Button = screen.getByRole('button', { name: '3' });
-    expect(page3Button).toHaveClass('bg-finxar-cta', 'text-white');
+    expect(page3Button).toHaveClass('bg-finixar-cta', 'text-white');
   });
 });
 
