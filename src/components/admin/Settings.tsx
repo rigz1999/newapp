@@ -154,11 +154,23 @@ export default function Settings() {
     setErrorMessage('');
 
     try {
+      // Get the current session to pass the auth token
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        setErrorMessage('Session expirée. Veuillez vous reconnecter.');
+        setSaving(false);
+        return;
+      }
+
       // Call the Edge Function to verify current password and update to new one
       const { data, error: functionError } = await supabase.functions.invoke('change-password', {
         body: {
           currentPassword: currentPassword,
           newPassword: newPassword,
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
