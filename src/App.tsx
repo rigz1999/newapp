@@ -110,10 +110,10 @@ function App() {
               user ? (
                 orgLoading || authLoading ? (
                   <DashboardSkeleton />
-                ) : !isAdmin && !organization ? (
-                  <PendingApproval />
-                ) : (
+                ) : (isAdmin || organization) ? (
                   <Layout organization={organization || DEFAULT_ORG} />
+                ) : (
+                  <PendingApproval />
                 )
               ) : (
                 <Navigate to="/login" replace />
