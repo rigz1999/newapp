@@ -226,11 +226,12 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             date_souscription,
             nombre_obligations,
             montant_investi,
-            tranches(tranche_name, projets(projet)),
-            investisseurs(nom_raison_sociale, id_investisseur)
+            tranches!inner(id, tranche_name, projets!inner(id, projet)),
+            investisseurs!inner(id, nom_raison_sociale, id_investisseur)
           `)
           .eq('org_id', orgId)
-          .limit(50),
+          .or(`investisseurs.nom_raison_sociale.ilike.%${lowerQuery}%,investisseurs.id_investisseur.ilike.%${lowerQuery}%,tranches.tranche_name.ilike.%${lowerQuery}%,tranches.projets.projet.ilike.%${lowerQuery}%`)
+          .limit(10),
 
         // Search Payments
         supabase
@@ -240,13 +241,15 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             date_paiement,
             montant,
             type_paiement,
-            souscriptions(
-              investisseurs(nom_raison_sociale),
-              tranches(projets(projet))
+            souscriptions!inner(
+              id,
+              investisseurs!inner(id, nom_raison_sociale),
+              tranches!inner(id, projets!inner(id, projet))
             )
           `)
           .eq('org_id', orgId)
-          .limit(50),
+          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.%${lowerQuery}%,souscriptions.tranches.projets.projet.ilike.%${lowerQuery}%`)
+          .limit(10),
 
         // Search Coupons (from paiements where type is coupon)
         supabase
@@ -255,14 +258,16 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             id,
             date_paiement,
             montant,
-            souscriptions(
-              investisseurs(nom_raison_sociale),
-              tranches(tranche_name, projets(projet))
+            souscriptions!inner(
+              id,
+              investisseurs!inner(id, nom_raison_sociale),
+              tranches!inner(id, tranche_name, projets!inner(id, projet))
             )
           `)
           .eq('org_id', orgId)
           .eq('type_paiement', 'coupon')
-          .limit(50)
+          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.%${lowerQuery}%,souscriptions.tranches.projets.projet.ilike.%${lowerQuery}%,souscriptions.tranches.tranche_name.ilike.%${lowerQuery}%`)
+          .limit(10)
       ]);
 
       // Process Projects
@@ -287,7 +292,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           inv.email || ''
         ].filter(Boolean),
         icon: <Users className="w-5 h-5 text-finixar-green" />,
-        link: `/investisseurs`
+        link: `/investisseurs/${inv.id}`
       }));
 
       // Process Tranches
@@ -302,65 +307,46 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       }));
 
       // Process Subscriptions - already filtered by database query
-      const subscriptions: SearchResult[] = (subscriptionsRes.data || [])
-        .slice(0, 10)
-        .map((s: any) => ({
-          type: 'subscription' as const,
-          id: s.id,
-          title: `Souscription - ${s.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
-          subtitle: `${s.tranches?.projets?.projet || 'Projet'} - ${formatDate(s.date_souscription)}`,
-          metadata: [
-            `${s.nombre_obligations} obligations`,
-            formatCurrency(s.montant_investi)
-          ],
-          icon: <FileText className="w-5 h-5 text-orange-600" />,
-          link: `/souscriptions`
-        }));
+      const subscriptions: SearchResult[] = (subscriptionsRes.data || []).map((s: any) => ({
+        type: 'subscription' as const,
+        id: s.id,
+        title: `Souscription - ${s.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
+        subtitle: `${s.tranches?.projets?.projet || 'Projet'} - ${formatDate(s.date_souscription)}`,
+        metadata: [
+          `${s.nombre_obligations} obligations`,
+          formatCurrency(s.montant_investi)
+        ],
+        icon: <FileText className="w-5 h-5 text-orange-600" />,
+        link: `/souscriptions/${s.id}`
+      }));
 
-      // Process Payments - filter by search query and limit results
-      const payments: SearchResult[] = (paymentsRes.data || [])
-        .filter((p: any) => {
-          const investorName = p.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
-          const projectName = p.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
-          return investorName.includes(lowerQuery) || projectName.includes(lowerQuery);
-        })
-        .slice(0, 10)
-        .map((p: any) => ({
-          type: 'payment' as const,
-          id: p.id,
-          title: `Paiement - ${p.souscriptions?.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
-          subtitle: `${p.souscriptions?.tranches?.projets?.projet || 'Projet'} - ${formatDate(p.date_paiement)}`,
-          metadata: [
-            formatCurrency(p.montant),
-            p.type_paiement || 'Paiement'
-          ],
-          icon: <DollarSign className="w-5 h-5 text-emerald-600" />,
-          link: `/paiements`
-        }));
+      // Process Payments - already filtered by database query
+      const payments: SearchResult[] = (paymentsRes.data || []).map((p: any) => ({
+        type: 'payment' as const,
+        id: p.id,
+        title: `Paiement - ${p.souscriptions?.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
+        subtitle: `${p.souscriptions?.tranches?.projets?.projet || 'Projet'} - ${formatDate(p.date_paiement)}`,
+        metadata: [
+          formatCurrency(p.montant),
+          p.type_paiement || 'Paiement'
+        ],
+        icon: <DollarSign className="w-5 h-5 text-emerald-600" />,
+        link: `/paiements/${p.id}`
+      }));
 
-      // Process Coupons - filter by search query and limit results
-      const coupons: SearchResult[] = (couponsRes.data || [])
-        .filter((c: any) => {
-          const investorName = c.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
-          const projectName = c.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
-          const trancheName = c.souscriptions?.tranches?.tranche_name?.toLowerCase() || '';
-          return investorName.includes(lowerQuery) ||
-                 projectName.includes(lowerQuery) ||
-                 trancheName.includes(lowerQuery);
-        })
-        .slice(0, 10)
-        .map((c: any) => ({
-          type: 'coupon' as const,
-          id: c.id,
-          title: `Coupon - ${c.souscriptions?.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
-          subtitle: `${c.souscriptions?.tranches?.projets?.projet || 'Projet'} - ${formatDate(c.date_paiement)}`,
-          metadata: [
-            formatCurrency(c.montant),
-            c.souscriptions?.tranches?.tranche_name || ''
-          ],
-          icon: <Receipt className="w-5 h-5 text-pink-600" />,
-          link: `/coupons`
-        }));
+      // Process Coupons - already filtered by database query
+      const coupons: SearchResult[] = (couponsRes.data || []).map((c: any) => ({
+        type: 'coupon' as const,
+        id: c.id,
+        title: `Coupon - ${c.souscriptions?.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
+        subtitle: `${c.souscriptions?.tranches?.projets?.projet || 'Projet'} - ${formatDate(c.date_paiement)}`,
+        metadata: [
+          formatCurrency(c.montant),
+          c.souscriptions?.tranches?.tranche_name || ''
+        ],
+        icon: <Receipt className="w-5 h-5 text-pink-600" />,
+        link: `/coupons/${c.id}`
+      }));
 
       setResults({
         projects,
