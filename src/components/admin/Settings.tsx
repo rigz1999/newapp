@@ -157,11 +157,19 @@ export default function Settings() {
       // Get the current session to pass the auth token
       const { data: { session } } = await supabase.auth.getSession();
 
+      console.log('Session check:', {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token,
+        tokenPreview: session?.access_token?.substring(0, 20) + '...'
+      });
+
       if (!session) {
         setErrorMessage('Session expirée. Veuillez vous reconnecter.');
         setSaving(false);
         return;
       }
+
+      console.log('Calling change-password function with Authorization header');
 
       // Call the Edge Function to verify current password and update to new one
       const { data, error: functionError } = await supabase.functions.invoke('change-password', {
@@ -173,6 +181,8 @@ export default function Settings() {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
+
+      console.log('Function response:', { data, error: functionError });
 
       setSaving(false);
 
