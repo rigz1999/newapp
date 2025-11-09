@@ -358,7 +358,7 @@ export default function Settings() {
               <button
                 onClick={handleUpdateProfile}
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="flex items-center gap-2 px-6 py-3 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {saving ? (
                   <>
@@ -572,7 +572,7 @@ export default function Settings() {
               <button
                 onClick={handleUpdateReminderSettings}
                 disabled={saving || !remindersEnabled}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {saving ? (
                   <>

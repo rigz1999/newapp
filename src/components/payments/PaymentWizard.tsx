@@ -686,7 +686,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
               <button
                 onClick={handleAnalyze}
                 disabled={files.length === 0 || analyzing}
-                className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-accent disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-cta-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
                 {analyzing ? (
                   <>
@@ -834,7 +834,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
               <button
                 onClick={() => setShowConfirmModal(true)}
                 disabled={processing || selectedMatches.size === 0}
-                className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <CheckCircle className="w-5 h-5" />
                 Valider la sélection ({selectedMatches.size})
@@ -842,7 +842,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
               <button
                 onClick={handleValidateAll}
                 disabled={processing || validMatches.length === 0}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {processing ? (
                   <>

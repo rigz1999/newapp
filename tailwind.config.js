@@ -6,10 +6,12 @@ export default {
       colors: {
         finixar: {
           background: '#F9FAFB',
-          sidebar: '#0B1F3A',
+          sidebar: '#0A1929', // Midnight blue
           cta: '#00B894',
           text: '#2E2E2E',
           accent: '#2EC4B6',
+          'cta-hover': '#00A080', // Darker teal for hover
+          'accent-hover': '#26B3A6', // Darker turquoise for hover
         },
       },
       fontFamily: {

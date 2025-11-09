@@ -770,7 +770,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                 </button>
                 <button
                   onClick={handleSaveClick}
-                  className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors"
+                  className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
                 >
                   Enregistrer
                 </button>
@@ -812,7 +812,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                 <button
                   onClick={handleConfirmSave}
                   disabled={saving}
-                  className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {saving ? (
                     <>

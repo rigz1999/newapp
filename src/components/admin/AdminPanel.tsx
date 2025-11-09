@@ -821,7 +821,7 @@ function PendingUserRow({
 
           <button
             onClick={handleGrant}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
+            className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
           >
             <UserPlus className="w-4 h-4" />
             Valider
