@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import {
-  User, Lock, Mail, Save, RefreshCw, CheckCircle, X, AlertCircle, Bell, Send
+  User, Lock, Mail, Save, RefreshCw, CheckCircle, X, AlertCircle, Bell, Send, Check
 } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { CardSkeleton } from '../common/Skeleton';
@@ -39,6 +39,20 @@ export default function Settings() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Password strength checker
+  const checkPasswordRequirements = (password: string) => {
+    return {
+      hasLowercase: /[a-z]/.test(password),
+      hasUppercase: /[A-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password),
+      hasMinLength: password.length >= 6
+    };
+  };
+
+  const passwordRequirements = checkPasswordRequirements(newPassword);
+  const isPasswordValid = Object.values(passwordRequirements).every(Boolean);
 
   useEffect(() => {
     if (user) {
@@ -140,8 +154,8 @@ export default function Settings() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setErrorMessage('Le mot de passe doit contenir au moins 6 caractères');
+    if (!isPasswordValid) {
+      setErrorMessage('Le mot de passe ne respecte pas tous les critères de sécurité');
       return;
     }
 
@@ -157,19 +171,11 @@ export default function Settings() {
       // Get the current session to pass the auth token
       const { data: { session } } = await supabase.auth.getSession();
 
-      console.log('Session check:', {
-        hasSession: !!session,
-        hasAccessToken: !!session?.access_token,
-        tokenPreview: session?.access_token?.substring(0, 20) + '...'
-      });
-
       if (!session) {
         setErrorMessage('Session expirée. Veuillez vous reconnecter.');
         setSaving(false);
         return;
       }
-
-      console.log('Calling change-password function with Authorization header');
 
       // Call the Edge Function to verify current password and update to new one
       const { data, error: functionError } = await supabase.functions.invoke('change-password', {
@@ -181,8 +187,6 @@ export default function Settings() {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
-
-      console.log('Function response:', { data, error: functionError });
 
       setSaving(false);
 
@@ -445,7 +449,43 @@ export default function Settings() {
                   placeholder="••••••••"
                 />
               </div>
-              <p className="text-xs text-slate-500 mt-2">Minimum 6 caractères</p>
+
+              {/* Password Requirements Visual Indicators */}
+              {newPassword && (
+                <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                  <p className="text-xs font-semibold text-slate-700 mb-2">Critères de sécurité :</p>
+
+                  <PasswordRequirement
+                    met={passwordRequirements.hasMinLength}
+                    text="Au moins 6 caractères"
+                  />
+                  <PasswordRequirement
+                    met={passwordRequirements.hasLowercase}
+                    text="Une lettre minuscule (a-z)"
+                  />
+                  <PasswordRequirement
+                    met={passwordRequirements.hasUppercase}
+                    text="Une lettre majuscule (A-Z)"
+                  />
+                  <PasswordRequirement
+                    met={passwordRequirements.hasNumber}
+                    text="Un chiffre (0-9)"
+                  />
+                  <PasswordRequirement
+                    met={passwordRequirements.hasSpecial}
+                    text="Un caractère spécial (!@#$%...)"
+                  />
+
+                  {isPasswordValid && (
+                    <div className="pt-2 mt-2 border-t border-slate-300">
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-xs font-semibold">Mot de passe sécurisé !</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Confirm Password */}
@@ -469,7 +509,7 @@ export default function Settings() {
             <div className="pt-4">
               <button
                 onClick={handleChangePassword}
-                disabled={saving}
+                disabled={saving || (newPassword && !isPasswordValid)}
                 className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {saving ? (
@@ -642,6 +682,34 @@ export default function Settings() {
         onClose={() => setShowSuccessModal(false)}
         message={successMessage}
       />
+    </div>
+  );
+}
+
+// Password Requirement Component
+function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200 ${
+          met
+            ? 'bg-green-500 text-white'
+            : 'bg-slate-300 text-slate-400'
+        }`}
+      >
+        {met ? (
+          <Check className="w-3 h-3" strokeWidth={3} />
+        ) : (
+          <X className="w-3 h-3" strokeWidth={3} />
+        )}
+      </div>
+      <span
+        className={`text-xs transition-colors duration-200 ${
+          met ? 'text-green-700 font-medium' : 'text-slate-600'
+        }`}
+      >
+        {text}
+      </span>
     </div>
   );
 }
