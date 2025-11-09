@@ -17,8 +17,8 @@ export default {
           'action-view-hover': '#2563eb',
           'action-edit': '#f59e0b',    // Edit/Modify buttons
           'action-edit-hover': '#d97706',
-          'action-process': '#8b5cf6', // Process/Execute buttons
-          'action-process-hover': '#7c3aed',
+          'action-process': '#3b82f6', // Process/Execute buttons (changed to blue)
+          'action-process-hover': '#2563eb', // Changed to blue hover
           'action-delete': '#ef4444',  // Delete/Critical buttons
           'action-delete-hover': '#dc2626',
 
@@ -43,7 +43,6 @@ export default {
           // Data Visualization
           'chart-blue': '#3b82f6',
           'chart-teal': '#06b6d4',
-          'chart-purple': '#8b5cf6',
           'chart-green': '#10b981',
           'chart-orange': '#f59e0b',
 
@@ -57,8 +56,8 @@ export default {
           green: '#10b981',           // Maps to action-create
           amber: '#f59e0b',           // Maps to action-edit
           red: '#ef4444',             // Maps to action-delete
-          purple: '#8b5cf6',          // Maps to action-process
-          'purple-hover': '#7c3aed',  // Maps to action-process-hover
+          purple: '#3b82f6',          // Maps to brand-blue (removed purple)
+          'purple-hover': '#2563eb',  // Maps to brand-blue-hover
           background: '#f9fafb',      // Light background
           text: '#0f172a',            // Maps to text-primary
           charcoal: '#0f172a',        // Maps to text-primary

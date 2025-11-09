@@ -158,7 +158,7 @@ export function SubscriptionsModal({
             {/* Export */}
             <button
               onClick={handleExport}
-              className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-action-view rounded-lg hover:bg-finixar-action-view-hover transition-colors"
             >
               <Download className="w-4 h-4" />
               Exporter CSV

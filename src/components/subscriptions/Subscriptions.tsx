@@ -411,7 +411,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           <button
             onClick={exportToCSV}
             disabled={filteredSubscriptions.length === 0}
-            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-finixar-action-view text-white px-4 py-2 rounded-lg hover:bg-finixar-action-view-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-5 h-5" />
             <span>Exporter CSV</span>
