@@ -498,7 +498,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               setEditedProject(project);
               setShowEditProject(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
           >
             <Edit className="w-4 h-4" />
             Modifier
@@ -630,7 +630,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 setEditingTranche(null);
                 setShowTrancheWizard(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
               Nouvelle Tranche
