@@ -65,6 +65,7 @@ export default function AdminPanel() {
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingInvitations, setLoadingInvitations] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modals state
@@ -99,6 +100,7 @@ export default function AdminPanel() {
   }, []);
 
   const fetchInvitations = async () => {
+    setLoadingInvitations(true);
     const { data, error } = await supabase
       .from('invitations')
       .select(`
@@ -113,6 +115,7 @@ export default function AdminPanel() {
     if (!error) {
       setInvitations(data || []);
     }
+    setLoadingInvitations(false);
   };
 
   const fetchData = async () => {
@@ -586,10 +589,11 @@ export default function AdminPanel() {
               e.stopPropagation();
               fetchInvitations();
             }}
-            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Rafraîchir"
+            disabled={loadingInvitations}
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${loadingInvitations ? 'animate-spin' : ''}`} />
           </button>
         </button>
 
@@ -868,7 +872,8 @@ export default function AdminPanel() {
           setShowInviteModal(false);
           setSuccessEmail(email);
           setShowSuccessModal(true);
-          fetchData();
+          // Reload invitations immediately after successful invite
+          fetchInvitations();
         }}
       />
 
