@@ -76,7 +76,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
           investisseur:investisseurs(nom_raison_sociale, type),
           tranche:tranches(tranche_name, date_echeance_finale)
         `)
-        .eq('projet_id', projectId) as any;
+        .eq('projet_id', projectId);
 
       if (subsError) throw subsError;
 
@@ -92,7 +92,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
         .from('coupons_echeances')
         .select('*')
         .in('souscription_id', subscriptionIds)
-        .order('date_echeance', { ascending: true }) as any;
+        .order('date_echeance', { ascending: true });
 
       if (echError) throw echError;
 

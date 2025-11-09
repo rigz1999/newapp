@@ -63,7 +63,7 @@ export default function Settings() {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single() as any;
+      .single();
 
     if (error) {
       // Error is silently ignored
@@ -82,7 +82,7 @@ export default function Settings() {
       .from('user_reminder_settings')
       .select('*')
       .eq('user_id', user.id)
-      .single() as any;
+      .single();
 
     if (!reminderError && reminderSettings) {
       setRemindersEnabled(reminderSettings.enabled);

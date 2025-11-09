@@ -115,7 +115,7 @@ export default function AdminPanel() {
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
-      .order('created_at', { ascending: false }) as any;
+      .order('created_at', { ascending: false });
 
     if (profilesError) {
       // Error is silently ignored - user can still see other data
@@ -161,7 +161,7 @@ export default function AdminPanel() {
         user_id: userId,
         org_id: orgId,
         role: role as 'member' | 'admin' | 'super_admin'
-      } as any);
+      });
 
     if (error) {
       setAlertModalConfig({
@@ -186,7 +186,7 @@ export default function AdminPanel() {
       .from('organizations')
       .insert({
         name: newOrgName.trim()
-      } as any);
+      });
 
     if (error) {
       setAlertModalConfig({
@@ -348,11 +348,11 @@ export default function AdminPanel() {
 
     const membership = memberships.find(m => m.user_id === userId);
     if (membership) {
-      const { data: profile } = await (supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single() as any);
+        .single();
 
       const org = organizations.find(o => o.id === membership.org_id);
 

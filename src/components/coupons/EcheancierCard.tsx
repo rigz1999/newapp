@@ -34,20 +34,20 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
 
       for (const tranche of tranches) {
         try {
-          const { data: souscriptions } = await (supabase
+          const { data: souscriptions } = await supabase
             .from('souscriptions')
             .select('id')
-            .eq('tranche_id', tranche.id) as any);
+            .eq('tranche_id', tranche.id);
 
           if (!souscriptions || souscriptions.length === 0) continue;
 
           const subscriptionIds = souscriptions.map((s: any) => s.id);
 
-          const { data: echeances } = await (supabase
+          const { data: echeances } = await supabase
             .from('coupons_echeances')
             .select('date_echeance, montant_coupon, statut, date_paiement, souscription_id')
             .in('souscription_id', subscriptionIds)
-            .order('date_echeance', { ascending: true }) as any);
+            .order('date_echeance', { ascending: true });
 
           if (echeances) {
             const now = new Date();
@@ -115,31 +115,31 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
     
     for (const tranche of tranches) {
       try {
-        const { data: souscriptions } = await (supabase
+        const { data: souscriptions } = await supabase
           .from('souscriptions')
           .select('id, investisseur_id')
-          .eq('tranche_id', tranche.id) as any);
+          .eq('tranche_id', tranche.id);
 
         if (!souscriptions || souscriptions.length === 0) continue;
 
         const subscriptionIds = souscriptions.map((s: any) => s.id);
         const investisseurIds = [...new Set(souscriptions.map((s: any) => s.investisseur_id))];
 
-        const { data: investisseurs } = await (supabase
+        const { data: investisseurs } = await supabase
           .from('investisseurs')
           .select('id, nom_raison_sociale')
-          .in('id', investisseurIds) as any);
+          .in('id', investisseurIds);
 
         const investisseursMap = new Map();
         investisseurs?.forEach((inv: any) => {
           investisseursMap.set(inv.id, inv);
         });
 
-        const { data: echeances } = await (supabase
+        const { data: echeances } = await supabase
           .from('coupons_echeances')
           .select('*')
           .in('souscription_id', subscriptionIds)
-          .order('date_echeance', { ascending: true }) as any);
+          .order('date_echeance', { ascending: true });
 
         if (echeances) {
           allEcheances.push(...echeances.map((e: any) => {

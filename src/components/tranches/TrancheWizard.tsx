@@ -88,7 +88,7 @@ export function TrancheWizard({
       .from("projets")
       .select("projet")
       .eq("id", projectId)
-      .single() as any;
+      .single();
 
     const { count } = await supabase
       .from("tranches")
