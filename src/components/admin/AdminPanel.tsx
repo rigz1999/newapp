@@ -579,11 +579,11 @@ export default function AdminPanel() {
 
       {/* Invitations Section */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
-        <button
-          onClick={() => toggleSection('invitations')}
-          className="w-full p-6 bg-blue-50 flex items-center justify-between hover:bg-blue-100 transition-colors"
-        >
-          <div className="flex items-center gap-2">
+        <div className="w-full p-6 bg-blue-50 flex items-center justify-between">
+          <button
+            onClick={() => toggleSection('invitations')}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
             {expandedSections.has('invitations') ? (
               <ChevronUp className="w-5 h-5 text-slate-600" />
             ) : (
@@ -593,7 +593,7 @@ export default function AdminPanel() {
             <h2 className="text-xl font-bold text-slate-900">
               Invitations en attente ({invitations.length})
             </h2>
-          </div>
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -605,7 +605,7 @@ export default function AdminPanel() {
           >
             <RefreshCw className={`w-4 h-4 ${loadingInvitations ? 'animate-spin' : ''}`} />
           </button>
-        </button>
+        </div>
 
         {expandedSections.has('invitations') && (
           <div className="divide-y divide-slate-200">
