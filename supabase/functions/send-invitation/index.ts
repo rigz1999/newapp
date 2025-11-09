@@ -82,7 +82,6 @@ serve(async (req) => {
         last_name: lastName,
         org_id: orgId,
         role,
-        invited_by: user.id,
         token: token_string,
         expires_at: expiresAt.toISOString(),
         status: 'pending'
@@ -95,7 +94,7 @@ serve(async (req) => {
     }
 
     // Create invitation link
-    const invitationLink = `${APP_URL}/invitation/${token_string}`
+    const invitationLink = `${APP_URL}/invitation/accept?token=${token_string}`
 
     // Send email via Resend
     const emailResponse = await fetch('https://api.resend.com/emails', {
