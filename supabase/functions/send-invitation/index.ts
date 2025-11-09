@@ -48,16 +48,22 @@ serve(async (req) => {
     // Parse request body
     const { email, firstName, lastName, role, orgId, orgName }: InvitationRequest = await req.json()
 
-    // Verify user is admin of the organization
-    const { data: membership } = await supabase
-      .from('memberships')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('org_id', orgId)
-      .single()
+    // Check if user is super admin (by email) or org admin
+    const SUPER_ADMIN_EMAIL = 'zrig.ayman@gmail.com'
+    const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL
 
-    if (!membership || (membership.role !== 'admin' && membership.role !== 'super_admin')) {
-      throw new Error('Not authorized to invite users to this organization')
+    if (!isSuperAdmin) {
+      // Verify user is admin of the organization
+      const { data: membership } = await supabase
+        .from('memberships')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('org_id', orgId)
+        .single()
+
+      if (!membership || membership.role !== 'admin') {
+        throw new Error('Not authorized to invite users to this organization')
+      }
     }
 
     // Generate secure token
