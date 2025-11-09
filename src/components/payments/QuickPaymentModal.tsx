@@ -198,7 +198,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
               <select
                 value={selectedProjectId}
                 onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
               >
                 <option value="">Sélectionner un projet</option>
                 {projects.map((project) => (
@@ -215,7 +215,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
                 value={selectedTrancheId}
                 onChange={(e) => setSelectedTrancheId(e.target.value)}
                 disabled={!selectedProjectId || tranches.length === 0}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta disabled:bg-slate-100 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta disabled:bg-slate-100 disabled:cursor-not-allowed"
               >
                 <option value="">Sélectionner une tranche</option>
                 {tranches.map((tranche) => (
@@ -278,7 +278,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
 
               <button
                 onClick={() => setShowUpload(true)}
-                className="w-full px-6 py-3 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors font-medium"
+                className="w-full px-6 py-3 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors font-medium"
               >
                 Télécharger le Justificatif de Paiement
               </button>

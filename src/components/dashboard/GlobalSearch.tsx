@@ -556,7 +556,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
                 onClick={() => setActiveFilter(filter.key as FilterType)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
                   activeFilter === filter.key
-                    ? 'bg-finxar-cta text-white'
+                    ? 'bg-finixar-cta text-white'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >

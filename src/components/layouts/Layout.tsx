@@ -131,20 +131,20 @@ export function Layout({ organization }: LayoutProps) {
   };
 
   return (
-    <div className="h-screen bg-finxar-background flex overflow-hidden">
-      <aside className="w-64 bg-finxar-sidebar text-white flex flex-col flex-shrink-0">
+    <div className="h-screen bg-finixar-background flex overflow-hidden">
+      <aside className="w-64 bg-finixar-sidebar text-white flex flex-col flex-shrink-0">
         <div className="p-6">
           <div className="flex items-center gap-2 mb-6">
-            <div className="bg-finxar-cta p-2 rounded-lg">
-              <TrendingUp className="w-6 h-6" />
+            <div className="bg-finixar-cta p-2 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold">Finxar</span>
+            <span className="text-xl font-bold">Finixar</span>
           </div>
 
           {/* Global Search Button */}
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="w-full flex items-center gap-3 px-4 py-2.5 mb-6 bg-slate-800 hover:bg-finxar-accent rounded-lg transition-colors text-slate-400 hover:text-white"
+            className="w-full flex items-center gap-3 px-4 py-2.5 mb-6 bg-slate-800/50 hover:bg-finixar-accent rounded-lg transition-colors text-slate-400 hover:text-white"
           >
             <Search className="w-4 h-4" />
             <span className="text-sm">Rechercher...</span>
@@ -154,7 +154,7 @@ export function Layout({ organization }: LayoutProps) {
             <Link
               to="/"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/') ? 'bg-finxar-accent text-white' : 'text-slate-300 hover:bg-finxar-accent hover:text-white'
+                isActive('/') ? 'bg-finixar-accent text-white' : 'text-slate-300 hover:bg-finixar-accent hover:text-white'
               }`}
             >
               <Home className="w-5 h-5" />
@@ -163,7 +163,7 @@ export function Layout({ organization }: LayoutProps) {
             <Link
               to="/coupons"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/coupons') ? 'bg-finxar-accent text-white' : 'text-slate-300 hover:bg-finxar-accent hover:text-white'
+                isActive('/coupons') ? 'bg-finixar-accent text-white' : 'text-slate-300 hover:bg-finixar-accent hover:text-white'
               }`}
             >
               <Receipt className="w-5 h-5" />
@@ -172,7 +172,7 @@ export function Layout({ organization }: LayoutProps) {
             <Link
               to="/projets"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/projets') ? 'bg-finxar-accent text-white' : 'text-slate-300 hover:bg-finxar-accent hover:text-white'
+                isActive('/projets') ? 'bg-finixar-accent text-white' : 'text-slate-300 hover:bg-finixar-accent hover:text-white'
               }`}
             >
               <FolderOpen className="w-5 h-5" />
@@ -181,7 +181,7 @@ export function Layout({ organization }: LayoutProps) {
             <Link
               to="/investisseurs"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/investisseurs') ? 'bg-finxar-accent text-white' : 'text-slate-300 hover:bg-finxar-accent hover:text-white'
+                isActive('/investisseurs') ? 'bg-finixar-accent text-white' : 'text-slate-300 hover:bg-finixar-accent hover:text-white'
               }`}
             >
               <Users className="w-5 h-5" />
@@ -190,7 +190,7 @@ export function Layout({ organization }: LayoutProps) {
             <Link
               to="/souscriptions"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/souscriptions') ? 'bg-finxar-accent text-white' : 'text-slate-300 hover:bg-finxar-accent hover:text-white'
+                isActive('/souscriptions') ? 'bg-finixar-accent text-white' : 'text-slate-300 hover:bg-finixar-accent hover:text-white'
               }`}
             >
               <FileText className="w-5 h-5" />
@@ -199,7 +199,7 @@ export function Layout({ organization }: LayoutProps) {
             <Link
               to="/paiements"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/paiements') ? 'bg-finxar-accent text-white' : 'text-slate-300 hover:bg-finxar-accent hover:text-white'
+                isActive('/paiements') ? 'bg-finixar-accent text-white' : 'text-slate-300 hover:bg-finixar-accent hover:text-white'
               }`}
             >
               <DollarSign className="w-5 h-5" />
@@ -211,7 +211,7 @@ export function Layout({ organization }: LayoutProps) {
             <Link
               to="/parametres"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive('/parametres') ? 'bg-finxar-accent text-white' : 'text-slate-300 hover:bg-finxar-accent hover:text-white'
+                isActive('/parametres') ? 'bg-finixar-accent text-white' : 'text-slate-300 hover:bg-finixar-accent hover:text-white'
               }`}
             >
               <Settings className="w-5 h-5" />
@@ -225,7 +225,7 @@ export function Layout({ organization }: LayoutProps) {
                 <Link
                   to="/membres"
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive('/membres') ? 'bg-finxar-cta text-white' : 'text-slate-300 hover:bg-finxar-cta hover:text-white'
+                    isActive('/membres') ? 'bg-finixar-cta text-white' : 'text-slate-300 hover:bg-finixar-cta hover:text-white'
                   }`}
                 >
                   <UserCog className="w-5 h-5" />
@@ -241,7 +241,7 @@ export function Layout({ organization }: LayoutProps) {
                 <Link
                   to="/admin"
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors relative ${
-                    isActive('/admin') ? 'bg-finxar-cta text-white' : 'text-slate-300 hover:bg-finxar-cta hover:text-white'
+                    isActive('/admin') ? 'bg-finixar-cta text-white' : 'text-slate-300 hover:bg-finixar-cta hover:text-white'
                   }`}
                 >
                   <Shield className="w-5 h-5" />
@@ -260,7 +260,7 @@ export function Layout({ organization }: LayoutProps) {
         <div className="mt-auto p-6 border-t border-slate-800">
           <div className="flex items-center gap-3 mb-4">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-              isSuperAdminUser ? 'bg-finxar-cta' : isOrgAdmin ? 'bg-finxar-cta' : 'bg-finxar-accent'
+              isSuperAdminUser ? 'bg-finixar-cta' : isOrgAdmin ? 'bg-finixar-cta' : 'bg-finixar-accent'
             }`}>
               {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
             </div>
@@ -275,7 +275,7 @@ export function Layout({ organization }: LayoutProps) {
           </div>
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-finxar-accent rounded-lg transition-colors"
+            className="w-full px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-finixar-accent rounded-lg transition-colors"
           >
             Se déconnecter
           </button>

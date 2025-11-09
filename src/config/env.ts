@@ -93,7 +93,7 @@ export const env: EnvConfig = {
     enableAdvancedFilters: getEnvVarAsBoolean('VITE_ENABLE_ADVANCED_FILTERS', true),
   },
   contact: {
-    supportEmail: getEnvVar('VITE_SUPPORT_EMAIL', false) || 'support@finxar.com',
+    supportEmail: getEnvVar('VITE_SUPPORT_EMAIL', false) || 'support@finixar.com',
   },
 };
 

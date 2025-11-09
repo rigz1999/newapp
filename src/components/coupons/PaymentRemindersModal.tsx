@@ -212,7 +212,7 @@ export default function PaymentRemindersModal({
               <button
                 onClick={() => setRemindersEnabled(!remindersEnabled)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  remindersEnabled ? 'bg-finxar-cta' : 'bg-slate-300'
+                  remindersEnabled ? 'bg-finixar-cta' : 'bg-slate-300'
                 }`}
               >
                 <span
@@ -236,7 +236,7 @@ export default function PaymentRemindersModal({
                   checked={remind7Days}
                   onChange={(e) => setRemind7Days(e.target.checked)}
                   disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finxar-cta disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-cta disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <div className="flex-1">
                   <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
@@ -255,7 +255,7 @@ export default function PaymentRemindersModal({
                   checked={remind14Days}
                   onChange={(e) => setRemind14Days(e.target.checked)}
                   disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finxar-cta disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-cta disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <div className="flex-1">
                   <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
@@ -274,7 +274,7 @@ export default function PaymentRemindersModal({
                   checked={remind30Days}
                   onChange={(e) => setRemind30Days(e.target.checked)}
                   disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finxar-cta disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-cta disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <div className="flex-1">
                   <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
@@ -306,7 +306,7 @@ export default function PaymentRemindersModal({
               <button
                 onClick={handleUpdateReminderSettings}
                 disabled={saving || !remindersEnabled}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {saving ? (
                   <>

@@ -300,7 +300,7 @@ export function TrancheWizard({
                   value={selectedProjectId}
                   onChange={(e) => handleProjectSelect(e.target.value)}
                   disabled={processing || isEditMode}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta bg-white disabled:opacity-50 disabled:bg-slate-50"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta bg-white disabled:opacity-50 disabled:bg-slate-50"
                 >
                   <option value="">Sélectionnez un projet</option>
                   {projects.map((project) => (
@@ -328,7 +328,7 @@ export function TrancheWizard({
                 onChange={(e) => setTrancheName(e.target.value)}
                 disabled={processing}
                 placeholder="Ex: T1, Tranche A..."
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta disabled:opacity-50"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta disabled:opacity-50"
               />
             </div>
 
@@ -347,7 +347,7 @@ export function TrancheWizard({
                       onChange={(e) => setTauxNominal(e.target.value)}
                       disabled={processing}
                       placeholder="Ex: 5.5"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta disabled:opacity-50"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta disabled:opacity-50"
                     />
                   </div>
 
@@ -359,7 +359,7 @@ export function TrancheWizard({
                       value={periodiciteCoupons}
                       onChange={(e) => setPeriodiciteCoupons(e.target.value)}
                       disabled={processing}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta bg-white disabled:opacity-50"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta bg-white disabled:opacity-50"
                     >
                       <option value="">Sélectionner...</option>
                       <option value="mensuelle">Mensuelle</option>
@@ -380,7 +380,7 @@ export function TrancheWizard({
                       value={dateEmission}
                       onChange={(e) => setDateEmission(e.target.value)}
                       disabled={processing}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta disabled:opacity-50"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta disabled:opacity-50"
                     />
                   </div>
 
@@ -393,7 +393,7 @@ export function TrancheWizard({
                       value={dateEcheanceFinale}
                       onChange={(e) => setDateEcheanceFinale(e.target.value)}
                       disabled={processing}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta disabled:opacity-50"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -408,7 +408,7 @@ export function TrancheWizard({
                     onChange={(e) => setDureeMois(e.target.value)}
                     disabled={processing}
                     placeholder="Ex: 24"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta disabled:opacity-50"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta disabled:opacity-50"
                   />
                 </div>
               </>
@@ -451,7 +451,7 @@ export function TrancheWizard({
                 </div>
                 <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                   <div
-                    className="h-2 bg-finxar-cta transition-all duration-150"
+                    className="h-2 bg-finixar-cta transition-all duration-150"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -509,7 +509,7 @@ export function TrancheWizard({
                     !trancheName || 
                     (isEditMode ? false : (!selectedProjectId || !csvFile))
                   }
-                  className="flex-1 px-4 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {processing ? (
                     <>

@@ -710,7 +710,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               placeholder="Rechercher par nom, ID, CGP, email..."
               value={advancedFilters.filters.search}
               onChange={(e) => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
             />
           </div>
 
@@ -725,7 +725,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
             <Filter className="w-5 h-5" />
             <span className="font-medium">Filtres avancés</span>
             {activeFiltersCount > 0 && (
-              <span className="bg-finxar-cta text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-finixar-cta text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}
@@ -996,7 +996,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     setShowDetailsModal(false);
                     handleEditClick(selectedInvestor);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                   Modifier
@@ -1159,7 +1159,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         type="text"
                         value={editFormData.nom_raison_sociale}
                         onChange={(e) => setEditFormData({ ...editFormData, nom_raison_sociale: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                       />
                     </div>
                     <div>
@@ -1167,7 +1167,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                       <select
                         value={normalizeType(editFormData.type)}
                         onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value === 'morale' ? 'Morale' : 'Physique' })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                       >
                         <option value="physique">Personne Physique</option>
                         <option value="morale">Personne Morale</option>
@@ -1179,7 +1179,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         type="email"
                         value={editFormData.email || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                       />
                     </div>
                     <div>
@@ -1188,7 +1188,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         type="tel"
                         value={editFormData.telephone || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, telephone: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                       />
                     </div>
                     <div>
@@ -1197,7 +1197,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         type="text"
                         value={editFormData.residence_fiscale || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, residence_fiscale: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                       />
                     </div>
                   </div>
@@ -1255,7 +1255,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="number"
                           value={editFormData.siren || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, siren: Number(e.target.value) })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                         />
                       </div>
                       <div>
@@ -1264,7 +1264,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.forme_juridique || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, forme_juridique: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                         />
                       </div>
                       <div>
@@ -1273,7 +1273,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.representant_legal || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, representant_legal: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                         />
                       </div>
                     </div>
@@ -1288,7 +1288,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.nom || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, nom: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                         />
                       </div>
                       <div>
@@ -1297,7 +1297,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.prenom || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, prenom: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                         />
                       </div>
                       <div>
@@ -1306,7 +1306,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.nationalite || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, nationalite: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                         />
                       </div>
                     </div>
@@ -1322,7 +1322,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         type="text"
                         value={editFormData.adresse || editFormData.siege_social || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, adresse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                       />
                     </div>
                     <div className="grid grid-cols-3 gap-4">
@@ -1332,7 +1332,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.code_postal || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, code_postal: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                         />
                       </div>
                       <div>
@@ -1341,7 +1341,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.ville || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, ville: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                         />
                       </div>
                       <div>
@@ -1350,7 +1350,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.pays || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, pays: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
                         />
                       </div>
                     </div>
@@ -1368,7 +1368,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               </button>
               <button
                 onClick={handleEditSave}
-                className="px-4 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors"
+                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors"
               >
                 Enregistrer
               </button>
@@ -1539,7 +1539,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   </div>
                   <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
                     <div
-                      className="bg-finxar-cta h-full transition-all duration-300 ease-out"
+                      className="bg-finixar-cta h-full transition-all duration-300 ease-out"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
@@ -1600,7 +1600,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               <button
                 onClick={handleRibUploadConfirm}
                 disabled={!ribFile || uploadingRib}
-                className="px-4 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {uploadingRib ? (
                   <>
@@ -1671,7 +1671,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               </button>
               <button
                 onClick={handleDownloadFromView}
-                className="px-4 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
                 Télécharger

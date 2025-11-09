@@ -127,7 +127,7 @@ export function RecentFilters({
                   </span>
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-finxar-cta rounded-full transition-all"
+                      className="h-full bg-finixar-cta rounded-full transition-all"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
