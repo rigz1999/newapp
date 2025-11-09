@@ -187,42 +187,9 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
     try {
       const lowerQuery = searchQuery.toLowerCase();
 
-      // First, search for matching investors and projects to get their IDs
-      const [investorsSearch, projectsSearch, tranchesSearch] = await Promise.all([
-        supabase
-          .from('investisseurs')
-          .select('id')
-          .eq('org_id', orgId)
-          .or(`nom_raison_sociale.ilike.%${lowerQuery}%,id_investisseur.ilike.%${lowerQuery}%,email.ilike.%${lowerQuery}%`),
-
-        supabase
-          .from('projets')
-          .select('id')
-          .eq('org_id', orgId)
-          .or(`projet.ilike.%${lowerQuery}%,emetteur.ilike.%${lowerQuery}%`),
-
-        supabase
-          .from('tranches')
-          .select('id, projet_id')
-          .ilike('tranche_name', `%${lowerQuery}%`)
-      ]);
-
-      const investorIds = (investorsSearch.data || []).map((inv: any) => inv.id);
-      const projectIds = (projectsSearch.data || []).map((proj: any) => proj.id);
-      const trancheIdsByName = (tranchesSearch.data || []).map((t: any) => t.id);
-
-      // Get tranches for matching projects
-      const tranchesByProject = projectIds.length > 0 ? await supabase
-        .from('tranches')
-        .select('id')
-        .in('projet_id', projectIds) : { data: [] };
-
-      // Combine all matching tranche IDs
-      const trancheIds = [...new Set([...trancheIdsByName, ...(tranchesByProject.data || []).map((t: any) => t.id)])];
-
-      // Now run all detailed searches in parallel
+      // Run all searches in parallel for maximum performance
       const [projectsRes, investorsRes, tranchesRes, subscriptionsRes, paymentsRes, couponsRes] = await Promise.all([
-        // Search Projects (detailed)
+        // Search Projects
         supabase
           .from('projets')
           .select('id, projet, emetteur, statut')
@@ -230,7 +197,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .or(`projet.ilike.%${lowerQuery}%,emetteur.ilike.%${lowerQuery}%`)
           .limit(10),
 
-        // Search Investors (detailed)
+        // Search Investors
         supabase
           .from('investisseurs')
           .select('id, nom_raison_sociale, id_investisseur, type, email')
@@ -238,7 +205,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .or(`nom_raison_sociale.ilike.%${lowerQuery}%,id_investisseur.ilike.%${lowerQuery}%,email.ilike.%${lowerQuery}%`)
           .limit(10),
 
-        // Search Tranches (detailed)
+        // Search Tranches
         supabase
           .from('tranches')
           .select(`
@@ -251,32 +218,21 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .ilike('tranche_name', `%${lowerQuery}%`)
           .limit(10),
 
-        // Search Subscriptions - filter by matching investors OR tranches
-        investorIds.length > 0 || trancheIds.length > 0 ? (async () => {
-          const query = supabase
-            .from('souscriptions')
-            .select(`
-              id,
-              date_souscription,
-              nombre_obligations,
-              montant_investi,
-              investisseur_id,
-              tranche_id,
-              tranches(tranche_name, projets(projet)),
-              investisseurs(nom_raison_sociale, id_investisseur)
-            `)
-            .eq('org_id', orgId);
+        // Search Subscriptions
+        supabase
+          .from('souscriptions')
+          .select(`
+            id,
+            date_souscription,
+            nombre_obligations,
+            montant_investi,
+            tranches(tranche_name, projets(projet)),
+            investisseurs(nom_raison_sociale, id_investisseur)
+          `)
+          .eq('org_id', orgId)
+          .limit(50),
 
-          if (investorIds.length > 0 && trancheIds.length > 0) {
-            return await query.or(`investisseur_id.in.(${investorIds.join(',')}),tranche_id.in.(${trancheIds.join(',')})`).limit(10);
-          } else if (investorIds.length > 0) {
-            return await query.in('investisseur_id', investorIds).limit(10);
-          } else {
-            return await query.in('tranche_id', trancheIds).limit(10);
-          }
-        })() : Promise.resolve({ data: [] }),
-
-        // Search Payments - filter by org and then by matching data
+        // Search Payments
         supabase
           .from('paiements')
           .select(`
@@ -284,10 +240,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             date_paiement,
             montant,
             type_paiement,
-            souscription_id,
-            souscriptions!inner(
-              investisseur_id,
-              tranche_id,
+            souscriptions(
               investisseurs(nom_raison_sociale),
               tranches(projets(projet))
             )
@@ -295,17 +248,14 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .eq('org_id', orgId)
           .limit(50),
 
-        // Search Coupons
+        // Search Coupons (from paiements where type is coupon)
         supabase
           .from('paiements')
           .select(`
             id,
             date_paiement,
             montant,
-            souscription_id,
-            souscriptions!inner(
-              investisseur_id,
-              tranche_id,
+            souscriptions(
               investisseurs(nom_raison_sociale),
               tranches(tranche_name, projets(projet))
             )
