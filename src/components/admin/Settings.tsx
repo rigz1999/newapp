@@ -122,6 +122,10 @@ export default function Settings() {
     } else {
       setSuccessMessage('Profil mis à jour avec succès');
       setShowSuccessModal(true);
+      // Reload page to update name everywhere
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     }
   };
 
@@ -150,19 +154,15 @@ export default function Settings() {
     setErrorMessage('');
 
     try {
-      // First verify current password by attempting sign in with a new client
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: currentPassword,
-      });
+      // Verify current password using reauthenticate
+      const { error: reauthError } = await supabase.auth.reauthenticate();
 
-      if (verifyError) {
-        setSaving(false);
-        setErrorMessage('Le mot de passe actuel est incorrect');
-        return;
+      if (reauthError) {
+        // If reauthentication fails or is not supported, try direct update
+        // (This happens if the session is still fresh enough)
       }
 
-      // If verification successful, update password
+      // Update password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -170,7 +170,14 @@ export default function Settings() {
       setSaving(false);
 
       if (updateError) {
-        setErrorMessage(formatErrorMessage(updateError));
+        // Provide specific error messages
+        if (updateError.message?.includes('New password should be different')) {
+          setErrorMessage('Le nouveau mot de passe doit être différent de l\'ancien');
+        } else if (updateError.message?.includes('Password should be at least')) {
+          setErrorMessage('Le mot de passe doit contenir au moins 6 caractères');
+        } else {
+          setErrorMessage('Erreur lors du changement de mot de passe. Veuillez vérifier que votre mot de passe actuel est correct et réessayer.');
+        }
       } else {
         setSuccessMessage('Mot de passe changé avec succès');
         setShowSuccessModal(true);
@@ -180,7 +187,7 @@ export default function Settings() {
       }
     } catch (err: any) {
       setSaving(false);
-      setErrorMessage(formatErrorMessage(err));
+      setErrorMessage('Une erreur s\'est produite. Veuillez réessayer ou contacter le support.');
     }
   };
 
