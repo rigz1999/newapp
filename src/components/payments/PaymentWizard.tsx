@@ -858,9 +858,9 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             </div>
           </div>
         )}
-        </div>
       </div>
       </div>
+    </div>
 
       {/* CONFIRMATION MODAL */}
       {showConfirmModal && (
