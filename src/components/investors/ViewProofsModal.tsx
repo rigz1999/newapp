@@ -225,7 +225,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
               <button
                 onClick={() => handleDeleteProof(confirmDelete.proofId, confirmDelete.fileUrl)}
                 disabled={deleting !== null}
-                className="flex-1 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-finixar-action-delete text-white rounded-lg hover:bg-finixar-action-delete-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {deleting ? 'Suppression...' : 'Supprimer'}
               </button>

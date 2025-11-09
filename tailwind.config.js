@@ -5,34 +5,64 @@ export default {
     extend: {
       colors: {
         finixar: {
-          // Primary Colors
-          navy: '#1e3a5f',        // Deep Navy Blue - Main brand, sidebar
-          white: '#ffffff',        // Crisp White
+          // Primary Brand
+          'deep-blue': '#0f172a',      // Sidebar, headers, main navigation
+          'brand-blue': '#3b82f6',     // Primary CTAs, active states
+          'brand-blue-hover': '#2563eb', // Darker blue for hover
 
-          // Accent Colors
-          teal: '#0891b2',         // Professional Teal - CTAs, links
-          'teal-hover': '#0e7490', // Darker teal for hover
-          green: '#10b981',        // Success Green - Completed payments
-          amber: '#f59e0b',        // Warning Amber - Pending actions
-          red: '#ef4444',          // Alert Red - Overdue, critical
+          // Quick Action Buttons
+          'action-create': '#10b981',  // Create/Add buttons
+          'action-create-hover': '#059669', // Hover state
+          'action-view': '#3b82f6',    // View/Details buttons
+          'action-view-hover': '#2563eb',
+          'action-edit': '#f59e0b',    // Edit/Modify buttons
+          'action-edit-hover': '#d97706',
+          'action-process': '#8b5cf6', // Process/Execute buttons
+          'action-process-hover': '#7c3aed',
+          'action-delete': '#ef4444',  // Delete/Critical buttons
+          'action-delete-hover': '#dc2626',
 
-          // Neutral Grays
-          charcoal: '#1f2937',     // Primary text
-          gray: '#6b7280',         // Secondary text
-          'gray-light': '#f3f4f6', // Borders, dividers
-          background: '#f9fafb',   // Page backgrounds
+          // Status Indicators
+          'status-active': '#10b981',  // Active/Paid
+          'status-pending': '#f59e0b', // Pending/Awaiting
+          'status-overdue': '#ef4444', // Overdue/Expired
+          'status-inactive': '#6b7280', // Draft/Inactive
 
-          // Optional Accent
-          purple: '#8b5cf6',       // Premium features
-          'purple-hover': '#7c3aed', // Darker purple for hover
+          // UI Structure
+          'bg-dark': '#0f172a',        // Sidebar/navigation
+          'bg-light': '#ffffff',       // Main content area
+          'bg-card': '#f8fafc',        // Dashboard cards/widgets
+          'border': '#e2e8f0',         // Separators, card borders
+          'hover': '#f1f5f9',          // Interactive hover effects
+
+          // Text Hierarchy
+          'text-primary': '#0f172a',   // Headings, important data
+          'text-secondary': '#64748b', // Labels, descriptions
+          'text-muted': '#94a3b8',     // Timestamps, helper text
+
+          // Data Visualization
+          'chart-blue': '#3b82f6',
+          'chart-teal': '#06b6d4',
+          'chart-purple': '#8b5cf6',
+          'chart-green': '#10b981',
+          'chart-orange': '#f59e0b',
 
           // Backwards compatibility mappings
-          sidebar: '#1e3a5f',      // Maps to navy
-          cta: '#0891b2',          // Maps to teal
-          'cta-hover': '#0e7490',  // Maps to teal-hover
-          accent: '#8b5cf6',       // Maps to purple for highlights
-          'accent-hover': '#7c3aed', // Maps to purple-hover
-          text: '#1f2937',         // Maps to charcoal
+          sidebar: '#0f172a',          // Maps to deep-blue
+          navy: '#0f172a',            // Maps to deep-blue
+          cta: '#3b82f6',             // Maps to brand-blue
+          'cta-hover': '#2563eb',     // Maps to brand-blue-hover
+          teal: '#3b82f6',            // Maps to brand-blue
+          'teal-hover': '#2563eb',    // Maps to brand-blue-hover
+          green: '#10b981',           // Maps to action-create
+          amber: '#f59e0b',           // Maps to action-edit
+          red: '#ef4444',             // Maps to action-delete
+          purple: '#8b5cf6',          // Maps to action-process
+          'purple-hover': '#7c3aed',  // Maps to action-process-hover
+          background: '#f9fafb',      // Light background
+          text: '#0f172a',            // Maps to text-primary
+          charcoal: '#0f172a',        // Maps to text-primary
+          gray: '#64748b',            // Maps to text-secondary
         },
       },
       fontFamily: {

@@ -574,7 +574,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                 <select
                   value={selectedProjectId}
                   onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal bg-white"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white"
                 >
                   <option value="">Sélectionnez un projet</option>
                   {projects.map((project) => (
@@ -589,7 +589,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                   value={selectedTrancheId}
                   onChange={(e) => setSelectedTrancheId(e.target.value)}
                   disabled={!selectedProjectId}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal bg-white disabled:bg-slate-100"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white disabled:bg-slate-100"
                 >
                   <option value="">Sélectionnez une tranche</option>
                   {tranches.map((tranche) => (
@@ -726,7 +726,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                           type="checkbox"
                           checked={selectedMatches.size > 0 && selectedMatches.size === matches.length}
                           onChange={toggleSelectAll}
-                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-finixar-teal"
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Statut</th>
@@ -750,7 +750,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                             type="checkbox"
                             checked={selectedMatches.has(idx)}
                             onChange={() => toggleSelectMatch(idx)}
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-finixar-teal"
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-finixar-brand-blue"
                           />
                         </td>
                         <td className="px-3 py-3">
@@ -834,7 +834,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
               <button
                 onClick={() => setShowConfirmModal(true)}
                 disabled={processing || selectedMatches.size === 0}
-                className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <CheckCircle className="w-5 h-5" />
                 Valider la sélection ({selectedMatches.size})
@@ -842,7 +842,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
               <button
                 onClick={handleValidateAll}
                 disabled={processing || validMatches.length === 0}
-                className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {processing ? (
                   <>

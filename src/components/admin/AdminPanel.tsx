@@ -821,7 +821,7 @@ function PendingUserRow({
 
           <button
             onClick={handleGrant}
-            className="px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
+            className="px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
           >
             <UserPlus className="w-4 h-4" />
             Valider
@@ -1087,7 +1087,7 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, title, message }: any)
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="flex-1 px-4 py-2 bg-finixar-action-delete text-white rounded-lg hover:bg-finixar-action-delete-hover transition-colors"
           >
             Confirmer
           </button>
@@ -1339,7 +1339,7 @@ function InviteMemberModal({
               <select
                 value={selectedOrgId}
                 onChange={(e) => setSelectedOrgId(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
               >
                 <option value="">Sélectionner une organisation</option>
                 {organizations.map(org => (
@@ -1356,7 +1356,7 @@ function InviteMemberModal({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                 placeholder="exemple@email.com"
               />
             </div>
@@ -1369,7 +1369,7 @@ function InviteMemberModal({
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                 placeholder="Jean"
               />
             </div>
@@ -1382,7 +1382,7 @@ function InviteMemberModal({
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                 placeholder="Dupont"
               />
             </div>
@@ -1394,7 +1394,7 @@ function InviteMemberModal({
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as 'member' | 'admin')}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
               >
                 <option value="member">Membre</option>
                 <option value="admin">Administrateur</option>
