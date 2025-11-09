@@ -150,11 +150,11 @@ function App() {
               }
             />
 
-            {/* Members Management - For Organization Admins */}
+            {/* Members Management - For Organization Admins and Super Admin */}
             <Route
               path="membres"
               element={
-                isOrgAdmin ? (
+                (isOrgAdmin || isAdmin) ? (
                   <ErrorBoundary>
                     <Suspense fallback={<LoadingFallback />}>
                       <Members />
