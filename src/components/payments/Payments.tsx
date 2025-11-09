@@ -274,7 +274,7 @@ export function Payments({ organization }: PaymentsProps) {
         </div>
         <button
           onClick={exportToCSV}
-          className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+          className="flex items-center gap-2 bg-finixar-action-view text-white px-4 py-2 rounded-lg hover:bg-finixar-action-view-hover transition-colors"
         >
           <Download className="w-5 h-5" />
           <span>Exporter CSV</span>
