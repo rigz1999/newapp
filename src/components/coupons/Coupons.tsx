@@ -466,17 +466,17 @@ export function Coupons({ organization: _organization }: CouponsProps) {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             onClick={() => setShowPaymentWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-all shadow-sm hover:shadow-md font-medium"
           >
             <Upload className="w-4 h-4" />
             Enregistrer Paiement
           </button>
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium"
           >
             <Download className="w-4 h-4" />
             Exporter Excel
@@ -752,7 +752,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
                                   e.stopPropagation();
                                   setShowPaymentWizard(true);
                                 }}
-                                className="px-3 py-1.5 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors flex items-center gap-1.5 text-xs font-medium"
+                                className="px-3 py-1.5 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 text-xs font-medium"
                               >
                                 <Upload className="w-3.5 h-3.5" />
                                 Enregistrer Paiement
