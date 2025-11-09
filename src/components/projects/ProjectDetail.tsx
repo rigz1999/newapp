@@ -943,8 +943,13 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         )}
 
         {showEditProject && project && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            {/* Backdrop */}
+            <div className="fixed inset-0 bg-black/50" onClick={() => setShowEditProject(false)} />
+
+            {/* Centered Container */}
+            <div className="flex min-h-full items-center justify-center p-4">
+              <div className="relative bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
                 <div className="flex justify-between items-start">
                   <div>
@@ -1167,13 +1172,22 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 </div>
                 </div>
               </div>
+              </div>
             </div>
           </div>
         )}
 
         {showEditSubscription && editingSubscription && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            {/* Backdrop */}
+            <div className="fixed inset-0 bg-black/50" onClick={() => {
+              setShowEditSubscription(false);
+              setEditingSubscription(null);
+            }} />
+
+            {/* Centered Container */}
+            <div className="flex min-h-full items-center justify-center p-4">
+              <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
                 <div className="flex justify-between items-start">
                   <div>
@@ -1283,6 +1297,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                   </button>
                 </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>
