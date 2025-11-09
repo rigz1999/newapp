@@ -873,9 +873,7 @@ export default function AdminPanel() {
           setSuccessEmail(email);
           setShowSuccessModal(true);
           // Reload invitations immediately after successful invite
-          setTimeout(() => {
-            fetchInvitations();
-          }, 500);
+          fetchInvitations();
         }}
       />
 
