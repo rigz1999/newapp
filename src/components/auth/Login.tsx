@@ -123,8 +123,8 @@ export function Login() {
     await supabase.auth.signOut();
   };
 
-  // Loading state
-  if (checkingAccess) {
+  // Loading state - also show when user has access (prevents flash before redirect)
+  if (checkingAccess || (user && hasAccess)) {
     return (
       <div className="min-h-screen bg-finixar-background flex items-center justify-center">
         <RefreshCw className="w-12 h-12 text-finixar-text animate-spin" />

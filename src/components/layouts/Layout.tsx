@@ -158,106 +158,106 @@ export function Layout({ organization }: LayoutProps) {
   return (
     <div className="h-screen bg-finixar-background flex overflow-hidden">
       <aside className="w-64 bg-finixar-deep-blue text-white flex flex-col flex-shrink-0">
-        {/* Header - Fixed height */}
-        <div className="p-6 flex-shrink-0">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="bg-finixar-brand-blue p-2 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-white" />
+        {/* Header - Compact */}
+        <div className="p-4 flex-shrink-0">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="bg-finixar-brand-blue p-1.5 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold">Finixar</span>
+            <span className="text-lg font-bold">Finixar</span>
           </div>
 
           {/* Global Search Button */}
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="w-full flex items-center gap-3 px-4 py-2.5 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-colors text-slate-400 hover:text-white"
+            className="w-full flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-colors text-slate-400 hover:text-white"
           >
             <Search className="w-4 h-4" />
             <span className="text-sm">Rechercher...</span>
           </button>
         </div>
 
-        {/* Navigation - Scrollable */}
-        <div className="flex-1 overflow-y-auto px-6">
-          <nav className="space-y-2 pb-4">
+        {/* Navigation - No scroll */}
+        <div className="flex-1 px-4">
+          <nav className="space-y-1">
             <Link
               to="/"
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                 isActive('/') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
               }`}
             >
-              <Home className="w-5 h-5" />
+              <Home className="w-4 h-4" />
               <span>Dashboard</span>
             </Link>
             <Link
               to="/coupons"
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                 isActive('/coupons') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
               }`}
             >
-              <Receipt className="w-5 h-5" />
-              <span>Tous les Coupons</span>
+              <Receipt className="w-4 h-4" />
+              <span>Coupons</span>
             </Link>
             <Link
               to="/projets"
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                 isActive('/projets') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
               }`}
             >
-              <FolderOpen className="w-5 h-5" />
+              <FolderOpen className="w-4 h-4" />
               <span>Projets</span>
             </Link>
             <Link
               to="/investisseurs"
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                 isActive('/investisseurs') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
               }`}
             >
-              <Users className="w-5 h-5" />
+              <Users className="w-4 h-4" />
               <span>Investisseurs</span>
             </Link>
             <Link
               to="/souscriptions"
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                 isActive('/souscriptions') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
               }`}
             >
-              <FileText className="w-5 h-5" />
+              <FileText className="w-4 h-4" />
               <span>Souscriptions</span>
             </Link>
             <Link
               to="/paiements"
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                 isActive('/paiements') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
               }`}
             >
-              <DollarSign className="w-5 h-5" />
+              <DollarSign className="w-4 h-4" />
               <span>Paiements</span>
             </Link>
 
             {/* Settings Link */}
-            <div className="border-t border-slate-700 my-4"></div>
+            <div className="border-t border-slate-700 my-2"></div>
             <Link
               to="/parametres"
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                 isActive('/parametres') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
               }`}
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-4 h-4" />
               <span>Paramètres</span>
             </Link>
 
             {/* Members Management Link - Only for Organization Admins */}
             {isOrgAdmin && !isSuperAdminUser && (
               <>
-                <div className="border-t border-slate-700 my-4"></div>
+                <div className="border-t border-slate-700 my-2"></div>
                 <Link
                   to="/membres"
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                     isActive('/membres') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
                   }`}
                 >
-                  <UserCog className="w-5 h-5" />
+                  <UserCog className="w-4 h-4" />
                   <span>Gestion Membres</span>
                 </Link>
               </>
@@ -266,17 +266,17 @@ export function Layout({ organization }: LayoutProps) {
             {/* Admin Panel Link - Only for Super Admins */}
             {isSuperAdminUser && (
               <>
-                <div className="border-t border-slate-700 my-4"></div>
+                <div className="border-t border-slate-700 my-2"></div>
                 <Link
                   to="/admin"
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors relative ${
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm relative ${
                     isActive('/admin') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
                   }`}
                 >
-                  <Shield className="w-5 h-5" />
+                  <Shield className="w-4 h-4" />
                   <span>Admin Panel</span>
                   {pendingCount > 0 && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 bg-finixar-action-delete text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-finixar-action-delete text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                       {pendingCount}
                     </span>
                   )}
@@ -286,26 +286,26 @@ export function Layout({ organization }: LayoutProps) {
           </nav>
         </div>
 
-        {/* Footer - Fixed height */}
-        <div className="flex-shrink-0 p-6 border-t border-slate-800">
-          <div className="flex items-center gap-3 mb-4">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+        {/* Footer - Compact */}
+        <div className="flex-shrink-0 p-4 border-t border-slate-800">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
               isSuperAdminUser ? 'bg-finixar-action-process' : isOrgAdmin ? 'bg-finixar-brand-blue' : 'bg-finixar-text-secondary'
             }`}>
               {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">
+              <p className="font-medium truncate text-sm">
                 {userProfile?.full_name || 'Utilisateur'}
               </p>
-              <p className="text-sm text-slate-400 capitalize">
-                {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Administrateur' : 'Membre'}
+              <p className="text-xs text-slate-400 capitalize">
+                {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : 'Membre'}
               </p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-finixar-brand-blue rounded-lg transition-colors"
+            className="w-full px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-finixar-brand-blue rounded-lg transition-colors"
           >
             Se déconnecter
           </button>

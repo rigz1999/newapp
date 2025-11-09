@@ -59,11 +59,31 @@ interface MonthlyData {
 
 export function Dashboard({ organization }: DashboardProps) {
   const navigate = useNavigate();
-  
+
+  // Cache key and duration - defined early
+  const CACHE_KEY = getDashboardCacheKey(organization.id);
+  const CACHE_DURATION = 5 * 60 * 1000;
+
+  // Cache getter - defined early for useState initializer
+  const checkCachedData = () => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (!cached) return null;
+      const { data, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp > CACHE_DURATION) {
+        localStorage.removeItem(CACHE_KEY);
+        return null;
+      }
+      return data;
+    } catch {
+      return null;
+    }
+  };
+
   // Fonction pour gérer les clics sur les alertes
   const handleAlertClick = (alertId: string) => {
     if (alertId === 'no-alerts') return; // Ne rien faire si message positif
-    
+
     if (alertId === 'late-payments') {
       navigate('/paiements');
     } else if (alertId === 'upcoming-week') {
@@ -74,7 +94,7 @@ export function Dashboard({ organization }: DashboardProps) {
       navigate('/paiements');
     }
   };
-  
+
   const montantRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
@@ -91,7 +111,11 @@ export function Dashboard({ organization }: DashboardProps) {
   const [recentPayments, setRecentPayments] = useState<Payment[]>([]);
   const [upcomingCoupons, setUpcomingCoupons] = useState<UpcomingCoupon[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Check if we have cached data to avoid showing skeleton on return
+  const [loading, setLoading] = useState(() => {
+    const cached = checkCachedData();
+    return !cached; // Only show loading if no cache
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,24 +163,8 @@ export function Dashboard({ organization }: DashboardProps) {
     type?: 'success' | 'error' | 'warning' | 'info';
   }>({ title: '', message: '', type: 'info' });
 
-  // Cache with org-specific key + version
-  const CACHE_KEY = getDashboardCacheKey(organization.id);
-  const CACHE_DURATION = 5 * 60 * 1000;
-
-  const getCachedData = () => {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (!cached) return null;
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp > CACHE_DURATION) {
-        localStorage.removeItem(CACHE_KEY);
-        return null;
-      }
-      return data;
-    } catch {
-      return null;
-    }
-  };
+  // getCachedData is now defined early in the component as checkCachedData
+  const getCachedData = checkCachedData;
 
   const setCachedData = (data: any) => {
     try {
@@ -645,9 +653,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowQuickPayment(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 rounded-lg transition-all group border border-amber-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
               >
-                <div className="bg-finixar-action-edit p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-slate-700 p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -658,9 +666,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowExportModal(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-cyan-50 to-cyan-100 hover:from-cyan-100 hover:to-cyan-200 rounded-lg transition-all group border border-cyan-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 rounded-lg transition-all group border border-indigo-200"
               >
-                <div className="bg-finixar-chart-teal p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-indigo-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Download className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
