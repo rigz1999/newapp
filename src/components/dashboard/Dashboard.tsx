@@ -619,9 +619,9 @@ export function Dashboard({ organization }: DashboardProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <button
                 onClick={() => { setShowNewProject(true); }}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all group border border-green-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
               >
-                <div className="bg-finixar-action-create p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-brand-blue p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Plus className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -632,7 +632,7 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowTrancheWizard(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all group border border-green-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 rounded-lg transition-all group border border-emerald-200"
               >
                 <div className="bg-finixar-action-create p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <FileText className="w-5 h-5 text-white" />
@@ -645,9 +645,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowQuickPayment(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 rounded-lg transition-all group border border-amber-200"
               >
-                <div className="bg-finixar-action-process p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-action-edit p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -658,9 +658,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowExportModal(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-cyan-50 to-cyan-100 hover:from-cyan-100 hover:to-cyan-200 rounded-lg transition-all group border border-cyan-200"
               >
-                <div className="bg-finixar-action-view p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-chart-teal p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Download className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
