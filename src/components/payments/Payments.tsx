@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Download, Search, DollarSign, CheckCircle2, Eye, Filter, X, AlertCircle } from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
@@ -36,6 +37,7 @@ interface Payment {
 type SortOrder = 'desc' | 'asc';
 
 export function Payments({ organization }: PaymentsProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,20 @@ export function Payments({ organization }: PaymentsProps) {
   useEffect(() => {
     fetchPayments();
   }, [organization.id]);
+
+  // Open proofs modal if ID is in URL params (from search)
+  useEffect(() => {
+    const paymentId = searchParams.get('id');
+    if (paymentId && payments.length > 0) {
+      const payment = payments.find(p => p.id === paymentId);
+      if (payment) {
+        handleViewProofs(payment);
+        // Remove the ID from URL to avoid reopening on refresh
+        searchParams.delete('id');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, payments]);
 
   useEffect(() => {
     setCurrentPage(1);

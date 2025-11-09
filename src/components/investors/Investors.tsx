@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import ExcelJS from 'exceljs';
@@ -86,6 +87,7 @@ const formatType = (type: string | null | undefined): string => {
 };
 
 function Investors({ organization: _organization }: InvestorsProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [investors, setInvestors] = useState<InvestorWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -158,6 +160,21 @@ function Investors({ organization: _organization }: InvestorsProps) {
       setInvestors([]);
     };
   }, []);
+
+  // Open details modal if ID is in URL params (from search)
+  useEffect(() => {
+    const investorId = searchParams.get('id');
+    if (investorId && investors.length > 0) {
+      const investor = investors.find(inv => inv.id === investorId);
+      if (investor) {
+        setSelectedInvestor(investor);
+        setShowDetailsModal(true);
+        // Remove the ID from URL to avoid reopening on refresh
+        searchParams.delete('id');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, investors]);
 
   // Extract unique values for filters
   const uniqueTypes = useMemo(() => [
