@@ -7,8 +7,6 @@ import { Layout } from './components/layouts/Layout';
 import { InvitationAccept } from './components/auth/InvitationAccept';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
-import { supabase } from './lib/supabase';
-import { env } from './config/env';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
@@ -28,10 +26,6 @@ function App() {
   const { user, loading: authLoading, isAdmin, isOrgAdmin } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
-
   const LoadingFallback = () => <DashboardSkeleton />;
 
   // Loading state
@@ -39,68 +33,21 @@ function App() {
     return <DashboardSkeleton />;
   }
 
-  // Pending approval screen (authenticated but no org)
-  const PendingApproval = () => (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-        {/* Icon */}
-        <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-
-        {/* Title */}
-        <h2 className="text-2xl font-bold text-slate-900 mb-3">
-          Demande en cours de traitement
-        </h2>
-
-        {/* Message */}
-        <p className="text-slate-600 mb-6 leading-relaxed">
-          Votre compte a été créé avec succès ! 🎉
-          <br /><br />
-          Un administrateur doit maintenant valider votre accès. Vous recevrez un email de confirmation dès que votre compte sera activé.
-        </p>
-
-        {/* Info box */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
-          <p className="text-sm text-blue-800">
-            <strong>💡 Que faire en attendant ?</strong>
-            <br />
-            • Vérifiez vos emails (inbox et spam)
-            <br />
-            • Le traitement prend généralement 24-48h
-            <br />
-            • Vous pouvez vous reconnecter plus tard
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="space-y-3">
-          <button
-            onClick={handleLogout}
-            className="w-full px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
-          >
-            Se déconnecter
-          </button>
-
-          <a
-            href={`mailto:${env.contact.supportEmail}`}
-            className="block text-sm text-slate-600 hover:text-slate-900 transition-colors"
-          >
-            Besoin d'aide ? Contactez le support →
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <ErrorBoundary>
       <BrowserRouter>
         <Routes>
           {/* Public Routes - No authentication required */}
-          <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+          <Route
+            path="/login"
+            element={
+              user && (isAdmin || organization) ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Login />
+              )
+            }
+          />
           <Route path="/invitation/accept" element={<InvitationAccept />} />
 
           {/* Protected Routes - Authentication required */}
@@ -110,10 +57,10 @@ function App() {
               user ? (
                 orgLoading || authLoading ? (
                   <DashboardSkeleton />
-                ) : !isAdmin && !organization ? (
-                  <PendingApproval />
-                ) : (
+                ) : (isAdmin || organization) ? (
                   <Layout organization={organization || DEFAULT_ORG} />
+                ) : (
+                  <Navigate to="/login" replace />
                 )
               ) : (
                 <Navigate to="/login" replace />
