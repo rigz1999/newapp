@@ -943,9 +943,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         )}
 
         {showEditProject && project && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-slate-200 sticky top-0 bg-white z-10">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">Modifier le Projet</h3>
@@ -957,10 +957,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 </div>
               </div>
 
-              <div className="p-6 bg-white">
+              <div className="flex-1 overflow-y-auto bg-white">
+                <div className="p-6">
                 {(editedProject.periodicite_coupons !== project.periodicite_coupons ||
                   editedProject.taux_nominal !== project.taux_nominal ||
-                  editedProject.maturite_mois !== project.maturite_mois) && 
+                  editedProject.maturite_mois !== project.maturite_mois) &&
                   subscriptions.length > 0 && (
                   <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3">
                     <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
@@ -1150,7 +1151,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                   </div>
                 </div>
 
-                <div className="flex gap-3 mt-6 pt-6 border-t border-slate-200 sticky bottom-0 bg-white">
+                <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setShowEditProject(false)}
                     className="flex-1 px-4 py-2 text-sm font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
@@ -1164,15 +1165,16 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                     Enregistrer
                   </button>
                 </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {showEditSubscription && editingSubscription && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-              <div className="p-6 border-b border-slate-200 bg-white">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">Modifier la Souscription</h3>
@@ -1192,7 +1194,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 </div>
               </div>
 
-              <div className="p-6 bg-white">
+              <div className="flex-1 overflow-y-auto bg-white">
+                <div className="p-6">
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-900 mb-2">
@@ -1278,6 +1281,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                   >
                     Enregistrer
                   </button>
+                </div>
                 </div>
               </div>
             </div>
