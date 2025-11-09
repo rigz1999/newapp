@@ -30,6 +30,8 @@ Object.defineProperty(import.meta, 'env', {
     VITE_ITEMS_PER_PAGE: '25',
     VITE_ENABLE_REALTIME_UPDATES: 'true',
     VITE_ENABLE_ADVANCED_FILTERS: 'true',
+    VITE_SUPPORT_EMAIL: 'test@example.com',
+    VITE_SUPER_ADMIN_EMAIL: 'admin@test.com',
     DEV: false,
   },
   writable: true,
