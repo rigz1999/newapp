@@ -20,7 +20,13 @@ serve(async (req) => {
   try {
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header received:', {
+      hasAuthHeader: !!authHeader,
+      authHeaderPreview: authHeader?.substring(0, 30) + '...'
+    });
+
     if (!authHeader) {
+      console.log('ERROR: No auth header provided');
       return new Response(
         JSON.stringify({ error: 'Non autorisé' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -28,6 +34,10 @@ serve(async (req) => {
     }
 
     const { currentPassword, newPassword } = await req.json();
+    console.log('Request body received:', {
+      hasCurrentPassword: !!currentPassword,
+      hasNewPassword: !!newPassword
+    });
 
     if (!currentPassword || !newPassword) {
       return new Response(
@@ -52,9 +62,18 @@ serve(async (req) => {
     }
 
     // Initialize Supabase client with user's token
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    console.log('Environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseAnonKey: !!supabaseAnonKey,
+      urlPreview: supabaseUrl?.substring(0, 30) + '...'
+    });
+
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl ?? '',
+      supabaseAnonKey ?? '',
       {
         global: {
           headers: { Authorization: authHeader },
@@ -63,16 +82,28 @@ serve(async (req) => {
     );
 
     // Get current user
+    console.log('Attempting to get user...');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
 
+    console.log('getUser result:', {
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      hasError: !!userError,
+      errorMessage: userError?.message,
+      errorStatus: userError?.status
+    });
+
     if (userError || !user) {
+      console.log('ERROR: getUser failed - returning 401');
       return new Response(
-        JSON.stringify({ error: 'Non autorisé' }),
+        JSON.stringify({ error: 'Non autorisé', details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Verify current password by attempting to sign in
+    console.log('Verifying current password for user:', user.email);
     const verifyClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -84,32 +115,42 @@ serve(async (req) => {
     });
 
     if (signInError) {
+      console.log('ERROR: Password verification failed:', signInError.message);
       return new Response(
         JSON.stringify({ error: 'Mot de passe actuel incorrect' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('Password verification successful');
+
     // Initialize admin client to update password
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    console.log('Admin client check:', {
+      hasServiceRoleKey: !!serviceRoleKey
+    });
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      serviceRoleKey ?? ''
     );
 
     // Update password using admin client
+    console.log('Updating password for user:', user.id);
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       user.id,
       { password: newPassword }
     );
 
     if (updateError) {
-      console.error('Error updating password:', updateError);
+      console.error('ERROR: Password update failed:', updateError);
       return new Response(
         JSON.stringify({ error: 'Erreur lors de la mise à jour du mot de passe' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('SUCCESS: Password updated successfully');
     return new Response(
       JSON.stringify({ success: true, message: 'Mot de passe changé avec succès' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
