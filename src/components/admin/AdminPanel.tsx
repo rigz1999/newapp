@@ -112,7 +112,17 @@ export default function AdminPanel() {
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
-    if (!error) {
+    console.log('fetchInvitations result:', { data, error, count: data?.length });
+
+    if (error) {
+      console.error('Error fetching invitations:', error);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors du chargement des invitations: ' + error.message,
+        type: 'error'
+      });
+      setShowAlertModal(true);
+    } else {
       setInvitations(data || []);
     }
     setLoadingInvitations(false);
