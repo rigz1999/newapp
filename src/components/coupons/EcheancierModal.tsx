@@ -353,7 +353,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
         </div>
 
         {/* Content - Groupé par Tranche puis Date */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-white">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>

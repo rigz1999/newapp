@@ -167,7 +167,7 @@ export function SubscriptionsModal({
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-white">
           <table className="w-full">
             <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
               <tr>
