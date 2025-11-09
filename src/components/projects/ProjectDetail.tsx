@@ -961,7 +961,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-6 bg-white">
                 {(editedProject.periodicite_coupons !== project.periodicite_coupons ||
                   editedProject.taux_nominal !== project.taux_nominal ||
                   editedProject.maturite_mois !== project.maturite_mois) && 
@@ -1176,7 +1176,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         {showEditSubscription && editingSubscription && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-              <div className="p-6 border-b border-slate-200">
+              <div className="p-6 border-b border-slate-200 bg-white">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">Modifier la Souscription</h3>
@@ -1196,7 +1196,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-6 bg-white">
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-900 mb-2">

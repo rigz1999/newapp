@@ -97,7 +97,7 @@ export function TranchesModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-white">
           <div className="space-y-4">
             {filteredTranches.map((tranche) => (
               <div

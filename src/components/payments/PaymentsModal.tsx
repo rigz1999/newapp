@@ -68,7 +68,7 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-white">
           {payments.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-slate-400">Aucun paiement enregistré</p>

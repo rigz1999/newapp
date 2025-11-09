@@ -285,7 +285,7 @@ export function TrancheWizard({
           </div>
 
           {/* Body - Scrollable */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
             {/* Project selection */}
             <div>
               <label className="block text-sm font-semibold text-slate-900 mb-2">

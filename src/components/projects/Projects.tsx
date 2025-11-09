@@ -453,7 +453,7 @@ export function Projects({ organization }: ProjectsProps) {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-white">
               <div>
                 <h3 className="text-2xl font-bold text-slate-900">Nouveau Projet</h3>
                 <p className="text-sm text-slate-600 mt-1">Créer un nouveau projet obligataire</p>
@@ -469,8 +469,8 @@ export function Projects({ organization }: ProjectsProps) {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
-              <form onSubmit={handleCreateProject} className="p-6">
+            <div className="flex-1 overflow-y-auto bg-white">
+              <form onSubmit={handleCreateProject} className="p-6 bg-white">
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="projet" className="block text-sm font-medium text-slate-900 mb-2">
