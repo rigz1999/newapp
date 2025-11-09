@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2, Filter, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { AlertModal } from '../common/Modals';
@@ -37,6 +38,7 @@ interface SubscriptionsProps {
 }
 
 export function Subscriptions({ organization }: SubscriptionsProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -118,6 +120,21 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       setSubscriptions([]);
     };
   }, [organization.id]);
+
+  // Open view modal if ID is in URL params (from search)
+  useEffect(() => {
+    const subscriptionId = searchParams.get('id');
+    if (subscriptionId && subscriptions.length > 0) {
+      const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+      if (subscription) {
+        setViewingSubscription(subscription);
+        setShowViewModal(true);
+        // Remove the ID from URL to avoid reopening on refresh
+        searchParams.delete('id');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, subscriptions]);
 
   const fetchSubscriptions = async () => {
     setLoading(true);

@@ -194,7 +194,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .from('projets')
           .select('id, projet, emetteur, statut')
           .eq('org_id', orgId)
-          .or(`projet.ilike.${searchTerm},emetteur.ilike.${searchTerm}`)
+          .or(`projet.ilike.%${searchQuery}%,emetteur.ilike.%${searchQuery}%`)
           .limit(10),
 
         // Search Investors
@@ -202,7 +202,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .from('investisseurs')
           .select('id, nom_raison_sociale, id_investisseur, type, email')
           .eq('org_id', orgId)
-          .or(`nom_raison_sociale.ilike.${searchTerm},id_investisseur.ilike.${searchTerm},email.ilike.${searchTerm}`)
+          .or(`nom_raison_sociale.ilike.%${searchQuery}%,id_investisseur.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
           .limit(10),
 
         // Search Tranches
@@ -230,7 +230,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             investisseurs!inner(id, nom_raison_sociale, id_investisseur)
           `)
           .eq('org_id', orgId)
-          .or(`investisseurs.nom_raison_sociale.ilike.${searchTerm},investisseurs.id_investisseur.ilike.${searchTerm},tranches.tranche_name.ilike.${searchTerm},tranches.projets.projet.ilike.${searchTerm}`)
+          .or(`investisseurs.nom_raison_sociale.ilike.%${searchQuery}%,investisseurs.id_investisseur.ilike.%${searchQuery}%,tranches.tranche_name.ilike.%${searchQuery}%,tranches.projets.projet.ilike.%${searchQuery}%`)
           .limit(10),
 
         // Search Payments
@@ -248,7 +248,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             )
           `)
           .eq('org_id', orgId)
-          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.${searchTerm},souscriptions.tranches.projets.projet.ilike.${searchTerm}`)
+          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.%${searchQuery}%,souscriptions.tranches.projets.projet.ilike.%${searchQuery}%`)
           .limit(10),
 
         // Search Coupons (from paiements where type is coupon)
@@ -266,7 +266,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           `)
           .eq('org_id', orgId)
           .eq('type_paiement', 'coupon')
-          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.${searchTerm},souscriptions.tranches.projets.projet.ilike.${searchTerm},souscriptions.tranches.tranche_name.ilike.${searchTerm}`)
+          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.%${searchQuery}%,souscriptions.tranches.projets.projet.ilike.%${searchQuery}%,souscriptions.tranches.tranche_name.ilike.%${searchQuery}%`)
           .limit(10)
       ]);
 
@@ -292,7 +292,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           inv.email || ''
         ].filter(Boolean),
         icon: <Users className="w-5 h-5 text-finixar-green" />,
-        link: `/investisseurs`
+        link: `/investisseurs?id=${inv.id}`
       }));
 
       // Process Tranches
@@ -317,7 +317,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           formatCurrency(s.montant_investi)
         ],
         icon: <FileText className="w-5 h-5 text-orange-600" />,
-        link: `/souscriptions`
+        link: `/souscriptions?id=${s.id}`
       }));
 
       // Process Payments - already filtered by database query
@@ -331,7 +331,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           p.type_paiement || 'Paiement'
         ],
         icon: <DollarSign className="w-5 h-5 text-emerald-600" />,
-        link: `/paiements`
+        link: `/paiements?id=${p.id}`
       }));
 
       // Process Coupons - already filtered by database query
@@ -345,7 +345,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           c.souscriptions?.tranches?.tranche_name || ''
         ],
         icon: <Receipt className="w-5 h-5 text-pink-600" />,
-        link: `/coupons`
+        link: `/coupons?id=${c.id}`
       }));
 
       setResults({

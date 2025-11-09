@@ -1,4 +1,5 @@
  import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import {
   Calendar,
@@ -78,6 +79,7 @@ const formatDate = (dateString: string) => {
 
 export function Coupons({ organization: _organization }: CouponsProps) {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -109,6 +111,21 @@ export function Coupons({ organization: _organization }: CouponsProps) {
   useEffect(() => {
     fetchCoupons();
   }, []);
+
+  // Open details modal if ID is in URL params (from search)
+  useEffect(() => {
+    const couponId = searchParams.get('id');
+    if (couponId && coupons.length > 0) {
+      const coupon = coupons.find(c => c.id === couponId);
+      if (coupon) {
+        setSelectedCoupon(coupon);
+        setShowDetailsModal(true);
+        // Remove the ID from URL to avoid reopening on refresh
+        searchParams.delete('id');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, coupons]);
 
   useEffect(() => {
     if (user) {
