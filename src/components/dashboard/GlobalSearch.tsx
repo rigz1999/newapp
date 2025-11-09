@@ -185,7 +185,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
     setError(null);
 
     try {
-      const lowerQuery = searchQuery.toLowerCase();
+      const searchTerm = `%${searchQuery}%`;
 
       // Run all searches in parallel for maximum performance
       const [projectsRes, investorsRes, tranchesRes, subscriptionsRes, paymentsRes, couponsRes] = await Promise.all([
@@ -194,7 +194,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .from('projets')
           .select('id, projet, emetteur, statut')
           .eq('org_id', orgId)
-          .or(`projet.ilike.%${lowerQuery}%,emetteur.ilike.%${lowerQuery}%`)
+          .or(`projet.ilike.${searchTerm},emetteur.ilike.${searchTerm}`)
           .limit(10),
 
         // Search Investors
@@ -202,7 +202,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .from('investisseurs')
           .select('id, nom_raison_sociale, id_investisseur, type, email')
           .eq('org_id', orgId)
-          .or(`nom_raison_sociale.ilike.%${lowerQuery}%,id_investisseur.ilike.%${lowerQuery}%,email.ilike.%${lowerQuery}%`)
+          .or(`nom_raison_sociale.ilike.${searchTerm},id_investisseur.ilike.${searchTerm},email.ilike.${searchTerm}`)
           .limit(10),
 
         // Search Tranches
@@ -215,7 +215,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             projets!inner(id, projet, org_id)
           `)
           .eq('projets.org_id', orgId)
-          .ilike('tranche_name', `%${lowerQuery}%`)
+          .ilike('tranche_name', searchTerm)
           .limit(10),
 
         // Search Subscriptions
@@ -230,7 +230,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             investisseurs!inner(id, nom_raison_sociale, id_investisseur)
           `)
           .eq('org_id', orgId)
-          .or(`investisseurs.nom_raison_sociale.ilike.%${lowerQuery}%,investisseurs.id_investisseur.ilike.%${lowerQuery}%,tranches.tranche_name.ilike.%${lowerQuery}%,tranches.projets.projet.ilike.%${lowerQuery}%`)
+          .or(`investisseurs.nom_raison_sociale.ilike.${searchTerm},investisseurs.id_investisseur.ilike.${searchTerm},tranches.tranche_name.ilike.${searchTerm},tranches.projets.projet.ilike.${searchTerm}`)
           .limit(10),
 
         // Search Payments
@@ -248,7 +248,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             )
           `)
           .eq('org_id', orgId)
-          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.%${lowerQuery}%,souscriptions.tranches.projets.projet.ilike.%${lowerQuery}%`)
+          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.${searchTerm},souscriptions.tranches.projets.projet.ilike.${searchTerm}`)
           .limit(10),
 
         // Search Coupons (from paiements where type is coupon)
@@ -266,7 +266,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           `)
           .eq('org_id', orgId)
           .eq('type_paiement', 'coupon')
-          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.%${lowerQuery}%,souscriptions.tranches.projets.projet.ilike.%${lowerQuery}%,souscriptions.tranches.tranche_name.ilike.%${lowerQuery}%`)
+          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.${searchTerm},souscriptions.tranches.projets.projet.ilike.${searchTerm},souscriptions.tranches.tranche_name.ilike.${searchTerm}`)
           .limit(10)
       ]);
 
@@ -292,7 +292,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           inv.email || ''
         ].filter(Boolean),
         icon: <Users className="w-5 h-5 text-finixar-green" />,
-        link: `/investisseurs/${inv.id}`
+        link: `/investisseurs`
       }));
 
       // Process Tranches
@@ -317,7 +317,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           formatCurrency(s.montant_investi)
         ],
         icon: <FileText className="w-5 h-5 text-orange-600" />,
-        link: `/souscriptions/${s.id}`
+        link: `/souscriptions`
       }));
 
       // Process Payments - already filtered by database query
@@ -331,7 +331,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           p.type_paiement || 'Paiement'
         ],
         icon: <DollarSign className="w-5 h-5 text-emerald-600" />,
-        link: `/paiements/${p.id}`
+        link: `/paiements`
       }));
 
       // Process Coupons - already filtered by database query
@@ -345,7 +345,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           c.souscriptions?.tranches?.tranche_name || ''
         ],
         icon: <Receipt className="w-5 h-5 text-pink-600" />,
-        link: `/coupons/${c.id}`
+        link: `/coupons`
       }));
 
       setResults({
