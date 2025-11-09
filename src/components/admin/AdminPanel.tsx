@@ -57,7 +57,10 @@ export default function AdminPanel() {
   const [showRemoveUserModal, setShowRemoveUserModal] = useState(false);
   const [showDeletePendingUserModal, setShowDeletePendingUserModal] = useState(false);
   const [showUserDetailModal, setShowUserDetailModal] = useState(false);
-  
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successEmail, setSuccessEmail] = useState('');
+
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
   const [deletingItem, setDeletingItem] = useState<{ type: 'org' | 'user' | 'pending_user'; id: string; name: string } | null>(null);
   const [selectedUserDetail, setSelectedUserDetail] = useState<UserDetail | null>(null);
@@ -449,13 +452,22 @@ export default function AdminPanel() {
               <p className="text-slate-600">Gérer les utilisateurs et les organisations</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowNewOrgModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nouvelle Organisation
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors"
+            >
+              <UserPlus className="w-4 h-4" />
+              Inviter un Membre
+            </button>
+            <button
+              onClick={() => setShowNewOrgModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nouvelle Organisation
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -703,6 +715,26 @@ export default function AdminPanel() {
         title={alertModalConfig.title}
         message={alertModalConfig.message}
         type={alertModalConfig.type}
+      />
+
+      {/* Invite Member Modal */}
+      <InviteMemberModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        organizations={organizations}
+        onSuccess={(email: string) => {
+          setShowInviteModal(false);
+          setSuccessEmail(email);
+          setShowSuccessModal(true);
+          fetchData();
+        }}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        email={successEmail}
       />
     </div>
   );
@@ -1172,6 +1204,303 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
             className="w-full px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
           >
             Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Invite Member Modal Component
+function InviteMemberModal({
+  isOpen,
+  onClose,
+  organizations,
+  onSuccess
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  organizations: Organization[];
+  onSuccess: (email: string) => void;
+}) {
+  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [selectedOrgId, setSelectedOrgId] = useState('');
+  const [role, setRole] = useState<'member' | 'admin'>('member');
+  const [sending, setSending] = useState(false);
+
+  // Alert modal state
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
+
+  if (!isOpen) return null;
+
+  const handleSendInvitation = async () => {
+    if (!email || !firstName || !lastName || !selectedOrgId) {
+      setAlertConfig({
+        title: 'Champs manquants',
+        message: 'Veuillez remplir tous les champs',
+        type: 'warning'
+      });
+      setShowAlert(true);
+      return;
+    }
+
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setAlertConfig({
+        title: 'Email invalide',
+        message: 'Veuillez entrer une adresse email valide',
+        type: 'error'
+      });
+      setShowAlert(true);
+      return;
+    }
+
+    setSending(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Session expirée');
+      }
+
+      const selectedOrg = organizations.find(o => o.id === selectedOrgId);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invitation`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            email,
+            firstName,
+            lastName,
+            role,
+            orgId: selectedOrgId,
+            orgName: selectedOrg?.name || 'Organisation',
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erreur lors de l\'envoi de l\'invitation');
+      }
+
+      // Success - reset form and trigger success modal
+      const invitedEmail = email;
+      setEmail('');
+      setFirstName('');
+      setLastName('');
+      setSelectedOrgId('');
+      setRole('member');
+      onSuccess(invitedEmail);
+    } catch (error: any) {
+      setAlertConfig({
+        title: 'Erreur',
+        message: error.message || 'Erreur lors de l\'envoi de l\'invitation',
+        type: 'error'
+      });
+      setShowAlert(true);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-slate-900">Inviter un Membre</h3>
+            <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
+              <X className="w-5 h-5 text-slate-600" />
+            </button>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Organisation *
+              </label>
+              <select
+                value={selectedOrgId}
+                onChange={(e) => setSelectedOrgId(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Sélectionner une organisation</option>
+                {organizations.map(org => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Email *
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="exemple@email.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Prénom *
+              </label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Jean"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Nom *
+              </label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Dupont"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Rôle *
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as 'member' | 'admin')}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="member">Membre</option>
+                <option value="admin">Administrateur</option>
+              </select>
+              <p className="text-xs text-slate-500 mt-2">
+                {role === 'admin'
+                  ? 'Peut gérer les membres et accéder à toutes les données'
+                  : 'Peut accéder et modifier les données de l\'organisation'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+              disabled={sending}
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handleSendInvitation}
+              disabled={sending}
+              className="flex-1 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {sending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Envoi...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Envoyer
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <AlertModal
+        isOpen={showAlert}
+        onClose={() => setShowAlert(false)}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
+    </>
+  );
+}
+
+// Success Modal Component
+function SuccessModal({
+  isOpen,
+  onClose,
+  email
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  email: string;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8" onClick={(e) => e.stopPropagation()}>
+        <div className="text-center">
+          {/* Success Icon */}
+          <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+
+          {/* Title */}
+          <h3 className="text-2xl font-bold text-slate-900 mb-3">
+            Invitation envoyée !
+          </h3>
+
+          {/* Message */}
+          <p className="text-slate-600 mb-2">
+            Un email d'invitation a été envoyé à
+          </p>
+          <p className="text-lg font-semibold text-blue-600 mb-6">
+            {email}
+          </p>
+
+          {/* Info Box */}
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6 text-left">
+            <p className="text-sm text-blue-900 leading-relaxed">
+              <strong className="flex items-center gap-2 mb-2">
+                <span className="text-lg">📧</span>
+                Prochaines étapes :
+              </strong>
+              <span className="block ml-7">• L'utilisateur recevra un email d'invitation</span>
+              <span className="block ml-7">• Il pourra créer son compte en cliquant sur le lien</span>
+              <span className="block ml-7">• L'invitation expire dans 7 jours</span>
+            </p>
+          </div>
+
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
+          >
+            Parfait ! 🎉
           </button>
         </div>
       </div>
