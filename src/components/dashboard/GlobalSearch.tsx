@@ -80,7 +80,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
     }
   }, []);
 
-  // Close modal when clicking outside
+  // Close modal when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
@@ -88,8 +88,18 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       }
     };
 
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose?.();
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, [onClose]);
 
   // Debounced search
