@@ -491,7 +491,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
               <button
                 onClick={handleAnalyze}
                 disabled={files.length === 0 || analyzing}
-                className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-accent disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-cta-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
               >
                 {analyzing ? 'Analyse en cours...' : 'Analyser le justificatif'}
               </button>
@@ -549,7 +549,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                     {match.confiance > 50 && (
                       <button
                         onClick={() => handleConfirm(match)}
-                        className="flex-1 bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                        className="flex-1 bg-finixar-cta text-white py-2 rounded-lg font-medium hover:bg-finixar-cta-hover transition-colors"
                       >
                         ✓ Confirmer & Marquer Payé
                       </button>

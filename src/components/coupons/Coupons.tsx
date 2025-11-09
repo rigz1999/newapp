@@ -463,14 +463,14 @@ export function Coupons({ organization: _organization }: CouponsProps) {
         <div className="flex gap-2">
           <button
             onClick={() => setShowPaymentWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
           >
             <Upload className="w-4 h-4" />
             Enregistrer Paiement
           </button>
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
           >
             <Download className="w-4 h-4" />
             Exporter Excel
@@ -746,7 +746,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
                                   e.stopPropagation();
                                   setShowPaymentWizard(true);
                                 }}
-                                className="px-3 py-1.5 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors flex items-center gap-1.5 text-xs font-medium"
+                                className="px-3 py-1.5 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors flex items-center gap-1.5 text-xs font-medium"
                               >
                                 <Upload className="w-3.5 h-3.5" />
                                 Enregistrer Paiement

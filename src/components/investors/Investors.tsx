@@ -692,7 +692,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
         </div>
         <button
           onClick={handleExportExcel}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
         >
           <Download className="w-4 h-4" />
           Exporter Excel
@@ -996,7 +996,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     setShowDetailsModal(false);
                     handleEditClick(selectedInvestor);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                   Modifier
@@ -1368,7 +1368,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               </button>
               <button
                 onClick={handleEditSave}
-                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors"
+                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
               >
                 Enregistrer
               </button>
@@ -1600,7 +1600,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               <button
                 onClick={handleRibUploadConfirm}
                 disabled={!ribFile || uploadingRib}
-                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {uploadingRib ? (
                   <>
@@ -1671,7 +1671,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               </button>
               <button
                 onClick={handleDownloadFromView}
-                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
                 Télécharger

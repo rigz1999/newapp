@@ -510,7 +510,7 @@ export function Dashboard({ organization }: DashboardProps) {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           <span>Actualiser</span>
@@ -632,9 +632,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowTrancheWizard(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all group border border-green-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 rounded-lg transition-all group border border-teal-200"
               >
-                <div className="bg-green-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-cta p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <FileText className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -788,7 +788,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         <div
                           className={`w-full rounded-t-lg transition-all hover:opacity-90 cursor-pointer shadow-md ${
                             viewMode === 'cumulative'
-                              ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 hover:from-emerald-700 hover:to-emerald-500'
+                              ? 'bg-gradient-to-t from-finixar-accent to-finixar-cta hover:from-finixar-accent-hover hover:to-finixar-cta-hover'
                               : 'bg-gradient-to-t from-finixar-cta to-finixar-accent hover:from-finixar-accent hover:to-finixar-cta'
                           }`}
                           style={{ height: `${heightPercentage}%` }}
@@ -1355,7 +1355,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     ref={lastFocusableRef}
                     type="submit"
                     disabled={creatingProject || !isFormValid}
-                    className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     {creatingProject ? 'Création...' : 'Créer le projet'}
                   </button>

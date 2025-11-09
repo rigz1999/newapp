@@ -278,7 +278,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
 
               <button
                 onClick={() => setShowUpload(true)}
-                className="w-full px-6 py-3 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors font-medium"
+                className="w-full px-6 py-3 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors font-medium"
               >
                 Télécharger le Justificatif de Paiement
               </button>

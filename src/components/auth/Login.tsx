@@ -166,7 +166,7 @@ export function Login() {
 
             <button
               onClick={handleRefresh}
-              className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-accent transition-colors mb-3 flex items-center justify-center gap-2"
+              className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-cta-hover transition-colors mb-3 flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
               Vérifier l'accès
@@ -273,7 +273,7 @@ export function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-cta-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (isSignUp ? 'Création...' : 'Connexion...') : (isSignUp ? 'Créer mon compte' : 'Se connecter')}
             </button>

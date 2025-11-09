@@ -438,7 +438,7 @@ export function Projects({ organization }: ProjectsProps) {
               <div className="bg-slate-50 px-6 py-3 flex gap-2 border-t border-slate-200">
                 <button
                   onClick={() => navigate(`/projets/${project.id}`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-finixar-cta text-white text-sm font-medium rounded-lg hover:bg-finixar-accent transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-finixar-cta text-white text-sm font-medium rounded-lg hover:bg-finixar-cta-hover transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   Voir détails
@@ -812,7 +812,7 @@ export function Projects({ organization }: ProjectsProps) {
                   <button
                     type="submit"
                     disabled={creatingProject || !isFormValid}
-                    className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-accent transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     {creatingProject ? 'Création...' : 'Créer le projet'}
                   </button>
