@@ -957,7 +957,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             <button
               onClick={handleExport}
               disabled={exporting || preview.sections === 0}
-              className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {exporting ? (
                 'Export en cours...'

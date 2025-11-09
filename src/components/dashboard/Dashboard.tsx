@@ -510,7 +510,7 @@ export function Dashboard({ organization }: DashboardProps) {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-finixar-brand-blue text-white rounded-lg hover:bg-finixar-brand-blue-hover transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           <span>Actualiser</span>
@@ -619,9 +619,9 @@ export function Dashboard({ organization }: DashboardProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <button
                 onClick={() => { setShowNewProject(true); }}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all group border border-green-200"
               >
-                <div className="bg-finixar-teal p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-action-create p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Plus className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -632,9 +632,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowTrancheWizard(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 rounded-lg transition-all group border border-teal-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-lg transition-all group border border-green-200"
               >
-                <div className="bg-finixar-teal p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-action-create p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <FileText className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -647,7 +647,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 onClick={() => setShowQuickPayment(true)}
                 className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all group border border-purple-200"
               >
-                <div className="bg-finixar-teal p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-action-process p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -658,9 +658,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
               <button
                 onClick={() => setShowExportModal(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
               >
-                <div className="bg-slate-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-action-view p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Download className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -715,7 +715,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   aria-label="Mode d'affichage"
                   value={viewMode}
                   onChange={(e) => setViewMode(e.target.value as 'monthly' | 'cumulative')}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-teal focus:border-transparent font-medium"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent font-medium"
                 >
                   <option value="monthly">Vue par mois</option>
                   <option value="cumulative">Vue cumulée</option>
@@ -724,7 +724,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   aria-label="Année"
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-teal focus:border-transparent"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
                 >
                   <option value={2024}>2024</option>
                   <option value={2025}>2025</option>
@@ -738,7 +738,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     setStartMonth(start);
                     setEndMonth(end);
                   }}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-teal focus:border-transparent"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
                 >
                   <option value="0-11">Année complète</option>
                   <option value="0-2">Q1 (Jan-Mar)</option>
@@ -1023,7 +1023,7 @@ export function Dashboard({ organization }: DashboardProps) {
                       required
                       value={newProjectData.projet}
                       onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: GreenTech 2025"
                     />
                   </div>
@@ -1039,7 +1039,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.type}
                         onChange={(e) => setNewProjectData({ ...newProjectData, type: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="obligations_simples">Obligations Simples</option>
                         <option value="obligations_convertibles">Obligations Convertibles</option>
@@ -1060,7 +1060,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         inputMode="decimal"
                         value={newProjectData.taux_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 8.50"
                       />
                     </div>
@@ -1078,7 +1078,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         min="1"
                         value={newProjectData.maturite_mois}
                         onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 60 (5 ans)"
                       />
                       <p className="mt-1 text-xs text-slate-600">Durée totale en mois</p>
@@ -1093,7 +1093,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.base_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, base_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="360">360 jours (30/360) - Standard</option>
                         <option value="365">365 jours (Exact/365)</option>
@@ -1173,7 +1173,7 @@ export function Dashboard({ organization }: DashboardProps) {
                           }));
                           requestAnimationFrame(moveCaretBeforeEuro);
                         }}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 1 500 000 €"
                       />
                     </div>
@@ -1187,7 +1187,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.periodicite_coupon}
                         onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="" disabled>Choisir…</option>
                         <option value="annuel">Annuel</option>
@@ -1207,7 +1207,7 @@ export function Dashboard({ organization }: DashboardProps) {
                       required
                       value={newProjectData.emetteur}
                       onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: GreenTech SAS"
                     />
                   </div>
@@ -1233,7 +1233,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         setSirenError(isValidSIREN(v) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).');
                       }}
                       aria-invalid={!!sirenError}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue ${
                         sirenError ? 'border-red-500' : 'border-slate-300'
                       }`}
                       placeholder="Ex: 123456789"
@@ -1256,7 +1256,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.prenom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Jean"
                       />
                     </div>
@@ -1270,7 +1270,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.nom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Dupont"
                       />
                     </div>
@@ -1286,7 +1286,7 @@ export function Dashboard({ organization }: DashboardProps) {
                       required
                       value={newProjectData.email_representant}
                       onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: jean.dupont@example.com"
                     />
                   </div>
@@ -1304,7 +1304,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.representant_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Cabinet Lefevre"
                       />
                     </div>
@@ -1319,7 +1319,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.email_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: contact@cabinet-lefevre.fr"
                       />
                     </div>
@@ -1334,7 +1334,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         pattern="[0-9]*"
                         value={newProjectData.telephone_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 0123456789"
                         maxLength={10}
                       />
@@ -1355,7 +1355,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     ref={lastFocusableRef}
                     type="submit"
                     disabled={creatingProject || !isFormValid}
-                    className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     {creatingProject ? 'Création...' : 'Créer le projet'}
                   </button>

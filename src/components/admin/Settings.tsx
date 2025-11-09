@@ -334,7 +334,7 @@ export default function Settings() {
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                 placeholder="Jean"
               />
             </div>
@@ -348,7 +348,7 @@ export default function Settings() {
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                 placeholder="Dupont"
               />
             </div>
@@ -358,7 +358,7 @@ export default function Settings() {
               <button
                 onClick={handleUpdateProfile}
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="flex items-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {saving ? (
                   <>
@@ -397,7 +397,7 @@ export default function Settings() {
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                   placeholder="••••••••"
                 />
               </div>
@@ -414,7 +414,7 @@ export default function Settings() {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                   placeholder="••••••••"
                 />
               </div>
@@ -432,7 +432,7 @@ export default function Settings() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                   placeholder="••••••••"
                 />
               </div>
@@ -502,7 +502,7 @@ export default function Settings() {
                   checked={remind7Days}
                   onChange={(e) => setRemind7Days(e.target.checked)}
                   disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-teal disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <div className="flex-1">
                   <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
@@ -521,7 +521,7 @@ export default function Settings() {
                   checked={remind14Days}
                   onChange={(e) => setRemind14Days(e.target.checked)}
                   disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-teal disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <div className="flex-1">
                   <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
@@ -540,7 +540,7 @@ export default function Settings() {
                   checked={remind30Days}
                   onChange={(e) => setRemind30Days(e.target.checked)}
                   disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-teal disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <div className="flex-1">
                   <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
@@ -572,7 +572,7 @@ export default function Settings() {
               <button
                 onClick={handleUpdateReminderSettings}
                 disabled={saving || !remindersEnabled}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {saving ? (
                   <>

@@ -989,7 +989,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           type="text"
                           value={editedProject.projet || ''}
                           onChange={(e) => setEditedProject({ ...editedProject, projet: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
 
@@ -1000,7 +1000,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             type="text"
                             value={editedProject.emetteur || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, emetteur: e.target.value })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           />
                         </div>
 
@@ -1010,7 +1010,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             type="text"
                             value={editedProject.siren_emetteur?.toString() || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, siren_emetteur: parseInt(e.target.value) || null })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           />
                         </div>
                       </div>
@@ -1020,7 +1020,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                         <select
                           value={editedProject.type || ''}
                           onChange={(e) => setEditedProject({ ...editedProject, type: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         >
                           <option value="obligations_simples">Obligations simples</option>
                           <option value="obligations_convertibles">Obligations convertibles</option>
@@ -1044,7 +1044,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             step="0.01"
                             value={editedProject.taux_nominal?.toString() || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, taux_nominal: parseFloat(e.target.value) || null })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           />
                         </div>
 
@@ -1055,7 +1055,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           <select
                             value={editedProject.periodicite_coupons || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, periodicite_coupons: e.target.value })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           >
                             <option value="">Sélectionner...</option>
                             <option value="mensuelle">Mensuelle</option>
@@ -1075,7 +1075,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             type="number"
                             value={editedProject.maturite_mois?.toString() || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, maturite_mois: parseInt(e.target.value) || null })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                             placeholder="Ex: 24"
                           />
                         </div>
@@ -1087,7 +1087,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           <select
                             value={editedProject.base_interet?.toString() || '360'}
                             onChange={(e) => setEditedProject({ ...editedProject, base_interet: parseInt(e.target.value) })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           >
                             <option value="360">360 jours</option>
                             <option value="365">365 jours</option>
@@ -1109,7 +1109,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             type="text"
                             value={editedProject.prenom_representant || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, prenom_representant: e.target.value })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           />
                         </div>
                         <div>
@@ -1118,7 +1118,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             type="text"
                             value={editedProject.nom_representant || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, nom_representant: e.target.value })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           />
                         </div>
                       </div>
@@ -1129,7 +1129,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           type="email"
                           value={editedProject.email_representant || ''}
                           onChange={(e) => setEditedProject({ ...editedProject, email_representant: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
 
@@ -1139,7 +1139,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           type="text"
                           value={editedProject.representant_masse || ''}
                           onChange={(e) => setEditedProject({ ...editedProject, representant_masse: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
 
@@ -1149,7 +1149,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           type="email"
                           value={editedProject.email_rep_masse || ''}
                           onChange={(e) => setEditedProject({ ...editedProject, email_rep_masse: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
                     </div>
@@ -1224,7 +1224,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           date_souscription: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                     />
                   </div>
 
@@ -1242,7 +1242,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           montant_investi: parseFloat(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                     />
                   </div>
 
@@ -1259,7 +1259,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           nombre_obligations: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                     />
                   </div>
 

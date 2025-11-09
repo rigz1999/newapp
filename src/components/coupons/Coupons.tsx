@@ -552,7 +552,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
               placeholder="Rechercher par investisseur, projet, tranche..."
               value={advancedFilters.filters.search}
               onChange={(e) => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             />
           </div>
 
@@ -567,7 +567,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
             <Filter className="w-5 h-5" />
             <span className="font-medium">Filtres avancés</span>
             {activeFiltersCount > 0 && (
-              <span className="bg-finixar-teal text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-finixar-brand-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}

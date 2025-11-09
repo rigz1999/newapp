@@ -276,7 +276,7 @@ export function Projects({ organization }: ProjectsProps) {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+          className="flex items-center gap-2 bg-finixar-action-create text-white px-4 py-2 rounded-lg hover:bg-finixar-action-create-hover transition-colors"
         >
           <Plus className="w-5 h-5" />
           <span>Nouveau Projet</span>
@@ -294,7 +294,7 @@ export function Projects({ organization }: ProjectsProps) {
               placeholder="Rechercher par nom, émetteur, représentant..."
               value={advancedFilters.filters.search}
               onChange={(e) => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             />
           </div>
 
@@ -309,7 +309,7 @@ export function Projects({ organization }: ProjectsProps) {
             <Filter className="w-5 h-5" />
             <span className="font-medium">Filtres avancés</span>
             {activeFiltersCount > 0 && (
-              <span className="bg-finixar-teal text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-finixar-brand-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}
@@ -407,7 +407,7 @@ export function Projects({ organization }: ProjectsProps) {
             >
               <div className="p-6">
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-finixar-teal p-3 rounded-lg flex-shrink-0">
+                  <div className="bg-finixar-brand-blue p-3 rounded-lg flex-shrink-0">
                     <Layers className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -438,7 +438,7 @@ export function Projects({ organization }: ProjectsProps) {
               <div className="bg-slate-50 px-6 py-3 flex gap-2 border-t border-slate-200">
                 <button
                   onClick={() => navigate(`/projets/${project.id}`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-finixar-teal text-white text-sm font-medium rounded-lg hover:bg-finixar-teal-hover transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-finixar-action-view text-white text-sm font-medium rounded-lg hover:bg-finixar-action-view-hover transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   Voir détails
@@ -482,7 +482,7 @@ export function Projects({ organization }: ProjectsProps) {
                       required
                       value={newProjectData.projet}
                       onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: GreenTech 2025"
                     />
                   </div>
@@ -498,7 +498,7 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.type}
                         onChange={(e) => setNewProjectData({ ...newProjectData, type: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="obligations_simples">Obligations Simples</option>
                         <option value="obligations_convertibles">Obligations Convertibles</option>
@@ -519,7 +519,7 @@ export function Projects({ organization }: ProjectsProps) {
                         inputMode="decimal"
                         value={newProjectData.taux_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 8.50"
                       />
                     </div>
@@ -537,7 +537,7 @@ export function Projects({ organization }: ProjectsProps) {
                         min="1"
                         value={newProjectData.maturite_mois}
                         onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 60 (5 ans)"
                       />
                       <p className="mt-1 text-xs text-slate-600">Durée totale en mois</p>
@@ -552,7 +552,7 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.base_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, base_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="360">360 jours (30/360) - Standard</option>
                         <option value="365">365 jours (Exact/365)</option>
@@ -631,7 +631,7 @@ export function Projects({ organization }: ProjectsProps) {
                           }));
                           requestAnimationFrame(moveCaretBeforeEuro);
                         }}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 1 500 000 €"
                       />
                     </div>
@@ -645,7 +645,7 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.periodicite_coupon}
                         onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="" disabled>Choisir…</option>
                         <option value="annuel">Annuel</option>
@@ -665,7 +665,7 @@ export function Projects({ organization }: ProjectsProps) {
                       required
                       value={newProjectData.emetteur}
                       onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: GreenTech SAS"
                     />
                   </div>
@@ -691,7 +691,7 @@ export function Projects({ organization }: ProjectsProps) {
                         setSirenError(isValidSIREN(v) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).');
                       }}
                       aria-invalid={!!sirenError}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue ${
                         sirenError ? 'border-red-500' : 'border-slate-300'
                       }`}
                       placeholder="Ex: 123456789"
@@ -714,7 +714,7 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.prenom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Jean"
                       />
                     </div>
@@ -728,7 +728,7 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.nom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Dupont"
                       />
                     </div>
@@ -744,7 +744,7 @@ export function Projects({ organization }: ProjectsProps) {
                       required
                       value={newProjectData.email_representant}
                       onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: jean.dupont@example.com"
                     />
                   </div>
@@ -762,7 +762,7 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.representant_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Cabinet Lefevre"
                       />
                     </div>
@@ -777,7 +777,7 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.email_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: contact@cabinet-lefevre.fr"
                       />
                     </div>
@@ -792,7 +792,7 @@ export function Projects({ organization }: ProjectsProps) {
                         pattern="[0-9]*"
                         value={newProjectData.telephone_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 0123456789"
                         maxLength={10}
                       />
@@ -812,7 +812,7 @@ export function Projects({ organization }: ProjectsProps) {
                   <button
                     type="submit"
                     disabled={creatingProject || !isFormValid}
-                    className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     {creatingProject ? 'Création...' : 'Créer le projet'}
                   </button>

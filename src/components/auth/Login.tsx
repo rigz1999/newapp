@@ -166,7 +166,7 @@ export function Login() {
 
             <button
               onClick={handleRefresh}
-              className="w-full bg-finixar-teal text-white py-3 rounded-lg font-medium hover:bg-finixar-teal-hover transition-colors mb-3 flex items-center justify-center gap-2"
+              className="w-full bg-finixar-action-process text-white py-3 rounded-lg font-medium hover:bg-finixar-action-process-hover transition-colors mb-3 flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
               Vérifier l'accès
@@ -196,7 +196,7 @@ export function Login() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="flex items-center justify-center mb-8">
-            <div className="bg-finixar-navy p-3 rounded-xl">
+            <div className="bg-finixar-deep-blue p-3 rounded-xl">
               {isSignUp ? (
                 <UserPlus className="w-8 h-8 text-white" />
               ) : (
@@ -224,7 +224,7 @@ export function Login() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent transition-all"
                   placeholder="Jean Dupont"
                 />
               </div>
@@ -240,7 +240,7 @@ export function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent transition-all"
                 placeholder="votre@email.fr"
               />
             </div>
@@ -256,7 +256,7 @@ export function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent transition-all"
                 placeholder="••••••••"
               />
               {isSignUp && (
@@ -273,7 +273,7 @@ export function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-finixar-teal text-white py-3 rounded-lg font-medium hover:bg-finixar-teal-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-finixar-action-process text-white py-3 rounded-lg font-medium hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (isSignUp ? 'Création...' : 'Connexion...') : (isSignUp ? 'Créer mon compte' : 'Se connecter')}
             </button>
