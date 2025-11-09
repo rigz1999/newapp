@@ -35,6 +35,21 @@ interface PendingUser {
   full_name?: string;
 }
 
+interface Invitation {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+  org_id: string;
+  organizations?: {
+    name: string;
+  };
+}
+
 interface UserDetail {
   user_id: string;
   email: string;
@@ -48,6 +63,7 @@ export default function AdminPanel() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -68,7 +84,7 @@ export default function AdminPanel() {
   const [newOrgName, setNewOrgName] = useState('');
   const [creating, setCreating] = useState(false);
   const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['pending', 'super-admins', 'organizations']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['invitations', 'pending', 'super-admins', 'organizations']));
 
   // Alert modal state
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -82,8 +98,28 @@ export default function AdminPanel() {
     fetchData();
   }, []);
 
+  const fetchInvitations = async () => {
+    const { data, error } = await supabase
+      .from('invitations')
+      .select(`
+        *,
+        organizations (
+          name
+        )
+      `)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (!error) {
+      setInvitations(data || []);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
+
+    // Fetch invitations
+    await fetchInvitations();
 
     const { data: orgs, error: orgsError } = await supabase
       .from('organizations')
@@ -152,6 +188,24 @@ export default function AdminPanel() {
     }
 
     setLoading(false);
+  };
+
+  const handleCancelInvitation = async (invitationId: string) => {
+    const { error } = await supabase
+      .from('invitations')
+      .delete()
+      .eq('id', invitationId);
+
+    if (error) {
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de l\'annulation de l\'invitation: ' + error.message,
+        type: 'error'
+      });
+      setShowAlertModal(true);
+    } else {
+      fetchInvitations();
+    }
   };
 
   const handleGrantAccess = async (userId: string, orgId: string, role: string) => {
@@ -472,7 +526,7 @@ export default function AdminPanel() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Organisations</p>
             <p className="text-2xl font-bold text-slate-900">{organizations.length}</p>
@@ -484,6 +538,10 @@ export default function AdminPanel() {
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Utilisateurs</p>
             <p className="text-2xl font-bold text-finixar-green">{regularMemberships.length}</p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-slate-200">
+            <p className="text-sm text-slate-600 mb-1">Invitations</p>
+            <p className="text-2xl font-bold text-blue-600">{invitations.length}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">En attente</p>
@@ -505,6 +563,68 @@ export default function AdminPanel() {
           />
         </div>
       </div>
+
+      {/* Invitations Section */}
+      {invitations.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+          <button
+            onClick={() => toggleSection('invitations')}
+            className="w-full p-6 bg-blue-50 flex items-center justify-between hover:bg-blue-100 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              {expandedSections.has('invitations') ? (
+                <ChevronUp className="w-5 h-5 text-slate-600" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-slate-600" />
+              )}
+              <Send className="w-6 h-6 text-blue-600" />
+              <h2 className="text-xl font-bold text-slate-900">
+                Invitations en attente ({invitations.length})
+              </h2>
+            </div>
+          </button>
+
+          {expandedSections.has('invitations') && (
+            <div className="divide-y divide-slate-200">
+              {invitations.map(invitation => (
+                <div key={invitation.id} className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-slate-900 text-lg">
+                        {invitation.first_name} {invitation.last_name}
+                      </p>
+                      <p className="text-sm text-slate-600">{invitation.email}</p>
+                      {invitation.organizations?.name && (
+                        <p className="text-sm text-blue-600 font-medium mt-1">
+                          Organisation : {invitation.organizations.name}
+                        </p>
+                      )}
+                      <p className="text-xs text-slate-500 mt-2">
+                        Invité le {new Date(invitation.created_at).toLocaleDateString('fr-FR')} •
+                        Expire le {new Date(invitation.expires_at).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                        invitation.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {invitation.role === 'admin' ? 'Administrateur' : 'Membre'}
+                      </span>
+                      <button
+                        onClick={() => handleCancelInvitation(invitation.id)}
+                        className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
+                        title="Annuler l'invitation"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Pending Users Section */}
       {pendingUsers.length > 0 && (
