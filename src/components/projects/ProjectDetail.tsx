@@ -943,7 +943,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         )}
 
         {showEditProject && project && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
               <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
                 <div className="flex justify-between items-start">
@@ -1172,7 +1172,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         )}
 
         {showEditSubscription && editingSubscription && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]">
               <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
                 <div className="flex justify-between items-start">
