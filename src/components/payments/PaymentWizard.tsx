@@ -49,7 +49,7 @@ interface PaymentWizardProps {
 }
 
 export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
-  const [_loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -62,7 +62,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   const [selectedTrancheId, setSelectedTrancheId] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [matches, setMatches] = useState<PaymentMatch[]>([]);
-  const [_uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
+  const [uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
   const [tempFileNames, setTempFileNames] = useState<string[]>([]);
   const [selectedMatches, setSelectedMatches] = useState<Set<number>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);

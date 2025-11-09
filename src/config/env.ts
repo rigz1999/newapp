@@ -30,6 +30,9 @@ interface EnvConfig {
     enableRealtimeUpdates: boolean;
     enableAdvancedFilters: boolean;
   };
+  contact: {
+    supportEmail: string;
+  };
 }
 
 function getEnvVar(key: string, required: boolean = true): string {
@@ -88,6 +91,9 @@ export const env: EnvConfig = {
   features: {
     enableRealtimeUpdates: getEnvVarAsBoolean('VITE_ENABLE_REALTIME_UPDATES', true),
     enableAdvancedFilters: getEnvVarAsBoolean('VITE_ENABLE_ADVANCED_FILTERS', true),
+  },
+  contact: {
+    supportEmail: getEnvVar('VITE_SUPPORT_EMAIL', false) || 'support@investflow.com',
   },
 };
 

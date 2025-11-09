@@ -136,14 +136,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
     type?: 'success' | 'error' | 'warning' | 'info';
   }>({ title: '', message: '', type: 'info' });
 
-  const [_allTranches, setAllTranches] = useState<Array<{
+  const [allTranches, setAllTranches] = useState<Array<{
     id: string;
     tranche_name: string;
     projet_id: string;
     projet_nom: string
   }>>([]);
 
-  const [_allCgps, setAllCgps] = useState<string[]>([]);
+  const [allCgps, setAllCgps] = useState<string[]>([]);
 
   useEffect(() => {
     let isMounted = true;
