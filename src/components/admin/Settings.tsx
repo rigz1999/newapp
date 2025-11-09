@@ -154,36 +154,34 @@ export default function Settings() {
     setErrorMessage('');
 
     try {
-      // Verify current password using reauthenticate
-      const { error: reauthError } = await supabase.auth.reauthenticate();
-
-      if (reauthError) {
-        // If reauthentication fails or is not supported, try direct update
-        // (This happens if the session is still fresh enough)
-      }
-
-      // Update password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
+      // Call the Edge Function to verify current password and update to new one
+      const { data, error: functionError } = await supabase.functions.invoke('change-password', {
+        body: {
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+        },
       });
 
       setSaving(false);
 
-      if (updateError) {
-        // Provide specific error messages
-        if (updateError.message?.includes('New password should be different')) {
-          setErrorMessage('Le nouveau mot de passe doit être différent de l\'ancien');
-        } else if (updateError.message?.includes('Password should be at least')) {
-          setErrorMessage('Le mot de passe doit contenir au moins 6 caractères');
-        } else {
-          setErrorMessage('Erreur lors du changement de mot de passe. Veuillez vérifier que votre mot de passe actuel est correct et réessayer.');
-        }
-      } else {
+      if (functionError) {
+        setErrorMessage(functionError.message || 'Erreur lors du changement de mot de passe.');
+        return;
+      }
+
+      if (data?.error) {
+        setErrorMessage(data.error);
+        return;
+      }
+
+      if (data?.success) {
         setSuccessMessage('Mot de passe changé avec succès');
         setShowSuccessModal(true);
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
+      } else {
+        setErrorMessage('Erreur lors du changement de mot de passe.');
       }
     } catch (err: any) {
       setSaving(false);

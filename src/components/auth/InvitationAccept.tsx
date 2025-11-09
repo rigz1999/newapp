@@ -123,61 +123,41 @@ export function InvitationAccept() {
     setError('');
 
     try {
-      // 1. Créer le compte utilisateur avec Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: invitation.email,
-        password: password,
-        options: {
-          data: {
-            full_name: `${invitation.first_name} ${invitation.last_name}`,
-          },
+      // Call the Edge Function to create account and bypass email confirmation
+      const { data, error: functionError } = await supabase.functions.invoke('accept-invitation', {
+        body: {
+          token: token,
+          password: password,
         },
       });
 
-      if (authError) {
-        // Si l'utilisateur existe déjà
-        if (authError.message.includes('already registered')) {
+      if (functionError) {
+        throw new Error(functionError.message || 'Erreur lors de la création du compte.');
+      }
+
+      if (data?.error) {
+        // Handle specific errors from the Edge Function
+        if (data.userExists) {
           setError('Un compte existe déjà avec cet email. Veuillez vous connecter.');
           setCreating(false);
           return;
         }
-        throw authError;
+        throw new Error(data.error);
       }
 
-      if (!authData.user) {
+      if (!data?.success) {
         throw new Error('Erreur lors de la création du compte.');
       }
 
-      // 2. Créer le membership dans l'organisation
-      const { error: membershipError } = await supabase
-        .from('memberships')
-        .insert({
-          user_id: authData.user.id,
-          org_id: invitation.org_id,
-          role: invitation.role,
-        } as any);
-
-      if (membershipError) {
-        throw new Error('Erreur lors de l\'ajout à l\'organisation.');
+      // If we got a session, set it
+      if (data.session) {
+        await supabase.auth.setSession(data.session);
       }
 
-      // 3. Marquer l'invitation comme acceptée
-      const { error: updateError } = await supabase
-        .from('invitations')
-        .update({
-          status: 'accepted',
-          accepted_at: new Date().toISOString(),
-        } as never)
-        .eq('id', invitation.id);
-
-      if (updateError) {
-        // Non bloquant, on continue
-      }
-
-      // 4. Succès !
+      // Success!
       setSuccess(true);
 
-      // Redirection après 3 secondes
+      // Redirect after 3 seconds
       setTimeout(() => {
         navigate('/');
       }, 3000);
