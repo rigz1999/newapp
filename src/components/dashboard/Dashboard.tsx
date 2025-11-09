@@ -268,11 +268,11 @@ export function Dashboard({ organization }: DashboardProps) {
       in90Days.setDate(today.getDate() + 90);
 
       const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes, chartSubsRes] = await Promise.all([
-        supabase.from('projets').select('id') as any,
-        supabase.from('tranches').select('id, projet_id') as any,
-        supabase.from('souscriptions').select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription') as any,
-        supabase.from('paiements').select('montant, statut').eq('statut', 'payé').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]) as any,
-        supabase.from('souscriptions').select('montant_investi, date_souscription') as any
+        supabase.from('projets').select('id'),
+        supabase.from('tranches').select('id, projet_id'),
+        supabase.from('souscriptions').select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
+        supabase.from('paiements').select('montant, statut').eq('statut', 'payé').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
+        supabase.from('souscriptions').select('montant_investi, date_souscription')
       ]);
 
       // Check for critical errors
@@ -991,9 +991,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
                   const { data, error } = await supabase
                     .from('projets')
-                    .insert([projectToCreate] as any)
+                    .insert([projectToCreate])
                     .select()
-                    .single() as any;
+                    .single();
 
                   if (error) throw error;
 
@@ -1164,7 +1164,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         }}
                         onPaste={(e) => {
                           e.preventDefault();
-                          const clipboardData = e.clipboardData || (window as any).clipboardData;
+                          const clipboardData = e.clipboardData;
                           const text = clipboardData?.getData('text') || '';
                           const digits = text.replace(/\D/g, '');
                           setNewProjectData(prev => ({

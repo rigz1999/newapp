@@ -8,6 +8,7 @@ import { InvitationAccept } from './components/auth/InvitationAccept';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
 import { supabase } from './lib/supabase';
+import { env } from './config/env';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
@@ -19,6 +20,9 @@ const Payments = lazy(() => import('./components/payments/Payments'));
 const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
 const Members = lazy(() => import('./components/admin/Members'));
 const Settings = lazy(() => import('./components/admin/Settings'));
+
+// Default organization for super admin users
+const DEFAULT_ORG = { id: 'admin', name: 'Admin', role: 'admin' } as const;
 
 function App() {
   const { user, loading: authLoading, isAdmin, isOrgAdmin } = useAuth();
@@ -81,7 +85,7 @@ function App() {
           </button>
 
           <a
-            href="mailto:support@investflow.com"
+            href={`mailto:${env.contact.supportEmail}`}
             className="block text-sm text-slate-600 hover:text-slate-900 transition-colors"
           >
             Besoin d'aide ? Contactez le support →
@@ -109,7 +113,7 @@ function App() {
                 ) : orgLoading ? (
                   <DashboardSkeleton />
                 ) : (
-                  <Layout organization={organization || { id: 'admin', name: 'Admin', role: 'admin' }} />
+                  <Layout organization={organization || DEFAULT_ORG} />
                 )
               ) : (
                 <Navigate to="/login" replace />
@@ -121,7 +125,7 @@ function App() {
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
-                    <Dashboard organization={organization || { id: 'admin', name: 'Admin', role: 'admin' }} />
+                    <Dashboard organization={organization || DEFAULT_ORG} />
                   </Suspense>
                 </ErrorBoundary>
               }
@@ -131,7 +135,7 @@ function App() {
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
-                    <Projects organization={organization || { id: 'admin', name: 'Admin', role: 'admin' }} />
+                    <Projects organization={organization || DEFAULT_ORG} />
                   </Suspense>
                 </ErrorBoundary>
               }
@@ -141,7 +145,7 @@ function App() {
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
-                    <ProjectDetail organization={organization || { id: 'admin', name: 'Admin', role: 'admin' }} />
+                    <ProjectDetail organization={organization || DEFAULT_ORG} />
                   </Suspense>
                 </ErrorBoundary>
               }
@@ -151,7 +155,7 @@ function App() {
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
-                    <Coupons organization={organization || { id: 'admin', name: 'Admin', role: 'admin' }} />
+                    <Coupons organization={organization || DEFAULT_ORG} />
                   </Suspense>
                 </ErrorBoundary>
               }
@@ -161,7 +165,7 @@ function App() {
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
-                    <Investors organization={organization || { id: 'admin', name: 'Admin', role: 'admin' }} />
+                    <Investors organization={organization || DEFAULT_ORG} />
                   </Suspense>
                 </ErrorBoundary>
               }
@@ -171,7 +175,7 @@ function App() {
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
-                    <Subscriptions organization={organization || { id: 'admin', name: 'Admin', role: 'admin' }} />
+                    <Subscriptions organization={organization || DEFAULT_ORG} />
                   </Suspense>
                 </ErrorBoundary>
               }
@@ -181,7 +185,7 @@ function App() {
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
-                    <Payments organization={organization || { id: 'admin', name: 'Admin', role: 'admin' }} />
+                    <Payments organization={organization || DEFAULT_ORG} />
                   </Suspense>
                 </ErrorBoundary>
               }

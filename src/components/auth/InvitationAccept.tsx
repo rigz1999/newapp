@@ -58,7 +58,7 @@ export function InvitationAccept() {
           organizations:organizations(name)
         `)
         .eq('token', token!)
-        .single() as any;
+        .single();
 
       if (invitationError || !invitationData) {
         setError('Invitation introuvable. Le lien est peut-être invalide.');

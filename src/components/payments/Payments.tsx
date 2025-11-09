@@ -109,7 +109,8 @@ export function Payments({ organization }: PaymentsProps) {
             nom_raison_sociale
           )
         `)
-        .order('date_paiement', { ascending: false });
+        .order('date_paiement', { ascending: false })
+        .limit(2000); // Safety limit to prevent loading too much data
 
       if (error) throw error;
 

@@ -72,7 +72,7 @@ export function Layout({ organization }: LayoutProps) {
         .from('profiles')
         .select('full_name')
         .eq('id', user.id)
-        .single() as any;
+        .single();
 
       if (profile) {
         setUserProfile(profile);
@@ -86,12 +86,12 @@ export function Layout({ organization }: LayoutProps) {
     // Fetch profiles
     const { data: profilesData } = await supabase
       .from('profiles')
-      .select('id, email') as any;
+      .select('id, email');
 
     // Fetch memberships with org_id (users who have an organization)
     const { data: membershipsData } = await supabase
       .from('memberships')
-      .select('user_id, role, org_id') as any;
+      .select('user_id, role, org_id');
 
     if (profilesData && membershipsData) {
       // Users with organization

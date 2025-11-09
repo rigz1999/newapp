@@ -52,7 +52,7 @@ export function useOrganization(userId: string | undefined) {
         const { data: memberships, error } = await (supabase
           .from('memberships')
           .select('org_id, role, organizations(id, name)')
-          .eq('user_id', userId) as any);
+          .eq('user_id', userId);
 
         logger.log('useOrganization - Memberships result:', { memberships, error });
 
@@ -120,7 +120,7 @@ export function useOrganization(userId: string | undefined) {
           setOrganization(null);
         }
       } catch (error) {
-        logger.error('useOrganization - Unexpected error:', error as any);
+        logger.error('useOrganization - Unexpected error:', error);
         setOrganization(null);
       } finally {
         setLoading(false);

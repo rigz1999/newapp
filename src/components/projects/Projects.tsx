@@ -622,7 +622,7 @@ export function Projects({ organization }: ProjectsProps) {
                         }}
                         onPaste={(e) => {
                           e.preventDefault();
-                          const clipboardData = e.clipboardData || (window as any).clipboardData;
+                          const clipboardData = e.clipboardData;
                           const text = clipboardData?.getData('text') || '';
                           const digits = text.replace(/\D/g, '');
                           setNewProjectData(prev => ({

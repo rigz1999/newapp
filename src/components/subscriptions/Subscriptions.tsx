@@ -142,7 +142,8 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         )
       `
       )
-      .order('date_souscription', { ascending: false });
+      .order('date_souscription', { ascending: false })
+      .limit(2000); // Safety limit to prevent loading too much data
 
     setSubscriptions((data || []) as Subscription[]);
     setLoading(false);

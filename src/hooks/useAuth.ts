@@ -47,10 +47,10 @@ export function useAuth() {
       const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL;
       const isSuperAdminUser = userData?.user?.email === superAdminEmail;
 
-      const { data: memberships } = await (supabase
+      const { data: memberships } = await supabase
         .from('memberships')
         .select('role, org_id')
-        .eq('user_id', userId) as any);
+        .eq('user_id', userId);
 
       // Check if user is an org admin (has admin role in an organization)
       const orgAdminMembership = memberships?.find(

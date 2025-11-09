@@ -136,14 +136,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
     type?: 'success' | 'error' | 'warning' | 'info';
   }>({ title: '', message: '', type: 'info' });
 
-  const [_allTranches, setAllTranches] = useState<Array<{
+  const [allTranches, setAllTranches] = useState<Array<{
     id: string;
     tranche_name: string;
     projet_id: string;
     projet_nom: string
   }>>([]);
 
-  const [_allCgps, setAllCgps] = useState<string[]>([]);
+  const [allCgps, setAllCgps] = useState<string[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -287,7 +287,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
     setLoading(true);
 
     const [investorsRes, subscriptionsRes, tranchesRes] = await Promise.all([
-      supabase.from('investisseurs').select('*').order('nom_raison_sociale'),
+      supabase
+        .from('investisseurs')
+        .select('*')
+        .order('nom_raison_sociale')
+        .limit(1000), // Safety limit to prevent loading too much data
       supabase.from('souscriptions').select(`
         investisseur_id, montant_investi,
         tranche:tranches(tranche_name, projet:projets(projet))
