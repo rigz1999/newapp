@@ -126,8 +126,8 @@ export default function Settings() {
   };
 
   const handleChangePassword = async () => {
-    if (!newPassword || !confirmPassword || !currentPassword) {
-      setErrorMessage('Tous les champs de mot de passe sont obligatoires');
+    if (!newPassword || !confirmPassword) {
+      setErrorMessage('Veuillez remplir tous les champs');
       return;
     }
 
@@ -141,28 +141,11 @@ export default function Settings() {
       return;
     }
 
-    if (newPassword === currentPassword) {
-      setErrorMessage('Le nouveau mot de passe doit être différent de l\'ancien');
-      return;
-    }
-
     setSaving(true);
     setErrorMessage('');
 
     try {
-      // First, verify the current password by attempting to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: currentPassword,
-      });
-
-      if (signInError) {
-        setSaving(false);
-        setErrorMessage('Le mot de passe actuel est incorrect');
-        return;
-      }
-
-      // If sign in successful, proceed to update password
+      // Update password directly - Supabase handles authentication
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -386,23 +369,6 @@ export default function Settings() {
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Current Password */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Mot de passe actuel *
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-
             {/* New Password */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">

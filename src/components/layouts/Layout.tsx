@@ -63,7 +63,7 @@ export function Layout({ organization }: LayoutProps) {
     }
   }, [isSuperAdminUser]);
 
-  // Fetch user profile
+  // Fetch user profile and listen for changes
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!user) return;
@@ -80,6 +80,31 @@ export function Layout({ organization }: LayoutProps) {
     };
 
     fetchUserProfile();
+
+    // Subscribe to profile changes for real-time updates
+    if (user) {
+      const profileChannel = supabase
+        .channel(`profile-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${user.id}`
+          },
+          (payload) => {
+            if (payload.new) {
+              setUserProfile({ full_name: (payload.new as any).full_name });
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        profileChannel.unsubscribe();
+      };
+    }
   }, [user]);
 
   const fetchPendingCount = async () => {
@@ -133,7 +158,8 @@ export function Layout({ organization }: LayoutProps) {
   return (
     <div className="h-screen bg-finixar-background flex overflow-hidden">
       <aside className="w-64 bg-finixar-deep-blue text-white flex flex-col flex-shrink-0">
-        <div className="p-6">
+        {/* Header - Fixed height */}
+        <div className="p-6 flex-shrink-0">
           <div className="flex items-center gap-2 mb-6">
             <div className="bg-finixar-brand-blue p-2 rounded-lg">
               <TrendingUp className="w-6 h-6 text-white" />
@@ -144,13 +170,16 @@ export function Layout({ organization }: LayoutProps) {
           {/* Global Search Button */}
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="w-full flex items-center gap-3 px-4 py-2.5 mb-6 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-colors text-slate-400 hover:text-white"
+            className="w-full flex items-center gap-3 px-4 py-2.5 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-colors text-slate-400 hover:text-white"
           >
             <Search className="w-4 h-4" />
             <span className="text-sm">Rechercher...</span>
           </button>
+        </div>
 
-          <nav className="space-y-2">
+        {/* Navigation - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-6">
+          <nav className="space-y-2 pb-4">
             <Link
               to="/"
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
@@ -257,7 +286,8 @@ export function Layout({ organization }: LayoutProps) {
           </nav>
         </div>
 
-        <div className="mt-auto p-6 border-t border-slate-800">
+        {/* Footer - Fixed height */}
+        <div className="flex-shrink-0 p-6 border-t border-slate-800">
           <div className="flex items-center gap-3 mb-4">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
               isSuperAdminUser ? 'bg-finixar-action-process' : isOrgAdmin ? 'bg-finixar-brand-blue' : 'bg-finixar-text-secondary'

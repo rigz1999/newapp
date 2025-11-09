@@ -36,6 +36,7 @@ export function Login() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
+        setCheckingAccess(true);  // Set to true BEFORE checking access
         setUser(session.user);
         checkUserAccess(session.user.id);
       } else {
