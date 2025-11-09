@@ -94,7 +94,7 @@ serve(async (req) => {
     }
 
     // Create invitation link
-    const invitationLink = `${APP_URL}/invitation/${token_string}`
+    const invitationLink = `${APP_URL}/invitation/accept?token=${token_string}`
 
     // Send email via Resend
     const emailResponse = await fetch('https://api.resend.com/emails', {
