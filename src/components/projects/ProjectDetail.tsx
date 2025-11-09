@@ -782,16 +782,14 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-baseline gap-3">
-              <h2 className="text-xl font-bold text-slate-900">Souscriptions</h2>
-              <button
-                onClick={() => setShowSubscriptionsModal(true)}
-                className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-              >
-                Voir tout ({subscriptions.length})
-              </button>
-            </div>
+          <div className="flex items-baseline gap-3 mb-4">
+            <h2 className="text-xl font-bold text-slate-900">Souscriptions</h2>
+            <button
+              onClick={() => setShowSubscriptionsModal(true)}
+              className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+            >
+              Voir tout ({subscriptions.length})
+            </button>
           </div>
 
           {subscriptions.length === 0 ? (
@@ -881,16 +879,14 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
         {/* ✅ SECTION MODIFIÉE - Historique des Paiements */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-baseline gap-3">
-              <h2 className="text-xl font-bold text-slate-900">Historique des Paiements</h2>
-              <button
-                onClick={() => setShowPaymentsModal(true)}
-                className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-              >
-                Voir tout ({payments.length})
-              </button>
-            </div>
+          <div className="flex items-baseline gap-3 mb-4">
+            <h2 className="text-xl font-bold text-slate-900">Historique des Paiements</h2>
+            <button
+              onClick={() => setShowPaymentsModal(true)}
+              className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+            >
+              Voir tout ({payments.length})
+            </button>
           </div>
 
           {payments.length === 0 ? (
