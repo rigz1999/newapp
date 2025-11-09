@@ -287,7 +287,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
     setLoading(true);
 
     const [investorsRes, subscriptionsRes, tranchesRes] = await Promise.all([
-      supabase.from('investisseurs').select('*').order('nom_raison_sociale'),
+      supabase
+        .from('investisseurs')
+        .select('*')
+        .order('nom_raison_sociale')
+        .limit(1000), // Safety limit to prevent loading too much data
       supabase.from('souscriptions').select(`
         investisseur_id, montant_investi,
         tranche:tranches(tranche_name, projet:projets(projet))
