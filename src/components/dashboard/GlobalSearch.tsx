@@ -186,10 +186,43 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
     try {
       const lowerQuery = searchQuery.toLowerCase();
-      
-      // Run all searches in parallel for maximum performance
+
+      // First, search for matching investors and projects to get their IDs
+      const [investorsSearch, projectsSearch, tranchesSearch] = await Promise.all([
+        supabase
+          .from('investisseurs')
+          .select('id')
+          .eq('org_id', orgId)
+          .or(`nom_raison_sociale.ilike.%${lowerQuery}%,id_investisseur.ilike.%${lowerQuery}%,email.ilike.%${lowerQuery}%`),
+
+        supabase
+          .from('projets')
+          .select('id')
+          .eq('org_id', orgId)
+          .or(`projet.ilike.%${lowerQuery}%,emetteur.ilike.%${lowerQuery}%`),
+
+        supabase
+          .from('tranches')
+          .select('id, projet_id')
+          .ilike('tranche_name', `%${lowerQuery}%`)
+      ]);
+
+      const investorIds = (investorsSearch.data || []).map((inv: any) => inv.id);
+      const projectIds = (projectsSearch.data || []).map((proj: any) => proj.id);
+      const trancheIdsByName = (tranchesSearch.data || []).map((t: any) => t.id);
+
+      // Get tranches for matching projects
+      const tranchesByProject = projectIds.length > 0 ? await supabase
+        .from('tranches')
+        .select('id')
+        .in('projet_id', projectIds) : { data: [] };
+
+      // Combine all matching tranche IDs
+      const trancheIds = [...new Set([...trancheIdsByName, ...(tranchesByProject.data || []).map((t: any) => t.id)])];
+
+      // Now run all detailed searches in parallel
       const [projectsRes, investorsRes, tranchesRes, subscriptionsRes, paymentsRes, couponsRes] = await Promise.all([
-        // Search Projects
+        // Search Projects (detailed)
         supabase
           .from('projets')
           .select('id, projet, emetteur, statut')
@@ -197,7 +230,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .or(`projet.ilike.%${lowerQuery}%,emetteur.ilike.%${lowerQuery}%`)
           .limit(10),
 
-        // Search Investors
+        // Search Investors (detailed)
         supabase
           .from('investisseurs')
           .select('id, nom_raison_sociale, id_investisseur, type, email')
@@ -205,7 +238,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .or(`nom_raison_sociale.ilike.%${lowerQuery}%,id_investisseur.ilike.%${lowerQuery}%,email.ilike.%${lowerQuery}%`)
           .limit(10),
 
-        // Search Tranches
+        // Search Tranches (detailed)
         supabase
           .from('tranches')
           .select(`
@@ -218,21 +251,32 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           .ilike('tranche_name', `%${lowerQuery}%`)
           .limit(10),
 
-        // Search Subscriptions
-        supabase
-          .from('souscriptions')
-          .select(`
-            id,
-            date_souscription,
-            nombre_obligations,
-            montant_investi,
-            tranches(tranche_name, projets(projet)),
-            investisseurs(nom_raison_sociale, id_investisseur)
-          `)
-          .eq('org_id', orgId)
-          .limit(10),
+        // Search Subscriptions - filter by matching investors OR tranches
+        investorIds.length > 0 || trancheIds.length > 0 ? (async () => {
+          const query = supabase
+            .from('souscriptions')
+            .select(`
+              id,
+              date_souscription,
+              nombre_obligations,
+              montant_investi,
+              investisseur_id,
+              tranche_id,
+              tranches(tranche_name, projets(projet)),
+              investisseurs(nom_raison_sociale, id_investisseur)
+            `)
+            .eq('org_id', orgId);
 
-        // Search Payments
+          if (investorIds.length > 0 && trancheIds.length > 0) {
+            return await query.or(`investisseur_id.in.(${investorIds.join(',')}),tranche_id.in.(${trancheIds.join(',')})`).limit(10);
+          } else if (investorIds.length > 0) {
+            return await query.in('investisseur_id', investorIds).limit(10);
+          } else {
+            return await query.in('tranche_id', trancheIds).limit(10);
+          }
+        })() : Promise.resolve({ data: [] }),
+
+        // Search Payments - filter by org and then by matching data
         supabase
           .from('paiements')
           .select(`
@@ -240,29 +284,35 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             date_paiement,
             montant,
             type_paiement,
-            souscriptions(
+            souscription_id,
+            souscriptions!inner(
+              investisseur_id,
+              tranche_id,
               investisseurs(nom_raison_sociale),
               tranches(projets(projet))
             )
           `)
           .eq('org_id', orgId)
-          .limit(10),
+          .limit(50),
 
-        // Search Coupons (from paiements where type is coupon)
+        // Search Coupons
         supabase
           .from('paiements')
           .select(`
             id,
             date_paiement,
             montant,
-            souscriptions(
+            souscription_id,
+            souscriptions!inner(
+              investisseur_id,
+              tranche_id,
               investisseurs(nom_raison_sociale),
               tranches(tranche_name, projets(projet))
             )
           `)
           .eq('org_id', orgId)
           .eq('type_paiement', 'coupon')
-          .limit(10)
+          .limit(50)
       ]);
 
       // Process Projects
@@ -301,16 +351,9 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
         link: `/projets/${t.projets?.id}`
       }));
 
-      // Process Subscriptions - filter by search query
+      // Process Subscriptions - already filtered by database query
       const subscriptions: SearchResult[] = (subscriptionsRes.data || [])
-        .filter((s: any) => {
-          const investorName = s.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
-          const projectName = s.tranches?.projets?.projet?.toLowerCase() || '';
-          const trancheName = s.tranches?.tranche_name?.toLowerCase() || '';
-          return investorName.includes(lowerQuery) || 
-                 projectName.includes(lowerQuery) ||
-                 trancheName.includes(lowerQuery);
-        })
+        .slice(0, 10)
         .map((s: any) => ({
           type: 'subscription' as const,
           id: s.id,
@@ -324,13 +367,14 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           link: `/souscriptions`
         }));
 
-      // Process Payments - filter by search query
+      // Process Payments - filter by search query and limit results
       const payments: SearchResult[] = (paymentsRes.data || [])
         .filter((p: any) => {
           const investorName = p.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
           const projectName = p.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
           return investorName.includes(lowerQuery) || projectName.includes(lowerQuery);
         })
+        .slice(0, 10)
         .map((p: any) => ({
           type: 'payment' as const,
           id: p.id,
@@ -344,16 +388,17 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           link: `/paiements`
         }));
 
-      // Process Coupons - filter by search query
+      // Process Coupons - filter by search query and limit results
       const coupons: SearchResult[] = (couponsRes.data || [])
         .filter((c: any) => {
           const investorName = c.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
           const projectName = c.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
           const trancheName = c.souscriptions?.tranches?.tranche_name?.toLowerCase() || '';
-          return investorName.includes(lowerQuery) || 
+          return investorName.includes(lowerQuery) ||
                  projectName.includes(lowerQuery) ||
                  trancheName.includes(lowerQuery);
         })
+        .slice(0, 10)
         .map((c: any) => ({
           type: 'coupon' as const,
           id: c.id,
