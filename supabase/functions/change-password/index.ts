@@ -73,17 +73,16 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       supabaseUrl ?? '',
-      supabaseAnonKey ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      supabaseAnonKey ?? ''
     );
 
-    // Get current user
-    console.log('Attempting to get user...');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    // Extract JWT token from Authorization header
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Extracted token preview:', token.substring(0, 30) + '...');
+
+    // Get current user by passing JWT directly
+    console.log('Attempting to get user with JWT...');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
     console.log('getUser result:', {
       hasUser: !!user,
