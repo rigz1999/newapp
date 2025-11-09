@@ -37,10 +37,14 @@ interface Invitation {
   status: string;
   created_at: string;
   expires_at: string;
+  org_id: string;
+  organizations?: {
+    name: string;
+  };
 }
 
 export default function Members() {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
   const [members, setMembers] = useState<Member[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -73,7 +77,10 @@ export default function Members() {
     if (!organization) return;
 
     setLoading(true);
-    const { data, error } = await supabase
+
+    // For superadmin, fetch all members across all organizations
+    // For org admin, only fetch members for their organization
+    let query = supabase
       .from('memberships')
       .select(`
         id,
@@ -85,8 +92,13 @@ export default function Members() {
           full_name
         )
       `)
-      .eq('org_id', organization.id)
       .order('created_at', { ascending: false });
+
+    if (!isSuperAdmin) {
+      query = query.eq('org_id', organization.id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       setAlertModalConfig({
@@ -104,12 +116,24 @@ export default function Members() {
   const fetchInvitations = async () => {
     if (!organization) return;
 
-    const { data, error } = await supabase
+    // For superadmin, fetch all invitations across all organizations
+    // For org admin, only fetch invitations for their organization
+    let query = supabase
       .from('invitations')
-      .select('*')
-      .eq('org_id', organization.id)
+      .select(`
+        *,
+        organizations (
+          name
+        )
+      `)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
+
+    if (!isSuperAdmin) {
+      query = query.eq('org_id', organization.id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       // Log error but don't block the UI - invitations are not critical
@@ -282,8 +306,13 @@ export default function Members() {
                 <div>
                   <p className="font-medium text-slate-900">{inv.first_name} {inv.last_name}</p>
                   <p className="text-sm text-slate-600">{inv.email}</p>
+                  {isSuperAdmin && inv.organizations?.name && (
+                    <p className="text-sm text-blue-600 font-medium mt-1">
+                      Organisation : {inv.organizations.name}
+                    </p>
+                  )}
                   <p className="text-xs text-slate-500 mt-1">
-                    Invité le {new Date(inv.created_at).toLocaleDateString('fr-FR')} • 
+                    Invité le {new Date(inv.created_at).toLocaleDateString('fr-FR')} •
                     Expire le {new Date(inv.expires_at).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
