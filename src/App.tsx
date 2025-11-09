@@ -108,10 +108,10 @@ function App() {
             path="/*"
             element={
               user ? (
-                !isAdmin && !organization && !orgLoading ? (
-                  <PendingApproval />
-                ) : orgLoading ? (
+                orgLoading || authLoading ? (
                   <DashboardSkeleton />
+                ) : !isAdmin && !organization ? (
+                  <PendingApproval />
                 ) : (
                   <Layout organization={organization || DEFAULT_ORG} />
                 )
