@@ -5,13 +5,34 @@ export default {
     extend: {
       colors: {
         finixar: {
-          background: '#F9FAFB',
-          sidebar: '#0A1929', // Midnight blue
-          cta: '#00B894',
-          text: '#2E2E2E',
-          accent: '#2EC4B6',
-          'cta-hover': '#00A080', // Darker teal for hover
-          'accent-hover': '#26B3A6', // Darker turquoise for hover
+          // Primary Colors
+          navy: '#1e3a5f',        // Deep Navy Blue - Main brand, sidebar
+          white: '#ffffff',        // Crisp White
+
+          // Accent Colors
+          teal: '#0891b2',         // Professional Teal - CTAs, links
+          'teal-hover': '#0e7490', // Darker teal for hover
+          green: '#10b981',        // Success Green - Completed payments
+          amber: '#f59e0b',        // Warning Amber - Pending actions
+          red: '#ef4444',          // Alert Red - Overdue, critical
+
+          // Neutral Grays
+          charcoal: '#1f2937',     // Primary text
+          gray: '#6b7280',         // Secondary text
+          'gray-light': '#f3f4f6', // Borders, dividers
+          background: '#f9fafb',   // Page backgrounds
+
+          // Optional Accent
+          purple: '#8b5cf6',       // Premium features
+          'purple-hover': '#7c3aed', // Darker purple for hover
+
+          // Backwards compatibility mappings
+          sidebar: '#1e3a5f',      // Maps to navy
+          cta: '#0891b2',          // Maps to teal
+          'cta-hover': '#0e7490',  // Maps to teal-hover
+          accent: '#8b5cf6',       // Maps to purple for highlights
+          'accent-hover': '#7c3aed', // Maps to purple-hover
+          text: '#1f2937',         // Maps to charcoal
         },
       },
       fontFamily: {

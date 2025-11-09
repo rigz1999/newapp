@@ -45,9 +45,9 @@ export function ConfirmModal({
     switch (type) {
       case 'danger':
         return {
-          icon: <AlertCircle className="w-12 h-12 text-red-600" />,
+          icon: <AlertCircle className="w-12 h-12 text-finixar-red" />,
           bgColor: 'bg-red-100',
-          buttonColor: 'bg-red-600 hover:bg-red-700'
+          buttonColor: 'bg-finixar-red hover:bg-red-700'
         };
       case 'warning':
         return {
@@ -59,13 +59,13 @@ export function ConfirmModal({
         return {
           icon: <Info className="w-12 h-12 text-blue-600" />,
           bgColor: 'bg-blue-100',
-          buttonColor: 'bg-finixar-cta hover:bg-finixar-cta-hover'
+          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover'
         };
       default:
         return {
-          icon: <AlertCircle className="w-12 h-12 text-red-600" />,
+          icon: <AlertCircle className="w-12 h-12 text-finixar-red" />,
           bgColor: 'bg-red-100',
-          buttonColor: 'bg-red-600 hover:bg-red-700'
+          buttonColor: 'bg-finixar-red hover:bg-red-700'
         };
     }
   };
@@ -140,15 +140,15 @@ export function AlertModal({
     switch (type) {
       case 'success':
         return {
-          icon: <CheckCircle className="w-12 h-12 text-green-600" />,
+          icon: <CheckCircle className="w-12 h-12 text-finixar-green" />,
           bgColor: 'bg-green-100',
-          buttonColor: 'bg-finixar-cta hover:bg-finixar-cta-hover'
+          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover'
         };
       case 'error':
         return {
-          icon: <AlertCircle className="w-12 h-12 text-red-600" />,
+          icon: <AlertCircle className="w-12 h-12 text-finixar-red" />,
           bgColor: 'bg-red-100',
-          buttonColor: 'bg-red-600 hover:bg-red-700'
+          buttonColor: 'bg-finixar-red hover:bg-red-700'
         };
       case 'warning':
         return {
@@ -160,13 +160,13 @@ export function AlertModal({
         return {
           icon: <Info className="w-12 h-12 text-blue-600" />,
           bgColor: 'bg-blue-100',
-          buttonColor: 'bg-finixar-cta hover:bg-finixar-cta-hover'
+          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover'
         };
       default:
         return {
           icon: <Info className="w-12 h-12 text-blue-600" />,
           bgColor: 'bg-blue-100',
-          buttonColor: 'bg-finixar-cta hover:bg-finixar-cta-hover'
+          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover'
         };
     }
   };

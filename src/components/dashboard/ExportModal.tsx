@@ -682,7 +682,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="w-5 h-5 text-finixar-cta" />
+                  <DollarSign className="w-5 h-5 text-finixar-teal" />
                   <span className="font-semibold text-slate-900">Paiements</span>
                 </div>
                 <p className="text-xs text-slate-600">Paiements uniquement</p>
@@ -712,7 +712,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                  <AlertTriangle className="w-5 h-5 text-finixar-red" />
                   <span className="font-semibold text-slate-900">Alertes</span>
                 </div>
                 <p className="text-xs text-slate-600">Alertes urgentes</p>
@@ -957,7 +957,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             <button
               onClick={handleExport}
               disabled={exporting || preview.sections === 0}
-              className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {exporting ? (
                 'Export en cours...'

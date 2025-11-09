@@ -62,7 +62,7 @@ export function ValidatedInput({
   return (
     <div className={className}>
       <label htmlFor={name} className="block text-sm font-medium text-slate-700 mb-2">
-        {label} {required && <span className="text-red-600">*</span>}
+        {label} {required && <span className="text-finixar-red">*</span>}
       </label>
       <div className="relative">
         <input
@@ -78,21 +78,21 @@ export function ValidatedInput({
               ? 'border-red-300 focus:ring-red-500 bg-red-50'
               : isValid && showValidIcon
               ? 'border-green-300 focus:ring-green-500 bg-green-50'
-              : 'border-slate-300 focus:ring-finixar-cta'
+              : 'border-slate-300 focus:ring-finixar-teal'
           }`}
         />
         {touched && showValidIcon && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             {isValid ? (
-              <CheckCircle className="w-5 h-5 text-green-600" />
+              <CheckCircle className="w-5 h-5 text-finixar-green" />
             ) : error ? (
-              <AlertCircle className="w-5 h-5 text-red-600" />
+              <AlertCircle className="w-5 h-5 text-finixar-red" />
             ) : null}
           </div>
         )}
       </div>
       {error && touched && (
-        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+        <p className="mt-1 text-sm text-finixar-red flex items-center gap-1">
           <AlertCircle className="w-4 h-4" />
           {error}
         </p>

@@ -250,7 +250,7 @@ export function Payments({ organization }: PaymentsProps) {
       {/* Error Banner */}
       {error && (
         <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-finixar-red flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <h3 className="font-semibold text-red-900 mb-1">Erreur de chargement</h3>
             <p className="text-red-700 text-sm">{error}</p>
@@ -260,7 +260,7 @@ export function Payments({ organization }: PaymentsProps) {
               setError(null);
               fetchPayments();
             }}
-            className="text-red-600 hover:text-red-800 text-sm font-medium"
+            className="text-finixar-red hover:text-red-800 text-sm font-medium"
           >
             Réessayer
           </button>
@@ -285,7 +285,7 @@ export function Payments({ organization }: PaymentsProps) {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-600 text-sm">Montant Total Payé</span>
-            <CheckCircle2 className="w-5 h-5 text-green-600" />
+            <CheckCircle2 className="w-5 h-5 text-finixar-green" />
           </div>
           <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalPaid)}</p>
         </div>
@@ -309,14 +309,14 @@ export function Payments({ organization }: PaymentsProps) {
               placeholder="Rechercher par projet, tranche, investisseur..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
             />
           </div>
 
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-            className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+            className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
           >
             <option value="desc">Plus récents</option>
             <option value="asc">Plus anciens</option>
@@ -326,7 +326,7 @@ export function Payments({ organization }: PaymentsProps) {
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
             className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
               showAdvancedFilters || hasActiveFilters
-                ? 'bg-finixar-cta text-white border-blue-600'
+                ? 'bg-finixar-teal text-white border-blue-600'
                 : 'border-slate-300 text-slate-700 hover:bg-slate-50'
             }`}
           >
@@ -399,7 +399,7 @@ export function Payments({ organization }: PaymentsProps) {
                   advancedFilters.clearAllFilters();
                   setSearchTerm('');
                 }}
-                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+                className="flex items-center gap-2 px-4 py-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
               >
                 <X className="w-4 h-4" />
                 Effacer tous les filtres

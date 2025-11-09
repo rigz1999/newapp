@@ -483,11 +483,11 @@ export default function AdminPanel() {
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Utilisateurs</p>
-            <p className="text-2xl font-bold text-green-600">{regularMemberships.length}</p>
+            <p className="text-2xl font-bold text-finixar-green">{regularMemberships.length}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">En attente</p>
-            <p className="text-2xl font-bold text-yellow-600">{pendingUsers.length}</p>
+            <p className="text-2xl font-bold text-finixar-amber">{pendingUsers.length}</p>
           </div>
         </div>
       </div>
@@ -519,7 +519,7 @@ export default function AdminPanel() {
               ) : (
                 <ChevronDown className="w-5 h-5 text-slate-600" />
               )}
-              <Clock className="w-6 h-6 text-yellow-600" />
+              <Clock className="w-6 h-6 text-finixar-amber" />
               <h2 className="text-xl font-bold text-slate-900">
                 Utilisateurs en attente ({pendingUsers.length})
               </h2>
@@ -776,7 +776,7 @@ function PendingUserRow({
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-              <Clock className="w-5 h-5 text-yellow-600" />
+              <Clock className="w-5 h-5 text-finixar-amber" />
             </div>
             <div>
               <p className="font-medium text-slate-900">
@@ -821,7 +821,7 @@ function PendingUserRow({
 
           <button
             onClick={handleGrant}
-            className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
+            className="px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
           >
             <UserPlus className="w-4 h-4" />
             Valider
@@ -829,7 +829,7 @@ function PendingUserRow({
 
           <button
             onClick={() => onDelete(user.user_id, user.full_name || user.email)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
             title="Supprimer l'utilisateur"
           >
             <Trash2 className="w-4 h-4" />
@@ -911,7 +911,7 @@ function OrganizationRow({
             {memberCount === 0 && (
               <button
                 onClick={() => onDelete(organization.id, organization.name)}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
                 title="Supprimer l'organisation"
               >
                 <Trash2 className="w-4 h-4" />
@@ -934,7 +934,7 @@ function OrganizationRow({
                 <div key={membership.id} className="p-4 pl-20 flex items-center justify-between hover:bg-slate-100 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                      <Users className="w-4 h-4 text-green-600" />
+                      <Users className="w-4 h-4 text-finixar-green" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-900">
@@ -956,7 +956,7 @@ function OrganizationRow({
                     </button>
                     <button
                       onClick={() => onRemoveMember(membership.id, membership.user_id)}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      className="p-1.5 text-finixar-red hover:bg-red-50 rounded transition-colors"
                       title="Retirer cet utilisateur"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1071,7 +1071,7 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, title, message }: any)
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-4 mb-4">
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertCircle className="w-6 h-6 text-red-600" />
+            <AlertCircle className="w-6 h-6 text-finixar-red" />
           </div>
           <div className="flex-1">
             <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
@@ -1087,7 +1087,7 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, title, message }: any)
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="flex-1 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             Confirmer
           </button>
@@ -1182,7 +1182,7 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
           {/* Status Badge */}
           {isPending && (
             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
-              <Clock className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <Clock className="w-5 h-5 text-finixar-amber flex-shrink-0 mt-0.5" />
               <p className="text-sm text-yellow-800">
                 <strong>En attente :</strong> Cet utilisateur n'a pas encore été assigné à une organisation.
               </p>
@@ -1339,7 +1339,7 @@ function InviteMemberModal({
               <select
                 value={selectedOrgId}
                 onChange={(e) => setSelectedOrgId(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
               >
                 <option value="">Sélectionner une organisation</option>
                 {organizations.map(org => (
@@ -1356,7 +1356,7 @@ function InviteMemberModal({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                 placeholder="exemple@email.com"
               />
             </div>
@@ -1369,7 +1369,7 @@ function InviteMemberModal({
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                 placeholder="Jean"
               />
             </div>
@@ -1382,7 +1382,7 @@ function InviteMemberModal({
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                 placeholder="Dupont"
               />
             </div>
@@ -1394,7 +1394,7 @@ function InviteMemberModal({
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as 'member' | 'admin')}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
               >
                 <option value="member">Membre</option>
                 <option value="admin">Administrateur</option>

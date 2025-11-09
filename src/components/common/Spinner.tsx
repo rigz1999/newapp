@@ -29,8 +29,8 @@ export function Spinner({
     blue: 'text-blue-600',
     white: 'text-white',
     slate: 'text-slate-600',
-    green: 'text-green-600',
-    red: 'text-red-600'
+    green: 'text-finixar-green',
+    red: 'text-finixar-red'
   };
 
   const spinner = (

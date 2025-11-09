@@ -65,7 +65,7 @@ export function RecentFilters({
           {recentFilters.length > 0 && (
             <button
               onClick={onClear}
-              className="text-xs text-slate-500 hover:text-red-600 transition-colors"
+              className="text-xs text-slate-500 hover:text-finixar-red transition-colors"
               title="Effacer l'historique"
             >
               <X className="w-4 h-4" />
@@ -127,7 +127,7 @@ export function RecentFilters({
                   </span>
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-finixar-cta rounded-full transition-all"
+                      className="h-full bg-finixar-teal rounded-full transition-all"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>

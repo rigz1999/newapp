@@ -294,7 +294,7 @@ export function Projects({ organization }: ProjectsProps) {
               placeholder="Rechercher par nom, émetteur, représentant..."
               value={advancedFilters.filters.search}
               onChange={(e) => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
             />
           </div>
 
@@ -309,7 +309,7 @@ export function Projects({ organization }: ProjectsProps) {
             <Filter className="w-5 h-5" />
             <span className="font-medium">Filtres avancés</span>
             {activeFiltersCount > 0 && (
-              <span className="bg-finixar-cta text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-finixar-teal text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}
@@ -407,7 +407,7 @@ export function Projects({ organization }: ProjectsProps) {
             >
               <div className="p-6">
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-finixar-cta p-3 rounded-lg flex-shrink-0">
+                  <div className="bg-finixar-teal p-3 rounded-lg flex-shrink-0">
                     <Layers className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -423,7 +423,7 @@ export function Projects({ organization }: ProjectsProps) {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600">Montant levé</span>
-                    <span className="font-semibold text-green-600">{formatCurrency(project.total_leve)}</span>
+                    <span className="font-semibold text-finixar-green">{formatCurrency(project.total_leve)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600 flex items-center gap-1">
@@ -438,7 +438,7 @@ export function Projects({ organization }: ProjectsProps) {
               <div className="bg-slate-50 px-6 py-3 flex gap-2 border-t border-slate-200">
                 <button
                   onClick={() => navigate(`/projets/${project.id}`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-finixar-cta text-white text-sm font-medium rounded-lg hover:bg-finixar-cta-hover transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-finixar-teal text-white text-sm font-medium rounded-lg hover:bg-finixar-teal-hover transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   Voir détails
@@ -474,7 +474,7 @@ export function Projects({ organization }: ProjectsProps) {
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="projet" className="block text-sm font-medium text-slate-900 mb-2">
-                      Nom du projet <span className="text-red-600">*</span>
+                      Nom du projet <span className="text-finixar-red">*</span>
                     </label>
                     <input
                       id="projet"
@@ -482,7 +482,7 @@ export function Projects({ organization }: ProjectsProps) {
                       required
                       value={newProjectData.projet}
                       onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       placeholder="Ex: GreenTech 2025"
                     />
                   </div>
@@ -491,14 +491,14 @@ export function Projects({ organization }: ProjectsProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="type" className="block text-sm font-medium text-slate-900 mb-2">
-                        Type d'obligations <span className="text-red-600">*</span>
+                        Type d'obligations <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="type"
                         required
                         value={newProjectData.type}
                         onChange={(e) => setNewProjectData({ ...newProjectData, type: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       >
                         <option value="obligations_simples">Obligations Simples</option>
                         <option value="obligations_convertibles">Obligations Convertibles</option>
@@ -507,7 +507,7 @@ export function Projects({ organization }: ProjectsProps) {
 
                     <div>
                       <label htmlFor="taux" className="block text-sm font-medium text-slate-900 mb-2">
-                        Taux d'intérêt (%) <span className="text-red-600">*</span>
+                        Taux d'intérêt (%) <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="taux"
@@ -519,7 +519,7 @@ export function Projects({ organization }: ProjectsProps) {
                         inputMode="decimal"
                         value={newProjectData.taux_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: 8.50"
                       />
                     </div>
@@ -528,7 +528,7 @@ export function Projects({ organization }: ProjectsProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="maturite" className="block text-sm font-medium text-slate-900 mb-2">
-                        Maturité (mois) <span className="text-red-600">*</span>
+                        Maturité (mois) <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="maturite"
@@ -537,7 +537,7 @@ export function Projects({ organization }: ProjectsProps) {
                         min="1"
                         value={newProjectData.maturite_mois}
                         onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: 60 (5 ans)"
                       />
                       <p className="mt-1 text-xs text-slate-600">Durée totale en mois</p>
@@ -545,14 +545,14 @@ export function Projects({ organization }: ProjectsProps) {
 
                     <div>
                       <label htmlFor="base_interet" className="block text-sm font-medium text-slate-900 mb-2">
-                        Base de calcul <span className="text-red-600">*</span>
+                        Base de calcul <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="base_interet"
                         required
                         value={newProjectData.base_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, base_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       >
                         <option value="360">360 jours (30/360) - Standard</option>
                         <option value="365">365 jours (Exact/365)</option>
@@ -564,7 +564,7 @@ export function Projects({ organization }: ProjectsProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="montant" className="block text-sm font-medium text-slate-900 mb-2">
-                        Montant global à lever (€) <span className="text-red-600">*</span>
+                        Montant global à lever (€) <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="montant"
@@ -631,21 +631,21 @@ export function Projects({ organization }: ProjectsProps) {
                           }));
                           requestAnimationFrame(moveCaretBeforeEuro);
                         }}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: 1 500 000 €"
                       />
                     </div>
 
                     <div>
                       <label htmlFor="periodicite" className="block text-sm font-medium text-slate-900 mb-2">
-                        Périodicité du coupon <span className="text-red-600">*</span>
+                        Périodicité du coupon <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="periodicite"
                         required
                         value={newProjectData.periodicite_coupon}
                         onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       >
                         <option value="" disabled>Choisir…</option>
                         <option value="annuel">Annuel</option>
@@ -657,7 +657,7 @@ export function Projects({ organization }: ProjectsProps) {
 
                   <div>
                     <label htmlFor="emetteur" className="block text-sm font-medium text-slate-900 mb-2">
-                      Émetteur <span className="text-red-600">*</span>
+                      Émetteur <span className="text-finixar-red">*</span>
                     </label>
                     <input
                       id="emetteur"
@@ -665,14 +665,14 @@ export function Projects({ organization }: ProjectsProps) {
                       required
                       value={newProjectData.emetteur}
                       onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       placeholder="Ex: GreenTech SAS"
                     />
                   </div>
 
                   <div>
                     <label htmlFor="siren" className="block text-sm font-medium text-slate-900 mb-2">
-                      SIREN de l'émetteur <span className="text-red-600">*</span>
+                      SIREN de l'émetteur <span className="text-finixar-red">*</span>
                     </label>
                     <input
                       id="siren"
@@ -691,7 +691,7 @@ export function Projects({ organization }: ProjectsProps) {
                         setSirenError(isValidSIREN(v) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).');
                       }}
                       aria-invalid={!!sirenError}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal ${
                         sirenError ? 'border-red-500' : 'border-slate-300'
                       }`}
                       placeholder="Ex: 123456789"
@@ -699,14 +699,14 @@ export function Projects({ organization }: ProjectsProps) {
                       inputMode="numeric"
                     />
                     {sirenError && (
-                      <p className="mt-1 text-sm text-red-600">{sirenError}</p>
+                      <p className="mt-1 text-sm text-finixar-red">{sirenError}</p>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="prenom" className="block text-sm font-medium text-slate-900 mb-2">
-                        Prénom du représentant <span className="text-red-600">*</span>
+                        Prénom du représentant <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="prenom"
@@ -714,13 +714,13 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.prenom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: Jean"
                       />
                     </div>
                     <div>
                       <label htmlFor="nom" className="block text-sm font-medium text-slate-900 mb-2">
-                        Nom du représentant <span className="text-red-600">*</span>
+                        Nom du représentant <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="nom"
@@ -728,7 +728,7 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.nom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: Dupont"
                       />
                     </div>
@@ -736,7 +736,7 @@ export function Projects({ organization }: ProjectsProps) {
 
                   <div>
                     <label htmlFor="emailrep" className="block text-sm font-medium text-slate-900 mb-2">
-                      Email du représentant <span className="text-red-600">*</span>
+                      Email du représentant <span className="text-finixar-red">*</span>
                     </label>
                     <input
                       id="emailrep"
@@ -744,7 +744,7 @@ export function Projects({ organization }: ProjectsProps) {
                       required
                       value={newProjectData.email_representant}
                       onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       placeholder="Ex: jean.dupont@example.com"
                     />
                   </div>
@@ -754,7 +754,7 @@ export function Projects({ organization }: ProjectsProps) {
 
                     <div>
                       <label htmlFor="repmasse" className="block text-sm font-medium text-slate-900 mb-2">
-                        Nom du représentant de la masse <span className="text-red-600">*</span>
+                        Nom du représentant de la masse <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="repmasse"
@@ -762,14 +762,14 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.representant_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: Cabinet Lefevre"
                       />
                     </div>
 
                     <div className="mt-4">
                       <label htmlFor="emailmasse" className="block text-sm font-medium text-slate-900 mb-2">
-                        Email du représentant de la masse <span className="text-red-600">*</span>
+                        Email du représentant de la masse <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="emailmasse"
@@ -777,7 +777,7 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         value={newProjectData.email_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: contact@cabinet-lefevre.fr"
                       />
                     </div>
@@ -792,7 +792,7 @@ export function Projects({ organization }: ProjectsProps) {
                         pattern="[0-9]*"
                         value={newProjectData.telephone_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: 0123456789"
                         maxLength={10}
                       />
@@ -812,7 +812,7 @@ export function Projects({ organization }: ProjectsProps) {
                   <button
                     type="submit"
                     disabled={creatingProject || !isFormValid}
-                    className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     {creatingProject ? 'Création...' : 'Créer le projet'}
                   </button>

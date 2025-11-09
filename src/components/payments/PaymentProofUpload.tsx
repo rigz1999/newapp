@@ -372,9 +372,9 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
   };
 
   const getMatchIcon = (status: string) => {
-    if (status === 'correspondance') return <CheckCircle className="w-6 h-6 text-green-600" />;
-    if (status === 'partielle') return <AlertTriangle className="w-6 h-6 text-yellow-600" />;
-    return <XCircle className="w-6 h-6 text-red-600" />;
+    if (status === 'correspondance') return <CheckCircle className="w-6 h-6 text-finixar-green" />;
+    if (status === 'partielle') return <AlertTriangle className="w-6 h-6 text-finixar-amber" />;
+    return <XCircle className="w-6 h-6 text-finixar-red" />;
   };
 
   const getMatchColor = (status: string) => {
@@ -471,7 +471,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                         </div>
                         <button
                           onClick={() => handleRemoveFile(idx)}
-                          className="text-red-600 hover:text-red-700 p-2 hover:bg-red-50 rounded transition-colors"
+                          className="text-finixar-red hover:text-red-700 p-2 hover:bg-red-50 rounded transition-colors"
                           title="Supprimer ce fichier"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -491,7 +491,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
               <button
                 onClick={handleAnalyze}
                 disabled={files.length === 0 || analyzing}
-                className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-cta-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-finixar-teal text-white py-3 rounded-lg font-medium hover:bg-finixar-teal-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
               >
                 {analyzing ? 'Analyse en cours...' : 'Analyser le justificatif'}
               </button>
@@ -549,7 +549,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                     {match.confiance > 50 && (
                       <button
                         onClick={() => handleConfirm(match)}
-                        className="flex-1 bg-finixar-cta text-white py-2 rounded-lg font-medium hover:bg-finixar-cta-hover transition-colors"
+                        className="flex-1 bg-finixar-teal text-white py-2 rounded-lg font-medium hover:bg-finixar-teal-hover transition-colors"
                       >
                         ✓ Confirmer & Marquer Payé
                       </button>
@@ -557,7 +557,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                     {match.confiance <= 50 && (
                       <button
                         onClick={() => handleConfirm(match)}
-                        className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                        className="flex-1 bg-finixar-red text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
                       >
                         ⚠️ Forcer la Confirmation
                       </button>

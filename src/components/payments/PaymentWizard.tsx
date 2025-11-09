@@ -574,7 +574,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                 <select
                   value={selectedProjectId}
                   onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta bg-white"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal bg-white"
                 >
                   <option value="">Sélectionnez un projet</option>
                   {projects.map((project) => (
@@ -589,7 +589,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                   value={selectedTrancheId}
                   onChange={(e) => setSelectedTrancheId(e.target.value)}
                   disabled={!selectedProjectId}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta bg-white disabled:bg-slate-100"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal bg-white disabled:bg-slate-100"
                 >
                   <option value="">Sélectionnez une tranche</option>
                   {tranches.map((tranche) => (
@@ -686,7 +686,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
               <button
                 onClick={handleAnalyze}
                 disabled={files.length === 0 || analyzing}
-                className="w-full bg-finixar-cta text-white py-3 rounded-lg font-medium hover:bg-finixar-cta-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-finixar-teal text-white py-3 rounded-lg font-medium hover:bg-finixar-teal-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
                 {analyzing ? (
                   <>
@@ -726,7 +726,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                           type="checkbox"
                           checked={selectedMatches.size > 0 && selectedMatches.size === matches.length}
                           onChange={toggleSelectAll}
-                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-finixar-cta"
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-finixar-teal"
                         />
                       </th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Statut</th>
@@ -750,23 +750,23 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                             type="checkbox"
                             checked={selectedMatches.has(idx)}
                             onChange={() => toggleSelectMatch(idx)}
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-finixar-cta"
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-finixar-teal"
                           />
                         </td>
                         <td className="px-3 py-3">
                           {match.statut === 'correspondance' ? (
                             <div className="flex items-center gap-1">
-                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              <CheckCircle className="w-4 h-4 text-finixar-green" />
                               <span className="text-xs font-medium text-green-700">{match.confiance}%</span>
                             </div>
                           ) : match.statut === 'partielle' ? (
                             <div className="flex items-center gap-1">
-                              <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                              <AlertTriangle className="w-4 h-4 text-finixar-amber" />
                               <span className="text-xs font-medium text-yellow-700">{match.confiance}%</span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1">
-                              <AlertCircle className="w-4 h-4 text-red-600" />
+                              <AlertCircle className="w-4 h-4 text-finixar-red" />
                               <span className="text-xs font-medium text-red-700">{match.confiance}%</span>
                             </div>
                           )}
@@ -834,7 +834,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
               <button
                 onClick={() => setShowConfirmModal(true)}
                 disabled={processing || selectedMatches.size === 0}
-                className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <CheckCircle className="w-5 h-5" />
                 Valider la sélection ({selectedMatches.size})
@@ -842,7 +842,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
               <button
                 onClick={handleValidateAll}
                 disabled={processing || validMatches.length === 0}
-                className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {processing ? (
                   <>
@@ -878,7 +878,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                 {hasNoMatchInSelection && (
                   <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4 mb-4">
                     <div className="flex items-start gap-2 mb-3">
-                      <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                      <AlertCircle className="w-6 h-6 text-finixar-red flex-shrink-0 mt-0.5" />
                       <div>
                         <p className="font-bold text-red-900 text-sm">ATTENTION CRITIQUE</p>
                         <p className="text-sm text-red-800 mt-1">
@@ -920,13 +920,13 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                         <span className="text-slate-600">{formatCurrency(match.paiement.montant)}</span>
                       </div>
                       {match.statut === 'pas-de-correspondance' && (
-                        <span className="text-xs text-red-600 font-semibold">0% - AUCUNE CORRESPONDANCE</span>
+                        <span className="text-xs text-finixar-red font-semibold">0% - AUCUNE CORRESPONDANCE</span>
                       )}
                       {match.statut === 'partielle' && (
                         <span className="text-xs text-orange-600">Partiel ({match.confiance}%)</span>
                       )}
                       {match.statut === 'correspondance' && (
-                        <span className="text-xs text-green-600">Valide ({match.confiance}%)</span>
+                        <span className="text-xs text-finixar-green">Valide ({match.confiance}%)</span>
                       )}
                     </li>
                   ))}
@@ -946,8 +946,8 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                   disabled={processing}
                   className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${
                     hasNoMatchInSelection 
-                      ? 'bg-red-600 hover:bg-red-700' 
-                      : 'bg-green-600 hover:bg-green-700'
+                      ? 'bg-finixar-red hover:bg-red-700' 
+                      : 'bg-finixar-green hover:bg-green-700'
                   }`}
                 >
                   {processing ? (

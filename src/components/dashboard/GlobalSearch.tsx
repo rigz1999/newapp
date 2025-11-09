@@ -276,7 +276,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           inv.type === 'morale' ? 'Personne Morale' : 'Personne Physique',
           inv.email || ''
         ].filter(Boolean),
-        icon: <Users className="w-5 h-5 text-green-600" />,
+        icon: <Users className="w-5 h-5 text-finixar-green" />,
         link: `/investisseurs`
       }));
 
@@ -430,7 +430,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
   const renderGroupedResults = () => {
     const groups = [
       { key: 'projects', title: 'Projets', icon: <Folder className="w-4 h-4" />, color: 'text-blue-600', results: results.projects },
-      { key: 'investors', title: 'Investisseurs', icon: <Users className="w-4 h-4" />, color: 'text-green-600', results: results.investors },
+      { key: 'investors', title: 'Investisseurs', icon: <Users className="w-4 h-4" />, color: 'text-finixar-green', results: results.investors },
       { key: 'tranches', title: 'Tranches', icon: <Layers className="w-4 h-4" />, color: 'text-purple-600', results: results.tranches },
       { key: 'subscriptions', title: 'Souscriptions', icon: <FileText className="w-4 h-4" />, color: 'text-orange-600', results: results.subscriptions },
       { key: 'payments', title: 'Paiements', icon: <DollarSign className="w-4 h-4" />, color: 'text-emerald-600', results: results.payments },
@@ -556,7 +556,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
                 onClick={() => setActiveFilter(filter.key as FilterType)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
                   activeFilter === filter.key
-                    ? 'bg-finixar-cta text-white'
+                    ? 'bg-finixar-teal text-white'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -576,7 +576,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           {/* Error State */}
           {error && (
             <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <TrendingUp className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <TrendingUp className="w-5 h-5 text-finixar-red flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-red-900">Erreur de recherche</p>
                 <p className="text-sm text-red-700 mt-1">{error}</p>

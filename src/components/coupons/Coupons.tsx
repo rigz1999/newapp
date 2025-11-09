@@ -457,20 +457,20 @@ export function Coupons({ organization: _organization }: CouponsProps) {
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Tous les Coupons</h2>
           <p className="text-slate-600 mt-1">
-            {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total: <span className="font-bold text-green-600">{formatCurrency(totalAmount)}</span>
+            {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total: <span className="font-bold text-finixar-green">{formatCurrency(totalAmount)}</span>
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowPaymentWizard(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors"
           >
             <Upload className="w-4 h-4" />
             Enregistrer Paiement
           </button>
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors"
           >
             <Download className="w-4 h-4" />
             Exporter Excel
@@ -484,8 +484,8 @@ export function Coupons({ organization: _organization }: CouponsProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-2">
-            <Clock className="w-8 h-8 text-yellow-600" />
-            <span className="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">
+            <Clock className="w-8 h-8 text-finixar-amber" />
+            <span className="text-xs font-medium text-finixar-amber bg-yellow-100 px-2 py-1 rounded-full">
               En Attente
             </span>
           </div>
@@ -496,8 +496,8 @@ export function Coupons({ organization: _organization }: CouponsProps) {
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-2">
-            <CheckCircle className="w-8 h-8 text-green-600" />
-            <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">
+            <CheckCircle className="w-8 h-8 text-finixar-green" />
+            <span className="text-xs font-medium text-finixar-green bg-green-100 px-2 py-1 rounded-full">
               Payés
             </span>
           </div>
@@ -508,8 +508,8 @@ export function Coupons({ organization: _organization }: CouponsProps) {
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-2">
-            <AlertTriangle className="w-8 h-8 text-red-600" />
-            <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-1 rounded-full">
+            <AlertTriangle className="w-8 h-8 text-finixar-red" />
+            <span className="text-xs font-medium text-finixar-red bg-red-100 px-2 py-1 rounded-full">
               En Retard
             </span>
           </div>
@@ -523,7 +523,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
                 advancedFilters.clearAllFilters();
                 advancedFilters.addMultiSelectFilter('statut', 'en_retard');
               }}
-              className="mt-2 text-xs text-red-600 hover:text-red-700 font-medium underline"
+              className="mt-2 text-xs text-finixar-red hover:text-red-700 font-medium underline"
             >
               Voir les {stats.enRetard.count} retard{stats.enRetard.count > 1 ? 's' : ''} →
             </button>
@@ -552,7 +552,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
               placeholder="Rechercher par investisseur, projet, tranche..."
               value={advancedFilters.filters.search}
               onChange={(e) => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
             />
           </div>
 
@@ -567,7 +567,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
             <Filter className="w-5 h-5" />
             <span className="font-medium">Filtres avancés</span>
             {activeFiltersCount > 0 && (
-              <span className="bg-finixar-cta text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-finixar-teal text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}
@@ -698,7 +698,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-slate-600">Total du jour</p>
-                    <p className="text-lg font-bold text-green-600">{formatCurrency(dateTotal)}</p>
+                    <p className="text-lg font-bold text-finixar-green">{formatCurrency(dateTotal)}</p>
                     <p className="text-xs text-slate-500">{tranches.length} tranche{tranches.length > 1 ? 's' : ''}</p>
                   </div>
                 </div>
@@ -737,7 +737,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
                           </button>
                           <div className="flex items-center gap-3">
                             <div className="text-right">
-                              <p className="text-sm font-bold text-green-600">{formatCurrency(tranche.total)}</p>
+                              <p className="text-sm font-bold text-finixar-green">{formatCurrency(tranche.total)}</p>
                               <p className="text-xs text-slate-500">{tranche.coupons.length} investisseur{tranche.coupons.length > 1 ? 's' : ''}</p>
                             </div>
                             {tranche.hasUnpaid && (
@@ -746,7 +746,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
                                   e.stopPropagation();
                                   setShowPaymentWizard(true);
                                 }}
-                                className="px-3 py-1.5 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors flex items-center gap-1.5 text-xs font-medium"
+                                className="px-3 py-1.5 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors flex items-center gap-1.5 text-xs font-medium"
                               >
                                 <Upload className="w-3.5 h-3.5" />
                                 Enregistrer Paiement
@@ -792,7 +792,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
                                             {!coupon.has_rib && (
                                               <>
                                                 <span>•</span>
-                                                <span className="text-red-600">⚠️ RIB manquant</span>
+                                                <span className="text-finixar-red">⚠️ RIB manquant</span>
                                               </>
                                             )}
                                           </div>
@@ -801,7 +801,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
 
                                       <div className="flex items-center gap-4 ml-4">
                                         <div className="text-right">
-                                          <p className="text-lg font-bold text-green-600">
+                                          <p className="text-lg font-bold text-finixar-green">
                                             {formatCurrency(coupon.montant_net)}
                                           </p>
                                           <p className="text-xs text-slate-500">
@@ -890,7 +890,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
                   </div>
                   <div>
                     <p className="text-xs text-slate-600">Montant Net</p>
-                    <p className="text-sm font-medium text-green-600">{formatCurrency(selectedCoupon.montant_net)}</p>
+                    <p className="text-sm font-medium text-finixar-green">{formatCurrency(selectedCoupon.montant_net)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600">Statut</p>
@@ -906,7 +906,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
                       </div>
                       <div>
                         <p className="text-xs text-slate-600">Montant Payé</p>
-                        <p className="text-sm font-medium text-green-600">{formatCurrency(selectedCoupon.montant_paye || 0)}</p>
+                        <p className="text-sm font-medium text-finixar-green">{formatCurrency(selectedCoupon.montant_paye || 0)}</p>
                       </div>
                     </>
                   )}

@@ -249,7 +249,7 @@ export function Tranches({ projectId, projectName, organization, onBack, onLogou
           >
             <div className="flex items-start gap-3">
               <AlertCircle
-                className={`w-5 h-5 ${uploadResult.success ? 'text-green-600' : 'text-red-600'} flex-shrink-0 mt-0.5`}
+                className={`w-5 h-5 ${uploadResult.success ? 'text-finixar-green' : 'text-finixar-red'} flex-shrink-0 mt-0.5`}
               />
               <div className="flex-1">
                 <p

@@ -51,7 +51,7 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
 
             <div className="bg-green-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Coins className="w-4 h-4 text-green-600" />
+                <Coins className="w-4 h-4 text-finixar-green" />
                 <p className="text-xs font-medium text-green-900">Payés</p>
               </div>
               <p className="text-2xl font-bold text-green-900">{stats.payes}</p>
