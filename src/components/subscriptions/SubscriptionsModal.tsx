@@ -127,7 +127,7 @@ export function SubscriptionsModal({
                 placeholder="Rechercher..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
               />
             </div>
 
@@ -135,7 +135,7 @@ export function SubscriptionsModal({
             <select
               value={filterTranche}
               onChange={(e) => setFilterTranche(e.target.value)}
-              className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
             >
               <option value="all">Toutes les tranches</option>
               {tranches.map(t => (
@@ -147,7 +147,7 @@ export function SubscriptionsModal({
             <select
               value={filterCGP}
               onChange={(e) => setFilterCGP(e.target.value)}
-              className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="px-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
             >
               <option value="all">Tous les CGP</option>
               {cgps.map(c => (
@@ -253,7 +253,7 @@ export function SubscriptionsModal({
                       </button>
                       <button
                         onClick={() => onDelete(sub)}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-1 text-finixar-red hover:bg-red-50 rounded transition-colors"
                         title="Supprimer"
                       >
                         <Trash2 className="w-4 h-4" />

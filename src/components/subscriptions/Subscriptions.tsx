@@ -429,7 +429,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                 placeholder="Rechercher par projet, tranche, investisseur..."
                 value={advancedFilters.filters.search}
                 onChange={(e) => advancedFilters.setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
               />
             </div>
 
@@ -444,7 +444,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
               <Filter className="w-5 h-5" />
               <span className="font-medium">Filtres avancés</span>
               {activeFiltersCount > 0 && (
-                <span className="bg-finixar-cta text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="bg-finixar-teal text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {activeFiltersCount}
                 </span>
               )}
@@ -600,7 +600,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-slate-900">
                         {formatCurrency(sub.montant_investi)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-green-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-finixar-green">
                         {formatCurrency(sub.coupon_net)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
@@ -624,7 +624,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                           </button>
                           <button
                             onClick={() => handleDeleteClick(sub)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-red-50 text-finixar-red hover:text-red-700 transition-colors"
                             title="Supprimer"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -679,7 +679,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       type="date"
                       value={editFormData.date_souscription}
                       onChange={(e) => setEditFormData({ ...editFormData, date_souscription: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                     />
                   </div>
 
@@ -691,7 +691,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       type="number"
                       value={editFormData.nombre_obligations}
                       onChange={(e) => setEditFormData({ ...editFormData, nombre_obligations: parseInt(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                     />
                   </div>
                 </div>
@@ -706,7 +706,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       step="0.01"
                       value={editFormData.montant_investi}
                       onChange={(e) => setEditFormData({ ...editFormData, montant_investi: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                     />
                   </div>
 
@@ -718,7 +718,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       type="date"
                       value={editFormData.prochaine_date_coupon}
                       onChange={(e) => setEditFormData({ ...editFormData, prochaine_date_coupon: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                     />
                   </div>
                 </div>
@@ -733,7 +733,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       step="0.01"
                       value={editFormData.coupon_brut}
                       onChange={(e) => setEditFormData({ ...editFormData, coupon_brut: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                     />
                   </div>
 
@@ -746,7 +746,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       step="0.01"
                       value={editFormData.coupon_net}
                       onChange={(e) => setEditFormData({ ...editFormData, coupon_net: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                     />
                   </div>
                 </div>
@@ -770,7 +770,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                 </button>
                 <button
                   onClick={handleSaveClick}
-                  className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
+                  className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors"
                 >
                   Enregistrer
                 </button>
@@ -812,7 +812,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                 <button
                   onClick={handleConfirmSave}
                   disabled={saving}
-                  className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {saving ? (
                     <>
@@ -914,7 +914,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-slate-600">Coupon net:</span>
-                      <span className="text-sm font-medium text-green-600">{formatCurrency(viewingSubscription.coupon_net)}</span>
+                      <span className="text-sm font-medium text-finixar-green">{formatCurrency(viewingSubscription.coupon_net)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-slate-600">Prochaine date de coupon:</span>
@@ -944,7 +944,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
                     <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                      <AlertTriangle className="w-6 h-6 text-red-600" />
+                      <AlertTriangle className="w-6 h-6 text-finixar-red" />
                     </div>
                   </div>
                   <div className="flex-1">
@@ -965,7 +965,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                         <strong>Montant:</strong> {formatCurrency(deletingSubscription.montant_investi)}
                       </p>
                     </div>
-                    <p className="text-sm text-red-600 mt-3 font-medium">
+                    <p className="text-sm text-finixar-red mt-3 font-medium">
                       ⚠️ Cette action est irréversible
                     </p>
                   </div>
@@ -983,7 +983,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                 <button
                   onClick={handleConfirmDelete}
                   disabled={deleting}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {deleting ? (
                     <>

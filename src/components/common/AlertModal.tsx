@@ -26,11 +26,11 @@ export function AlertModal({
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="w-12 h-12 text-green-600" />;
+        return <CheckCircle className="w-12 h-12 text-finixar-green" />;
       case 'warning':
         return <AlertTriangle className="w-12 h-12 text-orange-600" />;
       case 'error':
-        return <XCircle className="w-12 h-12 text-red-600" />;
+        return <XCircle className="w-12 h-12 text-finixar-red" />;
       case 'confirm':
         return <AlertTriangle className="w-12 h-12 text-blue-600" />;
       default:
@@ -85,9 +85,9 @@ export function AlertModal({
               onClick={handleConfirm}
               className={`flex-1 px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors shadow-sm ${
                 type === 'error' || type === 'warning'
-                  ? 'bg-red-600 hover:bg-red-700'
+                  ? 'bg-finixar-red hover:bg-red-700'
                   : type === 'success'
-                  ? 'bg-green-600 hover:bg-green-700'
+                  ? 'bg-finixar-green hover:bg-green-700'
                   : 'bg-slate-900 hover:bg-slate-800'
               }`}
             >

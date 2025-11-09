@@ -510,7 +510,7 @@ export function Dashboard({ organization }: DashboardProps) {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           <span>Actualiser</span>
@@ -520,7 +520,7 @@ export function Dashboard({ organization }: DashboardProps) {
       {error && !loading && (
         <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-finixar-red flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-red-900 mb-1">Erreur de chargement</h3>
               <p className="text-sm text-red-800">{error}</p>
@@ -536,7 +536,7 @@ export function Dashboard({ organization }: DashboardProps) {
             </div>
             <button
               onClick={() => setError(null)}
-              className="text-red-600 hover:text-red-800 transition-colors"
+              className="text-finixar-red hover:text-red-800 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -582,7 +582,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     >
                       <AlertCircle className={`w-5 h-5 flex-shrink-0 ${
                         alert.type === 'late_payment' 
-                          ? 'text-red-600' 
+                          ? 'text-finixar-red' 
                           : alert.type === 'upcoming_coupons'
                           ? 'text-blue-600'
                           : 'text-orange-600'
@@ -601,7 +601,7 @@ export function Dashboard({ organization }: DashboardProps) {
                       {alert.id !== 'no-alerts' && (
                         <ArrowRight className={`w-4 h-4 ${
                           alert.type === 'late_payment' 
-                            ? 'text-red-600' 
+                            ? 'text-finixar-red' 
                             : alert.type === 'upcoming_coupons'
                             ? 'text-blue-600'
                             : 'text-orange-600'
@@ -621,7 +621,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 onClick={() => { setShowNewProject(true); }}
                 className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
               >
-                <div className="bg-finixar-cta p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-teal p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Plus className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -634,7 +634,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 onClick={() => setShowTrancheWizard(true)}
                 className="flex items-center gap-3 p-4 bg-gradient-to-br from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 rounded-lg transition-all group border border-teal-200"
               >
-                <div className="bg-finixar-cta p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-teal p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <FileText className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -647,7 +647,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 onClick={() => setShowQuickPayment(true)}
                 className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all group border border-purple-200"
               >
-                <div className="bg-finixar-cta p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finixar-teal p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -683,10 +683,10 @@ export function Dashboard({ organization }: DashboardProps) {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-slate-600 text-sm">Coupons payés ce mois</span>
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <CheckCircle2 className="w-5 h-5 text-finixar-green" />
               </div>
               <p className="text-3xl font-bold text-slate-900 mb-1">{formatCurrency(stats.couponsPaidThisMonth)}</p>
-              <p className="text-sm text-green-600">{stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}</p>
+              <p className="text-sm text-finixar-green">{stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}</p>
             </div>
 
             <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -715,7 +715,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   aria-label="Mode d'affichage"
                   value={viewMode}
                   onChange={(e) => setViewMode(e.target.value as 'monthly' | 'cumulative')}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-cta focus:border-transparent font-medium"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-teal focus:border-transparent font-medium"
                 >
                   <option value="monthly">Vue par mois</option>
                   <option value="cumulative">Vue cumulée</option>
@@ -724,7 +724,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   aria-label="Année"
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-cta focus:border-transparent"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-teal focus:border-transparent"
                 >
                   <option value={2024}>2024</option>
                   <option value={2025}>2025</option>
@@ -738,7 +738,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     setStartMonth(start);
                     setEndMonth(end);
                   }}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-cta focus:border-transparent"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-teal focus:border-transparent"
                 >
                   <option value="0-11">Année complète</option>
                   <option value="0-2">Q1 (Jan-Mar)</option>
@@ -788,8 +788,8 @@ export function Dashboard({ organization }: DashboardProps) {
                         <div
                           className={`w-full rounded-t-lg transition-all hover:opacity-90 cursor-pointer shadow-md ${
                             viewMode === 'cumulative'
-                              ? 'bg-gradient-to-t from-finixar-accent to-finixar-cta hover:from-finixar-accent-hover hover:to-finixar-cta-hover'
-                              : 'bg-gradient-to-t from-finixar-cta to-finixar-accent hover:from-finixar-accent hover:to-finixar-cta'
+                              ? 'bg-gradient-to-t from-finixar-purple to-finixar-teal hover:from-finixar-purple-hover hover:to-finixar-teal-hover'
+                              : 'bg-gradient-to-t from-finixar-teal to-finixar-purple hover:from-finixar-purple hover:to-finixar-teal'
                           }`}
                           style={{ height: `${heightPercentage}%` }}
                         />
@@ -1015,7 +1015,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="projet" className="block text-sm font-medium text-slate-900 mb-2">
-                      Nom du projet <span className="text-red-600">*</span>
+                      Nom du projet <span className="text-finixar-red">*</span>
                     </label>
                     <input
                       id="projet"
@@ -1023,7 +1023,7 @@ export function Dashboard({ organization }: DashboardProps) {
                       required
                       value={newProjectData.projet}
                       onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       placeholder="Ex: GreenTech 2025"
                     />
                   </div>
@@ -1032,14 +1032,14 @@ export function Dashboard({ organization }: DashboardProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="type" className="block text-sm font-medium text-slate-900 mb-2">
-                        Type d'obligations <span className="text-red-600">*</span>
+                        Type d'obligations <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="type"
                         required
                         value={newProjectData.type}
                         onChange={(e) => setNewProjectData({ ...newProjectData, type: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       >
                         <option value="obligations_simples">Obligations Simples</option>
                         <option value="obligations_convertibles">Obligations Convertibles</option>
@@ -1048,7 +1048,7 @@ export function Dashboard({ organization }: DashboardProps) {
 
                     <div>
                       <label htmlFor="taux" className="block text-sm font-medium text-slate-900 mb-2">
-                        Taux d'intérêt (%) <span className="text-red-600">*</span>
+                        Taux d'intérêt (%) <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="taux"
@@ -1060,7 +1060,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         inputMode="decimal"
                         value={newProjectData.taux_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: 8.50"
                       />
                     </div>
@@ -1069,7 +1069,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="maturite" className="block text-sm font-medium text-slate-900 mb-2">
-                        Maturité (mois) <span className="text-red-600">*</span>
+                        Maturité (mois) <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="maturite"
@@ -1078,7 +1078,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         min="1"
                         value={newProjectData.maturite_mois}
                         onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: 60 (5 ans)"
                       />
                       <p className="mt-1 text-xs text-slate-600">Durée totale en mois</p>
@@ -1086,14 +1086,14 @@ export function Dashboard({ organization }: DashboardProps) {
 
                     <div>
                       <label htmlFor="base_interet" className="block text-sm font-medium text-slate-900 mb-2">
-                        Base de calcul <span className="text-red-600">*</span>
+                        Base de calcul <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="base_interet"
                         required
                         value={newProjectData.base_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, base_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       >
                         <option value="360">360 jours (30/360) - Standard</option>
                         <option value="365">365 jours (Exact/365)</option>
@@ -1105,7 +1105,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="montant" className="block text-sm font-medium text-slate-900 mb-2">
-                        Montant global à lever (€) <span className="text-red-600">*</span>
+                        Montant global à lever (€) <span className="text-finixar-red">*</span>
                       </label>
                       {/* Masked input */}
                       <input
@@ -1173,21 +1173,21 @@ export function Dashboard({ organization }: DashboardProps) {
                           }));
                           requestAnimationFrame(moveCaretBeforeEuro);
                         }}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: 1 500 000 €"
                       />
                     </div>
 
                     <div>
                       <label htmlFor="periodicite" className="block text-sm font-medium text-slate-900 mb-2">
-                        Périodicité du coupon <span className="text-red-600">*</span>
+                        Périodicité du coupon <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="periodicite"
                         required
                         value={newProjectData.periodicite_coupon}
                         onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       >
                         <option value="" disabled>Choisir…</option>
                         <option value="annuel">Annuel</option>
@@ -1199,7 +1199,7 @@ export function Dashboard({ organization }: DashboardProps) {
 
                   <div>
                     <label htmlFor="emetteur" className="block text-sm font-medium text-slate-900 mb-2">
-                      Émetteur <span className="text-red-600">*</span>
+                      Émetteur <span className="text-finixar-red">*</span>
                     </label>
                     <input
                       id="emetteur"
@@ -1207,14 +1207,14 @@ export function Dashboard({ organization }: DashboardProps) {
                       required
                       value={newProjectData.emetteur}
                       onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       placeholder="Ex: GreenTech SAS"
                     />
                   </div>
 
                   <div>
                     <label htmlFor="siren" className="block text-sm font-medium text-slate-900 mb-2">
-                      SIREN de l'émetteur <span className="text-red-600">*</span>
+                      SIREN de l'émetteur <span className="text-finixar-red">*</span>
                     </label>
                     <input
                       id="siren"
@@ -1233,7 +1233,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         setSirenError(isValidSIREN(v) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).');
                       }}
                       aria-invalid={!!sirenError}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal ${
                         sirenError ? 'border-red-500' : 'border-slate-300'
                       }`}
                       placeholder="Ex: 123456789"
@@ -1241,14 +1241,14 @@ export function Dashboard({ organization }: DashboardProps) {
                       inputMode="numeric"
                     />
                     {sirenError && (
-                      <p className="mt-1 text-sm text-red-600">{sirenError}</p>
+                      <p className="mt-1 text-sm text-finixar-red">{sirenError}</p>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="prenom" className="block text-sm font-medium text-slate-900 mb-2">
-                        Prénom du représentant <span className="text-red-600">*</span>
+                        Prénom du représentant <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="prenom"
@@ -1256,13 +1256,13 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.prenom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: Jean"
                       />
                     </div>
                     <div>
                       <label htmlFor="nom" className="block text-sm font-medium text-slate-900 mb-2">
-                        Nom du représentant <span className="text-red-600">*</span>
+                        Nom du représentant <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="nom"
@@ -1270,7 +1270,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.nom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: Dupont"
                       />
                     </div>
@@ -1278,7 +1278,7 @@ export function Dashboard({ organization }: DashboardProps) {
 
                   <div>
                     <label htmlFor="emailrep" className="block text-sm font-medium text-slate-900 mb-2">
-                      Email du représentant <span className="text-red-600">*</span>
+                      Email du représentant <span className="text-finixar-red">*</span>
                     </label>
                     <input
                       id="emailrep"
@@ -1286,7 +1286,7 @@ export function Dashboard({ organization }: DashboardProps) {
                       required
                       value={newProjectData.email_representant}
                       onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       placeholder="Ex: jean.dupont@example.com"
                     />
                   </div>
@@ -1296,7 +1296,7 @@ export function Dashboard({ organization }: DashboardProps) {
 
                     <div>
                       <label htmlFor="repmasse" className="block text-sm font-medium text-slate-900 mb-2">
-                        Nom du représentant de la masse <span className="text-red-600">*</span>
+                        Nom du représentant de la masse <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="repmasse"
@@ -1304,14 +1304,14 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.representant_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: Cabinet Lefevre"
                       />
                     </div>
 
                     <div className="mt-4">
                       <label htmlFor="emailmasse" className="block text-sm font-medium text-slate-900 mb-2">
-                        Email du représentant de la masse <span className="text-red-600">*</span>
+                        Email du représentant de la masse <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="emailmasse"
@@ -1319,7 +1319,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.email_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: contact@cabinet-lefevre.fr"
                       />
                     </div>
@@ -1334,7 +1334,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         pattern="[0-9]*"
                         value={newProjectData.telephone_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         placeholder="Ex: 0123456789"
                         maxLength={10}
                       />
@@ -1355,7 +1355,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     ref={lastFocusableRef}
                     type="submit"
                     disabled={creatingProject || !isFormValid}
-                    className="flex-1 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     {creatingProject ? 'Création...' : 'Créer le projet'}
                   </button>

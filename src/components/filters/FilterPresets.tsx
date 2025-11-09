@@ -57,12 +57,12 @@ export function FilterPresets({
             onChange={(e) => setNewPresetName(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSave()}
             placeholder="Nom du filtre..."
-            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta text-sm"
+            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal text-sm"
             autoFocus
           />
           <button
             onClick={handleSave}
-            className="px-3 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors text-sm"
+            className="px-3 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors text-sm"
           >
             OK
           </button>
@@ -93,7 +93,7 @@ export function FilterPresets({
               </button>
               <button
                 onClick={() => onDelete(preset.id)}
-                className="opacity-0 group-hover:opacity-100 p-1 text-red-600 hover:bg-red-50 rounded transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 text-finixar-red hover:bg-red-50 rounded transition-all"
                 title="Supprimer"
               >
                 <Trash2 className="w-3.5 h-3.5" />

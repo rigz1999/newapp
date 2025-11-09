@@ -38,7 +38,7 @@ function SingleToast({ toast, onClose }: ToastProps) {
     switch (toast.type) {
       case 'success':
         return {
-          icon: <CheckCircle className="w-5 h-5 text-green-600" />,
+          icon: <CheckCircle className="w-5 h-5 text-finixar-green" />,
           bg: 'bg-green-50',
           border: 'border-green-200',
           titleColor: 'text-green-900',
@@ -46,7 +46,7 @@ function SingleToast({ toast, onClose }: ToastProps) {
         };
       case 'error':
         return {
-          icon: <XCircle className="w-5 h-5 text-red-600" />,
+          icon: <XCircle className="w-5 h-5 text-finixar-red" />,
           bg: 'bg-red-50',
           border: 'border-red-200',
           titleColor: 'text-red-900',

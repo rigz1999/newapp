@@ -246,7 +246,7 @@ export function InvitationAccept() {
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="flex items-center justify-center mb-6">
               <div className="bg-red-100 p-4 rounded-full">
-                <AlertCircle className="w-12 h-12 text-red-600" />
+                <AlertCircle className="w-12 h-12 text-finixar-red" />
               </div>
             </div>
 

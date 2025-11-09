@@ -91,7 +91,7 @@ export function TranchesModal({
               placeholder="Rechercher une tranche..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
             />
           </div>
         </div>
@@ -136,7 +136,7 @@ export function TranchesModal({
                         onClose();
                         onDelete(tranche);
                       }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      className="p-2 text-finixar-red hover:bg-red-50 rounded transition-colors"
                       title="Supprimer"
                     >
                       <Trash2 className="w-4 h-4" />

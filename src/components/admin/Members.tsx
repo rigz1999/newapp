@@ -258,13 +258,13 @@ export default function Members() {
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Membres</p>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-2xl font-bold text-finixar-green">
               {members.filter(m => m.role === 'member').length}
             </p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Invitations</p>
-            <p className="text-2xl font-bold text-yellow-600">{pendingInvitations.length}</p>
+            <p className="text-2xl font-bold text-finixar-amber">{pendingInvitations.length}</p>
           </div>
         </div>
       </div>
@@ -273,7 +273,7 @@ export default function Members() {
       {pendingInvitations.length > 0 && (
         <div className="bg-yellow-50 rounded-xl border border-yellow-200 mb-6 p-6">
           <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-yellow-600" />
+            <Clock className="w-5 h-5 text-finixar-amber" />
             Invitations en attente ({pendingInvitations.length})
           </h2>
           <div className="space-y-3">
@@ -295,7 +295,7 @@ export default function Members() {
                   </span>
                   <button
                     onClick={() => handleCancelInvitation(inv.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
                     title="Annuler l'invitation"
                   >
                     <X className="w-4 h-4" />
@@ -367,7 +367,7 @@ export default function Members() {
                     </button>
                     <button
                       onClick={() => openRemoveModal(member)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
                       title="Retirer ce membre"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -570,7 +570,7 @@ function InviteMemberModal({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
               placeholder="exemple@email.com"
             />
           </div>
@@ -583,7 +583,7 @@ function InviteMemberModal({
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
               placeholder="Jean"
             />
           </div>
@@ -596,7 +596,7 @@ function InviteMemberModal({
               type="text"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
               placeholder="Dupont"
             />
           </div>
@@ -608,7 +608,7 @@ function InviteMemberModal({
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as 'member' | 'admin')}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
             >
               <option value="member">Membre</option>
               <option value="admin">Administrateur</option>
@@ -680,7 +680,7 @@ function RemoveMemberModal({
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-4 mb-4">
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertCircle className="w-6 h-6 text-red-600" />
+            <AlertCircle className="w-6 h-6 text-finixar-red" />
           </div>
           <div className="flex-1">
             <h3 className="text-xl font-bold text-slate-900 mb-2">Retirer le Membre</h3>
@@ -699,7 +699,7 @@ function RemoveMemberModal({
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="flex-1 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             Confirmer
           </button>
@@ -774,7 +774,7 @@ function ChangeRoleModal({
           <select
             value={newRole}
             onChange={(e) => setNewRole(e.target.value)}
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
           >
             <option value="member">Membre</option>
             <option value="admin">Administrateur</option>

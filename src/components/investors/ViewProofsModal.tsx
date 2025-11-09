@@ -153,7 +153,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
                           </button>
                           <button
                             onClick={() => downloadFile(proof.file_url, proof.file_name)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                            className="p-2 text-finixar-green hover:bg-green-50 rounded-lg transition-colors"
                             title="Télécharger"
                           >
                             <Download className="w-5 h-5" />
@@ -161,7 +161,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
                           <button
                             onClick={() => setConfirmDelete({ proofId: proof.id, fileUrl: proof.file_url, fileName: proof.file_name })}
                             disabled={deleting === proof.id}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Supprimer"
                           >
                             <Trash2 className={`w-5 h-5 ${deleting === proof.id ? 'animate-pulse' : ''}`} />
@@ -192,7 +192,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-red-100 p-3 rounded-full">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
+                <AlertTriangle className="w-6 h-6 text-finixar-red" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Confirmer la suppression</h3>
@@ -225,7 +225,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
               <button
                 onClick={() => handleDeleteProof(confirmDelete.proofId, confirmDelete.fileUrl)}
                 disabled={deleting !== null}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {deleting ? 'Suppression...' : 'Supprimer'}
               </button>

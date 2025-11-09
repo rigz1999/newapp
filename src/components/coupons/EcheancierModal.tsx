@@ -302,7 +302,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
 
             <div className="bg-green-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Coins className="w-4 h-4 text-green-600" />
+                <Coins className="w-4 h-4 text-finixar-green" />
                 <p className="text-xs font-medium text-green-900">Payés</p>
               </div>
               <p className="text-2xl font-bold text-green-900">{stats.paye}</p>
@@ -343,8 +343,8 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
               onClick={() => setFilter('paye')}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                 filter === 'paye'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-green-50 text-green-600 hover:bg-green-100'
+                  ? 'bg-finixar-green text-white'
+                  : 'bg-green-50 text-finixar-green hover:bg-green-100'
               }`}
             >
               Payés ({stats.paye})
@@ -391,7 +391,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                             <span className="font-medium">{group.totalCount}</span> coupon{group.totalCount > 1 ? 's' : ''}
                           </div>
                           <div className="text-right">
-                            <div className="text-base font-bold text-green-600">
+                            <div className="text-base font-bold text-finixar-green">
                               {formatCurrency(group.totalNet)}
                             </div>
                             <div className="text-xs text-slate-500">
@@ -442,7 +442,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                                         {dateGroup.count} investisseur{dateGroup.count > 1 ? 's' : ''}
                                       </div>
                                       <div className="text-right">
-                                        <div className="text-sm font-bold text-green-600">
+                                        <div className="text-sm font-bold text-finixar-green">
                                           {formatCurrency(dateGroup.totalNet + dateGroup.totalNominal)}
                                         </div>
                                         {dateGroup.isLastEcheance ? (
@@ -500,7 +500,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                                               </div>
                                             </td>
                                             <td className="px-4 py-2 text-right">
-                                              <div className="text-base font-bold text-green-600">
+                                              <div className="text-base font-bold text-finixar-green">
                                                 {formatCurrency(echeance.souscription.coupon_net)}
                                               </div>
                                               <div className="text-xs text-slate-500">

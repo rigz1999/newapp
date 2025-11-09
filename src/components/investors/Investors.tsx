@@ -692,7 +692,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
         </div>
         <button
           onClick={handleExportExcel}
-          className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors"
         >
           <Download className="w-4 h-4" />
           Exporter Excel
@@ -710,7 +710,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               placeholder="Rechercher par nom, ID, CGP, email..."
               value={advancedFilters.filters.search}
               onChange={(e) => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
             />
           </div>
 
@@ -725,7 +725,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
             <Filter className="w-5 h-5" />
             <span className="font-medium">Filtres avancés</span>
             {activeFiltersCount > 0 && (
-              <span className="bg-finixar-cta text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-finixar-teal text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}
@@ -897,7 +897,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                       <p>{investor.cgp || '-'}</p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-finixar-green">
                       {formatCurrency(investor.total_investi)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
@@ -917,7 +917,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                             </button>
                             <button
                               onClick={() => handleDeleteRib(investor)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-1.5 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
                               title="Supprimer le RIB"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -946,7 +946,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         </button>
                         <button
                           onClick={() => handleDeleteClick(investor)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
                           title="Supprimer"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -996,7 +996,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     setShowDetailsModal(false);
                     handleEditClick(selectedInvestor);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                   Modifier
@@ -1014,7 +1014,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               <div className="grid grid-cols-2 gap-6">
                 <div className="bg-slate-50 p-4 rounded-lg">
                   <p className="text-sm text-slate-600 mb-1">Total Investi</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(selectedInvestor.total_investi)}</p>
+                  <p className="text-2xl font-bold text-finixar-green">{formatCurrency(selectedInvestor.total_investi)}</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-lg">
                   <p className="text-sm text-slate-600 mb-1">Nombre de Souscriptions</p>
@@ -1159,7 +1159,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         type="text"
                         value={editFormData.nom_raison_sociale}
                         onChange={(e) => setEditFormData({ ...editFormData, nom_raison_sociale: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       />
                     </div>
                     <div>
@@ -1167,7 +1167,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                       <select
                         value={normalizeType(editFormData.type)}
                         onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value === 'morale' ? 'Morale' : 'Physique' })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       >
                         <option value="physique">Personne Physique</option>
                         <option value="morale">Personne Morale</option>
@@ -1179,7 +1179,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         type="email"
                         value={editFormData.email || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       />
                     </div>
                     <div>
@@ -1188,7 +1188,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         type="tel"
                         value={editFormData.telephone || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, telephone: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       />
                     </div>
                     <div>
@@ -1197,7 +1197,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         type="text"
                         value={editFormData.residence_fiscale || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, residence_fiscale: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       />
                     </div>
                   </div>
@@ -1255,7 +1255,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="number"
                           value={editFormData.siren || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, siren: Number(e.target.value) })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         />
                       </div>
                       <div>
@@ -1264,7 +1264,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.forme_juridique || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, forme_juridique: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         />
                       </div>
                       <div>
@@ -1273,7 +1273,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.representant_legal || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, representant_legal: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         />
                       </div>
                     </div>
@@ -1288,7 +1288,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.nom || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, nom: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         />
                       </div>
                       <div>
@@ -1297,7 +1297,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.prenom || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, prenom: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         />
                       </div>
                       <div>
@@ -1306,7 +1306,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.nationalite || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, nationalite: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         />
                       </div>
                     </div>
@@ -1322,7 +1322,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         type="text"
                         value={editFormData.adresse || editFormData.siege_social || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, adresse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                       />
                     </div>
                     <div className="grid grid-cols-3 gap-4">
@@ -1332,7 +1332,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.code_postal || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, code_postal: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         />
                       </div>
                       <div>
@@ -1341,7 +1341,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.ville || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, ville: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         />
                       </div>
                       <div>
@@ -1350,7 +1350,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           type="text"
                           value={editFormData.pays || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, pays: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-cta"
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-teal"
                         />
                       </div>
                     </div>
@@ -1368,7 +1368,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               </button>
               <button
                 onClick={handleEditSave}
-                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors"
+                className="px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors"
               >
                 Enregistrer
               </button>
@@ -1383,7 +1383,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
+                <AlertTriangle className="w-6 h-6 text-finixar-red" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 text-center mb-2">Supprimer l'investisseur</h3>
               <p className="text-slate-600 text-center mb-4">
@@ -1408,7 +1408,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors"
               >
                 Supprimer
               </button>
@@ -1504,7 +1504,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-100 rounded-lg">
-                      <FileText className="w-5 h-5 text-green-600" />
+                      <FileText className="w-5 h-5 text-finixar-green" />
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-slate-900">{ribFile.name}</p>
@@ -1517,7 +1517,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         setRibFile(null);
                         setRibPreview(null);
                       }}
-                      className="text-slate-400 hover:text-red-600 transition-colors"
+                      className="text-slate-400 hover:text-finixar-red transition-colors"
                       disabled={uploadingRib}
                     >
                       <X className="w-5 h-5" />
@@ -1539,7 +1539,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   </div>
                   <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
                     <div
-                      className="bg-finixar-cta h-full transition-all duration-300 ease-out"
+                      className="bg-finixar-teal h-full transition-all duration-300 ease-out"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
@@ -1551,7 +1551,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-100 rounded-full">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <CheckCircle className="w-5 h-5 text-finixar-green" />
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-green-900">
@@ -1569,7 +1569,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               {uploadError && (
                 <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
                   <div className="flex items-center gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                    <AlertCircle className="w-5 h-5 text-finixar-red flex-shrink-0" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-red-900">
                         Erreur lors de l'upload
@@ -1580,7 +1580,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     </div>
                     <button
                       onClick={() => setUploadError('')}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-finixar-red hover:text-red-800"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -1600,7 +1600,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               <button
                 onClick={handleRibUploadConfirm}
                 disabled={!ribFile || uploadingRib}
-                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {uploadingRib ? (
                   <>
@@ -1671,7 +1671,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               </button>
               <button
                 onClick={handleDownloadFromView}
-                className="px-4 py-2 bg-finixar-cta text-white rounded-lg hover:bg-finixar-cta-hover transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
                 Télécharger

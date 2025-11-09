@@ -88,7 +88,7 @@ describe('ConfirmModal', () => {
     );
 
     const confirmButton = screen.getByRole('button', { name: /confirmer/i });
-    expect(confirmButton).toHaveClass('bg-red-600');
+    expect(confirmButton).toHaveClass('bg-finixar-red');
   });
 
   it('should use warning styling when type is warning', () => {

@@ -69,14 +69,14 @@ export function LiveIndicator({
         {isLive ? (
           <>
             <div className="relative">
-              <Radio className="w-4 h-4 text-green-600" />
+              <Radio className="w-4 h-4 text-finixar-green" />
               {showPulse && (
                 <span className="absolute inset-0 animate-ping">
-                  <Radio className="w-4 h-4 text-green-600 opacity-75" />
+                  <Radio className="w-4 h-4 text-finixar-green opacity-75" />
                 </span>
               )}
             </div>
-            <span className="text-xs font-medium text-green-600">En direct</span>
+            <span className="text-xs font-medium text-finixar-green">En direct</span>
           </>
         ) : (
           <>
