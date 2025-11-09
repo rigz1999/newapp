@@ -510,7 +510,7 @@ export function Dashboard({ organization }: DashboardProps) {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           <span>Actualiser</span>
@@ -621,7 +621,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 onClick={() => { setShowNewProject(true); }}
                 className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
               >
-                <div className="bg-blue-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finxar-cta p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Plus className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -647,7 +647,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 onClick={() => setShowQuickPayment(true)}
                 className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-lg transition-all group border border-purple-200"
               >
-                <div className="bg-purple-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-finxar-cta p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
@@ -715,7 +715,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   aria-label="Mode d'affichage"
                   value={viewMode}
                   onChange={(e) => setViewMode(e.target.value as 'monthly' | 'cumulative')}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finxar-cta focus:border-transparent font-medium"
                 >
                   <option value="monthly">Vue par mois</option>
                   <option value="cumulative">Vue cumulée</option>
@@ -724,7 +724,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   aria-label="Année"
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finxar-cta focus:border-transparent"
                 >
                   <option value={2024}>2024</option>
                   <option value={2025}>2025</option>
@@ -738,7 +738,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     setStartMonth(start);
                     setEndMonth(end);
                   }}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finxar-cta focus:border-transparent"
                 >
                   <option value="0-11">Année complète</option>
                   <option value="0-2">Q1 (Jan-Mar)</option>
@@ -789,7 +789,7 @@ export function Dashboard({ organization }: DashboardProps) {
                           className={`w-full rounded-t-lg transition-all hover:opacity-90 cursor-pointer shadow-md ${
                             viewMode === 'cumulative'
                               ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 hover:from-emerald-700 hover:to-emerald-500'
-                              : 'bg-gradient-to-t from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500'
+                              : 'bg-gradient-to-t from-finxar-cta to-finxar-accent hover:from-finxar-accent hover:to-finxar-cta'
                           }`}
                           style={{ height: `${heightPercentage}%` }}
                         />
@@ -1023,7 +1023,7 @@ export function Dashboard({ organization }: DashboardProps) {
                       required
                       value={newProjectData.projet}
                       onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                       placeholder="Ex: GreenTech 2025"
                     />
                   </div>
@@ -1039,7 +1039,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.type}
                         onChange={(e) => setNewProjectData({ ...newProjectData, type: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                       >
                         <option value="obligations_simples">Obligations Simples</option>
                         <option value="obligations_convertibles">Obligations Convertibles</option>
@@ -1060,7 +1060,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         inputMode="decimal"
                         value={newProjectData.taux_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                         placeholder="Ex: 8.50"
                       />
                     </div>
@@ -1078,7 +1078,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         min="1"
                         value={newProjectData.maturite_mois}
                         onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                         placeholder="Ex: 60 (5 ans)"
                       />
                       <p className="mt-1 text-xs text-slate-600">Durée totale en mois</p>
@@ -1093,7 +1093,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.base_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, base_interet: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                       >
                         <option value="360">360 jours (30/360) - Standard</option>
                         <option value="365">365 jours (Exact/365)</option>
@@ -1173,7 +1173,7 @@ export function Dashboard({ organization }: DashboardProps) {
                           }));
                           requestAnimationFrame(moveCaretBeforeEuro);
                         }}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                         placeholder="Ex: 1 500 000 €"
                       />
                     </div>
@@ -1187,7 +1187,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.periodicite_coupon}
                         onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                       >
                         <option value="" disabled>Choisir…</option>
                         <option value="annuel">Annuel</option>
@@ -1207,7 +1207,7 @@ export function Dashboard({ organization }: DashboardProps) {
                       required
                       value={newProjectData.emetteur}
                       onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                       placeholder="Ex: GreenTech SAS"
                     />
                   </div>
@@ -1233,7 +1233,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         setSirenError(isValidSIREN(v) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).');
                       }}
                       aria-invalid={!!sirenError}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta ${
                         sirenError ? 'border-red-500' : 'border-slate-300'
                       }`}
                       placeholder="Ex: 123456789"
@@ -1256,7 +1256,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.prenom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                         placeholder="Ex: Jean"
                       />
                     </div>
@@ -1270,7 +1270,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.nom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                         placeholder="Ex: Dupont"
                       />
                     </div>
@@ -1286,7 +1286,7 @@ export function Dashboard({ organization }: DashboardProps) {
                       required
                       value={newProjectData.email_representant}
                       onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                       placeholder="Ex: jean.dupont@example.com"
                     />
                   </div>
@@ -1304,7 +1304,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.representant_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                         placeholder="Ex: Cabinet Lefevre"
                       />
                     </div>
@@ -1319,7 +1319,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         value={newProjectData.email_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                         placeholder="Ex: contact@cabinet-lefevre.fr"
                       />
                     </div>
@@ -1334,7 +1334,7 @@ export function Dashboard({ organization }: DashboardProps) {
                         pattern="[0-9]*"
                         value={newProjectData.telephone_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
                         placeholder="Ex: 0123456789"
                         maxLength={10}
                       />
@@ -1355,7 +1355,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     ref={lastFocusableRef}
                     type="submit"
                     disabled={creatingProject || !isFormValid}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                   >
                     {creatingProject ? 'Création...' : 'Créer le projet'}
                   </button>

@@ -57,12 +57,12 @@ export function FilterPresets({
             onChange={(e) => setNewPresetName(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSave()}
             placeholder="Nom du filtre..."
-            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta text-sm"
             autoFocus
           />
           <button
             onClick={handleSave}
-            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            className="px-3 py-2 bg-finxar-cta text-white rounded-lg hover:bg-finxar-accent transition-colors text-sm"
           >
             OK
           </button>

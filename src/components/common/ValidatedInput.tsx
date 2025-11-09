@@ -78,7 +78,7 @@ export function ValidatedInput({
               ? 'border-red-300 focus:ring-red-500 bg-red-50'
               : isValid && showValidIcon
               ? 'border-green-300 focus:ring-green-500 bg-green-50'
-              : 'border-slate-300 focus:ring-blue-500'
+              : 'border-slate-300 focus:ring-finxar-cta'
           }`}
         />
         {touched && showValidIcon && (

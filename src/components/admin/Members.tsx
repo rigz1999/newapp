@@ -570,7 +570,7 @@ function InviteMemberModal({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
               placeholder="exemple@email.com"
             />
           </div>
@@ -583,7 +583,7 @@ function InviteMemberModal({
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
               placeholder="Jean"
             />
           </div>
@@ -596,7 +596,7 @@ function InviteMemberModal({
               type="text"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
               placeholder="Dupont"
             />
           </div>
@@ -608,7 +608,7 @@ function InviteMemberModal({
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as 'member' | 'admin')}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
             >
               <option value="member">Membre</option>
               <option value="admin">Administrateur</option>
@@ -774,7 +774,7 @@ function ChangeRoleModal({
           <select
             value={newRole}
             onChange={(e) => setNewRole(e.target.value)}
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-cta"
           >
             <option value="member">Membre</option>
             <option value="admin">Administrateur</option>

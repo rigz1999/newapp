@@ -125,8 +125,8 @@ export function Login() {
   // Loading state
   if (checkingAccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <RefreshCw className="w-12 h-12 text-slate-600 animate-spin" />
+      <div className="min-h-screen bg-finxar-background flex items-center justify-center">
+        <RefreshCw className="w-12 h-12 text-finxar-text animate-spin" />
       </div>
     );
   }
@@ -134,7 +134,7 @@ export function Login() {
   // User logged in but no access - show waiting state
   if (user && !hasAccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-finxar-background flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="flex items-center justify-center mb-6">
@@ -166,7 +166,7 @@ export function Login() {
 
             <button
               onClick={handleRefresh}
-              className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors mb-3 flex items-center justify-center gap-2"
+              className="w-full bg-finxar-cta text-white py-3 rounded-lg font-medium hover:bg-finxar-accent transition-colors mb-3 flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
               Vérifier l'accès
@@ -192,11 +192,11 @@ export function Login() {
 
   // Normal login/signup form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-finxar-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="flex items-center justify-center mb-8">
-            <div className="bg-slate-900 p-3 rounded-xl">
+            <div className="bg-finxar-sidebar p-3 rounded-xl">
               {isSignUp ? (
                 <UserPlus className="w-8 h-8 text-white" />
               ) : (
@@ -205,8 +205,8 @@ export function Login() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-center text-slate-900 mb-2">
-            Gestion des Souscriptions
+          <h1 className="text-2xl font-bold text-center text-finxar-text mb-2">
+            Finxar
           </h1>
           <p className="text-center text-slate-600 mb-8">
             {isSignUp ? 'Créez votre compte' : 'Connectez-vous à votre compte'}
@@ -224,7 +224,7 @@ export function Login() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-accent focus:border-transparent transition-all"
                   placeholder="Jean Dupont"
                 />
               </div>
@@ -240,7 +240,7 @@ export function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-accent focus:border-transparent transition-all"
                 placeholder="votre@email.fr"
               />
             </div>
@@ -256,7 +256,7 @@ export function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finxar-accent focus:border-transparent transition-all"
                 placeholder="••••••••"
               />
               {isSignUp && (
@@ -273,7 +273,7 @@ export function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-finxar-cta text-white py-3 rounded-lg font-medium hover:bg-finxar-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (isSignUp ? 'Création...' : 'Connexion...') : (isSignUp ? 'Créer mon compte' : 'Se connecter')}
             </button>
