@@ -338,7 +338,7 @@ async function sendReminderEmail(
     <!-- Footer -->
     <div style="background-color: #f9fafb; padding: 20px 30px; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
       <p style="margin: 0; font-size: 12px; color: #6b7280; text-align: center;">
-        InvestFlow - Gestion d'investissements<br>
+        Finixar - Gestion d'investissements<br>
         Cet email a été envoyé automatiquement. Merci de ne pas répondre.
       </p>
     </div>
@@ -354,7 +354,7 @@ async function sendReminderEmail(
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: 'InvestFlow Reminders <noreply@investflow.com>',
+      from: 'Finixar Reminders <support@finixar.com>',
       to: toEmail,
       subject: testMode
         ? `🧪 [TEST] Rappel: Coupons à venir`
