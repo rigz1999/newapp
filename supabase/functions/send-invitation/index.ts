@@ -82,7 +82,6 @@ serve(async (req) => {
         last_name: lastName,
         org_id: orgId,
         role,
-        invited_by: user.id,
         token: token_string,
         expires_at: expiresAt.toISOString(),
         status: 'pending'
