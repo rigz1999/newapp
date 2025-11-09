@@ -16,7 +16,8 @@ import {
   ChevronRight,
   ChevronUp,
   Layers,
-  Upload
+  Upload,
+  Receipt
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { PaymentWizard } from '../payments/PaymentWizard';
@@ -453,12 +454,17 @@ export function Coupons({ organization: _organization }: CouponsProps) {
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Tous les Coupons</h2>
-          <p className="text-slate-600 mt-1">
-            {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total: <span className="font-bold text-finixar-green">{formatCurrency(totalAmount)}</span>
-          </p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-100 rounded-xl">
+            <Receipt className="w-8 h-8 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Tous les Coupons</h1>
+            <p className="text-slate-600">
+              {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total: <span className="font-bold text-finixar-green">{formatCurrency(totalAmount)}</span>
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <button

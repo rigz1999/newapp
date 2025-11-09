@@ -9,7 +9,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useOrganization } from '../../hooks/useOrganization';
 import {
   Users, UserPlus, Trash2, RefreshCw,
-  Mail, Calendar, Edit2, X, AlertCircle, Clock, Send
+  Mail, Calendar, Edit2, X, AlertCircle, Clock, Send, UserCog
 } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { AlertModal } from '../common/Modals';
@@ -227,8 +227,8 @@ export default function Members() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-900 rounded-xl">
-              <Users className="w-8 h-8 text-white" />
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <UserCog className="w-8 h-8 text-blue-600" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-slate-900">Gestion des Membres</h1>

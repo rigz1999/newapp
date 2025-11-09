@@ -267,10 +267,15 @@ export function Payments({ organization }: PaymentsProps) {
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Historique des Paiements</h2>
-          <p className="text-slate-600 mt-1">{filteredPayments.length} paiement{filteredPayments.length > 1 ? 's' : ''}</p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-100 rounded-xl">
+            <DollarSign className="w-8 h-8 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Historique des Paiements</h1>
+            <p className="text-slate-600">{filteredPayments.length} paiement{filteredPayments.length > 1 ? 's' : ''}</p>
+          </div>
         </div>
         <button
           onClick={exportToCSV}
