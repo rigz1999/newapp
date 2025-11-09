@@ -131,8 +131,8 @@ export function Layout({ organization }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <aside className="w-64 bg-slate-900 text-white flex flex-col fixed h-screen">
+    <div className="h-screen bg-slate-50 flex overflow-hidden">
+      <aside className="w-64 bg-slate-900 text-white flex flex-col flex-shrink-0">
         <div className="p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="bg-blue-600 p-2 rounded-lg">
@@ -282,7 +282,7 @@ export function Layout({ organization }: LayoutProps) {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto ml-64">
+      <main className="flex-1 overflow-y-auto relative">
         <Outlet />
       </main>
 
