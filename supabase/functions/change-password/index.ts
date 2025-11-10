@@ -46,10 +46,22 @@ serve(async (req) => {
       );
     }
 
-    // Validate new password
-    if (newPassword.length < 6) {
+    // Validate new password (strong validation)
+    if (newPassword.length < 12) {
       return new Response(
-        JSON.stringify({ error: 'Le mot de passe doit contenir au moins 6 caractères' }),
+        JSON.stringify({ error: 'Le mot de passe doit contenir au moins 12 caractères' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasLowerCase = /[a-z]/.test(newPassword);
+    const hasNumber = /\d/.test(newPassword);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecial) {
+      return new Response(
+        JSON.stringify({ error: 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
