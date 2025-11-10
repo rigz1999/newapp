@@ -32,7 +32,7 @@ SELECT
     ELSE '✗ RLS STILL ENABLED'
   END AS rls_status
 FROM pg_class
-JOIN information_schema.tables ON tablename = relname
+JOIN information_schema.tables ON table_name = relname
 WHERE table_schema = 'public'
   AND table_type = 'BASE TABLE'
   AND table_name IN (
