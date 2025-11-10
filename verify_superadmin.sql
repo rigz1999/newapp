@@ -32,7 +32,6 @@ WHERE p.is_superadmin = true;
 -- Check 3: List all superadmins
 SELECT
   u.email,
-  p.role,
   p.is_superadmin,
   p.created_at
 FROM profiles p

@@ -38,7 +38,6 @@ SELECT
 SELECT
   u.email,
   p.is_superadmin,
-  p.role,
   p.created_at
 FROM profiles p
 JOIN auth.users u ON p.id = u.id

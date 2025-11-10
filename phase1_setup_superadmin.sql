@@ -84,8 +84,7 @@ END $$;
 -- Display current superadmin status
 SELECT
   u.email,
-  p.is_superadmin,
-  p.role
+  p.is_superadmin
 FROM profiles p
 JOIN auth.users u ON p.id = u.id
 WHERE p.is_superadmin = true;

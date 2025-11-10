@@ -31,8 +31,7 @@ SELECT
     WHEN is_superadmin = true THEN '✓ YOU ARE NOW SUPERADMIN'
     ELSE '✗ FAILED - is_superadmin is still false'
   END as status,
-  is_superadmin,
-  role
+  is_superadmin
 FROM profiles
 WHERE id = auth.uid();
 
