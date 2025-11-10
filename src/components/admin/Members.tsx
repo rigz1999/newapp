@@ -150,22 +150,34 @@ export default function Members() {
   const handleRemoveMember = async () => {
     if (!selectedMember) return;
 
+    console.log('Attempting to remove member:', selectedMember);
+
     const { error } = await supabase
       .from('memberships')
       .delete()
       .eq('id', selectedMember.id);
 
     if (error) {
+      console.error('Error removing member:', error);
       setAlertModalConfig({
         title: 'Erreur',
-        message: formatErrorMessage(error),
+        message: `Impossible de supprimer le membre: ${formatErrorMessage(error)}`,
         type: 'error'
       });
       setShowAlertModal(true);
     } else {
+      console.log('Member removed successfully');
       setShowRemoveModal(false);
       setSelectedMember(null);
       fetchMembers();
+
+      // Show success message
+      setAlertModalConfig({
+        title: 'Membre supprimé',
+        message: 'Le membre a été supprimé avec succès de l\'organisation.',
+        type: 'success'
+      });
+      setShowAlertModal(true);
     }
   };
 

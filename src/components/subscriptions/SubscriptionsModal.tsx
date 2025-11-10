@@ -215,9 +215,9 @@ export function SubscriptionsModal({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="bg-white divide-y divide-slate-200">
               {filteredSubs.map((sub) => (
-                <tr key={sub.id} className="hover:bg-slate-50">
+                <tr key={sub.id} className="bg-white hover:bg-slate-50">
                   <td className="px-4 py-3 text-sm font-medium text-slate-900">
                     {sub.investisseur.nom_raison_sociale}
                   </td>

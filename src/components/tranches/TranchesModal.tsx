@@ -102,7 +102,7 @@ export function TranchesModal({
             {filteredTranches.map((tranche) => (
               <div
                 key={tranche.id}
-                className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 hover:shadow-sm transition-all"
+                className="bg-white border border-slate-200 rounded-lg p-4 hover:border-slate-300 hover:shadow-sm transition-all"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">

@@ -61,6 +61,22 @@ export function Projects({ organization }: ProjectsProps) {
   const [creatingProject, setCreatingProject] = useState(false);
 
   useEffect(() => {
+    // Clear legacy advanced filters from localStorage
+    const filterKey = 'projects-filters';
+    const stored = localStorage.getItem(filterKey);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        // Clear multiSelect filters if they exist
+        if (parsed.filters?.multiSelect?.length > 0) {
+          parsed.filters.multiSelect = [];
+          localStorage.setItem(filterKey, JSON.stringify(parsed));
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+
     let isMounted = true;
     const loadData = async () => {
       if (isMounted) await fetchProjects();
