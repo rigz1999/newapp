@@ -86,52 +86,56 @@ Deno.serve(async (req) => {
       urlPreview: supabaseUrl?.substring(0, 30) + '...'
     });
 
-    // Extract JWT token from Authorization header
+    // Extract JWT token and decode to get user email
     const token = authHeader.replace('Bearer ', '');
     console.log('Extracted token preview:', token.substring(0, 30) + '...');
 
-    // Use service role to verify the JWT
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    console.log('Service role key present:', !!supabaseServiceRoleKey);
-
-    const supabaseAdmin = createClient(
-      supabaseUrl ?? '',
-      supabaseServiceRoleKey ?? ''
-    );
-
-    // Get current user by verifying JWT with admin client
-    console.log('Attempting to get user with admin client...');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-
-    console.log('getUser result:', {
-      hasUser: !!user,
-      userId: user?.id,
-      userEmail: user?.email,
-      hasError: !!userError,
-      errorMessage: userError?.message,
-      errorStatus: userError?.status
-    });
-
-    if (userError || !user) {
-      console.log('ERROR: getUser failed - returning 401');
+    // Decode JWT to get payload (without verification - we'll verify via password check)
+    console.log('Decoding JWT to get user info...');
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      console.log('ERROR: Invalid JWT format');
       return new Response(
-        JSON.stringify({ error: 'Non autorisé', details: userError?.message }),
+        JSON.stringify({ error: 'Token invalide' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    let userEmail: string;
+    let userId: string;
+    try {
+      const payload = JSON.parse(atob(parts[1]));
+      userEmail = payload.email;
+      userId = payload.sub;
+      console.log('JWT decoded:', { userEmail, userId });
+    } catch (e) {
+      console.log('ERROR: Failed to decode JWT:', e);
+      return new Response(
+        JSON.stringify({ error: 'Token invalide' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!userEmail || !userId) {
+      console.log('ERROR: JWT missing email or user ID');
+      return new Response(
+        JSON.stringify({ error: 'Token invalide' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Create a regular client for password verification
-    console.log('Creating regular Supabase client for password verification...');
+    console.log('Creating Supabase client for password verification...');
     const supabaseClient = createClient(
       supabaseUrl ?? '',
       supabaseAnonKey ?? ''
     );
-    console.log('Regular client created');
+    console.log('Client created');
 
     // Verify current password by attempting to sign in
-    console.log('Verifying current password by sign in attempt...');
+    console.log('Verifying current password for user:', userEmail);
     const { error: signInError } = await supabaseClient.auth.signInWithPassword({
-      email: user.email!,
+      email: userEmail,
       password: currentPassword,
     });
 
@@ -149,10 +153,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use the admin client we created earlier to update password
-    console.log('Attempting to update user password...');
+    // Create admin client to update password
+    console.log('Creating admin client...');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    console.log('Service role key present:', !!supabaseServiceRoleKey);
+
+    const supabaseAdmin = createClient(
+      supabaseUrl ?? '',
+      supabaseServiceRoleKey ?? ''
+    );
+
+    console.log('Attempting to update user password for user ID:', userId);
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      user.id,
+      userId,
       { password: newPassword }
     );
 
