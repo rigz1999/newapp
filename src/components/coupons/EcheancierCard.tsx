@@ -324,7 +324,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-baseline gap-3">
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-slate-600" />
             <h2 className="text-xl font-bold text-slate-900">Échéancier des Coupons</h2>
