@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { CheckCircle, AlertCircle, Lock, Mail, User, RefreshCw } from 'lucide-react';
+import { CheckCircle, AlertCircle, Lock, Mail, User, RefreshCw, Eye, EyeOff, Check, X } from 'lucide-react';
 
 interface Invitation {
   id: string;
@@ -34,6 +34,8 @@ export function InvitationAccept() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [creating, setCreating] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -103,14 +105,28 @@ export function InvitationAccept() {
     }
   };
 
+  // Password strength checker
+  const checkPasswordRequirements = (password: string) => {
+    return {
+      hasLowercase: /[a-z]/.test(password),
+      hasUppercase: /[A-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password),
+      hasMinLength: password.length >= 12
+    };
+  };
+
+  const passwordRequirements = checkPasswordRequirements(password);
+  const isPasswordValid = Object.values(passwordRequirements).every(Boolean);
+
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!invitation) return;
 
     // Validation
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.');
+    if (!isPasswordValid) {
+      setError('Le mot de passe ne respecte pas tous les critères de sécurité.');
       return;
     }
 
@@ -333,15 +349,64 @@ export function InvitationAccept() {
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
-                  placeholder="Minimum 6 caractères"
+                  minLength={12}
+                  className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
+                  placeholder="Minimum 12 caractères"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
               </div>
+
+              {/* Password Requirements Visual Indicators */}
+              {password && (
+                <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                  <p className="text-xs font-semibold text-slate-700 mb-2">Critères de sécurité :</p>
+
+                  <PasswordRequirement
+                    met={passwordRequirements.hasMinLength}
+                    text="Au moins 12 caractères"
+                  />
+                  <PasswordRequirement
+                    met={passwordRequirements.hasLowercase}
+                    text="Une lettre minuscule (a-z)"
+                  />
+                  <PasswordRequirement
+                    met={passwordRequirements.hasUppercase}
+                    text="Une lettre majuscule (A-Z)"
+                  />
+                  <PasswordRequirement
+                    met={passwordRequirements.hasNumber}
+                    text="Un chiffre (0-9)"
+                  />
+                  <PasswordRequirement
+                    met={passwordRequirements.hasSpecial}
+                    text="Un caractère spécial (!@#$%...)"
+                  />
+
+                  {isPasswordValid && (
+                    <div className="pt-2 mt-2 border-t border-slate-300">
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-xs font-semibold">Mot de passe sécurisé !</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Confirmer mot de passe */}
@@ -353,15 +418,37 @@ export function InvitationAccept() {
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   id="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  minLength={6}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
+                  minLength={12}
+                  className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
                   placeholder="Confirmer votre mot de passe"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
               </div>
+
+              {/* Password Match Indicator */}
+              {confirmPassword && (
+                <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <PasswordRequirement
+                    met={password === confirmPassword}
+                    text={password === confirmPassword ? "Les mots de passe correspondent" : "Les mots de passe ne correspondent pas"}
+                  />
+                </div>
+              )}
             </div>
 
             {error && (
@@ -392,6 +479,34 @@ export function InvitationAccept() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Password Requirement Component
+function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200 ${
+          met
+            ? 'bg-green-500 text-white'
+            : 'bg-slate-300 text-slate-400'
+        }`}
+      >
+        {met ? (
+          <Check className="w-3 h-3" strokeWidth={3} />
+        ) : (
+          <X className="w-3 h-3" strokeWidth={3} />
+        )}
+      </div>
+      <span
+        className={`text-xs transition-colors duration-200 ${
+          met ? 'text-green-700 font-medium' : 'text-slate-600'
+        }`}
+      >
+        {text}
+      </span>
     </div>
   );
 }

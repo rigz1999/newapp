@@ -28,10 +28,16 @@ serve(async (req) => {
       );
     }
 
-    // Validate password
-    if (password.length < 6) {
+    // Validate password requirements
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password);
+    const hasMinLength = password.length >= 12;
+
+    if (!hasMinLength || !hasLowercase || !hasUppercase || !hasNumber || !hasSpecial) {
       return new Response(
-        JSON.stringify({ error: 'Le mot de passe doit contenir au moins 6 caractères' }),
+        JSON.stringify({ error: 'Le mot de passe doit contenir au moins 12 caractères, une minuscule, une majuscule, un chiffre et un caractère spécial' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
