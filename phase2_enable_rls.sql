@@ -535,7 +535,7 @@ CREATE POLICY "invitations_select_policy"
   USING (
     is_superadmin() OR
     org_id IN (SELECT get_user_org_ids()) OR
-    email = (SELECT email FROM profiles WHERE id = auth.uid())
+    email = (SELECT email FROM auth.users WHERE id = auth.uid())
   );
 
 CREATE POLICY "invitations_insert_policy"
