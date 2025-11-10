@@ -19,7 +19,7 @@ interface EcheancierCardProps {
 }
 
 export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll }: EcheancierCardProps) {
-  const [tranchesStats, setTranchesStats] = useState<Map<string, any>>(new Map());
+  const [globalStats, setGlobalStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,10 +28,12 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
       return;
     }
 
-    const fetchTranchesEcheanciers = async () => {
+    const fetchGlobalEcheancier = async () => {
       setLoading(true);
-      const statsMap = new Map();
 
+      let allEcheances: Echeance[] = [];
+
+      // Charger toutes les échéances de toutes les tranches
       for (const tranche of tranches) {
         try {
           const { data: souscriptions } = await supabase
@@ -50,37 +52,53 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
             .order('date_echeance', { ascending: true });
 
           if (echeances) {
-            const now = new Date();
-            const payes = echeances.filter((e: Echeance) => e.statut === 'paye').length;
-            const enRetard = echeances.filter((e: Echeance) => e.statut === 'en_attente' && new Date(e.date_echeance) < now).length;
-            const prochains = echeances.filter((e: Echeance) => e.statut === 'en_attente' && new Date(e.date_echeance) >= now);
-
-            const prochainCoupon = prochains[0];
-            const totalProchainCoupon = prochains
-              .filter((e: Echeance) => e.date_echeance === prochainCoupon?.date_echeance)
-              .reduce((sum: number, e: Echeance) => sum + Number(e.montant_coupon), 0);
-
-            statsMap.set(tranche.id, {
-              payes,
-              enRetard,
-              prochainCoupon: prochainCoupon ? {
-                date: prochainCoupon.date_echeance,
-                montant: totalProchainCoupon,
-                nb_investisseurs: prochains.filter((e: Echeance) => e.date_echeance === prochainCoupon?.date_echeance).length
-              } : null,
-              totalEcheances: echeances.length
-            });
+            allEcheances.push(...echeances);
           }
         } catch (error) {
           console.error(`Error fetching echeances for tranche ${tranche.id}:`, error);
         }
       }
 
-      setTranchesStats(statsMap);
+      // Calculer les stats globales
+      if (allEcheances.length > 0) {
+        const now = new Date();
+        const payes = allEcheances.filter((e: Echeance) => e.statut === 'paye').length;
+        const enRetard = allEcheances.filter((e: Echeance) => e.statut === 'en_attente' && new Date(e.date_echeance) < now).length;
+        const prochains = allEcheances.filter((e: Echeance) => e.statut === 'en_attente' && new Date(e.date_echeance) >= now);
+
+        // Trouver le prochain coupon (la plus proche échéance à venir)
+        const prochainCoupon = prochains[0];
+
+        // Calculer le total et le nombre d'investisseurs pour toutes les échéances du même jour
+        const totalProchainCoupon = prochainCoupon
+          ? prochains
+              .filter((e: Echeance) => e.date_echeance === prochainCoupon.date_echeance)
+              .reduce((sum: number, e: Echeance) => sum + Number(e.montant_coupon), 0)
+          : 0;
+
+        const nbInvestisseursProchain = prochainCoupon
+          ? new Set(prochains
+              .filter((e: Echeance) => e.date_echeance === prochainCoupon.date_echeance)
+              .map((e: Echeance) => e.souscription_id)
+            ).size
+          : 0;
+
+        setGlobalStats({
+          payes,
+          enRetard,
+          prochainCoupon: prochainCoupon ? {
+            date: prochainCoupon.date_echeance,
+            montant: totalProchainCoupon,
+            nb_investisseurs: nbInvestisseursProchain
+          } : null,
+          totalEcheances: allEcheances.length
+        });
+      }
+
       setLoading(false);
     };
 
-    fetchTranchesEcheanciers();
+    fetchGlobalEcheancier();
   }, [projectId, tranches.length]);
 
   const formatCurrency = (amount: number) => {
@@ -329,75 +347,75 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
 
       {tranches.length === 0 ? (
         <p className="text-center text-slate-400 py-8">Aucune tranche pour afficher l'échéancier</p>
+      ) : !globalStats ? (
+        <p className="text-center text-slate-400 py-8">Aucune échéance disponible</p>
       ) : (
-        <div className="space-y-2">
-          {tranches.map((tranche) => {
-            const stats = tranchesStats.get(tranche.id);
-            if (!stats) return null;
+        <div className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer">
+          <button
+            onClick={() => onViewAll?.()}
+            className="w-full px-6 py-4 hover:bg-slate-50 transition-colors"
+          >
+            <div className="space-y-4">
+              {/* En-tête avec alerte si retard */}
+              {globalStats.enRetard > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  <span className="text-sm font-medium text-red-700">
+                    {globalStats.enRetard} échéance{globalStats.enRetard > 1 ? 's' : ''} en retard
+                  </span>
+                </div>
+              )}
 
-            const hasRetard = stats.enRetard > 0;
-            const prochainCoupon = stats.prochainCoupon;
-
-            return (
-              <div
-                key={tranche.id}
-                className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 hover:shadow-sm transition-all"
-              >
-                {/* ✅ LIGNE CLIQUABLE qui ouvre le modal */}
-                <button
-                  onClick={() => onViewAll?.()}
-                  className="w-full px-4 py-3 hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    {/* Nom de tranche + Alerte si retard */}
-                    <div className="flex items-center gap-3 min-w-[200px]">
-                      <h3 className="text-sm font-semibold text-slate-900">{tranche.tranche_name}</h3>
-                      {hasRetard && (
-                        <span className="flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
-                          <AlertCircle className="w-3 h-3" />
-                          {stats.enRetard} en retard
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Infos compactes */}
-                    <div className="flex items-center gap-6 flex-1">
-                      {prochainCoupon && (
-                        <>
-                          <div className="text-xs">
-                            <span className="text-slate-600">Prochain : </span>
-                            <span className="font-semibold text-slate-900">{formatDate(prochainCoupon.date)}</span>
-                            <span className="text-slate-500 ml-1">({getRelativeDate(prochainCoupon.date)})</span>
-                          </div>
-                          <div className="text-xs">
-                            <span className="text-slate-600">Montant : </span>
-                            <span className="font-semibold text-slate-900">{formatCurrency(prochainCoupon.montant)}</span>
-                            <span className="text-slate-500 ml-1">• {prochainCoupon.nb_investisseurs} inv.</span>
-                          </div>
-                        </>
-                      )}
-                      <div className="text-xs">
-                        <span className="text-slate-600">Progression : </span>
-                        <span className="font-semibold text-slate-900">{stats.payes}/{stats.totalEcheances}</span>
-                        <span className="text-slate-500 ml-1">({Math.round((stats.payes / stats.totalEcheances) * 100)}%)</span>
-                      </div>
-                    </div>
-
-                    {/* Bouton */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onPaymentClick(tranche.id);
-                      }}
-                      className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Enregistrer paiement
-                    </button>
+              {/* Prochain coupon */}
+              {globalStats.prochainCoupon && (
+                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                  <div>
+                    <p className="text-xs text-slate-600 mb-1">Prochain versement</p>
+                    <p className="text-lg font-bold text-slate-900">
+                      {formatDate(globalStats.prochainCoupon.date)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {getRelativeDate(globalStats.prochainCoupon.date)}
+                    </p>
                   </div>
-                </button>
+                  <div className="text-right">
+                    <p className="text-xs text-slate-600 mb-1">Montant total</p>
+                    <p className="text-lg font-bold text-blue-600">
+                      {formatCurrency(globalStats.prochainCoupon.montant)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {globalStats.prochainCoupon.nb_investisseurs} investisseur{globalStats.prochainCoupon.nb_investisseurs > 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Progression globale */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-600 mb-1">Progression</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold text-slate-900">
+                      {Math.round((globalStats.payes / globalStats.totalEcheances) * 100)}%
+                    </span>
+                    <span className="text-sm text-slate-500">
+                      ({globalStats.payes}/{globalStats.totalEcheances} versements)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Barre de progression */}
+                <div className="flex-1 max-w-xs ml-6">
+                  <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      style={{ width: `${Math.round((globalStats.payes / globalStats.totalEcheances) * 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
               </div>
-            );
-          })}
+            </div>
+          </button>
         </div>
       )}
     </div>
