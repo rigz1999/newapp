@@ -50,7 +50,7 @@ export default function Settings() {
       hasUppercase: /[A-Z]/.test(password),
       hasNumber: /[0-9]/.test(password),
       hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password),
-      hasMinLength: password.length >= 6
+      hasMinLength: password.length >= 12
     };
   };
 
@@ -484,7 +484,7 @@ export default function Settings() {
 
                   <PasswordRequirement
                     met={passwordRequirements.hasMinLength}
-                    text="Au moins 6 caractères"
+                    text="Au moins 12 caractères"
                   />
                   <PasswordRequirement
                     met={passwordRequirements.hasLowercase}
@@ -548,7 +548,7 @@ export default function Settings() {
                 <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
                   <PasswordRequirement
                     met={newPassword === confirmPassword}
-                    text="Les mots de passe correspondent"
+                    text={newPassword === confirmPassword ? "Les mots de passe correspondent" : "Les mots de passe ne correspondent pas"}
                   />
                 </div>
               )}
