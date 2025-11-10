@@ -320,17 +320,17 @@ CREATE POLICY "view_projets"
     OR org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
   );
 
--- Insert/Update/Delete: Super admin OR org admins can manage
+-- Insert/Update/Delete: Super admin OR any member of the org can manage
 CREATE POLICY "manage_projets"
   ON projets FOR ALL
   TO authenticated
   USING (
     is_super_admin()
-    OR is_org_admin(org_id)
+    OR org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
   )
   WITH CHECK (
     is_super_admin()
-    OR is_org_admin(org_id)
+    OR org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
   );
 
 -- ============================================
@@ -350,11 +350,11 @@ CREATE POLICY "manage_investisseurs"
   TO authenticated
   USING (
     is_super_admin()
-    OR is_org_admin(org_id)
+    OR org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
   )
   WITH CHECK (
     is_super_admin()
-    OR is_org_admin(org_id)
+    OR org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
   );
 
 -- ============================================
@@ -379,14 +379,14 @@ CREATE POLICY "manage_tranches"
     is_super_admin()
     OR projet_id IN (
       SELECT p.id FROM projets p
-      WHERE is_org_admin(p.org_id)
+      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   )
   WITH CHECK (
     is_super_admin()
     OR projet_id IN (
       SELECT p.id FROM projets p
-      WHERE is_org_admin(p.org_id)
+      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
 
@@ -414,7 +414,7 @@ CREATE POLICY "manage_souscriptions"
     OR tranche_id IN (
       SELECT t.id FROM tranches t
       JOIN projets p ON p.id = t.projet_id
-      WHERE is_org_admin(p.org_id)
+      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   )
   WITH CHECK (
@@ -422,7 +422,7 @@ CREATE POLICY "manage_souscriptions"
     OR tranche_id IN (
       SELECT t.id FROM tranches t
       JOIN projets p ON p.id = t.projet_id
-      WHERE is_org_admin(p.org_id)
+      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
 
@@ -452,7 +452,7 @@ CREATE POLICY "manage_coupons"
       SELECT s.id FROM souscriptions s
       JOIN tranches t ON t.id = s.tranche_id
       JOIN projets p ON p.id = t.projet_id
-      WHERE is_org_admin(p.org_id)
+      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   )
   WITH CHECK (
@@ -461,7 +461,7 @@ CREATE POLICY "manage_coupons"
       SELECT s.id FROM souscriptions s
       JOIN tranches t ON t.id = s.tranche_id
       JOIN projets p ON p.id = t.projet_id
-      WHERE is_org_admin(p.org_id)
+      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
 
@@ -493,7 +493,7 @@ CREATE POLICY "manage_paiements"
       JOIN souscriptions s ON s.id = ce.souscription_id
       JOIN tranches t ON t.id = s.tranche_id
       JOIN projets p ON p.id = t.projet_id
-      WHERE is_org_admin(p.org_id)
+      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   )
   WITH CHECK (
@@ -503,7 +503,7 @@ CREATE POLICY "manage_paiements"
       JOIN souscriptions s ON s.id = ce.souscription_id
       JOIN tranches t ON t.id = s.tranche_id
       JOIN projets p ON p.id = t.projet_id
-      WHERE is_org_admin(p.org_id)
+      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
 
@@ -537,7 +537,7 @@ CREATE POLICY "manage_payment_proofs"
       JOIN souscriptions s ON s.id = ce.souscription_id
       JOIN tranches t ON t.id = s.tranche_id
       JOIN projets p ON p.id = t.projet_id
-      WHERE is_org_admin(p.org_id)
+      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   )
   WITH CHECK (
@@ -548,7 +548,7 @@ CREATE POLICY "manage_payment_proofs"
       JOIN souscriptions s ON s.id = ce.souscription_id
       JOIN tranches t ON t.id = s.tranche_id
       JOIN projets p ON p.id = t.projet_id
-      WHERE is_org_admin(p.org_id)
+      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
 
@@ -587,7 +587,7 @@ CREATE POLICY "delete_reminder_settings"
 -- Summary of Access Control
 -- ============================================
 
--- SUPER ADMIN (identified by email):
+-- SUPER ADMIN (identified by email: zrig.ayman@gmail.com):
 --   ✓ Create/delete organizations
 --   ✓ Create/update/delete memberships (assign users to orgs)
 --   ✓ Full access to all data across all organizations
@@ -598,9 +598,10 @@ CREATE POLICY "delete_reminder_settings"
 --   ✓ Manage (create/update/delete) their organization's data
 --   ✓ Invite users to their organization
 --   ✓ Assign roles to users in their organization
+--   ✓ Manage memberships in their organization
 
 -- ORG MEMBER (role='member' in memberships):
 --   ✓ View their organization's data
---   ✗ Cannot create/update/delete data
+--   ✓ Create/update/delete data in their organization
 --   ✗ Cannot invite users
 --   ✗ Cannot manage memberships
