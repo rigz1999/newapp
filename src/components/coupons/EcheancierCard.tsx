@@ -353,55 +353,52 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
         <div className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer">
           <button
             onClick={() => onViewAll?.()}
-            className="w-full px-6 py-4 hover:bg-slate-50 transition-colors"
+            className="w-full px-6 py-5 hover:bg-slate-50 transition-colors text-left"
           >
-            <div className="space-y-4">
-              {/* En-tête avec alerte si retard */}
-              {globalStats.enRetard > 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-red-600" />
-                  <span className="text-sm font-medium text-red-700">
-                    {globalStats.enRetard} échéance{globalStats.enRetard > 1 ? 's' : ''} en retard
-                  </span>
-                </div>
-              )}
-
-              {/* Prochain coupon */}
-              {globalStats.prochainCoupon && (
-                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+            {/* Zone haute : Prochain versement */}
+            {globalStats.prochainCoupon && (
+              <div className="mb-5">
+                <p className="text-sm text-slate-600 mb-3">Prochain versement</p>
+                <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="text-xs text-slate-600 mb-1">Prochain versement</p>
-                    <p className="text-lg font-bold text-slate-900">
-                      {formatDate(globalStats.prochainCoupon.date)}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {getRelativeDate(globalStats.prochainCoupon.date)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-slate-600 mb-1">Montant total</p>
-                    <p className="text-lg font-bold text-blue-600">
+                    <p className="text-2xl font-bold text-slate-900 mb-1">
                       {formatCurrency(globalStats.prochainCoupon.montant)}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-sm text-slate-500">
                       {globalStats.prochainCoupon.nb_investisseurs} investisseur{globalStats.prochainCoupon.nb_investisseurs > 1 ? 's' : ''}
                     </p>
                   </div>
-                </div>
-              )}
-
-              {/* Progression globale */}
-              <div>
-                <p className="text-xs text-slate-600 mb-1">Progression</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-slate-900">
-                    {Math.round((globalStats.payes / globalStats.totalEcheances) * 100)}%
-                  </span>
-                  <span className="text-sm text-slate-500">
-                    ({globalStats.payes}/{globalStats.totalEcheances} versements)
-                  </span>
+                  <div className="text-right">
+                    <p className="text-lg font-semibold text-slate-900">
+                      {formatDate(globalStats.prochainCoupon.date)}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {getRelativeDate(globalStats.prochainCoupon.date)}
+                    </p>
+                  </div>
                 </div>
               </div>
+            )}
+
+            {/* Divider */}
+            <div className="border-t border-slate-200 my-4"></div>
+
+            {/* Zone basse : Progression + Alertes */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500 mb-1">
+                  {globalStats.payes} sur {globalStats.totalEcheances} versements effectués ({Math.round((globalStats.payes / globalStats.totalEcheances) * 100)}%)
+                </p>
+              </div>
+
+              {globalStats.enRetard > 0 && (
+                <div className="flex items-center gap-1.5 text-red-600">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-sm font-medium">
+                    {globalStats.enRetard} en retard
+                  </span>
+                </div>
+              )}
             </div>
           </button>
         </div>
