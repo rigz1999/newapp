@@ -42,10 +42,8 @@ export function useAuth() {
 
   const checkAdminStatus = async (userId: string) => {
     try {
-      // Check if user is THE super admin (by email)
-      const { data: userData } = await supabase.auth.getUser();
-      const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL;
-      const isSuperAdminUser = userData?.user?.email === superAdminEmail;
+      // Check if user is THE super admin (via RPC - secure)
+      const { data: isSuperAdminUser } = await supabase.rpc('check_super_admin_status');
 
       const { data: memberships } = await supabase
         .from('memberships')
@@ -60,9 +58,9 @@ export function useAuth() {
       // Get user's role in their organization
       const orgMembership = memberships?.find((m: any) => m.org_id !== null);
 
-      setIsSuperAdmin(isSuperAdminUser);
+      setIsSuperAdmin(!!isSuperAdminUser);
       setIsOrgAdmin(!!orgAdminMembership);
-      setIsAdmin(isSuperAdminUser); // Keep for backward compatibility
+      setIsAdmin(!!isSuperAdminUser); // Keep for backward compatibility
       setUserRole(orgMembership?.role || null);
       setLoading(false);
     } catch {
