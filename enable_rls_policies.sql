@@ -673,4 +673,4 @@ CREATE POLICY "user_reminder_settings_delete_policy"
 -- ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_superadmin boolean DEFAULT false;
 
 -- Then manually set superadmin flag for specific users:
--- UPDATE profiles SET is_superadmin = true WHERE email = 'superadmin@yourcompany.com';
+-- UPDATE profiles SET is_superadmin = true WHERE email = 'zrig.ayman@gmail.com';
