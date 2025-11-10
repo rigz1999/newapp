@@ -189,131 +189,166 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
       // Run all searches in parallel for maximum performance
       const [projectsRes, investorsRes, tranchesRes, subscriptionsRes, paymentsRes, couponsRes] = await Promise.all([
-        // Search Projects - using textSearch or multiple queries
+        // Search Projects - fetch all and filter client-side to avoid 400 errors
         (async () => {
           console.log('🔍 Searching projects with:', { searchQuery, searchTerm, orgId });
 
-          // Try searching in projet field
-          const { data: byProjet, error: error1 } = await supabase
+          const { data, error } = await supabase
             .from('projets')
             .select('id, projet, emetteur, statut')
             .eq('org_id', orgId)
-            .ilike('projet', searchTerm)
-            .limit(10);
+            .limit(100);
 
-          console.log('📁 Search by projet:', { byProjet, error1 });
+          console.log('📁 All projects:', { data, error });
 
-          // Try searching in emetteur field
-          const { data: byEmetteur, error: error2 } = await supabase
-            .from('projets')
-            .select('id, projet, emetteur, statut')
-            .eq('org_id', orgId)
-            .ilike('emetteur', searchTerm)
-            .limit(10);
+          if (!data) {
+            return { data: [], error };
+          }
 
-          console.log('🏢 Search by emetteur:', { byEmetteur, error2 });
+          // Filter client-side
+          const search = searchQuery.toLowerCase();
+          const filtered = data.filter((p: any) => {
+            const projet = (p.projet || '').toLowerCase();
+            const emetteur = (p.emetteur || '').toLowerCase();
+            return projet.includes(search) || emetteur.includes(search);
+          }).slice(0, 10);
 
-          // Combine and deduplicate results
-          const combined = [...(byProjet || []), ...(byEmetteur || [])];
-          const unique = Array.from(new Map(combined.map(item => [item.id, item])).values()).slice(0, 10);
+          console.log('✅ Filtered projects:', filtered);
 
-          console.log('✅ Combined projects:', unique);
-
-          return { data: unique, error: error1 || error2 };
+          return { data: filtered, error };
         })(),
 
-        // Search Investors
+        // Search Investors - fetch all and filter client-side to avoid 400 errors
         (async () => {
-          const { data: byName, error: e1 } = await supabase
+          const { data, error } = await supabase
             .from('investisseurs')
             .select('id, nom_raison_sociale, id_investisseur, type, email')
             .eq('org_id', orgId)
-            .ilike('nom_raison_sociale', searchTerm)
-            .limit(10);
+            .limit(100);
 
-          const { data: byId, error: e2 } = await supabase
-            .from('investisseurs')
-            .select('id, nom_raison_sociale, id_investisseur, type, email')
-            .eq('org_id', orgId)
-            .ilike('id_investisseur', searchTerm)
-            .limit(10);
+          if (!data) {
+            return { data: [], error };
+          }
 
-          const { data: byEmail, error: e3 } = await supabase
-            .from('investisseurs')
-            .select('id, nom_raison_sociale, id_investisseur, type, email')
-            .eq('org_id', orgId)
-            .ilike('email', searchTerm)
-            .limit(10);
+          // Filter client-side
+          const search = searchQuery.toLowerCase();
+          const filtered = data.filter((inv: any) => {
+            const name = (inv.nom_raison_sociale || '').toLowerCase();
+            const id = (inv.id_investisseur || '').toLowerCase();
+            const email = (inv.email || '').toLowerCase();
+            return name.includes(search) || id.includes(search) || email.includes(search);
+          }).slice(0, 10);
 
-          const combined = [...(byName || []), ...(byId || []), ...(byEmail || [])];
-          const unique = Array.from(new Map(combined.map(item => [item.id, item])).values()).slice(0, 10);
-
-          return { data: unique, error: e1 || e2 || e3 };
+          return { data: filtered, error };
         })(),
 
-        // Search Tranches
-        supabase
-          .from('tranches')
-          .select(`
-            id,
-            tranche_name,
-            taux_interet,
-            projets!inner(id, projet, org_id)
-          `)
-          .eq('projets.org_id', orgId)
-          .ilike('tranche_name', searchTerm)
-          .limit(10),
-
-        // Search Subscriptions
-        supabase
-          .from('souscriptions')
-          .select(`
-            id,
-            date_souscription,
-            nombre_obligations,
-            montant_investi,
-            tranches!inner(id, tranche_name, projets!inner(id, projet)),
-            investisseurs!inner(id, nom_raison_sociale, id_investisseur)
-          `)
-          .eq('org_id', orgId)
-          .or(`investisseurs.nom_raison_sociale.ilike.%${searchQuery}%,investisseurs.id_investisseur.ilike.%${searchQuery}%,tranches.tranche_name.ilike.%${searchQuery}%,tranches.projets.projet.ilike.%${searchQuery}%`)
-          .limit(10),
-
-        // Search Payments
-        supabase
-          .from('paiements')
-          .select(`
-            id,
-            date_paiement,
-            montant,
-            type_paiement,
-            souscriptions!inner(
+        // Search Tranches - simplified without inner join issues
+        (async () => {
+          const { data, error } = await supabase
+            .from('tranches')
+            .select(`
               id,
-              investisseurs!inner(id, nom_raison_sociale),
-              tranches!inner(id, projets!inner(id, projet))
-            )
-          `)
-          .eq('org_id', orgId)
-          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.%${searchQuery}%,souscriptions.tranches.projets.projet.ilike.%${searchQuery}%`)
-          .limit(10),
+              tranche_name,
+              taux_interet,
+              projet_id,
+              projets(id, projet, org_id)
+            `)
+            .ilike('tranche_name', searchTerm)
+            .limit(50);
 
-        // Search Coupons (from paiements where type is coupon)
-        supabase
-          .from('paiements')
-          .select(`
-            id,
-            date_paiement,
-            montant,
-            souscriptions!inner(
+          // Filter by org_id in code since nested filter causes 400 error
+          const filtered = (data || []).filter((t: any) => t.projets?.org_id === orgId).slice(0, 10);
+          return { data: filtered, error };
+        })(),
+
+        // Search Subscriptions - simplified
+        (async () => {
+          const { data, error } = await supabase
+            .from('souscriptions')
+            .select(`
               id,
-              investisseurs!inner(id, nom_raison_sociale),
-              tranches!inner(id, tranche_name, projets!inner(id, projet))
-            )
-          `)
-          .eq('org_id', orgId)
-          .eq('type_paiement', 'coupon')
-          .or(`souscriptions.investisseurs.nom_raison_sociale.ilike.%${searchQuery}%,souscriptions.tranches.projets.projet.ilike.%${searchQuery}%,souscriptions.tranches.tranche_name.ilike.%${searchQuery}%`)
-          .limit(10)
+              date_souscription,
+              nombre_obligations,
+              montant_investi,
+              tranches(id, tranche_name, projets(id, projet)),
+              investisseurs(id, nom_raison_sociale, id_investisseur)
+            `)
+            .eq('org_id', orgId)
+            .limit(50);
+
+          // Filter by search term in code
+          const filtered = (data || []).filter((s: any) => {
+            const investorName = s.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
+            const investorId = s.investisseurs?.id_investisseur?.toLowerCase() || '';
+            const trancheName = s.tranches?.tranche_name?.toLowerCase() || '';
+            const projectName = s.tranches?.projets?.projet?.toLowerCase() || '';
+            const search = searchQuery.toLowerCase();
+            return investorName.includes(search) || investorId.includes(search) ||
+                   trancheName.includes(search) || projectName.includes(search);
+          }).slice(0, 10);
+
+          return { data: filtered, error };
+        })(),
+
+        // Search Payments - simplified
+        (async () => {
+          const { data, error } = await supabase
+            .from('paiements')
+            .select(`
+              id,
+              date_paiement,
+              montant,
+              type_paiement,
+              souscriptions(
+                id,
+                investisseurs(id, nom_raison_sociale),
+                tranches(id, projets(id, projet))
+              )
+            `)
+            .eq('org_id', orgId)
+            .neq('type_paiement', 'coupon')
+            .limit(50);
+
+          // Filter by search term in code
+          const filtered = (data || []).filter((p: any) => {
+            const investorName = p.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
+            const projectName = p.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
+            const search = searchQuery.toLowerCase();
+            return investorName.includes(search) || projectName.includes(search);
+          }).slice(0, 10);
+
+          return { data: filtered, error };
+        })(),
+
+        // Search Coupons - simplified
+        (async () => {
+          const { data, error } = await supabase
+            .from('paiements')
+            .select(`
+              id,
+              date_paiement,
+              montant,
+              souscriptions(
+                id,
+                investisseurs(id, nom_raison_sociale),
+                tranches(id, tranche_name, projets(id, projet))
+              )
+            `)
+            .eq('org_id', orgId)
+            .eq('type_paiement', 'coupon')
+            .limit(50);
+
+          // Filter by search term in code
+          const filtered = (data || []).filter((c: any) => {
+            const investorName = c.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
+            const projectName = c.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
+            const trancheName = c.souscriptions?.tranches?.tranche_name?.toLowerCase() || '';
+            const search = searchQuery.toLowerCase();
+            return investorName.includes(search) || projectName.includes(search) || trancheName.includes(search);
+          }).slice(0, 10);
+
+          return { data: filtered, error };
+        })()
       ]);
 
       // Process Projects
