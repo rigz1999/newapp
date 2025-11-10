@@ -189,21 +189,59 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
       // Run all searches in parallel for maximum performance
       const [projectsRes, investorsRes, tranchesRes, subscriptionsRes, paymentsRes, couponsRes] = await Promise.all([
-        // Search Projects
-        supabase
-          .from('projets')
-          .select('id, projet, emetteur, statut')
-          .eq('org_id', orgId)
-          .or(`projet.ilike.%${searchQuery}%,emetteur.ilike.%${searchQuery}%`)
-          .limit(10),
+        // Search Projects - using textSearch or multiple queries
+        (async () => {
+          // Try searching in projet field
+          const { data: byProjet, error: error1 } = await supabase
+            .from('projets')
+            .select('id, projet, emetteur, statut')
+            .eq('org_id', orgId)
+            .ilike('projet', searchTerm)
+            .limit(10);
+
+          // Try searching in emetteur field
+          const { data: byEmetteur, error: error2 } = await supabase
+            .from('projets')
+            .select('id, projet, emetteur, statut')
+            .eq('org_id', orgId)
+            .ilike('emetteur', searchTerm)
+            .limit(10);
+
+          // Combine and deduplicate results
+          const combined = [...(byProjet || []), ...(byEmetteur || [])];
+          const unique = Array.from(new Map(combined.map(item => [item.id, item])).values()).slice(0, 10);
+
+          return { data: unique, error: error1 || error2 };
+        })(),
 
         // Search Investors
-        supabase
-          .from('investisseurs')
-          .select('id, nom_raison_sociale, id_investisseur, type, email')
-          .eq('org_id', orgId)
-          .or(`nom_raison_sociale.ilike.%${searchQuery}%,id_investisseur.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
-          .limit(10),
+        (async () => {
+          const { data: byName, error: e1 } = await supabase
+            .from('investisseurs')
+            .select('id, nom_raison_sociale, id_investisseur, type, email')
+            .eq('org_id', orgId)
+            .ilike('nom_raison_sociale', searchTerm)
+            .limit(10);
+
+          const { data: byId, error: e2 } = await supabase
+            .from('investisseurs')
+            .select('id, nom_raison_sociale, id_investisseur, type, email')
+            .eq('org_id', orgId)
+            .ilike('id_investisseur', searchTerm)
+            .limit(10);
+
+          const { data: byEmail, error: e3 } = await supabase
+            .from('investisseurs')
+            .select('id, nom_raison_sociale, id_investisseur, type, email')
+            .eq('org_id', orgId)
+            .ilike('email', searchTerm)
+            .limit(10);
+
+          const combined = [...(byName || []), ...(byId || []), ...(byEmail || [])];
+          const unique = Array.from(new Map(combined.map(item => [item.id, item])).values()).slice(0, 10);
+
+          return { data: unique, error: e1 || e2 || e3 };
+        })(),
 
         // Search Tranches
         supabase
