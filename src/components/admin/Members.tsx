@@ -170,6 +170,14 @@ export default function Members() {
       setShowRemoveModal(false);
       setSelectedMember(null);
       fetchMembers();
+
+      // Show success message
+      setAlertModalConfig({
+        title: 'Membre supprimé',
+        message: 'Le membre a été supprimé avec succès de l\'organisation.',
+        type: 'success'
+      });
+      setShowAlertModal(true);
     }
   };
 
