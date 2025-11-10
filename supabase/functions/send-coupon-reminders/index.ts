@@ -419,7 +419,7 @@ async function sendReminderEmail(
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: 'Finixar Reminders <onboarding@resend.dev>',
+      from: 'Finixar Reminders <support@finixar.com>',
       to: toEmail,
       subject: testMode
         ? `🧪 [TEST] Rappel: Coupons à venir`
