@@ -391,27 +391,15 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
               )}
 
               {/* Progression globale */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-slate-600 mb-1">Progression</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-slate-900">
-                      {Math.round((globalStats.payes / globalStats.totalEcheances) * 100)}%
-                    </span>
-                    <span className="text-sm text-slate-500">
-                      ({globalStats.payes}/{globalStats.totalEcheances} versements)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Barre de progression */}
-                <div className="flex-1 max-w-xs ml-6">
-                  <div className="w-full bg-slate-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all"
-                      style={{ width: `${Math.round((globalStats.payes / globalStats.totalEcheances) * 100)}%` }}
-                    ></div>
-                  </div>
+              <div>
+                <p className="text-xs text-slate-600 mb-1">Progression</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-slate-900">
+                    {Math.round((globalStats.payes / globalStats.totalEcheances) * 100)}%
+                  </span>
+                  <span className="text-sm text-slate-500">
+                    ({globalStats.payes}/{globalStats.totalEcheances} versements)
+                  </span>
                 </div>
               </div>
             </div>
