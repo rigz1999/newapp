@@ -191,6 +191,8 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       const [projectsRes, investorsRes, tranchesRes, subscriptionsRes, paymentsRes, couponsRes] = await Promise.all([
         // Search Projects - using textSearch or multiple queries
         (async () => {
+          console.log('🔍 Searching projects with:', { searchQuery, searchTerm, orgId });
+
           // Try searching in projet field
           const { data: byProjet, error: error1 } = await supabase
             .from('projets')
@@ -198,6 +200,8 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             .eq('org_id', orgId)
             .ilike('projet', searchTerm)
             .limit(10);
+
+          console.log('📁 Search by projet:', { byProjet, error1 });
 
           // Try searching in emetteur field
           const { data: byEmetteur, error: error2 } = await supabase
@@ -207,9 +211,13 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             .ilike('emetteur', searchTerm)
             .limit(10);
 
+          console.log('🏢 Search by emetteur:', { byEmetteur, error2 });
+
           // Combine and deduplicate results
           const combined = [...(byProjet || []), ...(byEmetteur || [])];
           const unique = Array.from(new Map(combined.map(item => [item.id, item])).values()).slice(0, 10);
+
+          console.log('✅ Combined projects:', unique);
 
           return { data: unique, error: error1 || error2 };
         })(),
