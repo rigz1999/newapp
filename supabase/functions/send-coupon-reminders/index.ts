@@ -41,6 +41,35 @@ serve(async (req) => {
   }
 
   try {
+    // ✅ VALIDATE ENVIRONMENT VARIABLES
+    if (!RESEND_API_KEY) {
+      console.error('❌ RESEND_API_KEY is not configured');
+      return new Response(
+        JSON.stringify({
+          error: 'RESEND_API_KEY is not configured in Supabase Edge Functions. Please add it in Settings → Edge Functions.',
+          details: 'Missing environment variable'
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ Supabase credentials not configured');
+      return new Response(
+        JSON.stringify({
+          error: 'Supabase credentials not configured',
+          details: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY'
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Initialize Supabase client with service role
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -48,6 +77,8 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const testMode = body?.testMode === true;
     const testUserId = body?.userId;
+
+    console.log(`📧 ${testMode ? 'TEST MODE' : 'PRODUCTION'} - Starting email reminder process`);
 
     // Get all users with reminders enabled (or just test user)
     let query = supabase
@@ -68,7 +99,7 @@ serve(async (req) => {
     const { data: settings, error: settingsError } = await query;
 
     if (settingsError) {
-      console.error('Error fetching settings:', settingsError);
+      console.error('❌ Error fetching settings:', settingsError);
       return new Response(JSON.stringify({ error: settingsError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -76,25 +107,35 @@ serve(async (req) => {
     }
 
     if (!settings || settings.length === 0) {
-      return new Response(JSON.stringify({ message: 'No users with reminders enabled' }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.log('⚠️ No users with reminders enabled');
+      return new Response(
+        JSON.stringify({
+          message: testMode ? 'Please enable reminders and select at least one reminder period first.' : 'No users with reminders enabled'
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     // Process each user
     const results = [];
     for (const userSettings of settings) {
       try {
+        console.log(`👤 Processing user: ${userSettings.user_id}`);
+
         // Get user email
         const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
           userSettings.user_id
         );
 
         if (userError || !userData?.user?.email) {
-          console.error(`Error getting user ${userSettings.user_id}:`, userError);
+          console.error(`❌ Error getting user ${userSettings.user_id}:`, userError);
           continue;
         }
+
+        console.log(`📧 User email: ${userData.user.email}`);
 
         // Get user's organization
         const { data: membership } = await supabase
@@ -104,7 +145,7 @@ serve(async (req) => {
           .single();
 
         if (!membership?.org_id) {
-          console.log(`User ${userSettings.user_id} has no organization`);
+          console.log(`⚠️ User ${userSettings.user_id} has no organization`);
           continue;
         }
 
@@ -142,21 +183,30 @@ serve(async (req) => {
           new Map(allCoupons.map(c => [c.id, c])).values()
         );
 
+        console.log(`📊 Found ${uniqueCoupons.length} coupons to remind about`);
+
         // Send email if there are coupons (or if test mode, send anyway)
         if (uniqueCoupons.length > 0 || testMode) {
-          await sendReminderEmail(
+          console.log(`📤 Sending email to ${userData.user.email}...`);
+
+          const emailResult = await sendReminderEmail(
             userData.user.email,
             uniqueCoupons,
             userSettings,
             testMode
           );
+
+          console.log(`✅ Email sent successfully! Resend ID: ${emailResult.id}`);
+
           results.push({
             user_id: userSettings.user_id,
             email: userData.user.email,
             coupons_count: uniqueCoupons.length,
             status: 'sent',
+            resend_id: emailResult.id
           });
         } else {
+          console.log(`⏭️ No coupons to send for user ${userSettings.user_id}`);
           results.push({
             user_id: userSettings.user_id,
             email: userData.user.email,
@@ -165,7 +215,7 @@ serve(async (req) => {
           });
         }
       } catch (error) {
-        console.error(`Error processing user ${userSettings.user_id}:`, error);
+        console.error(`❌ Error processing user ${userSettings.user_id}:`, error);
         results.push({
           user_id: userSettings.user_id,
           status: 'error',
@@ -173,6 +223,8 @@ serve(async (req) => {
         });
       }
     }
+
+    console.log(`✅ Finished processing ${results.length} users`);
 
     return new Response(
       JSON.stringify({
@@ -186,8 +238,8 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Fatal error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('❌ Fatal error:', error);
+    return new Response(JSON.stringify({ error: error.message, details: error.toString() }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -199,29 +251,29 @@ async function getCouponsForDate(supabase: any, orgId: string, targetDate: Date)
   const dateStr = targetDate.toISOString().split('T')[0];
 
   const { data: coupons, error } = await supabase
-    .from('payments')
+    .from('paiements')
     .select(`
       id,
       echeance_date,
       montant_brut,
       montant_net,
-      subscription:subscriptions (
-        investor:investors (
+      souscription:souscriptions (
+        investisseur:investisseurs (
           nom,
           prenom
         ),
         tranche:tranches (
           nom,
-          projet:projects (
+          projet:projets (
             projet
           )
         )
       )
     `)
-    .eq('subscription.tranche.projet.org_id', orgId)
+    .eq('org_id', orgId)
     .gte('echeance_date', dateStr)
     .lt('echeance_date', `${dateStr}T23:59:59`)
-    .neq('statut', 'paid');
+    .neq('statut', 'payé');
 
   if (error) {
     console.error('Error fetching coupons:', error);
@@ -233,9 +285,9 @@ async function getCouponsForDate(supabase: any, orgId: string, targetDate: Date)
     echeance_date: c.echeance_date,
     montant_brut: c.montant_brut,
     montant_net: c.montant_net,
-    project_name: c.subscription?.tranche?.projet?.projet || 'N/A',
-    tranche_name: c.subscription?.tranche?.nom || 'N/A',
-    investor_name: `${c.subscription?.investor?.prenom || ''} ${c.subscription?.investor?.nom || ''}`.trim() || 'N/A',
+    project_name: c.souscription?.tranche?.projet?.projet || 'N/A',
+    tranche_name: c.souscription?.tranche?.nom || 'N/A',
+    investor_name: `${c.souscription?.investisseur?.prenom || ''} ${c.souscription?.investisseur?.nom || ''}`.trim() || 'N/A',
   }));
 }
 
@@ -358,6 +410,8 @@ async function sendReminderEmail(
 </html>
   `;
 
+  console.log(`📤 Calling Resend API to send email to ${toEmail}...`);
+
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -365,7 +419,7 @@ async function sendReminderEmail(
       Authorization: `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: 'Finixar Reminders <support@finixar.com>',
+      from: 'Finixar Reminders <onboarding@resend.dev>',
       to: toEmail,
       subject: testMode
         ? `🧪 [TEST] Rappel: Coupons à venir`
@@ -374,13 +428,15 @@ async function sendReminderEmail(
     }),
   });
 
+  const responseData = await response.text();
+
   if (!response.ok) {
-    const error = await response.text();
-    console.error('Resend API error:', error);
-    throw new Error(`Failed to send email: ${error}`);
+    console.error('❌ Resend API error:', response.status, responseData);
+    throw new Error(`Failed to send email via Resend API (${response.status}): ${responseData}`);
   }
 
-  return await response.json();
+  console.log('✅ Resend API response:', responseData);
+  return JSON.parse(responseData);
 }
 
 // Helper functions
