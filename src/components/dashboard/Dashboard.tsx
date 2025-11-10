@@ -8,6 +8,7 @@ import { AlertModal } from '../common/Modals';
 import { DashboardSkeleton } from '../common/Skeleton';
 import { ExportModal } from './ExportModal';
 import { formatCurrency, formatDate, getRelativeDate, formatMontantDisplay } from '../../utils/formatters';
+import Decimal from 'decimal.js';
 import { isValidSIREN } from '../../utils/validators';
 import { generateAlerts, type Alert, type Payment, type UpcomingCoupon } from '../../utils/dashboardAlerts';
 import {
@@ -358,7 +359,7 @@ export function Dashboard({ organization }: DashboardProps) {
 
           if (existing) {
             existing.investor_count += 1;
-            existing.coupon_brut = parseFloat(existing.coupon_brut) + parseFloat(coupon.coupon_brut);
+            existing.coupon_brut = new Decimal(existing.coupon_brut).plus(new Decimal(coupon.coupon_brut)).toNumber();
           } else {
             acc.push({ ...coupon, investor_count: 1 });
           }
