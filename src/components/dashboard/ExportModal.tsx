@@ -3,6 +3,7 @@ import { X, FileText, DollarSign, Calendar, AlertTriangle, Download, ChevronDown
 import ExcelJS from 'exceljs';
 // @ts-ignore
 import jsPDF from 'jspdf';
+import Decimal from 'decimal.js';
 // @ts-ignore
 import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '../../utils/formatters';
@@ -268,7 +269,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
           if (existing) {
             existing.investor_count += 1;
-            existing.coupon_brut = parseFloat(existing.coupon_brut) + parseFloat(coupon.coupon_brut);
+            existing.coupon_brut = new Decimal(existing.coupon_brut).plus(new Decimal(coupon.coupon_brut)).toNumber();
           } else {
             acc.push({ ...coupon, investor_count: 1 });
           }
