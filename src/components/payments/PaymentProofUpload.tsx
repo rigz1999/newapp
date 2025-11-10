@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { Upload, X, CheckCircle, AlertTriangle, XCircle, Trash2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
+import { sanitizeFileName } from '../../utils/sanitizer';
 
 // Configure le worker avec la version 5.4 (correspond au package installé)
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
@@ -285,7 +286,8 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
         if (paymentError) throw paymentError;
 
         // Upload file to permanent storage
-        const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
+        const safeName = sanitizeFileName(files[0].name);
+        const permanentFileName = `${paymentData.id}/${Date.now()}_${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
           .upload(permanentFileName, downloadData);
@@ -313,7 +315,8 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
       } else {
         // Single payment confirmation
-        const permanentFileName = `${payment!.id}/${Date.now()}_${files[0].name}`;
+        const safeName = sanitizeFileName(files[0].name);
+        const permanentFileName = `${payment!.id}/${Date.now()}_${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
           .upload(permanentFileName, downloadData);
