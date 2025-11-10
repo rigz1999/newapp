@@ -790,17 +790,9 @@ function SuccessModal({
           </h3>
 
           {/* Message */}
-          <p className="text-slate-600 mb-6">
+          <p className="text-slate-600">
             {message}
           </p>
-
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all font-semibold shadow-lg shadow-blue-500/30"
-          >
-            Continuer
-          </button>
         </div>
       </div>
     </div>
