@@ -87,9 +87,15 @@ serve(async (req) => {
         user_id,
         remind_7_days,
         remind_14_days,
-        remind_30_days
-      `)
-      .eq('enabled', true);
+        remind_30_days,
+        enabled
+      `);
+
+    // In test mode, get user settings regardless of enabled status
+    // In production mode, only get enabled users
+    if (!testMode) {
+      query = query.eq('enabled', true);
+    }
 
     // If test mode, filter to specific user
     if (testMode && testUserId) {
@@ -106,11 +112,24 @@ serve(async (req) => {
       });
     }
 
-    if (!settings || settings.length === 0) {
+    // In test mode, if no settings found, create default test settings
+    let userSettings = settings || [];
+    if (testMode && testUserId && userSettings.length === 0) {
+      console.log('📝 No settings found for test user, using default test settings');
+      userSettings = [{
+        user_id: testUserId,
+        remind_7_days: true,
+        remind_14_days: true,
+        remind_30_days: true,
+        enabled: false // Not enabled yet, just testing
+      }];
+    }
+
+    if (!testMode && (!userSettings || userSettings.length === 0)) {
       console.log('⚠️ No users with reminders enabled');
       return new Response(
         JSON.stringify({
-          message: testMode ? 'Please enable reminders and select at least one reminder period first.' : 'No users with reminders enabled'
+          message: 'No users with reminders enabled'
         }),
         {
           status: 200,
@@ -121,67 +140,104 @@ serve(async (req) => {
 
     // Process each user
     const results = [];
-    for (const userSettings of settings) {
+    for (const userSetting of userSettings) {
       try {
-        console.log(`👤 Processing user: ${userSettings.user_id}`);
+        console.log(`👤 Processing user: ${userSetting.user_id}`);
 
         // Get user email
         const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
-          userSettings.user_id
+          userSetting.user_id
         );
 
         if (userError || !userData?.user?.email) {
-          console.error(`❌ Error getting user ${userSettings.user_id}:`, userError);
+          console.error(`❌ Error getting user ${userSetting.user_id}:`, userError);
           continue;
         }
 
         console.log(`📧 User email: ${userData.user.email}`);
 
-        // Get user's organization
-        const { data: membership } = await supabase
-          .from('memberships')
-          .select('org_id')
-          .eq('user_id', userSettings.user_id)
-          .single();
-
-        if (!membership?.org_id) {
-          console.log(`⚠️ User ${userSettings.user_id} has no organization`);
-          continue;
-        }
-
         // Collect coupons for all enabled reminder periods
-        const allCoupons: CouponReminder[] = [];
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        let uniqueCoupons: CouponReminder[] = [];
 
-        // Check 7 days
-        if (userSettings.remind_7_days) {
-          const targetDate = new Date(today);
-          targetDate.setDate(targetDate.getDate() + 7);
-          const coupons = await getCouponsForDate(supabase, membership.org_id, targetDate);
-          allCoupons.push(...coupons);
+        if (testMode) {
+          // In test mode, create fake coupon data for demonstration
+          console.log('📝 Creating fake coupon data for test email');
+          const today = new Date();
+          uniqueCoupons = [
+            {
+              id: 'test-1',
+              echeance_date: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              montant_brut: 5000,
+              montant_net: 4500,
+              project_name: 'Projet Immobilier Paris 15',
+              tranche_name: 'Tranche A',
+              investor_name: 'Jean Dupont'
+            },
+            {
+              id: 'test-2',
+              echeance_date: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+              montant_brut: 7500,
+              montant_net: 6800,
+              project_name: 'Résidence Les Acacias',
+              tranche_name: 'Tranche B',
+              investor_name: 'Marie Martin'
+            },
+            {
+              id: 'test-3',
+              echeance_date: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              montant_brut: 10000,
+              montant_net: 9200,
+              project_name: 'Développement Commercial Lyon',
+              tranche_name: 'Tranche C',
+              investor_name: 'Pierre Dubois'
+            }
+          ];
+        } else {
+          // Production mode: get real coupons from database
+          const { data: membership } = await supabase
+            .from('memberships')
+            .select('org_id')
+            .eq('user_id', userSetting.user_id)
+            .single();
+
+          if (!membership?.org_id) {
+            console.log(`⚠️ User ${userSetting.user_id} has no organization`);
+            continue;
+          }
+
+          const allCoupons: CouponReminder[] = [];
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          // Check 7 days
+          if (userSetting.remind_7_days) {
+            const targetDate = new Date(today);
+            targetDate.setDate(targetDate.getDate() + 7);
+            const coupons = await getCouponsForDate(supabase, membership.org_id, targetDate);
+            allCoupons.push(...coupons);
+          }
+
+          // Check 14 days
+          if (userSetting.remind_14_days) {
+            const targetDate = new Date(today);
+            targetDate.setDate(targetDate.getDate() + 14);
+            const coupons = await getCouponsForDate(supabase, membership.org_id, targetDate);
+            allCoupons.push(...coupons);
+          }
+
+          // Check 30 days
+          if (userSetting.remind_30_days) {
+            const targetDate = new Date(today);
+            targetDate.setDate(targetDate.getDate() + 30);
+            const coupons = await getCouponsForDate(supabase, membership.org_id, targetDate);
+            allCoupons.push(...coupons);
+          }
+
+          // Remove duplicates (coupon might match multiple periods)
+          uniqueCoupons = Array.from(
+            new Map(allCoupons.map(c => [c.id, c])).values()
+          );
         }
-
-        // Check 14 days
-        if (userSettings.remind_14_days) {
-          const targetDate = new Date(today);
-          targetDate.setDate(targetDate.getDate() + 14);
-          const coupons = await getCouponsForDate(supabase, membership.org_id, targetDate);
-          allCoupons.push(...coupons);
-        }
-
-        // Check 30 days
-        if (userSettings.remind_30_days) {
-          const targetDate = new Date(today);
-          targetDate.setDate(targetDate.getDate() + 30);
-          const coupons = await getCouponsForDate(supabase, membership.org_id, targetDate);
-          allCoupons.push(...coupons);
-        }
-
-        // Remove duplicates (coupon might match multiple periods)
-        const uniqueCoupons = Array.from(
-          new Map(allCoupons.map(c => [c.id, c])).values()
-        );
 
         console.log(`📊 Found ${uniqueCoupons.length} coupons to remind about`);
 
@@ -192,32 +248,32 @@ serve(async (req) => {
           const emailResult = await sendReminderEmail(
             userData.user.email,
             uniqueCoupons,
-            userSettings,
+            userSetting,
             testMode
           );
 
           console.log(`✅ Email sent successfully! Resend ID: ${emailResult.id}`);
 
           results.push({
-            user_id: userSettings.user_id,
+            user_id: userSetting.user_id,
             email: userData.user.email,
             coupons_count: uniqueCoupons.length,
             status: 'sent',
             resend_id: emailResult.id
           });
         } else {
-          console.log(`⏭️ No coupons to send for user ${userSettings.user_id}`);
+          console.log(`⏭️ No coupons to send for user ${userSetting.user_id}`);
           results.push({
-            user_id: userSettings.user_id,
+            user_id: userSetting.user_id,
             email: userData.user.email,
             coupons_count: 0,
             status: 'no_coupons',
           });
         }
       } catch (error) {
-        console.error(`❌ Error processing user ${userSettings.user_id}:`, error);
+        console.error(`❌ Error processing user ${userSetting.user_id}:`, error);
         results.push({
-          user_id: userSettings.user_id,
+          user_id: userSetting.user_id,
           status: 'error',
           error: error.message,
         });
