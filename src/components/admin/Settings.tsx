@@ -171,14 +171,20 @@ export default function Settings() {
     setErrorMessage('');
 
     try {
+      console.log('Starting password change process...');
+
       // Get the current session to pass the auth token
       const { data: { session } } = await supabase.auth.getSession();
+
+      console.log('Session check:', { hasSession: !!session, userId: session?.user?.id });
 
       if (!session) {
         setErrorMessage('Session expirée. Veuillez vous reconnecter.');
         setSaving(false);
         return;
       }
+
+      console.log('Calling change-password function...');
 
       // Call the Edge Function to verify current password and update to new one
       const { data, error: functionError } = await supabase.functions.invoke('change-password', {
@@ -191,28 +197,35 @@ export default function Settings() {
         },
       });
 
+      console.log('Function response:', { data, functionError });
+
       setSaving(false);
 
       if (functionError) {
+        console.error('Function error:', functionError);
         setErrorMessage(functionError.message || 'Erreur lors du changement de mot de passe.');
         return;
       }
 
       if (data?.error) {
+        console.error('Data error:', data.error);
         setErrorMessage(data.error);
         return;
       }
 
       if (data?.success) {
+        console.log('Password changed successfully');
         setSuccessMessage('Mot de passe changé avec succès');
         setShowSuccessModal(true);
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
+        console.error('Unexpected response:', data);
         setErrorMessage('Erreur lors du changement de mot de passe.');
       }
     } catch (err: any) {
+      console.error('Caught error:', err);
       setSaving(false);
       setErrorMessage('Une erreur s\'est produite. Veuillez réessayer ou contacter le support.');
     }

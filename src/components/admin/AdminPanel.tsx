@@ -355,19 +355,23 @@ export default function AdminPanel() {
   const handleRemoveMember = async () => {
     if (!deletingItem || deletingItem.type !== 'user') return;
 
+    console.log('Attempting to remove member (AdminPanel):', deletingItem);
+
     const { error } = await supabase
       .from('memberships')
       .delete()
       .eq('id', deletingItem.id);
 
     if (error) {
+      console.error('Error removing member (AdminPanel):', error);
       setAlertModalConfig({
-        title: 'Erreur',
-        message: 'Erreur: ' + error.message,
+        title: 'Erreur de suppression',
+        message: 'Impossible de supprimer ce membre: ' + error.message,
         type: 'error'
       });
       setShowAlertModal(true);
     } else {
+      console.log('Member removed successfully (AdminPanel)');
       setShowRemoveUserModal(false);
       setDeletingItem(null);
       fetchData();
