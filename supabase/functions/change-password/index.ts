@@ -86,27 +86,20 @@ Deno.serve(async (req) => {
       urlPreview: supabaseUrl?.substring(0, 30) + '...'
     });
 
+    console.log('Creating Supabase client...');
+    const supabaseClient = createClient(
+      supabaseUrl ?? '',
+      supabaseAnonKey ?? ''
+    );
+    console.log('Supabase client created');
+
     // Extract JWT token from Authorization header
     const token = authHeader.replace('Bearer ', '');
     console.log('Extracted token preview:', token.substring(0, 30) + '...');
 
-    console.log('Creating Supabase client with user token...');
-    const supabaseClient = createClient(
-      supabaseUrl ?? '',
-      supabaseAnonKey ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: authHeader,
-          },
-        },
-      }
-    );
-    console.log('Supabase client created with auth header');
-
-    // Get current user using the authenticated client
-    console.log('Attempting to get user...');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    // Get current user by passing JWT directly
+    console.log('Attempting to get user with JWT...');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
     console.log('getUser result:', {
       hasUser: !!user,
