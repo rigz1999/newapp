@@ -162,14 +162,14 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
 
     // Add headers with custom column widths
     worksheet.columns = [
-      { header: 'Date', key: 'Date', width: 12 },
+      { header: 'Date Échéance', key: 'Date Échéance', width: 15 },
       { header: 'Tranche', key: 'Tranche', width: 20 },
       { header: 'Investisseur', key: 'Investisseur', width: 25 },
       { header: 'Type', key: 'Type', width: 10 },
       { header: 'Coupon Brut', key: 'Coupon Brut', width: 12 },
       { header: 'Coupon Net', key: 'Coupon Net', width: 12 },
-      { header: 'Remboursement Nominal', key: 'Remboursement Nominal', width: 18 },
-      { header: 'Total à Payer', key: 'Total à Payer', width: 14 },
+      { header: 'Remboursement Nominal', key: 'Remboursement Nominal', width: 20 },
+      { header: 'Total à Payer', key: 'Total à Payer', width: 15 },
       { header: 'Statut', key: 'Statut', width: 10 }
     ];
 

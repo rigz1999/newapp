@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { FolderOpen, Plus, Layers, Search, Eye, Users, X, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { FolderOpen, Plus, Layers, Search, Eye, Users, X } from 'lucide-react';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { CardSkeleton } from '../common/Skeleton';
 import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
-import { MultiSelectFilter } from '../filters/MultiSelectFilter';
-import { FilterPresets } from '../filters/FilterPresets';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
 
 interface ProjectWithStats {
@@ -34,7 +32,6 @@ export function Projects({ organization }: ProjectsProps) {
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(searchParams.get('create') === 'true');
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Advanced filters
   const advancedFilters = useAdvancedFilters({
@@ -81,18 +78,7 @@ export function Projects({ organization }: ProjectsProps) {
     }
   }, [searchParams]);
 
-  // Extract unique values for filters
-  const uniqueEmetteurs = useMemo(() =>
-    Array.from(new Set(projects.map(p => p.emetteur).filter(Boolean))).map(e => ({ value: e, label: e })),
-    [projects]
-  );
-
-  const uniqueRepresentants = useMemo(() =>
-    Array.from(new Set(projects.map(p => p.representant_masse).filter(Boolean))).map(r => ({ value: r!, label: r! })),
-    [projects]
-  );
-
-  // Apply filters
+  // Apply search filter
   const filteredProjects = useMemo(() => {
     let filtered = [...projects];
 
@@ -106,26 +92,8 @@ export function Projects({ organization }: ProjectsProps) {
       );
     }
 
-    // Multi-select emetteur filter
-    const emetteurFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'emetteur');
-    if (emetteurFilter && emetteurFilter.values.length > 0) {
-      filtered = filtered.filter(p => emetteurFilter.values.includes(p.emetteur));
-    }
-
-    // Multi-select representant filter
-    const representantFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'representant');
-    if (representantFilter && representantFilter.values.length > 0) {
-      filtered = filtered.filter(p => p.representant_masse && representantFilter.values.includes(p.representant_masse));
-    }
-
     return filtered;
-  }, [projects, advancedFilters.filters]);
-
-  // Count active filters
-  const activeFiltersCount = useMemo(() => [
-    advancedFilters.filters.search ? 1 : 0,
-    ...advancedFilters.filters.multiSelect.map(f => f.values.length > 0 ? 1 : 0)
-  ].reduce((a, b) => a + b, 0), [advancedFilters.filters]);
+  }, [projects, advancedFilters.filters.search]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -288,91 +256,28 @@ export function Projects({ organization }: ProjectsProps) {
         </button>
       </div>
 
-      {/* Filters Section */}
+      {/* Search Section */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-        {/* Basic Search */}
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Rechercher par nom, émetteur, représentant..."
+              placeholder="Rechercher un projet par nom ou émetteur..."
               value={advancedFilters.filters.search}
               onChange={(e) => advancedFilters.setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             />
           </div>
-
-          <button
-            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
-              showAdvancedFilters || activeFiltersCount > 0
-                ? 'bg-blue-50 border-blue-300 text-blue-700'
-                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <Filter className="w-5 h-5" />
-            <span className="font-medium">Filtres avancés</span>
-            {activeFiltersCount > 0 && (
-              <span className="bg-finixar-brand-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                {activeFiltersCount}
-              </span>
-            )}
-            {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+          {advancedFilters.filters.search && (
+            <button
+              onClick={() => advancedFilters.setSearch('')}
+              className="px-4 py-3 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Effacer
+            </button>
+          )}
         </div>
-
-        {/* Advanced Filters Panel */}
-        {showAdvancedFilters && (
-          <div className="border-t border-slate-200 pt-6 space-y-4">
-            {/* Filter Presets */}
-            <FilterPresets
-              presets={advancedFilters.presets}
-              onSave={(name) => advancedFilters.savePreset(name)}
-              onLoad={(id) => advancedFilters.loadPreset(id)}
-              onDelete={(id) => advancedFilters.deletePreset(id)}
-            />
-
-            {/* Multi-select Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <MultiSelectFilter
-                label="Émetteurs"
-                options={uniqueEmetteurs}
-                selectedValues={
-                  advancedFilters.filters.multiSelect.find(f => f.field === 'emetteur')?.values || []
-                }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('emetteur', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('emetteur', value)}
-                onClear={() => advancedFilters.clearMultiSelectFilter('emetteur')}
-                placeholder="Sélectionner des émetteurs..."
-              />
-
-              <MultiSelectFilter
-                label="Représentants de masse"
-                options={uniqueRepresentants}
-                selectedValues={
-                  advancedFilters.filters.multiSelect.find(f => f.field === 'representant')?.values || []
-                }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('representant', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('representant', value)}
-                onClear={() => advancedFilters.clearMultiSelectFilter('representant')}
-                placeholder="Sélectionner des représentants..."
-              />
-            </div>
-
-            {/* Clear All Filters */}
-            {activeFiltersCount > 0 && (
-              <div className="flex justify-end">
-                <button
-                  onClick={() => advancedFilters.clearAllFilters()}
-                  className="text-sm text-slate-600 hover:text-slate-900 underline"
-                >
-                  Effacer tous les filtres
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {loading ? (
@@ -388,12 +293,12 @@ export function Projects({ organization }: ProjectsProps) {
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
           <FolderOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">
-            {activeFiltersCount > 0 ? 'Aucun projet trouvé' : 'Aucun projet'}
+            {advancedFilters.filters.search ? 'Aucun projet trouvé' : 'Aucun projet'}
           </h3>
           <p className="text-slate-600 mb-4">
-            {activeFiltersCount > 0 ? 'Essayez avec d\'autres filtres' : 'Créez votre premier projet pour commencer'}
+            {advancedFilters.filters.search ? 'Essayez avec d\'autres termes de recherche' : 'Créez votre premier projet pour commencer'}
           </p>
-          {activeFiltersCount === 0 && (
+          {!advancedFilters.filters.search && (
             <button
               onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors"

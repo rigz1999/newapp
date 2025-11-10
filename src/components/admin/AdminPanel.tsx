@@ -26,6 +26,10 @@ interface Membership {
   org_id: string | null;
   role: string;
   created_at: string;
+  profiles?: {
+    email: string;
+    full_name: string | null;
+  };
 }
 
 interface PendingUser {
@@ -152,6 +156,10 @@ export default function AdminPanel() {
         *,
         organizations (
           name
+        ),
+        profiles:user_id (
+          email,
+          full_name
         )
       `)
       .order('created_at', { ascending: false });
@@ -1102,10 +1110,13 @@ function OrganizationRow({
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-900">
-                        User: {membership.user_id.substring(0, 12)}...
+                        {membership.profiles?.full_name || 'Utilisateur'}
                       </p>
                       <p className="text-xs text-slate-600">
-                        Rôle: <span className="font-medium capitalize">{membership.role}</span> • 
+                        {membership.profiles?.email || membership.user_id.substring(0, 20) + '...'}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Rôle: <span className="font-medium capitalize">{membership.role}</span> •
                         Ajouté le {new Date(membership.created_at).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
