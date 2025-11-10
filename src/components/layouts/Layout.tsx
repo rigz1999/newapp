@@ -111,7 +111,7 @@ export function Layout({ organization }: LayoutProps) {
     // Fetch profiles
     const { data: profilesData } = await supabase
       .from('profiles')
-      .select('id, email');
+      .select('id, is_superadmin');
 
     // Fetch memberships with org_id (users who have an organization)
     const { data: membershipsData } = await supabase
@@ -126,11 +126,10 @@ export function Layout({ organization }: LayoutProps) {
           .map((m: any) => m.user_id)
       );
 
-      // Super admin is identified by email
-      const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL || 'zrig.ayman@gmail.com';
+      // Super admin is identified by is_superadmin column
       const superAdminIds = new Set(
         profilesData
-          .filter((p: any) => p.email === superAdminEmail)
+          .filter((p: any) => p.is_superadmin === true)
           .map((p: any) => p.id)
       );
 
@@ -138,7 +137,7 @@ export function Layout({ organization }: LayoutProps) {
       const pending = profilesData.filter(
         (p: any) => !userIdsWithOrg.has(p.id) && !superAdminIds.has(p.id)
       );
-      
+
       setPendingCount(pending.length);
     }
   };

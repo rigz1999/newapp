@@ -57,6 +57,7 @@ interface UserDetail {
   created_at: string;
   org_name?: string;
   role?: string;
+  is_superadmin?: boolean;
 }
 
 export default function AdminPanel() {
@@ -180,11 +181,9 @@ export default function AdminPanel() {
       // Les utilisateurs en attente sont ceux qui:
       // 1. N'ont pas de membership avec org_id
       // 2. Ne sont pas super_admin (super admins n'ont pas d'org_id mais c'est normal)
-      // Super admin is identified by email, not by membership role
-      const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL;
       const superAdminIds = new Set(
         (profilesData || [])
-          .filter((profile: any) => profile.email === superAdminEmail)
+          .filter((profile: any) => profile.is_superadmin === true)
           .map((profile: any) => profile.id)
       );
 
@@ -403,11 +402,19 @@ export default function AdminPanel() {
     // Find user in pending or memberships
     const pendingUser = pendingUsers.find(u => u.user_id === userId);
     if (pendingUser) {
+      // Fetch profile to get is_superadmin status
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', pendingUser.user_id)
+        .single();
+
       setSelectedUserDetail({
         user_id: pendingUser.user_id,
         email: pendingUser.email,
         full_name: pendingUser.full_name,
-        created_at: pendingUser.created_at
+        created_at: pendingUser.created_at,
+        is_superadmin: profile?.is_superadmin || false
       });
       setShowUserDetailModal(true);
       return;
@@ -429,7 +436,8 @@ export default function AdminPanel() {
         full_name: profile?.full_name,
         created_at: profile?.created_at || membership.created_at,
         org_name: org?.name,
-        role: membership.role
+        role: membership.role,
+        is_superadmin: profile?.is_superadmin || false
       });
       setShowUserDetailModal(true);
     }
@@ -726,8 +734,8 @@ export default function AdminPanel() {
                     <Shield className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900">{import.meta.env.VITE_SUPER_ADMIN_EMAIL}</p>
-                    <p className="text-sm text-slate-600">Super administrateur système</p>
+                    <p className="font-medium text-slate-900">Super Administrateur Système</p>
+                    <p className="text-sm text-slate-600">Accès total à toutes les organisations</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1257,8 +1265,7 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
   if (!isOpen || !user) return null;
 
   // Déterminer le statut de l'utilisateur
-  const superAdminEmail = import.meta.env.VITE_SUPER_ADMIN_EMAIL;
-  const isSuperAdmin = user.email === superAdminEmail;
+  const isSuperAdmin = user.is_superadmin || false;
   const hasOrganization = !!user.org_name;
   const isPending = !hasOrganization && !isSuperAdmin;
 
