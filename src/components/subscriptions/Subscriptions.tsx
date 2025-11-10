@@ -195,8 +195,6 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           date_souscription: editFormData.date_souscription,
           nombre_obligations: editFormData.nombre_obligations,
           montant_investi: editFormData.montant_investi,
-          coupon_brut: editFormData.coupon_brut,
-          coupon_net: editFormData.coupon_net,
           prochaine_date_coupon: editFormData.prochaine_date_coupon || null,
         } as never)
         .eq('id', editingSubscription.id);
@@ -755,9 +753,10 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       type="number"
                       step="0.01"
                       value={editFormData.coupon_brut}
-                      onChange={(e) => setEditFormData({ ...editFormData, coupon_brut: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                      disabled
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-600 cursor-not-allowed"
                     />
+                    <p className="text-xs text-slate-500 mt-1">Calculé automatiquement</p>
                   </div>
 
                   <div>
@@ -768,9 +767,10 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       type="number"
                       step="0.01"
                       value={editFormData.coupon_net}
-                      onChange={(e) => setEditFormData({ ...editFormData, coupon_net: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                      disabled
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-600 cursor-not-allowed"
                     />
+                    <p className="text-xs text-slate-500 mt-1">Calculé automatiquement</p>
                   </div>
                 </div>
 
