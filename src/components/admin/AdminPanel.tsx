@@ -165,8 +165,9 @@ export default function AdminPanel() {
       .order('created_at', { ascending: false });
 
     if (membershipsError) {
-      // Error is silently ignored - user can still see other data
+      console.error('Error loading memberships:', membershipsError);
     } else {
+      console.log('Loaded memberships with profiles:', membershipData);
       setMemberships((membershipData || []) as Membership[]);
     }
 
