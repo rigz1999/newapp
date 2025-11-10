@@ -195,7 +195,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
           const { data, error } = await supabase
             .from('projets')
-            .select('id, projet, emetteur, statut')
+            .select('id, projet, emetteur')
             .eq('org_id', orgId)
             .limit(100);
 
@@ -222,7 +222,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
         (async () => {
           const { data, error } = await supabase
             .from('investisseurs')
-            .select('id, nom_raison_sociale, id_investisseur, type, email')
+            .select('id, nom_raison_sociale, type, email')
             .eq('org_id', orgId)
             .limit(100);
 
@@ -234,9 +234,8 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           const search = searchQuery.toLowerCase();
           const filtered = data.filter((inv: any) => {
             const name = (inv.nom_raison_sociale || '').toLowerCase();
-            const id = (inv.id_investisseur || '').toLowerCase();
             const email = (inv.email || '').toLowerCase();
-            return name.includes(search) || id.includes(search) || email.includes(search);
+            return name.includes(search) || email.includes(search);
           }).slice(0, 10);
 
           return { data: filtered, error };
@@ -270,21 +269,22 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
               date_souscription,
               nombre_obligations,
               montant_investi,
-              tranches(id, tranche_name, projets(id, projet)),
-              investisseurs(id, nom_raison_sociale, id_investisseur)
+              tranches(id, tranche_name, projets(id, projet, org_id)),
+              investisseurs(id, nom_raison_sociale)
             `)
-            .eq('org_id', orgId)
-            .limit(50);
+            .limit(100);
 
-          // Filter by search term in code
+          // Filter by org_id and search term in code
           const filtered = (data || []).filter((s: any) => {
+            // First filter by org_id from nested project
+            if (s.tranches?.projets?.org_id !== orgId) return false;
+
+            // Then filter by search term
             const investorName = s.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
-            const investorId = s.investisseurs?.id_investisseur?.toLowerCase() || '';
             const trancheName = s.tranches?.tranche_name?.toLowerCase() || '';
             const projectName = s.tranches?.projets?.projet?.toLowerCase() || '';
             const search = searchQuery.toLowerCase();
-            return investorName.includes(search) || investorId.includes(search) ||
-                   trancheName.includes(search) || projectName.includes(search);
+            return investorName.includes(search) || trancheName.includes(search) || projectName.includes(search);
           }).slice(0, 10);
 
           return { data: filtered, error };
@@ -298,19 +298,22 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
               id,
               date_paiement,
               montant,
-              type_paiement,
+              type,
               souscriptions(
                 id,
                 investisseurs(id, nom_raison_sociale),
-                tranches(id, projets(id, projet))
+                tranches(id, projets(id, projet, org_id))
               )
             `)
-            .eq('org_id', orgId)
-            .neq('type_paiement', 'coupon')
-            .limit(50);
+            .neq('type', 'coupon')
+            .limit(100);
 
-          // Filter by search term in code
+          // Filter by org_id and search term in code
           const filtered = (data || []).filter((p: any) => {
+            // First filter by org_id from nested project
+            if (p.souscriptions?.tranches?.projets?.org_id !== orgId) return false;
+
+            // Then filter by search term
             const investorName = p.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
             const projectName = p.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
             const search = searchQuery.toLowerCase();
@@ -331,15 +334,18 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
               souscriptions(
                 id,
                 investisseurs(id, nom_raison_sociale),
-                tranches(id, tranche_name, projets(id, projet))
+                tranches(id, tranche_name, projets(id, projet, org_id))
               )
             `)
-            .eq('org_id', orgId)
-            .eq('type_paiement', 'coupon')
-            .limit(50);
+            .eq('type', 'coupon')
+            .limit(100);
 
-          // Filter by search term in code
+          // Filter by org_id and search term in code
           const filtered = (data || []).filter((c: any) => {
+            // First filter by org_id from nested project
+            if (c.souscriptions?.tranches?.projets?.org_id !== orgId) return false;
+
+            // Then filter by search term
             const investorName = c.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
             const projectName = c.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
             const trancheName = c.souscriptions?.tranches?.tranche_name?.toLowerCase() || '';
@@ -357,7 +363,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
         id: p.id,
         title: p.projet,
         subtitle: `Émetteur: ${p.emetteur}`,
-        metadata: p.statut ? [p.statut] : [],
+        metadata: [],
         icon: <Folder className="w-5 h-5 text-blue-600" />,
         link: `/projets/${p.id}`
       }));
@@ -367,10 +373,9 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
         type: 'investor' as const,
         id: inv.id,
         title: inv.nom_raison_sociale || 'Sans nom',
-        subtitle: `ID: ${inv.id_investisseur}`,
+        subtitle: inv.email || 'Pas d\'email',
         metadata: [
-          inv.type === 'morale' ? 'Personne Morale' : 'Personne Physique',
-          inv.email || ''
+          inv.type === 'morale' ? 'Personne Morale' : 'Personne Physique'
         ].filter(Boolean),
         icon: <Users className="w-5 h-5 text-finixar-green" />,
         link: `/investisseurs?id=${inv.id}`
@@ -409,7 +414,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
         subtitle: `${p.souscriptions?.tranches?.projets?.projet || 'Projet'} - ${formatDate(p.date_paiement)}`,
         metadata: [
           formatCurrency(p.montant),
-          p.type_paiement || 'Paiement'
+          p.type || 'Paiement'
         ],
         icon: <DollarSign className="w-5 h-5 text-emerald-600" />,
         link: `/paiements?id=${p.id}`
