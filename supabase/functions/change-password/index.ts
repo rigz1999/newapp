@@ -86,20 +86,22 @@ Deno.serve(async (req) => {
       urlPreview: supabaseUrl?.substring(0, 30) + '...'
     });
 
-    console.log('Creating Supabase client...');
-    const supabaseClient = createClient(
-      supabaseUrl ?? '',
-      supabaseAnonKey ?? ''
-    );
-    console.log('Supabase client created');
-
     // Extract JWT token from Authorization header
     const token = authHeader.replace('Bearer ', '');
     console.log('Extracted token preview:', token.substring(0, 30) + '...');
 
-    // Get current user by passing JWT directly
-    console.log('Attempting to get user with JWT...');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    // Use service role to verify the JWT
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    console.log('Service role key present:', !!supabaseServiceRoleKey);
+
+    const supabaseAdmin = createClient(
+      supabaseUrl ?? '',
+      supabaseServiceRoleKey ?? ''
+    );
+
+    // Get current user by verifying JWT with admin client
+    console.log('Attempting to get user with admin client...');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
     console.log('getUser result:', {
       hasUser: !!user,
@@ -117,6 +119,14 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Create a regular client for password verification
+    console.log('Creating regular Supabase client for password verification...');
+    const supabaseClient = createClient(
+      supabaseUrl ?? '',
+      supabaseAnonKey ?? ''
+    );
+    console.log('Regular client created');
 
     // Verify current password by attempting to sign in
     console.log('Verifying current password by sign in attempt...');
@@ -139,15 +149,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use service role to update password (bypasses current password check)
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    console.log('Service role key present:', !!supabaseServiceRoleKey);
-
-    const supabaseAdmin = createClient(
-      supabaseUrl ?? '',
-      supabaseServiceRoleKey ?? ''
-    );
-
+    // Use the admin client we created earlier to update password
     console.log('Attempting to update user password...');
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       user.id,
