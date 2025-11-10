@@ -3,42 +3,44 @@
 // Verifies current password and updates to new password
 // ============================================
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    console.log('=== Change Password Function Start ===');
+
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
-    console.log('Auth header received:', {
-      hasAuthHeader: !!authHeader,
-      authHeaderPreview: authHeader?.substring(0, 30) + '...'
-    });
+    console.log('Auth header present:', !!authHeader);
 
     if (!authHeader) {
-      console.log('ERROR: No auth header provided');
+      console.log('ERROR: No authorization header');
       return new Response(
         JSON.stringify({ error: 'Non autorisé' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Parse request body
     const { currentPassword, newPassword } = await req.json();
-    console.log('Request body received:', {
+    console.log('Request body parsed:', {
       hasCurrentPassword: !!currentPassword,
-      hasNewPassword: !!newPassword
+      hasNewPassword: !!newPassword,
+      currentPasswordLength: currentPassword?.length,
+      newPasswordLength: newPassword?.length
     });
 
+    // Validate inputs
     if (!currentPassword || !newPassword) {
       return new Response(
         JSON.stringify({ error: 'Mot de passe actuel et nouveau mot de passe requis' }),
@@ -74,6 +76,7 @@ serve(async (req) => {
     }
 
     // Initialize Supabase client with user's token
+    console.log('Getting environment variables...');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
@@ -83,10 +86,12 @@ serve(async (req) => {
       urlPreview: supabaseUrl?.substring(0, 30) + '...'
     });
 
+    console.log('Creating Supabase client...');
     const supabaseClient = createClient(
       supabaseUrl ?? '',
       supabaseAnonKey ?? ''
     );
+    console.log('Supabase client created');
 
     // Extract JWT token from Authorization header
     const token = authHeader.replace('Bearer ', '');
@@ -114,63 +119,65 @@ serve(async (req) => {
     }
 
     // Verify current password by attempting to sign in
-    console.log('Verifying current password for user:', user.email);
-    const verifyClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-
-    const { error: signInError } = await verifyClient.auth.signInWithPassword({
+    console.log('Verifying current password by sign in attempt...');
+    const { error: signInError } = await supabaseClient.auth.signInWithPassword({
       email: user.email!,
       password: currentPassword,
     });
 
+    console.log('Sign in verification result:', {
+      hasError: !!signInError,
+      errorMessage: signInError?.message,
+      errorStatus: signInError?.status
+    });
+
     if (signInError) {
-      console.log('ERROR: Password verification failed:', signInError.message);
+      console.log('ERROR: Current password verification failed');
       return new Response(
         JSON.stringify({ error: 'Mot de passe actuel incorrect' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Password verification successful');
-
-    // Initialize admin client to update password
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    console.log('Admin client check:', {
-      hasServiceRoleKey: !!serviceRoleKey
-    });
+    // Use service role to update password (bypasses current password check)
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    console.log('Service role key present:', !!supabaseServiceRoleKey);
 
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      serviceRoleKey ?? ''
+      supabaseUrl ?? '',
+      supabaseServiceRoleKey ?? ''
     );
 
-    // Update password using admin client
-    console.log('Updating password for user:', user.id);
+    console.log('Attempting to update user password...');
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       user.id,
       { password: newPassword }
     );
 
+    console.log('Password update result:', {
+      hasError: !!updateError,
+      errorMessage: updateError?.message
+    });
+
     if (updateError) {
-      console.error('ERROR: Password update failed:', updateError);
+      console.log('ERROR: Password update failed');
       return new Response(
-        JSON.stringify({ error: 'Erreur lors de la mise à jour du mot de passe' }),
+        JSON.stringify({ error: 'Erreur lors du changement de mot de passe: ' + updateError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('SUCCESS: Password updated successfully');
+    console.log('SUCCESS: Password changed successfully');
     return new Response(
       JSON.stringify({ success: true, message: 'Mot de passe changé avec succès' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.log('ERROR: Unexpected error in change-password function');
+    console.error('Error details:', error);
     return new Response(
-      JSON.stringify({ error: 'Une erreur inattendue s\'est produite' }),
+      JSON.stringify({ error: 'Erreur serveur: ' + error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
