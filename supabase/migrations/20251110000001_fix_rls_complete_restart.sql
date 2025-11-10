@@ -399,9 +399,8 @@ CREATE POLICY "view_souscriptions"
   TO authenticated
   USING (
     is_super_admin()
-    OR tranche_id IN (
-      SELECT t.id FROM tranches t
-      JOIN projets p ON p.id = t.projet_id
+    OR projet_id IN (
+      SELECT p.id FROM projets p
       WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
@@ -411,17 +410,15 @@ CREATE POLICY "manage_souscriptions"
   TO authenticated
   USING (
     is_super_admin()
-    OR tranche_id IN (
-      SELECT t.id FROM tranches t
-      JOIN projets p ON p.id = t.projet_id
+    OR projet_id IN (
+      SELECT p.id FROM projets p
       WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   )
   WITH CHECK (
     is_super_admin()
-    OR tranche_id IN (
-      SELECT t.id FROM tranches t
-      JOIN projets p ON p.id = t.projet_id
+    OR projet_id IN (
+      SELECT p.id FROM projets p
       WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
@@ -437,8 +434,7 @@ CREATE POLICY "view_coupons"
     is_super_admin()
     OR souscription_id IN (
       SELECT s.id FROM souscriptions s
-      JOIN tranches t ON t.id = s.tranche_id
-      JOIN projets p ON p.id = t.projet_id
+      JOIN projets p ON p.id = s.projet_id
       WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
@@ -450,8 +446,7 @@ CREATE POLICY "manage_coupons"
     is_super_admin()
     OR souscription_id IN (
       SELECT s.id FROM souscriptions s
-      JOIN tranches t ON t.id = s.tranche_id
-      JOIN projets p ON p.id = t.projet_id
+      JOIN projets p ON p.id = s.projet_id
       WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   )
@@ -459,8 +454,7 @@ CREATE POLICY "manage_coupons"
     is_super_admin()
     OR souscription_id IN (
       SELECT s.id FROM souscriptions s
-      JOIN tranches t ON t.id = s.tranche_id
-      JOIN projets p ON p.id = t.projet_id
+      JOIN projets p ON p.id = s.projet_id
       WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
@@ -474,13 +468,7 @@ CREATE POLICY "view_paiements"
   TO authenticated
   USING (
     is_super_admin()
-    OR echeance_id IN (
-      SELECT ce.id FROM coupons_echeances ce
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN tranches t ON t.id = s.tranche_id
-      JOIN projets p ON p.id = t.projet_id
-      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
-    )
+    OR org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
   );
 
 CREATE POLICY "manage_paiements"
@@ -488,23 +476,11 @@ CREATE POLICY "manage_paiements"
   TO authenticated
   USING (
     is_super_admin()
-    OR echeance_id IN (
-      SELECT ce.id FROM coupons_echeances ce
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN tranches t ON t.id = s.tranche_id
-      JOIN projets p ON p.id = t.projet_id
-      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
-    )
+    OR org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
   )
   WITH CHECK (
     is_super_admin()
-    OR echeance_id IN (
-      SELECT ce.id FROM coupons_echeances ce
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN tranches t ON t.id = s.tranche_id
-      JOIN projets p ON p.id = t.projet_id
-      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
-    )
+    OR org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
   );
 
 -- ============================================
@@ -518,11 +494,7 @@ CREATE POLICY "view_payment_proofs"
     is_super_admin()
     OR paiement_id IN (
       SELECT pa.id FROM paiements pa
-      JOIN coupons_echeances ce ON ce.id = pa.echeance_id
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN tranches t ON t.id = s.tranche_id
-      JOIN projets p ON p.id = t.projet_id
-      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
+      WHERE pa.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
 
@@ -533,22 +505,14 @@ CREATE POLICY "manage_payment_proofs"
     is_super_admin()
     OR paiement_id IN (
       SELECT pa.id FROM paiements pa
-      JOIN coupons_echeances ce ON ce.id = pa.echeance_id
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN tranches t ON t.id = s.tranche_id
-      JOIN projets p ON p.id = t.projet_id
-      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
+      WHERE pa.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   )
   WITH CHECK (
     is_super_admin()
     OR paiement_id IN (
       SELECT pa.id FROM paiements pa
-      JOIN coupons_echeances ce ON ce.id = pa.echeance_id
-      JOIN souscriptions s ON s.id = ce.souscription_id
-      JOIN tranches t ON t.id = s.tranche_id
-      JOIN projets p ON p.id = t.projet_id
-      WHERE p.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
+      WHERE pa.org_id IN (SELECT user_org_ids.org_id FROM user_org_ids())
     )
   );
 
