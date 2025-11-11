@@ -18,6 +18,8 @@ interface Subscription {
   coupon_brut: number;
   coupon_net: number;
   prochaine_date_coupon: string | null;
+  cgp: string | null;
+  email_cgp: string | null;
   tranches: {
     tranche_name: string;
     projets: {
