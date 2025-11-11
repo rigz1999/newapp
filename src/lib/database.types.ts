@@ -118,35 +118,74 @@ export interface Database {
       projets: {
         Row: {
           id: string
-          org_id: string
+          org_id: string | null
           projet: string
-          emetteur: string
+          emetteur: string | null
+          siren_emetteur: number | null
+          nom_representant: string | null
+          prenom_representant: string | null
+          email_representant: string | null
           representant_masse: string | null
-          rep_masse_email: string | null
-          rep_masse_tel: string | null
-          manager_email: string | null
+          email_rep_masse: string | null
+          telephone_rep_masse: number | null
+          taux_interet: number | null
+          montant_global_eur: number | null
+          maturite_mois: number | null
+          base_interet: number | null
+          type: 'obligations_simples' | 'obligations_convertibles'
+          taux_nominal: number | null
+          periodicite_coupons: string | null
+          date_emission: string | null
+          duree_mois: number | null
+          montant_global: number | null
           created_at: string
         }
         Insert: {
           id?: string
-          org_id: string
+          org_id?: string | null
           projet: string
-          emetteur: string
+          emetteur?: string | null
+          siren_emetteur?: number | null
+          nom_representant?: string | null
+          prenom_representant?: string | null
+          email_representant?: string | null
           representant_masse?: string | null
-          rep_masse_email?: string | null
-          rep_masse_tel?: string | null
-          manager_email?: string | null
+          email_rep_masse?: string | null
+          telephone_rep_masse?: number | null
+          taux_interet?: number | null
+          montant_global_eur?: number | null
+          maturite_mois?: number | null
+          base_interet?: number | null
+          type?: 'obligations_simples' | 'obligations_convertibles'
+          taux_nominal?: number | null
+          periodicite_coupons?: string | null
+          date_emission?: string | null
+          duree_mois?: number | null
+          montant_global?: number | null
           created_at?: string
         }
         Update: {
           id?: string
-          org_id?: string
+          org_id?: string | null
           projet?: string
-          emetteur?: string
+          emetteur?: string | null
+          siren_emetteur?: number | null
+          nom_representant?: string | null
+          prenom_representant?: string | null
+          email_representant?: string | null
           representant_masse?: string | null
-          rep_masse_email?: string | null
-          rep_masse_tel?: string | null
-          manager_email?: string | null
+          email_rep_masse?: string | null
+          telephone_rep_masse?: number | null
+          taux_interet?: number | null
+          montant_global_eur?: number | null
+          maturite_mois?: number | null
+          base_interet?: number | null
+          type?: 'obligations_simples' | 'obligations_convertibles'
+          taux_nominal?: number | null
+          periodicite_coupons?: string | null
+          date_emission?: string | null
+          duree_mois?: number | null
+          montant_global?: number | null
           created_at?: string
         }
       }
