@@ -745,10 +745,16 @@ Deno.serve(async (req: Request) => {
           for (const sub of subscriptions) {
             // Calculate coupon amount per payment
             // Formula: (montant_investi * taux_nominal / 100) / paymentsPerYear
+            console.log(`  DEBUG Souscription ${sub.id}:`, {
+              montant_investi: sub.montant_investi,
+              tauxNominal: tauxNominal,
+              paymentsPerYear: freq.paymentsPerYear
+            });
+
             const annualCoupon = (sub.montant_investi * tauxNominal) / 100;
             const couponPerPayment = annualCoupon / freq.paymentsPerYear;
 
-            console.log(`  Souscription ${sub.id}: Montant=${sub.montant_investi}€, Coupon/période=${couponPerPayment.toFixed(2)}€`);
+            console.log(`  Souscription ${sub.id}: Montant=${sub.montant_investi}€, AnnualCoupon=${annualCoupon.toFixed(2)}€, Coupon/période=${couponPerPayment.toFixed(2)}€`);
 
             // Generate payment dates
             for (let i = 1; i <= numberOfPayments; i++) {
@@ -769,6 +775,9 @@ Deno.serve(async (req: Request) => {
           // Bulk insert coupons
           if (couponsToInsert.length > 0) {
             console.log(`Insertion de ${couponsToInsert.length} coupons...`);
+            console.log("Premier coupon à insérer:", couponsToInsert[0]);
+            console.log("Dernier coupon à insérer:", couponsToInsert[couponsToInsert.length - 1]);
+
             const { error: couponsErr } = await supabase
               .from("coupons_echeances")
               .insert(couponsToInsert);
