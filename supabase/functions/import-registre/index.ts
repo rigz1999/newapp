@@ -630,7 +630,14 @@ Deno.serve(async (req: Request) => {
 
         console.log("📋 CGP Info:", { cgp, emailCgp, codeCgp, sirenCgp });
 
+        // Calculate annual coupon amounts
+        const couponBrut = tauxNominal ? (montant * tauxNominal) / 100 : 0;
+        // Physique: 30% flat tax -> net = brut * 0.7
+        // Morale: no flat tax -> net = brut
+        const couponNet = investorType === 'physique' ? couponBrut * 0.7 : couponBrut;
+
         console.log("Création souscription - Quantité:", quantite, "Montant:", montant);
+        console.log("Calcul coupons annuels - Type:", investorType, "Brut:", couponBrut, "Net:", couponNet);
 
         const { error: subErr } = await supabase
           .from("souscriptions")
@@ -641,6 +648,8 @@ Deno.serve(async (req: Request) => {
             date_souscription: dateSouscription,
             nombre_obligations: quantite,
             montant_investi: montant,
+            coupon_brut: couponBrut,
+            coupon_net: couponNet,
             date_validation_bs: parseDate(r["Date de Validation BS"]),
             date_transfert: dateTransfert,
             pea: r["PEA / PEA-PME"] ? true : null,
@@ -724,6 +733,19 @@ Deno.serve(async (req: Request) => {
         console.log("Taux nominal:", tauxNominal, "%");
         console.log("Périodicité:", periodiciteCoupons, `(tous les ${freq.months} mois)`);
 
+        // Calculate the final maturity date (last coupon date)
+        const finalMaturityDate = new Date(trancheEmissionDate);
+        finalMaturityDate.setMonth(finalMaturityDate.getMonth() + (numberOfPayments * freq.months));
+        const dateEcheanceFinaleCalculee = finalMaturityDate.toISOString().split('T')[0];
+
+        console.log("Date d'échéance finale calculée:", dateEcheanceFinaleCalculee);
+
+        // Update tranche with calculated final maturity date
+        await supabase
+          .from("tranches")
+          .update({ date_echeance_finale: dateEcheanceFinaleCalculee })
+          .eq("id", trancheId);
+
         // Get all created subscriptions for this tranche
         const { data: subscriptions, error: subQueryErr } = await supabase
           .from("souscriptions")
@@ -749,18 +771,10 @@ Deno.serve(async (req: Request) => {
             // Ensure montant_investi is a number (may come as string from DB)
             const montantInvesti = Number(sub.montant_investi);
 
-            console.log(`  DEBUG Souscription ${sub.id}:`, {
-              montant_investi_raw: sub.montant_investi,
-              montant_investi_type: typeof sub.montant_investi,
-              montant_investi_parsed: montantInvesti,
-              tauxNominal: tauxNominal,
-              paymentsPerYear: freq.paymentsPerYear
-            });
-
             const annualCoupon = (montantInvesti * tauxNominal) / 100;
             const couponPerPayment = annualCoupon / freq.paymentsPerYear;
 
-            console.log(`  Souscription ${sub.id}: Montant=${montantInvesti}€, AnnualCoupon=${annualCoupon.toFixed(2)}€, Coupon/période=${couponPerPayment.toFixed(2)}€`);
+            console.log(`  Souscription ${sub.id}: Montant=${montantInvesti}€, Coupon/période=${couponPerPayment.toFixed(2)}€`);
 
             // Generate payment dates
             for (let i = 1; i <= numberOfPayments; i++) {
@@ -769,13 +783,9 @@ Deno.serve(async (req: Request) => {
 
               const dateEcheance = paymentDate.toISOString().split('T')[0];
 
-              // For the last payment, add the principal (nominal) repayment
-              const isLastPayment = (i === numberOfPayments);
-              const montantCoupon = isLastPayment
-                ? Math.round((couponPerPayment + montantInvesti) * 100) / 100  // Last: interest + principal
-                : Math.round(couponPerPayment * 100) / 100;  // Others: just interest
-
-              console.log(`    Coupon ${i}/${numberOfPayments}: date=${dateEcheance}, montant=${montantCoupon}€ ${isLastPayment ? '(avec remboursement nominal)' : ''}`);
+              // montant_coupon contains ONLY the interest (coupon)
+              // The principal (nominal) is added by the frontend for the last payment
+              const montantCoupon = Math.round(couponPerPayment * 100) / 100;
 
               couponsToInsert.push({
                 souscription_id: sub.id,
@@ -788,9 +798,7 @@ Deno.serve(async (req: Request) => {
 
           // Bulk insert coupons
           if (couponsToInsert.length > 0) {
-            console.log(`Insertion de ${couponsToInsert.length} coupons...`);
-            console.log("Premier coupon à insérer:", couponsToInsert[0]);
-            console.log("Dernier coupon à insérer:", couponsToInsert[couponsToInsert.length - 1]);
+            console.log(`Insertion de ${couponsToInsert.length} coupons dans la base...`);
 
             const { error: couponsErr } = await supabase
               .from("coupons_echeances")
