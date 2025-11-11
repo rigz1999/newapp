@@ -271,22 +271,31 @@ Deno.serve(async (req: Request) => {
     const trancheId = trancheData.id;
     console.log("Tranche créée avec succès, ID:", trancheId);
 
-    // Read file as text (CSV/TSV)
+    // Read file with proper encoding handling
     console.log("=== ANALYSE DU FICHIER ===");
     console.log("Nom:", file.name);
     console.log("Type:", file.type);
     console.log("Taille:", file.size, "bytes");
 
-    const text = await file.text();
+    // Read file as ArrayBuffer and decode with proper encoding
+    const buffer = await file.arrayBuffer();
+
+    // Try UTF-8 first, then fallback to Windows-1252 if encoding issues detected
+    let text = new TextDecoder("utf-8").decode(buffer);
+
+    // Detect encoding issues
+    if (text.includes("�") || text.includes("Ã©") || text.includes("Ã")) {
+      console.warn("⚠️ PROBLÈME D'ENCODAGE UTF-8 DÉTECTÉ! Tentative avec Windows-1252...");
+      text = new TextDecoder("windows-1252").decode(buffer);
+      console.log("✅ Fichier décodé avec Windows-1252");
+    } else {
+      console.log("✅ Fichier décodé avec UTF-8");
+    }
+
     console.log("Taille:", text.length, "caractères");
     console.log("Premières 500 caractères:");
     console.log(text.substring(0, 500));
     console.log("---");
-
-    // Detect encoding issues
-    if (text.includes("�") || text.includes("Ã©") || text.includes("Ã")) {
-      console.warn("⚠️ PROBLÈME D'ENCODAGE DÉTECTÉ!");
-    }
 
     // Count lines
     const lineCount = text.split(/\r?\n/).length;
