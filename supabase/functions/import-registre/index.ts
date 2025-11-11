@@ -632,10 +632,12 @@ Deno.serve(async (req: Request) => {
 
         // Calculate annual coupon amounts
         const couponBrut = tauxNominal ? (montant * tauxNominal) / 100 : 0;
-        const couponNet = couponBrut * 0.7; // After 30% flat tax
+        // Physique: 30% flat tax -> net = brut * 0.7
+        // Morale: no flat tax -> net = brut
+        const couponNet = investorType === 'physique' ? couponBrut * 0.7 : couponBrut;
 
         console.log("Création souscription - Quantité:", quantite, "Montant:", montant);
-        console.log("Calcul coupons annuels - Brut:", couponBrut, "Net:", couponNet);
+        console.log("Calcul coupons annuels - Type:", investorType, "Brut:", couponBrut, "Net:", couponNet);
 
         const { error: subErr } = await supabase
           .from("souscriptions")
