@@ -64,10 +64,10 @@ function parseCSV(text: string): Array<Record<string, string>> {
   const lines = text.split(/\r?\n/);
   const result: Array<Record<string, string>> = [];
   
-  // Auto-detect separator
+  // Auto-detect separator - FLEXIBLE for encoding issues
   let separator = ";";
-  const firstDataLine = lines.find(line => 
-    line.includes("Projet") && (line.includes("Quantité") || line.includes("Quantite"))
+  const firstDataLine = lines.find(line =>
+    line.includes("Projet") && line.toLowerCase().includes("quantit")
   );
   
   if (firstDataLine) {
@@ -95,10 +95,9 @@ function parseCSV(text: string): Array<Record<string, string>> {
     const trimmed = line.trim();
     if (!trimmed) continue;
     
-    // Check if this is a header line
+    // Check if this is a header line - FLEXIBLE for encoding issues
     const isHeaderLine = (trimmed.includes("Projet") || trimmed.toLowerCase().includes("projet")) &&
-                        (trimmed.includes("Quantité") || trimmed.includes("Quantite") || 
-                         trimmed.toLowerCase().includes("quantité") || trimmed.toLowerCase().includes("quantite"));
+                        trimmed.toLowerCase().includes("quantit"); // Partial match handles encoding issues
     
     if (isHeaderLine) {
       headers = trimmed.split(separator).map(h => h.trim());
