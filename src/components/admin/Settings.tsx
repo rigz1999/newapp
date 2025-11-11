@@ -198,12 +198,23 @@ export default function Settings() {
       });
 
       console.log('Function response:', { data, functionError });
+      console.log('Data type:', typeof data);
+      console.log('Data keys:', data ? Object.keys(data) : 'null');
+      console.log('Data.success:', data?.success);
+      console.log('Data.message:', data?.message);
 
       setSaving(false);
 
       if (functionError) {
         console.error('Function error:', functionError);
-        setErrorMessage(functionError.message || 'Erreur lors du changement de mot de passe.');
+        console.error('Function error context:', (functionError as any).context);
+        // Try to extract the actual error message from the response
+        const errorMsg = (functionError as any).context?.body?.error
+          || (functionError as any).context?.error
+          || data?.error
+          || functionError.message
+          || 'Erreur lors du changement de mot de passe.';
+        setErrorMessage(errorMsg);
         return;
       }
 
@@ -222,6 +233,7 @@ export default function Settings() {
         setConfirmPassword('');
       } else {
         console.error('Unexpected response:', data);
+        console.error('Full data object:', JSON.stringify(data, null, 2));
         setErrorMessage('Erreur lors du changement de mot de passe.');
       }
     } catch (err: any) {
