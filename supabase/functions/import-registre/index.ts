@@ -350,6 +350,9 @@ Deno.serve(async (req: Request) => {
           const prenom = cleanString(r["Prénom(s)"]) || "";
           const nom = cleanString(r["Nom(s)"]) || "";
           const nomUsage = cleanString(r["Nom d'usage"]) || "";
+
+          console.log("📝 Extraction nom:", { prenom, nom, nomUsage });
+
           // Include all three fields: prénom + nom d'usage + nom
           investorName = [prenom, nomUsage, nom].filter(Boolean).join(" ").trim();
 
@@ -400,7 +403,7 @@ Deno.serve(async (req: Request) => {
 
           const invPayload: any = {
             type: "physique",
-            nom_raison_sociale: investorName || nom || "Investisseur",
+            nom_raison_sociale: investorName || "Investisseur",
             email: email,
             telephone: cleanPhone(r["Téléphone"]),
             adresse: cleanString(r["Adresse du domicile"]),
@@ -410,8 +413,8 @@ Deno.serve(async (req: Request) => {
             lieu_naissance: cleanString(r["Lieu de naissance"]),
             ppe: toBool(r["PPE"]),
             categorie_mifid: cleanString(r["Catégorisation"]),
-            cgp_nom: cgpNom,
-            cgp_email: cgpEmail,
+            cgp: cgpNom,
+            email_cgp: cgpEmail,
           };
 
           console.log("Payload investisseur physique");
@@ -513,8 +516,8 @@ Deno.serve(async (req: Request) => {
             departement_naissance: cleanString(r["Département de naissance du représentant"]),
             ppe: toBool(r["PPE"]),
             categorie_mifid: cleanString(r["Catégorisation"]),
-            cgp_nom: cgpNomMorale,
-            cgp_email: cgpEmailMorale,
+            cgp: cgpNomMorale,
+            email_cgp: cgpEmailMorale,
           };
 
           console.log("Payload société");
@@ -561,6 +564,12 @@ Deno.serve(async (req: Request) => {
         // Create subscription
         const quantite = toNumber(r["Quantité"]);
         const montant = toNumber(r["Montant"]);
+
+        // Skip if no quantity or amount (empty row)
+        if (!quantite || !montant || quantite <= 0 || montant <= 0) {
+          console.warn("⚠️ Ligne ignorée - Quantité ou Montant invalide:", { quantite, montant });
+          continue;
+        }
 
         // Use Date de Transfert from CSV as subscription date
         const dateSouscriptionCSV = parseDate(r["Date de souscription"]);

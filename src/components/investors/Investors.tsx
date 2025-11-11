@@ -147,6 +147,10 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
   const [allCgps, setAllCgps] = useState<string[]>([]);
 
+  // Bulk delete states
+  const [selectedInvestorIds, setSelectedInvestorIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
@@ -175,6 +179,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
       }
     }
   }, [searchParams, investors]);
+
+  // Clear selections when filters change
+  useEffect(() => {
+    setSelectedInvestorIds(new Set());
+  }, [advancedFilters.filters, currentPage]);
 
   // Extract unique values for filters
   const uniqueTypes = useMemo(() => [
@@ -478,6 +487,61 @@ function Investors({ organization: _organization }: InvestorsProps) {
     fetchInvestors();
   };
 
+  // Bulk delete functions
+  const handleSelectInvestor = (investorId: string) => {
+    const newSelected = new Set(selectedInvestorIds);
+    if (newSelected.has(investorId)) {
+      newSelected.delete(investorId);
+    } else {
+      newSelected.add(investorId);
+    }
+    setSelectedInvestorIds(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedInvestorIds.size === filteredInvestors.length) {
+      setSelectedInvestorIds(new Set());
+    } else {
+      setSelectedInvestorIds(new Set(filteredInvestors.map(inv => inv.id)));
+    }
+  };
+
+  const handleBulkDeleteClick = () => {
+    if (selectedInvestorIds.size === 0) return;
+    setShowBulkDeleteModal(true);
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    if (selectedInvestorIds.size === 0) return;
+
+    const idsToDelete = Array.from(selectedInvestorIds);
+
+    const { error } = await supabase
+      .from('investisseurs')
+      .delete()
+      .in('id', idsToDelete);
+
+    if (error) {
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: `Erreur lors de la suppression: ${error.message}`,
+        type: 'error'
+      });
+      setShowAlertModal(true);
+      return;
+    }
+
+    setAlertModalConfig({
+      title: 'Succès',
+      message: `${idsToDelete.length} investisseur(s) supprimé(s) avec succès`,
+      type: 'success'
+    });
+    setShowAlertModal(true);
+    setShowBulkDeleteModal(false);
+    setSelectedInvestorIds(new Set());
+    fetchInvestors();
+  };
+
   const handleRibUpload = async (investor: InvestorWithStats) => {
     setSelectedInvestor(investor);
     setShowRibModal(true);
@@ -730,16 +794,34 @@ function Investors({ organization: _organization }: InvestorsProps) {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Investisseurs</h1>
-            <p className="text-slate-600">{filteredInvestors.length} investisseur{filteredInvestors.length > 1 ? 's' : ''}</p>
+            <p className="text-slate-600">
+              {filteredInvestors.length} investisseur{filteredInvestors.length > 1 ? 's' : ''}
+              {selectedInvestorIds.size > 0 && (
+                <span className="ml-2 text-finixar-teal font-semibold">
+                  ({selectedInvestorIds.size} sélectionné{selectedInvestorIds.size > 1 ? 's' : ''})
+                </span>
+              )}
+            </p>
           </div>
         </div>
-        <button
-          onClick={handleExportExcel}
-          className="flex items-center gap-2 px-4 py-2 bg-finixar-action-view text-white rounded-lg hover:bg-finixar-action-view-hover transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Exporter Excel
-        </button>
+        <div className="flex items-center gap-3">
+          {selectedInvestorIds.size > 0 && (
+            <button
+              onClick={handleBulkDeleteClick}
+              className="flex items-center gap-2 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Supprimer ({selectedInvestorIds.size})
+            </button>
+          )}
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-finixar-action-view text-white rounded-lg hover:bg-finixar-action-view-hover transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Exporter Excel
+          </button>
+        </div>
       </div>
 
       {/* Filters Section */}
@@ -870,6 +952,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
+                <th className="px-4 py-3 text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedInvestorIds.size === filteredInvestors.length && filteredInvestors.length > 0}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-finixar-teal border-slate-300 rounded focus:ring-finixar-teal cursor-pointer"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left">
                   <button onClick={() => handleSort('nom_raison_sociale')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
                     Nom / Raison Sociale <ArrowUpDown className="w-4 h-4" />
@@ -914,6 +1004,15 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 
                 return (
                   <tr key={investor.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedInvestorIds.has(investor.id)}
+                        onChange={() => handleSelectInvestor(investor.id)}
+                        className="w-4 h-4 text-finixar-teal border-slate-300 rounded focus:ring-finixar-teal cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${isInvestorMorale ? 'bg-purple-100' : 'bg-blue-100'}`}>
@@ -1741,6 +1840,16 @@ function Investors({ organization: _organization }: InvestorsProps) {
         title={alertModalConfig.title}
         message={alertModalConfig.message}
         type={alertModalConfig.type}
+      />
+
+      {/* Bulk Delete Modal */}
+      <ConfirmModal
+        isOpen={showBulkDeleteModal}
+        onClose={() => setShowBulkDeleteModal(false)}
+        onConfirm={handleBulkDeleteConfirm}
+        title="Supprimer les investisseurs"
+        message={`Êtes-vous sûr de vouloir supprimer ${selectedInvestorIds.size} investisseur${selectedInvestorIds.size > 1 ? 's' : ''} ?\n\nCette action est irréversible et supprimera également toutes les souscriptions associées.`}
+        type="danger"
       />
     </div>
   );
