@@ -59,7 +59,8 @@ Deno.serve(async (req) => {
     const hasUpperCase = /[A-Z]/.test(newPassword);
     const hasLowerCase = /[a-z]/.test(newPassword);
     const hasNumber = /\d/.test(newPassword);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+    // Accept common special characters including: !@#$%^&*(),.?":{}|<>-_+=[]~`/\;'
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>\-_+=\[\]~`/\\;']/.test(newPassword);
 
     if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecial) {
       return new Response(
