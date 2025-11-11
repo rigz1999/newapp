@@ -745,10 +745,22 @@ Deno.serve(async (req: Request) => {
           for (const sub of subscriptions) {
             // Calculate coupon amount per payment
             // Formula: (montant_investi * taux_nominal / 100) / paymentsPerYear
-            const annualCoupon = (sub.montant_investi * tauxNominal) / 100;
+
+            // Ensure montant_investi is a number (may come as string from DB)
+            const montantInvesti = Number(sub.montant_investi);
+
+            console.log(`  DEBUG Souscription ${sub.id}:`, {
+              montant_investi_raw: sub.montant_investi,
+              montant_investi_type: typeof sub.montant_investi,
+              montant_investi_parsed: montantInvesti,
+              tauxNominal: tauxNominal,
+              paymentsPerYear: freq.paymentsPerYear
+            });
+
+            const annualCoupon = (montantInvesti * tauxNominal) / 100;
             const couponPerPayment = annualCoupon / freq.paymentsPerYear;
 
-            console.log(`  Souscription ${sub.id}: Montant=${sub.montant_investi}€, Coupon/période=${couponPerPayment.toFixed(2)}€`);
+            console.log(`  Souscription ${sub.id}: Montant=${montantInvesti}€, AnnualCoupon=${annualCoupon.toFixed(2)}€, Coupon/période=${couponPerPayment.toFixed(2)}€`);
 
             // Generate payment dates
             for (let i = 1; i <= numberOfPayments; i++) {
@@ -757,10 +769,18 @@ Deno.serve(async (req: Request) => {
 
               const dateEcheance = paymentDate.toISOString().split('T')[0];
 
+              // For the last payment, add the principal (nominal) repayment
+              const isLastPayment = (i === numberOfPayments);
+              const montantCoupon = isLastPayment
+                ? Math.round((couponPerPayment + montantInvesti) * 100) / 100  // Last: interest + principal
+                : Math.round(couponPerPayment * 100) / 100;  // Others: just interest
+
+              console.log(`    Coupon ${i}/${numberOfPayments}: date=${dateEcheance}, montant=${montantCoupon}€ ${isLastPayment ? '(avec remboursement nominal)' : ''}`);
+
               couponsToInsert.push({
                 souscription_id: sub.id,
                 date_echeance: dateEcheance,
-                montant_coupon: Math.round(couponPerPayment * 100) / 100, // Round to 2 decimals
+                montant_coupon: montantCoupon,
                 statut: 'en_attente',
               });
             }
@@ -769,6 +789,9 @@ Deno.serve(async (req: Request) => {
           // Bulk insert coupons
           if (couponsToInsert.length > 0) {
             console.log(`Insertion de ${couponsToInsert.length} coupons...`);
+            console.log("Premier coupon à insérer:", couponsToInsert[0]);
+            console.log("Dernier coupon à insérer:", couponsToInsert[couponsToInsert.length - 1]);
+
             const { error: couponsErr } = await supabase
               .from("coupons_echeances")
               .insert(couponsToInsert);
