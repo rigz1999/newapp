@@ -988,7 +988,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     type: newProjectData.type,
                     taux_interet: parseFloat(newProjectData.taux_interet),
                     montant_global_eur: newProjectData.montant_global_eur ? parseFloat(newProjectData.montant_global_eur) : null,
-                    periodicite_coupon: newProjectData.periodicite_coupon,
+                    periodicite_coupons: newProjectData.periodicite_coupon,
                     maturite_mois: parseInt(newProjectData.maturite_mois, 10),
                     base_interet: parseInt(newProjectData.base_interet, 10),
                     // keep identifiers as strings
