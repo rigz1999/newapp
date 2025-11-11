@@ -410,7 +410,8 @@ Deno.serve(async (req: Request) => {
             lieu_naissance: cleanString(r["Lieu de naissance"]),
             ppe: toBool(r["PPE"]),
             categorie_mifid: cleanString(r["Catégorisation"]),
-            // CGP info is stored in souscriptions table, not investisseurs
+            cgp_nom: cgpNom,
+            cgp_email: cgpEmail,
           };
 
           console.log("Payload investisseur physique");
@@ -512,7 +513,8 @@ Deno.serve(async (req: Request) => {
             departement_naissance: cleanString(r["Département de naissance du représentant"]),
             ppe: toBool(r["PPE"]),
             categorie_mifid: cleanString(r["Catégorisation"]),
-            // CGP info is stored in souscriptions table, not investisseurs
+            cgp_nom: cgpNomMorale,
+            cgp_email: cgpEmailMorale,
           };
 
           console.log("Payload société");
