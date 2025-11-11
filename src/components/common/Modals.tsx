@@ -4,6 +4,7 @@
 // ============================================
 
 import { AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { useEffect } from 'react';
 
 interface BaseModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ interface ConfirmModalProps extends BaseModalProps {
 interface AlertModalProps extends BaseModalProps {
   type?: 'success' | 'error' | 'warning' | 'info';
   buttonText?: string;
+  autoDismiss?: boolean;
+  autoDismissDelay?: number;
 }
 
 /**
@@ -39,6 +42,17 @@ export function ConfirmModal({
   type = 'danger',
   isLoading = false
 }: ConfirmModalProps) {
+  // Handle ESC key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !isLoading) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose, isLoading]);
+
   if (!isOpen) return null;
 
   const getTypeStyles = () => {
@@ -132,8 +146,31 @@ export function AlertModal({
   title,
   message,
   type = 'info',
-  buttonText = 'OK'
+  buttonText = 'OK',
+  autoDismiss = false,
+  autoDismissDelay = 3000
 }: AlertModalProps) {
+  // Handle ESC key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
+  // Auto-dismiss after delay
+  useEffect(() => {
+    if (isOpen && autoDismiss) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, autoDismissDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, autoDismiss, autoDismissDelay, onClose]);
+
   if (!isOpen) return null;
 
   const getTypeStyles = () => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Upload, X, CheckCircle, AlertTriangle, XCircle, Trash2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -42,24 +42,66 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  const processFiles = (selectedFiles: File[]) => {
+    const validFiles: File[] = [];
+
+    for (const file of selectedFiles) {
+      const validation = validateFile(file, FILE_VALIDATION_PRESETS.documents);
+      if (!validation.valid) {
+        setError(validation.error || 'Fichier invalide');
+        return;
+      }
+      validFiles.push(file);
+    }
+
+    setFiles(prev => [...prev, ...validFiles]);
+    setError(null);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      const validFiles: File[] = [];
-
-      for (const file of selectedFiles) {
-        const validation = validateFile(file, FILE_VALIDATION_PRESETS.documents);
-        if (!validation.valid) {
-          setError(validation.error || 'Fichier invalide');
-          return;
-        }
-        validFiles.push(file);
-      }
-
-      setFiles(prev => [...prev, ...validFiles]);
-      setError(null);
+      processFiles(selectedFiles);
     }
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    processFiles(droppedFiles);
   };
 
   const handleRemoveFile = (index: number) => {
@@ -387,8 +429,14 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6 border-b border-slate-200">
           <div className="flex justify-between items-start">
             <div>
@@ -444,8 +492,18 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                 </div>
               )}
 
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center mb-6">
-                <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center mb-6 transition-colors ${
+                  isDragging
+                    ? 'border-finixar-teal bg-finixar-teal bg-opacity-5'
+                    : 'border-slate-300 hover:border-slate-400'
+                }`}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <Upload className={`w-12 h-12 mx-auto mb-4 ${isDragging ? 'text-finixar-teal' : 'text-slate-400'}`} />
                 <input
                   type="file"
                   onChange={handleFileChange}
@@ -459,7 +517,10 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                 >
                   {files.length > 0 ? 'Ajouter d\'autres fichiers' : 'Choisir des fichiers'}
                 </label>
-                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier) - v3.0</p>
+                <p className="text-sm text-slate-500 mt-2">
+                  {isDragging ? 'Déposez vos fichiers ici' : 'ou glissez-déposez vos fichiers'}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">PDF, PNG, JPG ou WEBP (max 10MB par fichier)</p>
               </div>
 
               {files.length > 0 && (
