@@ -62,6 +62,17 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
     fetchEcheances();
   }, [projectId]);
 
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   const fetchEcheances = async () => {
     setLoading(true);
     try {

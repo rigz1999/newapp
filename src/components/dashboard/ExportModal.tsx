@@ -154,6 +154,17 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
     }
   }, [selectedPreset]);
 
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !exporting) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose, exporting]);
+
   const handlePresetClick = (preset: ExportPreset) => {
     setSelectedPreset(preset);
   };

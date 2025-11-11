@@ -1,6 +1,6 @@
 import { X, Download, Eye, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertModal } from '../common/Modals';
 
 interface ViewProofsModalProps {
@@ -21,6 +21,17 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
     message: string;
     type?: 'success' | 'error' | 'warning' | 'info';
   }>({ title: '', message: '', type: 'info' });
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !confirmDelete) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose, confirmDelete]);
 
   const downloadFile = (url: string, filename: string) => {
     const a = document.createElement('a');
