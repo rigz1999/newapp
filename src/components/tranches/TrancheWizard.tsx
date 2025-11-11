@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { X, CheckCircle, AlertCircle, Loader, Edit } from "lucide-react";
 import { FileUpload } from "../investors/FileUpload";
@@ -34,6 +35,7 @@ export function TrancheWizard({
   editingTranche,
   isEditMode = false,
 }: TrancheWizardProps) {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -200,6 +202,13 @@ export function TrancheWizard({
       form.append("tranche_name", trancheName);
       form.append("file", csvFile, csvFile.name);
 
+      // Add tranche metadata
+      if (tauxNominal) form.append("taux_nominal", tauxNominal);
+      if (periodiciteCoupons) form.append("periodicite_coupons", periodiciteCoupons);
+      if (dateEmission) form.append("date_emission", dateEmission);
+      if (dateEcheanceFinale) form.append("date_echeance_finale", dateEcheanceFinale);
+      if (dureeMois) form.append("duree_mois", dureeMois);
+
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
       console.log("URL Edge Function:", url);
 
@@ -231,11 +240,18 @@ export function TrancheWizard({
                 `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
                 `${result.updatedInvestisseurs || 0} investisseurs mis à jour`
               );
-              
+
               if (result.errors && result.errors.length > 0) {
                 console.warn("Erreurs d'import:", result.errors);
                 setError(`${result.errors.length} ligne(s) en erreur (voir console)`);
               }
+
+              // Redirect to project detail page after 2 seconds
+              setTimeout(() => {
+                onSuccess();
+                onClose();
+                navigate(`/projets/${selectedProjectId}`);
+              }, 2000);
             } else if (result.success && result.createdSouscriptions === 0) {
               setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
               console.error("Import terminé mais 0 souscriptions créées:", result);
