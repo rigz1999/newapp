@@ -222,6 +222,7 @@ export function Dashboard({ organization }: DashboardProps) {
     if (!showNewProject) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        console.log('ESC pressed in New Project Modal');
         resetNewProjectForm();
         setShowNewProject(false);
       }
@@ -241,8 +242,8 @@ export function Dashboard({ organization }: DashboardProps) {
         }
       }
     };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
+    document.addEventListener('keydown', handleKey, { capture: true });
+    return () => document.removeEventListener('keydown', handleKey, { capture: true });
   }, [showNewProject, resetNewProjectForm]);
 
   // Listen for cache invalidation events from other components

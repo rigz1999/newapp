@@ -73,6 +73,18 @@ export function TrancheWizard({
     }
   }, [editingTranche, isEditMode]);
 
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !processing) {
+        console.log('ESC pressed in TrancheWizard');
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
+  }, [onClose, processing]);
+
   const fetchProjects = async () => {
     setLoading(true);
     const { data } = await supabase
