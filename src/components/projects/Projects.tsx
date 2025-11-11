@@ -195,11 +195,24 @@ export function Projects({ organization }: ProjectsProps) {
     setCreatingProject(true);
 
     try {
+      // Parse numeric fields
+      const tauxValue = newProjectData.taux_interet && newProjectData.taux_interet.trim() !== ''
+        ? parseFloat(newProjectData.taux_interet)
+        : null;
+      const montantGlobal = newProjectData.montant_global_eur
+        ? parseInt(newProjectData.montant_global_eur.replace(/\s/g, ''))
+        : null;
+      const maturite = newProjectData.maturite_mois
+        ? parseInt(newProjectData.maturite_mois)
+        : null;
+      const baseInteret = newProjectData.base_interet
+        ? parseInt(newProjectData.base_interet)
+        : 360;
+
       const projectToCreate: any = {
         projet: newProjectData.projet,
         type: newProjectData.type || null,
         emetteur: newProjectData.emetteur,
-        // Keep SIREN as string to preserve leading zeros (e.g., "012345678")
         siren_emetteur: newProjectData.siren_emetteur || null,
         nom_representant: newProjectData.nom_representant || null,
         prenom_representant: newProjectData.prenom_representant || null,
@@ -207,33 +220,15 @@ export function Projects({ organization }: ProjectsProps) {
         representant_masse: newProjectData.representant_masse || null,
         email_rep_masse: newProjectData.email_rep_masse || null,
         telephone_rep_masse: newProjectData.telephone_rep_masse || null,
+        org_id: organization.id,
+        taux_interet: tauxValue,
+        taux_nominal: tauxValue,
+        montant_global_eur: montantGlobal,
+        periodicite_coupons: newProjectData.periodicite_coupon || null,
+        maturite_mois: maturite,
+        duree_mois: maturite,
+        base_interet: baseInteret,
       };
-
-      // Champs optionnels
-      if (newProjectData.taux_interet && newProjectData.taux_interet.trim() !== '') {
-        const tauxValue = parseFloat(newProjectData.taux_interet);
-        if (!isNaN(tauxValue)) {
-          console.log('Setting taux fields to:', tauxValue);
-          projectToCreate.taux_interet = tauxValue;
-          projectToCreate.taux_nominal = tauxValue; // Save to both fields for compatibility
-        } else {
-          console.warn('Invalid taux_interet value:', newProjectData.taux_interet);
-        }
-      } else {
-        console.warn('No taux_interet provided:', newProjectData.taux_interet);
-      }
-      if (newProjectData.montant_global_eur) {
-        projectToCreate.montant_global_eur = parseInt(newProjectData.montant_global_eur.replace(/\s/g, ''));
-      }
-      if (newProjectData.periodicite_coupon) {
-        projectToCreate.periodicite_coupons = newProjectData.periodicite_coupon;
-      }
-      if (newProjectData.maturite_mois) {
-        projectToCreate.maturite_mois = parseInt(newProjectData.maturite_mois);
-      }
-      if (newProjectData.base_interet) {
-        projectToCreate.base_interet = parseInt(newProjectData.base_interet);
-      }
 
       console.log('Project to create:', projectToCreate);
 
