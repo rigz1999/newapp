@@ -763,10 +763,18 @@ Deno.serve(async (req: Request) => {
 
               const dateEcheance = paymentDate.toISOString().split('T')[0];
 
+              // For the last payment, add the principal (nominal) repayment
+              const isLastPayment = (i === numberOfPayments);
+              const montantCoupon = isLastPayment
+                ? Math.round((couponPerPayment + sub.montant_investi) * 100) / 100  // Last: interest + principal
+                : Math.round(couponPerPayment * 100) / 100;  // Others: just interest
+
+              console.log(`    Coupon ${i}/${numberOfPayments}: date=${dateEcheance}, montant=${montantCoupon}€ ${isLastPayment ? '(avec remboursement nominal)' : ''}`);
+
               couponsToInsert.push({
                 souscription_id: sub.id,
                 date_echeance: dateEcheance,
-                montant_coupon: Math.round(couponPerPayment * 100) / 100, // Round to 2 decimals
+                montant_coupon: montantCoupon,
                 statut: 'en_attente',
               });
             }
