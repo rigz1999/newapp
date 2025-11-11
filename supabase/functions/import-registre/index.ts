@@ -212,8 +212,11 @@ Deno.serve(async (req: Request) => {
     console.log("Projet ID:", projetId);
     console.log("Nom tranche:", trancheName);
     console.log("Fichier:", file.name);
-    console.log("Taux nominal:", tauxNominal);
-    console.log("Périodicité:", periodiciteCoupons);
+    console.log("📊 Paramètres pour écheancier:");
+    console.log("  - Taux nominal:", tauxNominal);
+    console.log("  - Périodicité:", periodiciteCoupons);
+    console.log("  - Date émission (form):", dateEmissionForm);
+    console.log("  - Durée (mois):", dureeMois);
 
     // Supabase client (service role)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -688,21 +691,32 @@ Deno.serve(async (req: Request) => {
     }
 
     // Generate payment schedule (écheancier) for all subscriptions
-    if (tauxNominal && periodiciteCoupons && trancheEmissionDate && dureeMois) {
+    console.log("\n=== VÉRIFICATION CONDITIONS ÉCHEANCIER ===");
+    console.log("Vérification des paramètres requis:");
+    console.log("  ✓ Taux nominal:", tauxNominal, tauxNominal !== null ? "OK" : "MANQUANT");
+    console.log("  ✓ Périodicité coupons:", periodiciteCoupons, periodiciteCoupons ? "OK" : "MANQUANT");
+    console.log("  ✓ Date d'émission tranche:", trancheEmissionDate, trancheEmissionDate ? "OK" : "MANQUANT");
+    console.log("  ✓ Durée (mois):", dureeMois, dureeMois !== null ? "OK" : "MANQUANT");
+
+    // Use !== null to allow 0 values
+    if (tauxNominal !== null && periodiciteCoupons && trancheEmissionDate && dureeMois !== null) {
+      console.log("\n✅ Tous les paramètres présents! Génération de l'écheancier...");
       console.log("=== GÉNÉRATION ÉCHEANCIER ===");
 
-      // Map frequency to months between payments
-      const frequencyMap: Record<string, { months: number; paymentsPerYear: number }> = {
-        "annuel": { months: 12, paymentsPerYear: 1 },
-        "semestriel": { months: 6, paymentsPerYear: 2 },
-        "trimestriel": { months: 3, paymentsPerYear: 4 },
-      };
+      try {
+        // Map frequency to months between payments
+        const frequencyMap: Record<string, { months: number; paymentsPerYear: number }> = {
+          "annuel": { months: 12, paymentsPerYear: 1 },
+          "semestriel": { months: 6, paymentsPerYear: 2 },
+          "trimestriel": { months: 3, paymentsPerYear: 4 },
+        };
 
-      const freq = frequencyMap[periodiciteCoupons.toLowerCase()];
+        const freq = frequencyMap[periodiciteCoupons.toLowerCase()];
 
-      if (!freq) {
-        console.warn("⚠️ Périodicité inconnue:", periodiciteCoupons);
-      } else {
+        if (!freq) {
+          console.warn("⚠️ Périodicité inconnue:", periodiciteCoupons);
+          throw new Error(`Périodicité inconnue: ${periodiciteCoupons}`);
+        }
         // Calculate number of payments
         const numberOfPayments = Math.ceil(dureeMois / freq.months);
 
@@ -717,8 +731,13 @@ Deno.serve(async (req: Request) => {
           .eq("tranche_id", trancheId);
 
         if (subQueryErr) {
-          console.error("Erreur récupération souscriptions:", subQueryErr);
-        } else if (subscriptions && subscriptions.length > 0) {
+          console.error("❌ Erreur récupération souscriptions:", subQueryErr);
+          throw subQueryErr;
+        }
+
+        if (!subscriptions || subscriptions.length === 0) {
+          console.warn("⚠️ Aucune souscription trouvée pour générer l'écheancier");
+        } else {
           console.log(`Génération des coupons pour ${subscriptions.length} souscriptions...`);
 
           const couponsToInsert: any[] = [];
@@ -757,19 +776,40 @@ Deno.serve(async (req: Request) => {
 
             if (couponsErr) {
               console.error("❌ Erreur création coupons:", couponsErr);
+              throw couponsErr;
             } else {
               console.log("✅ Écheancier créé avec succès!");
+              console.log(`   Total coupons insérés: ${couponsToInsert.length}`);
             }
+          } else {
+            console.warn("⚠️ Aucun coupon à insérer");
           }
         }
+      } catch (echeancierError: any) {
+        console.error("❌ ERREUR LORS DE LA GÉNÉRATION DE L'ÉCHEANCIER:", echeancierError);
+        console.error("   Message:", echeancierError?.message);
+        console.error("   Stack:", echeancierError?.stack);
+        // Don't fail the entire import if écheancier generation fails
+        console.warn("⚠️ L'import a réussi mais l'écheancier n'a pas pu être généré.");
+        console.warn("   Vous pouvez le générer manuellement plus tard.");
       }
     } else {
-      console.log("⚠️ Données manquantes pour générer l'écheancier:");
-      console.log("  - Taux nominal:", tauxNominal);
-      console.log("  - Périodicité coupons:", periodiciteCoupons);
-      console.log("  - Date d'émission:", trancheEmissionDate);
-      console.log("  - Durée (mois):", dureeMois);
+      console.warn("\n❌ ÉCHEANCIER NON GÉNÉRÉ - Paramètres manquants");
+      console.warn("Pour générer l'écheancier, assurez-vous de remplir ces champs dans le formulaire:");
+      console.warn("  - Taux nominal:", tauxNominal || "❌ MANQUANT");
+      console.warn("  - Périodicité coupons:", periodiciteCoupons || "❌ MANQUANT");
+      console.warn("  - Date d'émission:", trancheEmissionDate || "❌ MANQUANT (vérifiez le CSV ou le formulaire)");
+      console.warn("  - Durée (mois):", dureeMois || "❌ MANQUANT");
+      console.warn("\n💡 Vous pouvez modifier la tranche plus tard pour ajouter ces informations.");
     }
+
+    console.log("\n=== 🎉 IMPORT TERMINÉ AVEC SUCCÈS ===");
+    console.log(`Tranche ID: ${trancheId}`);
+    console.log(`Nom: ${trancheName}`);
+    console.log(`Investisseurs: ${createdInvestisseurs} créés, ${updatedInvestisseurs} mis à jour`);
+    console.log(`Souscriptions: ${createdSouscriptions} créées`);
+    console.log(`Erreurs: ${errors.length}`);
+    console.log("=====================================\n");
 
     return new Response(
       JSON.stringify({
