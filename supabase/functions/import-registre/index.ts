@@ -288,6 +288,8 @@ Deno.serve(async (req: Request) => {
     console.log(`✅ Parsed ${rows.length} rows from CSV`);
 
     if (rows.length > 0) {
+      const firstRow = rows[0];
+      console.log("📋 Colonnes CSV détectées:", Object.keys(firstRow).filter(k => k !== '_investorType'));
       console.log("Première ligne (physique):", rows.find(r => r._investorType === "physique"));
       console.log("Première ligne (morale):", rows.find(r => r._investorType === "morale"));
     } else {
@@ -564,6 +566,13 @@ Deno.serve(async (req: Request) => {
         // Create subscription
         const quantite = toNumber(r["Quantité"]);
         const montant = toNumber(r["Montant"]);
+
+        console.log("📊 Valeurs CSV:", {
+          "Quantité (brut)": r["Quantité"],
+          "Montant (brut)": r["Montant"],
+          "quantite (parsé)": quantite,
+          "montant (parsé)": montant
+        });
 
         // Skip if no quantity or amount (empty row)
         if (!quantite || !montant || quantite <= 0 || montant <= 0) {
