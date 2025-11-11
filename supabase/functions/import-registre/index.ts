@@ -188,6 +188,13 @@ Deno.serve(async (req: Request) => {
     const dureeMoisStr = form.get("duree_mois");
     const dureeMois = dureeMoisStr ? parseInt(String(dureeMoisStr)) : null;
 
+    // Map periodicite_coupons to frequence (database field name) and provide defaults for required fields
+    const frequence = (periodiciteCoupons?.toLowerCase() === "annuel" || periodiciteCoupons?.toLowerCase() === "semestriel" || periodiciteCoupons?.toLowerCase() === "trimestriel")
+      ? periodiciteCoupons.toLowerCase() as "annuel" | "semestriel" | "trimestriel"
+      : "annuel"; // default
+    const tauxInteret = tauxNominal || 0; // default to 0 if not provided
+    const maturiteMois = dureeMois || 12; // default to 12 months if not provided
+
     if (!projetId || !trancheName || !file) {
       return new Response(
         JSON.stringify({
@@ -214,16 +221,27 @@ Deno.serve(async (req: Request) => {
 
     // 1) CREATE TRANCHE FIRST
     console.log("Création de la tranche...");
+    console.log("Données tranche:", {
+      projet_id: projetId,
+      tranche_name: trancheName,
+      frequence,
+      taux_nominal: tauxNominal,
+      taux_interet: tauxInteret,
+      maturite_mois: maturiteMois,
+      date_emission: dateEmissionForm,
+      date_echeance_finale: dateEcheanceFinale,
+    });
     const { data: trancheData, error: trancheError } = await supabase
       .from("tranches")
       .insert({
         projet_id: projetId,
         tranche_name: trancheName,
+        frequence: frequence,
         taux_nominal: tauxNominal,
-        periodicite_coupons: periodiciteCoupons,
+        taux_interet: tauxInteret,
+        maturite_mois: maturiteMois,
         date_emission: dateEmissionForm,
         date_echeance_finale: dateEcheanceFinale,
-        duree_mois: dureeMois,
       })
       .select()
       .single();
@@ -340,8 +358,9 @@ Deno.serve(async (req: Request) => {
           // Physical person
           const prenom = cleanString(r["Prénom(s)"]) || "";
           const nom = cleanString(r["Nom(s)"]) || "";
-          const nomUsage = cleanString(r["Nom d'usage"]);
-          investorName = [prenom, nomUsage || nom].filter(Boolean).join(" ").trim();
+          const nomUsage = cleanString(r["Nom d'usage"]) || "";
+          // Include all three fields: prénom + nom d'usage + nom
+          investorName = [prenom, nomUsage, nom].filter(Boolean).join(" ").trim();
 
           console.log("Nom complet:", investorName);
 
@@ -349,6 +368,10 @@ Deno.serve(async (req: Request) => {
           console.log("Email:", email);
 
           const dateNaissance = parseDate(r["Né(e) le"]);
+
+          // Extract CGP information
+          const cgpNom = cleanString(r["CGP"]) || null;
+          const cgpEmail = cleanString(r["Email du CGP"])?.toLowerCase() || null;
 
           // Try to find existing investor by email
           let existing = null;
@@ -396,6 +419,8 @@ Deno.serve(async (req: Request) => {
             lieu_naissance: cleanString(r["Lieu de naissance"]),
             ppe: toBool(r["PPE"]),
             categorie_mifid: cleanString(r["Catégorisation"]),
+            cgp_nom: cgpNom,
+            cgp_email: cgpEmail,
           };
 
           console.log("Payload investisseur physique");
@@ -443,6 +468,10 @@ Deno.serve(async (req: Request) => {
 
           const emailRepLegal = cleanString(r["Email du représentant légal"])?.toLowerCase() || null;
           console.log("Email rep legal:", emailRepLegal);
+
+          // Extract CGP information
+          const cgpNomMorale = cleanString(r["CGP"]) || null;
+          const cgpEmailMorale = cleanString(r["Email du CGP"])?.toLowerCase() || null;
 
           // Try to find by SIREN or email
           let existing = null;
@@ -493,6 +522,8 @@ Deno.serve(async (req: Request) => {
             departement_naissance: cleanString(r["Département de naissance du représentant"]),
             ppe: toBool(r["PPE"]),
             categorie_mifid: cleanString(r["Catégorisation"]),
+            cgp_nom: cgpNomMorale,
+            cgp_email: cgpEmailMorale,
           };
 
           console.log("Payload société");
@@ -614,7 +645,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Generate payment schedule (écheancier) for all subscriptions
-    if (tauxNominal && periodiciteCoupons && trancheEmissionDate && dureeMois) {
+    if (tauxNominal && frequence && trancheEmissionDate && maturiteMois) {
       console.log("=== GÉNÉRATION ÉCHEANCIER ===");
 
       // Map frequency to months between payments
@@ -624,17 +655,17 @@ Deno.serve(async (req: Request) => {
         "trimestriel": { months: 3, paymentsPerYear: 4 },
       };
 
-      const freq = frequencyMap[periodiciteCoupons.toLowerCase()];
+      const freq = frequencyMap[frequence.toLowerCase()];
 
       if (!freq) {
-        console.warn("⚠️ Périodicité inconnue:", periodiciteCoupons);
+        console.warn("⚠️ Périodicité inconnue:", frequence);
       } else {
         // Calculate number of payments
-        const numberOfPayments = Math.ceil(dureeMois / freq.months);
+        const numberOfPayments = Math.ceil(maturiteMois / freq.months);
 
         console.log("Nombre de paiements:", numberOfPayments);
         console.log("Taux nominal:", tauxNominal, "%");
-        console.log("Périodicité:", periodiciteCoupons, `(tous les ${freq.months} mois)`);
+        console.log("Périodicité:", frequence, `(tous les ${freq.months} mois)`);
 
         // Get all created subscriptions for this tranche
         const { data: subscriptions, error: subQueryErr } = await supabase
@@ -692,9 +723,9 @@ Deno.serve(async (req: Request) => {
     } else {
       console.log("⚠️ Données manquantes pour générer l'écheancier:");
       console.log("  - Taux nominal:", tauxNominal);
-      console.log("  - Périodicité:", periodiciteCoupons);
+      console.log("  - Fréquence:", frequence);
       console.log("  - Date d'émission:", trancheEmissionDate);
-      console.log("  - Durée (mois):", dureeMois);
+      console.log("  - Maturité (mois):", maturiteMois);
     }
 
     return new Response(

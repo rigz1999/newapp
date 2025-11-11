@@ -245,13 +245,6 @@ export function TrancheWizard({
                 console.warn("Erreurs d'import:", result.errors);
                 setError(`${result.errors.length} ligne(s) en erreur (voir console)`);
               }
-
-              // Redirect to project detail page after 2 seconds
-              setTimeout(() => {
-                onSuccess();
-                onClose();
-                navigate(`/projets/${selectedProjectId}`);
-              }, 2000);
             } else if (result.success && result.createdSouscriptions === 0) {
               setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
               console.error("Import terminé mais 0 souscriptions créées:", result);
@@ -516,10 +509,11 @@ export function TrancheWizard({
                 onClick={() => {
                   onSuccess();
                   onClose();
+                  navigate(`/projets/${selectedProjectId}`);
                 }}
                 className="w-full px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors"
               >
-                Terminer
+                Voir le projet
               </button>
             ) : (
               <>
