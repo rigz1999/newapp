@@ -4,7 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import { initSentry } from './config/sentry';
 
-// Initialize error tracking
+// Initialize error tracking and app
 initSentry();
 
 createRoot(document.getElementById('root')!).render(
