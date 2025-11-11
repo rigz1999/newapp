@@ -69,6 +69,24 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
   const [step, setStep] = useState<'select' | 'upload' | 'results'>('select');
 
+  // Close modal on ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // If confirmation modal is open, close it first
+        if (showConfirmModal) {
+          setShowConfirmModal(false);
+        } else {
+          // Otherwise close the main modal
+          onClose();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose, showConfirmModal]);
+
   const handleBackToSelect = () => {
     setStep('select');
     setSelectedProjectId('');
@@ -865,8 +883,8 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
       {/* CONFIRMATION MODAL */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]" onClick={() => setShowConfirmModal(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="p-6">
               <h3 className="text-lg font-bold text-slate-900 mb-4">Confirmer la validation</h3>
               
