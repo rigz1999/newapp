@@ -212,8 +212,11 @@ Deno.serve(async (req: Request) => {
     console.log("Projet ID:", projetId);
     console.log("Nom tranche:", trancheName);
     console.log("Fichier:", file.name);
-    console.log("Taux nominal:", tauxNominal);
-    console.log("Périodicité:", periodiciteCoupons);
+    console.log("📊 Paramètres pour écheancier:");
+    console.log("  - Taux nominal:", tauxNominal);
+    console.log("  - Périodicité:", periodiciteCoupons);
+    console.log("  - Date émission (form):", dateEmissionForm);
+    console.log("  - Durée (mois):", dureeMois);
 
     // Supabase client (service role)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -688,7 +691,15 @@ Deno.serve(async (req: Request) => {
     }
 
     // Generate payment schedule (écheancier) for all subscriptions
+    console.log("\n=== VÉRIFICATION CONDITIONS ÉCHEANCIER ===");
+    console.log("Vérification des paramètres requis:");
+    console.log("  ✓ Taux nominal:", tauxNominal, tauxNominal ? "OK" : "MANQUANT");
+    console.log("  ✓ Périodicité coupons:", periodiciteCoupons, periodiciteCoupons ? "OK" : "MANQUANT");
+    console.log("  ✓ Date d'émission tranche:", trancheEmissionDate, trancheEmissionDate ? "OK" : "MANQUANT");
+    console.log("  ✓ Durée (mois):", dureeMois, dureeMois ? "OK" : "MANQUANT");
+
     if (tauxNominal && periodiciteCoupons && trancheEmissionDate && dureeMois) {
+      console.log("\n✅ Tous les paramètres présents! Génération de l'écheancier...");
       console.log("=== GÉNÉRATION ÉCHEANCIER ===");
 
       // Map frequency to months between payments
@@ -764,11 +775,13 @@ Deno.serve(async (req: Request) => {
         }
       }
     } else {
-      console.log("⚠️ Données manquantes pour générer l'écheancier:");
-      console.log("  - Taux nominal:", tauxNominal);
-      console.log("  - Périodicité coupons:", periodiciteCoupons);
-      console.log("  - Date d'émission:", trancheEmissionDate);
-      console.log("  - Durée (mois):", dureeMois);
+      console.warn("\n❌ ÉCHEANCIER NON GÉNÉRÉ - Paramètres manquants");
+      console.warn("Pour générer l'écheancier, assurez-vous de remplir ces champs dans le formulaire:");
+      console.warn("  - Taux nominal:", tauxNominal || "❌ MANQUANT");
+      console.warn("  - Périodicité coupons:", periodiciteCoupons || "❌ MANQUANT");
+      console.warn("  - Date d'émission:", trancheEmissionDate || "❌ MANQUANT (vérifiez le CSV ou le formulaire)");
+      console.warn("  - Durée (mois):", dureeMois || "❌ MANQUANT");
+      console.warn("\n💡 Vous pouvez modifier la tranche plus tard pour ajouter ces informations.");
     }
 
     return new Response(
