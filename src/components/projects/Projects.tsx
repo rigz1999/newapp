@@ -223,7 +223,7 @@ export function Projects({ organization }: ProjectsProps) {
         console.warn('No taux_interet provided:', newProjectData.taux_interet);
       }
       if (newProjectData.montant_global_eur) {
-        projectToCreate.montant_global = parseInt(newProjectData.montant_global_eur.replace(/\s/g, ''));
+        projectToCreate.montant_global_eur = parseInt(newProjectData.montant_global_eur.replace(/\s/g, ''));
       }
       if (newProjectData.periodicite_coupon) {
         projectToCreate.periodicite_coupons = newProjectData.periodicite_coupon;
