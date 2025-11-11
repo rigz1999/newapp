@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X, Calendar, Coins } from 'lucide-react';
 
 interface Payment {
@@ -17,6 +18,17 @@ interface PaymentsModalProps {
 }
 
 export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }: PaymentsModalProps) {
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   const stats = {
     total: payments.length,
     payes: payments.filter(p => p.statut === 'Payé' || p.statut === 'payé').length,

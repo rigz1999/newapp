@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { X, Search, Calendar, Edit, Trash2 } from 'lucide-react';
 
 interface TranchesModalProps {
@@ -23,6 +23,17 @@ export function TranchesModal({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy] = useState<'date' | 'montant' | 'nom'>('date');
   const [sortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   // Enrichir les tranches avec les stats de souscriptions
   const enrichedTranches = useMemo(() => {

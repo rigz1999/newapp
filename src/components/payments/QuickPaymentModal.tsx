@@ -65,6 +65,17 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
     }
   }, [selectedTrancheId]);
 
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !showUpload) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose, showUpload]);
+
   const fetchProjects = async () => {
     setLoading(true);
     try {

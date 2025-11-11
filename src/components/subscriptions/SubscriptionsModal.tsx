@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { X, Search, Download, ArrowUpDown, Edit, Trash2 } from 'lucide-react';
 
 interface SubscriptionsModalProps {
@@ -23,6 +23,17 @@ export function SubscriptionsModal({
   const [filterCGP, setFilterCGP] = useState('all');
   const [sortBy, setSortBy] = useState<'date' | 'montant' | 'investisseur'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   // Extraire les tranches et CGP uniques
   const tranches = useMemo(() => {
