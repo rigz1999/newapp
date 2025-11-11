@@ -58,8 +58,8 @@ export default function PaymentRemindersModal({
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
   }, [isOpen, onClose, saving]);
 
   const fetchReminderSettings = async () => {

@@ -72,9 +72,9 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
+  }, [onClose, showUpload]);
 
   const fetchProjects = async () => {
     setLoading(true);

@@ -29,9 +29,9 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
+  }, [onClose, confirmDelete]);
 
   const downloadFile = (url: string, filename: string) => {
     const a = document.createElement('a');

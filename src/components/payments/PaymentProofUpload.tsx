@@ -48,11 +48,14 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        console.log('ESC pressed in PaymentProofUpload');
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+
+    // Add listener with capture phase to ensure it runs first
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
   }, [onClose]);
 
   const processFiles = (selectedFiles: File[]) => {
@@ -432,6 +435,8 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
       onClick={onClose}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => e.preventDefault()}
     >
       <div
         className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"

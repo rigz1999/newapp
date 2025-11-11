@@ -300,6 +300,32 @@ function Investors({ organization: _organization }: InvestorsProps) {
     setCurrentPage(1);
   }, [advancedFilters.filters]);
 
+  // Handle ESC key to close modals
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showDetailsModal) {
+          console.log('ESC pressed in Investor Details Modal');
+          setShowDetailsModal(false);
+        } else if (showEditModal) {
+          console.log('ESC pressed in Investor Edit Modal');
+          setShowEditModal(false);
+        } else if (showDeleteModal) {
+          console.log('ESC pressed in Investor Delete Modal');
+          setShowDeleteModal(false);
+        } else if (showRibModal) {
+          console.log('ESC pressed in RIB Upload Modal');
+          setShowRibModal(false);
+        } else if (showRibViewModal) {
+          console.log('ESC pressed in RIB View Modal');
+          setShowRibViewModal(false);
+        }
+      }
+    };
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
+  }, [showDetailsModal, showEditModal, showDeleteModal, showRibModal, showRibViewModal]);
+
   const fetchInvestors = async () => {
     setLoading(true);
 
@@ -989,8 +1015,8 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
       {/* Modals remain the same - I'll include key fixes in the details modal */}
       {showDetailsModal && selectedInvestor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowDetailsModal(false)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className={`p-3 rounded-lg ${
