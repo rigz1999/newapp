@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { FolderOpen, Plus, Layers, Search, Eye, Users, X } from 'lucide-react';
+import { FolderOpen, Plus, Layers, Search, Eye, Users, X, Trash2 } from 'lucide-react';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { CardSkeleton } from '../common/Skeleton';
 import { isValidSIREN } from '../../utils/validators';
@@ -142,6 +142,28 @@ export function Projects({ organization }: ProjectsProps) {
     } catch {
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string, projectName: string) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le projet "${projectName}" ?\n\nCette action supprimera également toutes les tranches, souscriptions et coupons associés. Cette action est irréversible.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projets')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      // Refresh project list
+      await fetchProjects();
+      triggerCacheInvalidation();
+    } catch (err: any) {
+      console.error('Erreur lors de la suppression du projet:', err);
+      alert(`Erreur lors de la suppression: ${err.message}`);
     }
   };
 
@@ -368,6 +390,16 @@ export function Projects({ organization }: ProjectsProps) {
                 >
                   <Eye className="w-4 h-4" />
                   Voir détails
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteProject(project.id, project.projet);
+                  }}
+                  className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                  title="Supprimer le projet"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
