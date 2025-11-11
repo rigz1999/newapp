@@ -759,10 +759,9 @@ Deno.serve(async (req: Request) => {
 
               couponsToInsert.push({
                 souscription_id: sub.id,
-                tranche_id: trancheId,
                 date_echeance: dateEcheance,
                 montant_coupon: Math.round(couponPerPayment * 100) / 100, // Round to 2 decimals
-                statut: 'à venir',
+                statut: 'en_attente',
               });
             }
           }
@@ -771,7 +770,7 @@ Deno.serve(async (req: Request) => {
           if (couponsToInsert.length > 0) {
             console.log(`Insertion de ${couponsToInsert.length} coupons...`);
             const { error: couponsErr } = await supabase
-              .from("coupons")
+              .from("coupons_echeances")
               .insert(couponsToInsert);
 
             if (couponsErr) {
