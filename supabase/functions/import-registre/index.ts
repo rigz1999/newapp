@@ -188,13 +188,6 @@ Deno.serve(async (req: Request) => {
     const dureeMoisStr = form.get("duree_mois");
     const dureeMois = dureeMoisStr ? parseInt(String(dureeMoisStr)) : null;
 
-    // Map periodicite_coupons to frequence (database field name) and provide defaults for required fields
-    const frequence = (periodiciteCoupons?.toLowerCase() === "annuel" || periodiciteCoupons?.toLowerCase() === "semestriel" || periodiciteCoupons?.toLowerCase() === "trimestriel")
-      ? periodiciteCoupons.toLowerCase() as "annuel" | "semestriel" | "trimestriel"
-      : "annuel"; // default
-    const tauxInteret = tauxNominal || 0; // default to 0 if not provided
-    const maturiteMois = dureeMois || 12; // default to 12 months if not provided
-
     if (!projetId || !trancheName || !file) {
       return new Response(
         JSON.stringify({
@@ -224,10 +217,9 @@ Deno.serve(async (req: Request) => {
     console.log("Données tranche:", {
       projet_id: projetId,
       tranche_name: trancheName,
-      frequence,
       taux_nominal: tauxNominal,
-      taux_interet: tauxInteret,
-      maturite_mois: maturiteMois,
+      periodicite_coupons: periodiciteCoupons,
+      duree_mois: dureeMois,
       date_emission: dateEmissionForm,
       date_echeance_finale: dateEcheanceFinale,
     });
@@ -236,10 +228,9 @@ Deno.serve(async (req: Request) => {
       .insert({
         projet_id: projetId,
         tranche_name: trancheName,
-        frequence: frequence,
         taux_nominal: tauxNominal,
-        taux_interet: tauxInteret,
-        maturite_mois: maturiteMois,
+        periodicite_coupons: periodiciteCoupons,
+        duree_mois: dureeMois,
         date_emission: dateEmissionForm,
         date_echeance_finale: dateEcheanceFinale,
       })
@@ -645,7 +636,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Generate payment schedule (écheancier) for all subscriptions
-    if (tauxNominal && frequence && trancheEmissionDate && maturiteMois) {
+    if (tauxNominal && periodiciteCoupons && trancheEmissionDate && dureeMois) {
       console.log("=== GÉNÉRATION ÉCHEANCIER ===");
 
       // Map frequency to months between payments
@@ -655,17 +646,17 @@ Deno.serve(async (req: Request) => {
         "trimestriel": { months: 3, paymentsPerYear: 4 },
       };
 
-      const freq = frequencyMap[frequence.toLowerCase()];
+      const freq = frequencyMap[periodiciteCoupons.toLowerCase()];
 
       if (!freq) {
-        console.warn("⚠️ Périodicité inconnue:", frequence);
+        console.warn("⚠️ Périodicité inconnue:", periodiciteCoupons);
       } else {
         // Calculate number of payments
-        const numberOfPayments = Math.ceil(maturiteMois / freq.months);
+        const numberOfPayments = Math.ceil(dureeMois / freq.months);
 
         console.log("Nombre de paiements:", numberOfPayments);
         console.log("Taux nominal:", tauxNominal, "%");
-        console.log("Périodicité:", frequence, `(tous les ${freq.months} mois)`);
+        console.log("Périodicité:", periodiciteCoupons, `(tous les ${freq.months} mois)`);
 
         // Get all created subscriptions for this tranche
         const { data: subscriptions, error: subQueryErr } = await supabase
@@ -723,9 +714,9 @@ Deno.serve(async (req: Request) => {
     } else {
       console.log("⚠️ Données manquantes pour générer l'écheancier:");
       console.log("  - Taux nominal:", tauxNominal);
-      console.log("  - Fréquence:", frequence);
+      console.log("  - Périodicité coupons:", periodiciteCoupons);
       console.log("  - Date d'émission:", trancheEmissionDate);
-      console.log("  - Maturité (mois):", maturiteMois);
+      console.log("  - Durée (mois):", dureeMois);
     }
 
     return new Response(
