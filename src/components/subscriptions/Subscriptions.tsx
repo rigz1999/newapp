@@ -18,6 +18,8 @@ interface Subscription {
   coupon_brut: number;
   coupon_net: number;
   prochaine_date_coupon: string | null;
+  cgp: string | null;
+  email_cgp: string | null;
   tranches: {
     tranche_name: string;
     projets: {
@@ -30,6 +32,8 @@ interface Subscription {
     nom_raison_sociale: string | null;
     representant_legal: string | null;
     email: string | null;
+    cgp: string | null;
+    email_cgp: string | null;
   };
 }
 
@@ -155,7 +159,9 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           type,
           nom_raison_sociale,
           representant_legal,
-          email
+          email,
+          cgp,
+          email_cgp
         )
       `
       )
@@ -287,6 +293,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       'Investisseur',
       'Type',
       'Email',
+      'CGP',
       'Date souscription',
       'Quantité',
       'Montant investi',
@@ -302,6 +309,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       sub.investisseurs.nom_raison_sociale || sub.investisseurs.representant_legal || '',
       sub.investisseurs.type,
       sub.investisseurs.email || '',
+      sub.cgp || sub.investisseurs.cgp || '',
       formatDate(sub.date_souscription),
       sub.nombre_obligations,
       sub.montant_investi,
@@ -576,6 +584,9 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       Investisseur
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                      CGP
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
                       Date
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
@@ -611,6 +622,9 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                         <div className="text-sm text-slate-600">
                           {sub.investisseurs.type.toLowerCase() === 'physique' ? 'Personne physique' : 'Personne morale'}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {sub.cgp || sub.investisseurs.cgp || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                         {formatDate(sub.date_souscription)}
@@ -911,6 +925,10 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                     <div className="flex justify-between">
                       <span className="text-sm text-slate-600">Email:</span>
                       <span className="text-sm font-medium text-slate-900">{viewingSubscription.investisseurs.email || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-slate-600">CGP:</span>
+                      <span className="text-sm font-medium text-slate-900">{viewingSubscription.cgp || viewingSubscription.investisseurs.cgp || '-'}</span>
                     </div>
                   </div>
                 </div>
