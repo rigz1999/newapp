@@ -51,9 +51,10 @@ export default function PaymentRemindersModal({
 
   // Handle ESC key to close modal
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen && !saving) {
-        console.log('ESC pressed in PaymentRemindersModal');
+      if (e.key === 'Escape' && !saving) {
         onClose();
       }
     };

@@ -69,7 +69,6 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !showUpload) {
-        console.log('ESC pressed in QuickPaymentModal');
         onClose();
       }
     };

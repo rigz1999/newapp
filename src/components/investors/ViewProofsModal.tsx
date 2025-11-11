@@ -26,7 +26,6 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !confirmDelete) {
-        console.log('ESC pressed in ViewProofsModal');
         onClose();
       }
     };

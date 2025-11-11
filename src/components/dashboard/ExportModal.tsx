@@ -156,9 +156,10 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
   // Handle ESC key to close modal
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen && !exporting) {
-        console.log('ESC pressed in ExportModal');
+      if (e.key === 'Escape' && !exporting) {
         onClose();
       }
     };

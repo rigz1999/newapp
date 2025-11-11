@@ -148,7 +148,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [showDetailsModal, showPaymentWizard]);
+  }, []);
 
   const fetchCoupons = async () => {
     setLoading(true);
