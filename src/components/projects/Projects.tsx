@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { FolderOpen, Plus, Layers, Search, Eye, Users, X, Trash2 } from 'lucide-react';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { CardSkeleton } from '../common/Skeleton';
+import { AlertModal } from '../common/Modals';
 import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
@@ -32,6 +33,11 @@ export function Projects({ organization }: ProjectsProps) {
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(searchParams.get('create') === 'true');
+
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deletingProject, setDeletingProject] = useState(false);
 
   // Advanced filters
   const advancedFilters = useAdvancedFilters({
@@ -145,18 +151,26 @@ export function Projects({ organization }: ProjectsProps) {
     }
   };
 
-  const handleDeleteProject = async (projectId: string, projectName: string) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer le projet "${projectName}" ?\n\nCette action supprimera également toutes les tranches, souscriptions et coupons associés. Cette action est irréversible.`)) {
-      return;
-    }
+  const handleDeleteProject = (projectId: string, projectName: string) => {
+    setProjectToDelete({ id: projectId, name: projectName });
+    setShowDeleteModal(true);
+  };
 
+  const confirmDeleteProject = async () => {
+    if (!projectToDelete) return;
+
+    setDeletingProject(true);
     try {
       const { error } = await supabase
         .from('projets')
         .delete()
-        .eq('id', projectId);
+        .eq('id', projectToDelete.id);
 
       if (error) throw error;
+
+      // Close modal and reset state
+      setShowDeleteModal(false);
+      setProjectToDelete(null);
 
       // Refresh project list
       await fetchProjects();
@@ -164,6 +178,8 @@ export function Projects({ organization }: ProjectsProps) {
     } catch (err: any) {
       console.error('Erreur lors de la suppression du projet:', err);
       alert(`Erreur lors de la suppression: ${err.message}`);
+    } finally {
+      setDeletingProject(false);
     }
   };
 
@@ -779,6 +795,38 @@ export function Projects({ organization }: ProjectsProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && projectToDelete && (
+        <AlertModal
+          type="danger"
+          title="Supprimer le projet"
+          message={
+            <div className="space-y-2">
+              <p>Êtes-vous sûr de vouloir supprimer le projet <strong>"{projectToDelete.name}"</strong> ?</p>
+              <p className="text-sm text-slate-600">
+                Cette action supprimera également :
+              </p>
+              <ul className="text-sm text-slate-600 list-disc list-inside space-y-1">
+                <li>Toutes les tranches associées</li>
+                <li>Toutes les souscriptions</li>
+                <li>Tous les coupons et paiements</li>
+              </ul>
+              <p className="text-sm font-semibold text-red-600 mt-3">
+                ⚠️ Cette action est irréversible.
+              </p>
+            </div>
+          }
+          confirmText={deletingProject ? "Suppression..." : "Supprimer définitivement"}
+          cancelText="Annuler"
+          onConfirm={confirmDeleteProject}
+          onCancel={() => {
+            setShowDeleteModal(false);
+            setProjectToDelete(null);
+          }}
+          disabled={deletingProject}
+        />
       )}
     </div>
   );
