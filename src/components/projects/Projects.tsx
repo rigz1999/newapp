@@ -210,10 +210,17 @@ export function Projects({ organization }: ProjectsProps) {
       };
 
       // Champs optionnels
-      if (newProjectData.taux_interet) {
+      if (newProjectData.taux_interet && newProjectData.taux_interet.trim() !== '') {
         const tauxValue = parseFloat(newProjectData.taux_interet);
-        projectToCreate.taux_interet = tauxValue;
-        projectToCreate.taux_nominal = tauxValue; // Save to both fields for compatibility
+        if (!isNaN(tauxValue)) {
+          console.log('Setting taux fields to:', tauxValue);
+          projectToCreate.taux_interet = tauxValue;
+          projectToCreate.taux_nominal = tauxValue; // Save to both fields for compatibility
+        } else {
+          console.warn('Invalid taux_interet value:', newProjectData.taux_interet);
+        }
+      } else {
+        console.warn('No taux_interet provided:', newProjectData.taux_interet);
       }
       if (newProjectData.montant_global_eur) {
         projectToCreate.montant_global = parseInt(newProjectData.montant_global_eur.replace(/\s/g, ''));
@@ -228,11 +235,15 @@ export function Projects({ organization }: ProjectsProps) {
         projectToCreate.base_interet = parseInt(newProjectData.base_interet);
       }
 
+      console.log('Project to create:', projectToCreate);
+
       const { data: _data, error } = await supabase
         .from('projets')
         .insert([projectToCreate] as never)
         .select()
         .single();
+
+      console.log('Created project:', _data);
 
       if (error) throw error;
 
