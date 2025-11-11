@@ -58,6 +58,16 @@ const cleanString = (s?: string | null): string | null => {
   return cleaned || null;
 };
 
+// Helper to get column value with fallback for encoding issues
+const getColumn = (row: Record<string, string>, ...columnNames: string[]): string | undefined => {
+  for (const name of columnNames) {
+    if (row[name] !== undefined) {
+      return row[name];
+    }
+  }
+  return undefined;
+};
+
 // Parse CSV with dual sections (Personnes Physiques / Personnes Morales)
 function parseCSV(text: string): Array<Record<string, string> & { _investorType: string }> {
   const lines = text.split(/\r?\n/);
@@ -288,6 +298,8 @@ Deno.serve(async (req: Request) => {
     console.log(`✅ Parsed ${rows.length} rows from CSV`);
 
     if (rows.length > 0) {
+      const firstRow = rows[0];
+      console.log("📋 Colonnes CSV détectées:", Object.keys(firstRow).filter(k => k !== '_investorType'));
       console.log("Première ligne (physique):", rows.find(r => r._investorType === "physique"));
       console.log("Première ligne (morale):", rows.find(r => r._investorType === "morale"));
     } else {
@@ -561,9 +573,16 @@ Deno.serve(async (req: Request) => {
           throw new Error("investisseurId est null");
         }
 
-        // Create subscription
-        const quantite = toNumber(r["Quantité"]);
-        const montant = toNumber(r["Montant"]);
+        // Create subscription - handle encoding issues with column names
+        const quantite = toNumber(getColumn(r, "Quantité", "Quantit�", "Quantite"));
+        const montant = toNumber(getColumn(r, "Montant"));
+
+        console.log("📊 Valeurs CSV:", {
+          "Quantité (brut)": getColumn(r, "Quantité", "Quantit�", "Quantite"),
+          "Montant (brut)": r["Montant"],
+          "quantite (parsé)": quantite,
+          "montant (parsé)": montant
+        });
 
         // Skip if no quantity or amount (empty row)
         if (!quantite || !montant || quantite <= 0 || montant <= 0) {
