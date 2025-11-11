@@ -120,6 +120,20 @@ export function TrancheWizard({
       const suggested = await getSuggestedTrancheName(projectId);
       setSuggestedName(suggested);
       setTrancheName(suggested);
+
+      // Fetch project financial data to auto-populate tranche fields
+      const { data: project } = await supabase
+        .from("projets")
+        .select("taux_interet, periodicite_coupons, maturite_mois")
+        .eq("id", projectId)
+        .single();
+
+      if (project) {
+        console.log("Auto-populating from project:", project);
+        if (project.taux_interet) setTauxNominal(project.taux_interet.toString());
+        if (project.periodicite_coupons) setPeriodiciteCoupons(project.periodicite_coupons);
+        if (project.maturite_mois) setDureeMois(project.maturite_mois.toString());
+      }
     }
   };
 
