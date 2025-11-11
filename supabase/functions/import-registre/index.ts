@@ -358,10 +358,10 @@ Deno.serve(async (req: Request) => {
         let investorName = "";
 
         if (investorType === "physique") {
-          // Physical person
-          const prenom = cleanString(r["Prénom(s)"]) || "";
-          const nom = cleanString(r["Nom(s)"]) || "";
-          const nomUsage = cleanString(r["Nom d'usage"]) || "";
+          // Physical person - handle encoding issues with column names
+          const prenom = cleanString(getColumn(r, "Prénom(s)", "Pr�nom(s)", "Prenom(s)")) || "";
+          const nom = cleanString(getColumn(r, "Nom(s)")) || "";
+          const nomUsage = cleanString(getColumn(r, "Nom d'usage")) || "";
 
           console.log("📝 Extraction nom:", { prenom, nom, nomUsage });
 
@@ -369,6 +369,12 @@ Deno.serve(async (req: Request) => {
           investorName = [prenom, nomUsage, nom].filter(Boolean).join(" ").trim();
 
           console.log("Nom complet:", investorName);
+
+          // Skip if no name at all
+          if (!investorName) {
+            console.warn("⚠️ Ligne ignorée - Pas de nom d'investisseur");
+            continue;
+          }
 
           const email = cleanString(r["Email"])?.toLowerCase() || null;
           console.log("Email:", email);
@@ -468,6 +474,12 @@ Deno.serve(async (req: Request) => {
           investorName = raisonSociale;
           console.log("Raison sociale:", raisonSociale);
 
+          // Skip if no company name
+          if (!investorName) {
+            console.warn("⚠️ Ligne ignorée - Pas de raison sociale");
+            continue;
+          }
+
           const sirenStr = cleanString(r["N° SIREN"]);
           const siren = sirenStr ? parseInt(sirenStr.replace(/\D/g, "")) : null;
           console.log("SIREN:", siren);
@@ -512,8 +524,8 @@ Deno.serve(async (req: Request) => {
             }
           }
 
-          const prenomRep = cleanString(r["Prénom du représentant légal"]) || "";
-          const nomRep = cleanString(r["Nom du représentant légal"]) || "";
+          const prenomRep = cleanString(getColumn(r, "Prénom du représentant légal", "Pr�nom du repr�sentant l�gal")) || "";
+          const nomRep = cleanString(getColumn(r, "Nom du représentant légal", "Nom du repr�sentant l�gal")) || "";
           const representantLegal = [prenomRep, nomRep].filter(Boolean).join(" ").trim() || null;
 
           const invPayload: any = {
@@ -597,11 +609,14 @@ Deno.serve(async (req: Request) => {
 
         console.log("Date souscription:", dateSouscription);
 
-        const cgp = cleanString(r["CGP"]);
-        const emailCgp = cleanString(r["Email du CGP"]);
-        const codeCgp = cleanString(r["Code du CGP"]);
-        const sirenCgpStr = cleanString(r["Siren du CGP"]);
+        // Extract CGP info for subscription - handle encoding issues
+        const cgp = cleanString(getColumn(r, "CGP"));
+        const emailCgp = cleanString(getColumn(r, "Email du CGP"));
+        const codeCgp = cleanString(getColumn(r, "Code du CGP"));
+        const sirenCgpStr = cleanString(getColumn(r, "Siren du CGP"));
         const sirenCgp = sirenCgpStr ? parseInt(sirenCgpStr.replace(/\D/g, "")) : null;
+
+        console.log("📋 CGP Info:", { cgp, emailCgp, codeCgp, sirenCgp });
 
         console.log("Création souscription - Quantité:", quantite, "Montant:", montant);
 
