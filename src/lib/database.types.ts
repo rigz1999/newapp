@@ -383,39 +383,42 @@ export interface Database {
           created_at?: string
         }
       }
-      coupons: {
+      coupons_echeances: {
         Row: {
           id: string
           souscription_id: string
-          tranche_id: string
           date_echeance: string
           montant_coupon: number
-          statut: 'à venir' | 'payé' | 'en retard'
+          statut: string
           date_paiement: string | null
-          jours_retard: number | null
+          montant_paye: number | null
+          paiement_id: string | null
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
           souscription_id: string
-          tranche_id: string
           date_echeance: string
           montant_coupon: number
-          statut?: 'à venir' | 'payé' | 'en retard'
+          statut?: string
           date_paiement?: string | null
-          jours_retard?: number | null
+          montant_paye?: number | null
+          paiement_id?: string | null
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
           souscription_id?: string
-          tranche_id?: string
           date_echeance?: string
           montant_coupon?: number
-          statut?: 'à venir' | 'payé' | 'en retard'
+          statut?: string
           date_paiement?: string | null
-          jours_retard?: number | null
+          montant_paye?: number | null
+          paiement_id?: string | null
           created_at?: string
+          updated_at?: string
         }
       }
       payment_proofs: {
