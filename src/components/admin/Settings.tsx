@@ -208,10 +208,24 @@ export default function Settings() {
       if (functionError) {
         console.error('Function error:', functionError);
         console.error('Function error context:', (functionError as any).context);
-        // Try to extract the actual error message from the response
-        const errorMsg = (functionError as any).context?.body?.error
-          || (functionError as any).context?.error
-          || data?.error
+
+        // Try to read the response body if available
+        const response = (functionError as any).context;
+        if (response && typeof response.text === 'function') {
+          try {
+            const errorText = await response.text();
+            console.error('Response body text:', errorText);
+            const errorJson = JSON.parse(errorText);
+            console.error('Response body JSON:', errorJson);
+            setErrorMessage(errorJson.error || 'Erreur lors du changement de mot de passe.');
+            return;
+          } catch (e) {
+            console.error('Could not parse error response:', e);
+          }
+        }
+
+        // Fallback error handling
+        const errorMsg = data?.error
           || functionError.message
           || 'Erreur lors du changement de mot de passe.';
         setErrorMessage(errorMsg);
