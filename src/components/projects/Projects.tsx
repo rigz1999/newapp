@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { FolderOpen, Plus, Layers, Search, Eye, Users, X, Trash2 } from 'lucide-react';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { CardSkeleton } from '../common/Skeleton';
-import { AlertModal } from '../common/Modals';
+import { ConfirmModal } from '../common/Modals';
 import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
@@ -798,36 +798,24 @@ export function Projects({ organization }: ProjectsProps) {
       )}
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && projectToDelete && (
-        <AlertModal
-          type="danger"
-          title="Supprimer le projet"
-          message={
-            <div className="space-y-2">
-              <p>Êtes-vous sûr de vouloir supprimer le projet <strong>"{projectToDelete.name}"</strong> ?</p>
-              <p className="text-sm text-slate-600">
-                Cette action supprimera également :
-              </p>
-              <ul className="text-sm text-slate-600 list-disc list-inside space-y-1">
-                <li>Toutes les tranches associées</li>
-                <li>Toutes les souscriptions</li>
-                <li>Tous les coupons et paiements</li>
-              </ul>
-              <p className="text-sm font-semibold text-red-600 mt-3">
-                ⚠️ Cette action est irréversible.
-              </p>
-            </div>
-          }
-          confirmText={deletingProject ? "Suppression..." : "Supprimer définitivement"}
-          cancelText="Annuler"
-          onConfirm={confirmDeleteProject}
-          onCancel={() => {
-            setShowDeleteModal(false);
-            setProjectToDelete(null);
-          }}
-          disabled={deletingProject}
-        />
-      )}
+      <ConfirmModal
+        isOpen={showDeleteModal && !!projectToDelete}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setProjectToDelete(null);
+        }}
+        onConfirm={confirmDeleteProject}
+        type="danger"
+        title="Supprimer le projet"
+        message={
+          projectToDelete
+            ? `Êtes-vous sûr de vouloir supprimer le projet "${projectToDelete.name}" ?\n\nCette action supprimera également toutes les tranches, souscriptions et coupons associés.\n\n⚠️ Cette action est irréversible.`
+            : ''
+        }
+        confirmText={deletingProject ? "Suppression..." : "Supprimer définitivement"}
+        cancelText="Annuler"
+        isLoading={deletingProject}
+      />
     </div>
   );
 }
