@@ -207,7 +207,14 @@ export default function Settings() {
 
       if (functionError) {
         console.error('Function error:', functionError);
-        setErrorMessage(functionError.message || 'Erreur lors du changement de mot de passe.');
+        console.error('Function error context:', (functionError as any).context);
+        // Try to extract the actual error message from the response
+        const errorMsg = (functionError as any).context?.body?.error
+          || (functionError as any).context?.error
+          || data?.error
+          || functionError.message
+          || 'Erreur lors du changement de mot de passe.';
+        setErrorMessage(errorMsg);
         return;
       }
 
