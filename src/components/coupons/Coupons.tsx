@@ -138,6 +138,18 @@ export function Coupons({ organization: _organization }: CouponsProps) {
     setCurrentPage(1);
   }, [advancedFilters.filters]);
 
+  // Handle ESC key to close modals
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showDetailsModal) setShowDetailsModal(false);
+        if (showPaymentWizard) setShowPaymentWizard(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showDetailsModal, showPaymentWizard]);
+
   const fetchCoupons = async () => {
     setLoading(true);
     try {
@@ -864,8 +876,14 @@ export function Coupons({ organization: _organization }: CouponsProps) {
 
       {/* Details Modal */}
       {showDetailsModal && selectedCoupon && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowDetailsModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-xl font-bold text-slate-900">Détail du Coupon</h3>
               <button
