@@ -31,7 +31,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose, confirmDelete]);
+  }, [onClose]);
 
   const downloadFile = (url: string, filename: string) => {
     const a = document.createElement('a');

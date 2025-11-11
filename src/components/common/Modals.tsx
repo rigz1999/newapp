@@ -44,8 +44,10 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   // Handle ESC key
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen && !isLoading) {
+      if (e.key === 'Escape' && !isLoading) {
         onClose();
       }
     };
@@ -152,8 +154,10 @@ export function AlertModal({
 }: AlertModalProps) {
   // Handle ESC key
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose();
       }
     };

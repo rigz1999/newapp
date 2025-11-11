@@ -220,10 +220,12 @@ export function Dashboard({ organization }: DashboardProps) {
   // Focus trap + Escape close for New Project modal
   useEffect(() => {
     if (!showNewProject) return;
+
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         resetNewProjectForm();
         setShowNewProject(false);
+        return;
       }
       if (e.key === 'Tab' && modalRef.current && firstFocusableRef.current && lastFocusableRef.current) {
         const focusable = modalRef.current.querySelectorAll<HTMLElement>(
