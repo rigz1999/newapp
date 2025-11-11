@@ -143,8 +143,17 @@ export function Layout({ organization }: LayoutProps) {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+      }
+    } catch (err) {
+      console.error('Unexpected logout error:', err);
+    } finally {
+      // Always navigate to login page, even if signOut fails
+      navigate('/', { replace: true });
+    }
   };
 
   const isActive = (path: string) => {
