@@ -211,7 +211,9 @@ export function Projects({ organization }: ProjectsProps) {
 
       // Champs optionnels
       if (newProjectData.taux_interet) {
-        projectToCreate.taux_nominal = parseFloat(newProjectData.taux_interet);
+        const tauxValue = parseFloat(newProjectData.taux_interet);
+        projectToCreate.taux_interet = tauxValue;
+        projectToCreate.taux_nominal = tauxValue; // Save to both fields for compatibility
       }
       if (newProjectData.montant_global_eur) {
         projectToCreate.montant_global = parseInt(newProjectData.montant_global_eur.replace(/\s/g, ''));
