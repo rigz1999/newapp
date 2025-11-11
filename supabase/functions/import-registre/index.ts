@@ -1,8 +1,7 @@
 // supabase/functions/import-registre/index.ts
-// Deno Edge Function: Parse CSV "Registre des titres" with semicolon separator
+// Deno Edge Function: Parse CSV "Registre des titres" with dual sections (Physiques/Morales)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
 
 /* ---------------- CORS ---------------- */
 const corsHeaders = {
@@ -16,20 +15,20 @@ const corsHeaders = {
 const parseDate = (value: any): string | null => {
   if (!value) return null;
   const v = String(value).trim();
-  
+
   // Format: dd/mm/yyyy
   const frMatch = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (frMatch) {
     const [_, dd, mm, yyyy] = frMatch;
     return `${yyyy}-${mm}-${dd}`;
   }
-  
+
   // Format: yyyy-mm-dd HH:MM:SS (from Excel/CSV export)
   const isoMatch = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) {
     return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
   }
-  
+
   return null;
 };
 
@@ -59,82 +58,100 @@ const cleanString = (s?: string | null): string | null => {
   return cleaned || null;
 };
 
-// Parse CSV manually with auto-detection of separator
-function parseCSV(text: string): Array<Record<string, string>> {
+// Parse CSV with dual sections (Personnes Physiques / Personnes Morales)
+function parseCSV(text: string): Array<Record<string, string> & { _investorType: string }> {
   const lines = text.split(/\r?\n/);
-  const result: Array<Record<string, string>> = [];
-  
+  const result: Array<Record<string, string> & { _investorType: string }> = [];
+
   // Auto-detect separator
-  let separator = ";";
-  const firstDataLine = lines.find(line => 
-    line.includes("Projet") && (line.includes("Quantité") || line.includes("Quantite"))
-  );
-  
-  if (firstDataLine) {
-    // Count separators to detect which one is used
-    const semicolonCount = (firstDataLine.match(/;/g) || []).length;
-    const commaCount = (firstDataLine.match(/,/g) || []).length;
-    const tabCount = (firstDataLine.match(/\t/g) || []).length;
-    
-    if (semicolonCount > Math.max(commaCount, tabCount)) {
-      separator = ";";
-    } else if (commaCount > Math.max(semicolonCount, tabCount)) {
-      separator = ",";
-    } else if (tabCount > 0) {
+  let separator = "\t"; // Default to tab
+  const sampleLine = lines.find(line => line.includes("Projet") && line.toLowerCase().includes("quantit"));
+
+  if (sampleLine) {
+    const tabCount = (sampleLine.match(/\t/g) || []).length;
+    const semicolonCount = (sampleLine.match(/;/g) || []).length;
+    const commaCount = (sampleLine.match(/,/g) || []).length;
+
+    if (tabCount > Math.max(semicolonCount, commaCount)) {
       separator = "\t";
+    } else if (semicolonCount > Math.max(tabCount, commaCount)) {
+      separator = ";";
+    } else if (commaCount > 0) {
+      separator = ",";
     }
-    
-    console.log("Séparateur détecté:", separator === ";" ? "point-virgule" : separator === "," ? "virgule" : "tabulation");
-    console.log("Ligne d'en-tête:", firstDataLine);
+
+    console.log("Séparateur détecté:", separator === "\t" ? "tabulation" : separator === ";" ? "point-virgule" : "virgule");
   }
-  
+
   let headers: string[] = [];
+  let currentSection: "physique" | "morale" | null = null;
   let inDataSection = false;
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-    
-    // Check if this is a header line
-    const isHeaderLine = (trimmed.includes("Projet") || trimmed.toLowerCase().includes("projet")) &&
-                        (trimmed.includes("Quantité") || trimmed.includes("Quantite") || 
-                         trimmed.toLowerCase().includes("quantité") || trimmed.toLowerCase().includes("quantite"));
-    
-    if (isHeaderLine) {
-      headers = trimmed.split(separator).map(h => h.trim());
-      inDataSection = true;
-      console.log("En-têtes trouvés:", headers);
+
+    // Detect section headers
+    if (trimmed.toLowerCase().includes("personnes physiques")) {
+      console.log("📍 Section détectée: Personnes Physiques");
+      currentSection = "physique";
+      inDataSection = false;
+      headers = [];
       continue;
     }
-    
-    // Skip title lines
-    if (trimmed.toLowerCase().includes("registre des titres") || 
-        trimmed.toLowerCase() === "total" ||
-        trimmed.toLowerCase().includes("personnes physiques") ||
-        trimmed.toLowerCase().includes("personnes morales")) {
+
+    if (trimmed.toLowerCase().includes("personnes morales")) {
+      console.log("📍 Section détectée: Personnes Morales");
+      currentSection = "morale";
+      inDataSection = false;
+      headers = [];
+      continue;
+    }
+
+    // Check if this is a header line (has "Projet" and "Quantit")
+    if ((trimmed.includes("Projet") || trimmed.toLowerCase().includes("projet")) &&
+        trimmed.toLowerCase().includes("quantit")) {
+      headers = trimmed.split(separator).map(h => h.trim());
+      inDataSection = true;
+      console.log(`En-têtes section ${currentSection}:`, headers.slice(0, 5), "... (total: " + headers.length + ")");
+      continue;
+    }
+
+    // Skip title/summary lines
+    if (trimmed.toLowerCase().includes("registre des titres") ||
+        trimmed.toLowerCase() === "total") {
       inDataSection = false;
       continue;
     }
-    
+
     // Parse data lines
-    if (inDataSection && headers.length > 0) {
+    if (inDataSection && headers.length > 0 && currentSection) {
       const values = line.split(separator);
-      
+
       // Check if this is a valid data row (has Projet value in first column)
       const firstValue = values[0] ? values[0].trim() : "";
-      if (firstValue && 
+      if (firstValue &&
           !firstValue.toLowerCase().includes("registre") &&
           !firstValue.toLowerCase().includes("total") &&
           firstValue.length > 0) {
-        const row: Record<string, string> = {};
+
+        const row: Record<string, string> & { _investorType: string } = {
+          _investorType: currentSection
+        };
+
         headers.forEach((header, index) => {
           row[header] = values[index] ? values[index].trim() : "";
         });
+
         result.push(row);
       }
     }
   }
-  
+
+  console.log(`✅ Total lignes parsées: ${result.length}`);
+  console.log(`   - Personnes physiques: ${result.filter(r => r._investorType === "physique").length}`);
+  console.log(`   - Personnes morales: ${result.filter(r => r._investorType === "morale").length}`);
+
   return result;
 }
 
@@ -152,7 +169,7 @@ Deno.serve(async (req: Request) => {
     const ctype = req.headers.get("content-type") ?? "";
     if (!ctype.includes("multipart/form-data")) {
       return new Response(
-        "Send multipart/form-data with fields: projet_id, tranche_id, file",
+        "Send multipart/form-data with fields: projet_id, tranche_name, file",
         { status: 400, headers: corsHeaders }
       );
     }
@@ -162,11 +179,27 @@ Deno.serve(async (req: Request) => {
     const trancheName = String(form.get("tranche_name") ?? "");
     const file = form.get("file") as File | null;
 
+    // Get optional tranche metadata from form
+    const tauxNominalStr = form.get("taux_nominal");
+    const tauxNominal = tauxNominalStr ? parseFloat(String(tauxNominalStr)) : null;
+    const periodiciteCoupons = form.get("periodicite_coupons") ? String(form.get("periodicite_coupons")) : null;
+    const dateEmissionForm = form.get("date_emission") ? String(form.get("date_emission")) : null;
+    const dateEcheanceFinale = form.get("date_echeance_finale") ? String(form.get("date_echeance_finale")) : null;
+    const dureeMoisStr = form.get("duree_mois");
+    const dureeMois = dureeMoisStr ? parseInt(String(dureeMoisStr)) : null;
+
+    // Map periodicite_coupons to frequence (database field name) and provide defaults for required fields
+    const frequence = (periodiciteCoupons?.toLowerCase() === "annuel" || periodiciteCoupons?.toLowerCase() === "semestriel" || periodiciteCoupons?.toLowerCase() === "trimestriel")
+      ? periodiciteCoupons.toLowerCase() as "annuel" | "semestriel" | "trimestriel"
+      : "annuel"; // default
+    const tauxInteret = tauxNominal || 0; // default to 0 if not provided
+    const maturiteMois = dureeMois || 12; // default to 12 months if not provided
+
     if (!projetId || !trancheName || !file) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: false,
-          error: "Missing projet_id, tranche_name or file" 
+          error: "Missing projet_id, tranche_name or file"
         }),
         { status: 400, headers: corsHeaders }
       );
@@ -176,6 +209,8 @@ Deno.serve(async (req: Request) => {
     console.log("Projet ID:", projetId);
     console.log("Nom tranche:", trancheName);
     console.log("Fichier:", file.name);
+    console.log("Taux nominal:", tauxNominal);
+    console.log("Périodicité:", periodiciteCoupons);
 
     // Supabase client (service role)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -186,11 +221,27 @@ Deno.serve(async (req: Request) => {
 
     // 1) CREATE TRANCHE FIRST
     console.log("Création de la tranche...");
+    console.log("Données tranche:", {
+      projet_id: projetId,
+      tranche_name: trancheName,
+      frequence,
+      taux_nominal: tauxNominal,
+      taux_interet: tauxInteret,
+      maturite_mois: maturiteMois,
+      date_emission: dateEmissionForm,
+      date_echeance_finale: dateEcheanceFinale,
+    });
     const { data: trancheData, error: trancheError } = await supabase
       .from("tranches")
       .insert({
         projet_id: projetId,
         tranche_name: trancheName,
+        frequence: frequence,
+        taux_nominal: tauxNominal,
+        taux_interet: tauxInteret,
+        maturite_mois: maturiteMois,
+        date_emission: dateEmissionForm,
+        date_echeance_finale: dateEcheanceFinale,
       })
       .select()
       .single();
@@ -198,9 +249,9 @@ Deno.serve(async (req: Request) => {
     if (trancheError) {
       console.error("Erreur création tranche:", trancheError);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: false,
-          error: `Erreur création tranche: ${trancheError.message}` 
+          error: `Erreur création tranche: ${trancheError.message}`
         }),
         { status: 500, headers: corsHeaders }
       );
@@ -208,9 +259,9 @@ Deno.serve(async (req: Request) => {
 
     if (!trancheData) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: false,
-          error: "Tranche non créée (données manquantes)" 
+          error: "Tranche non créée (données manquantes)"
         }),
         { status: 500, headers: corsHeaders }
       );
@@ -218,127 +269,74 @@ Deno.serve(async (req: Request) => {
 
     const trancheId = trancheData.id;
     console.log("Tranche créée avec succès, ID:", trancheId);
-    
-    // Get tranche emission date for subscriptions
-    const trancheEmissionDate = trancheData.date_emission || null;
-    console.log("Date d'émission de la tranche:", trancheEmissionDate);
 
-    // Read file
+    // Read file as text (CSV/TSV)
     console.log("=== ANALYSE DU FICHIER ===");
     console.log("Nom:", file.name);
     console.log("Type:", file.type);
     console.log("Taille:", file.size, "bytes");
-    
-    let rows: Array<Record<string, string>> = [];
-    
-    // Check if Excel or CSV
-    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || 
-                    file.type.includes('spreadsheet') || file.type.includes('excel');
-    
-    if (isExcel) {
-      console.log("📊 Format détecté: Excel");
-      
-      // Read as array buffer
-      const arrayBuffer = await file.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-      
-      console.log("Feuilles trouvées:", workbook.SheetNames);
-      
-      // Get first sheet
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      
-      // Convert to JSON (array of objects)
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { 
-        header: 1,
-        raw: false,
-        dateNF: 'yyyy-mm-dd'
-      }) as any[][];
-      
-      console.log("Lignes brutes lues:", jsonData.length);
-      
-      // Parse the rows to find headers and data
-      let headers: string[] = [];
-      let inDataSection = false;
-      
-      for (let i = 0; i < jsonData.length; i++) {
-        const row = jsonData[i];
-        if (!row || row.length === 0) continue;
-        
-        const firstCell = String(row[0] || "").trim();
-        
-        // Check if header row
-        if ((firstCell.toLowerCase().includes("projet") || firstCell === "Projet") && 
-            row.some((cell: any) => String(cell || "").toLowerCase().includes("quantit"))) {
-          headers = row.map((cell: any) => String(cell || "").trim());
-          inDataSection = true;
-          console.log("En-têtes trouvés ligne", i + 1, ":", headers);
-          continue;
-        }
-        
-        // Skip section titles
-        if (firstCell.toLowerCase().includes("registre") || 
-            firstCell.toLowerCase().includes("total") ||
-            firstCell.toLowerCase().includes("personnes")) {
-          inDataSection = false;
-          continue;
-        }
-        
-        // Parse data rows
-        if (inDataSection && headers.length > 0 && firstCell && firstCell.length > 0) {
-          const rowObj: Record<string, string> = {};
-          headers.forEach((header, idx) => {
-            rowObj[header] = String(row[idx] || "").trim();
-          });
-          rows.push(rowObj);
-        }
-      }
-      
-      console.log("✅ Lignes de données extraites:", rows.length);
-      
-    } else {
-      console.log("📄 Format détecté: CSV");
-      
-      // Read as text
-      const text = await file.text();
-      console.log("Taille:", text.length, "caractères");
-      console.log("Premières 1000 caractères:");
-      console.log(text.substring(0, 1000));
-      console.log("---");
-      
-      // Detect encoding issues
-      if (text.includes("�") || text.includes("Ã©") || text.includes("Ã")) {
-        console.warn("⚠️ PROBLÈME D'ENCODAGE DÉTECTÉ!");
-      }
-      
-      // Count lines
-      const lineCount = text.split(/\r?\n/).length;
-      console.log("Nombre de lignes:", lineCount);
-      
-      // Parse CSV
-      rows = parseCSV(text);
-      
-      console.log(`✅ Parsed ${rows.length} rows from CSV`);
+
+    const text = await file.text();
+    console.log("Taille:", text.length, "caractères");
+    console.log("Premières 500 caractères:");
+    console.log(text.substring(0, 500));
+    console.log("---");
+
+    // Detect encoding issues
+    if (text.includes("�") || text.includes("Ã©") || text.includes("Ã")) {
+      console.warn("⚠️ PROBLÈME D'ENCODAGE DÉTECTÉ!");
     }
-    
+
+    // Count lines
+    const lineCount = text.split(/\r?\n/).length;
+    console.log("Nombre de lignes:", lineCount);
+
+    // Parse CSV
+    const rows = parseCSV(text);
+
+    console.log(`✅ Parsed ${rows.length} rows from CSV`);
+
     if (rows.length > 0) {
-      console.log("Colonnes détectées:", Object.keys(rows[0]));
-      console.log("Première ligne de données:", rows[0]);
-      if (rows[1]) console.log("Deuxième ligne de données:", rows[1]);
+      console.log("Première ligne (physique):", rows.find(r => r._investorType === "physique"));
+      console.log("Première ligne (morale):", rows.find(r => r._investorType === "morale"));
     } else {
       console.error("❌ AUCUNE LIGNE DÉTECTÉE!");
-      
+
       await supabase.from("tranches").delete().eq("id", trancheId);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Aucune donnée trouvée dans le fichier. Vérifiez le format. Utilisez de préférence un fichier Excel (.xlsx)",
+          error: "Aucune donnée trouvée dans le fichier. Vérifiez le format.",
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, "content-type": "application/json" } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, "content-type": "application/json" }
         }
       );
     }
+
+    // Find earliest Date de Transfert from CSV to set as tranche date_emission
+    let earliestDateTransfert: string | null = null;
+    for (const r of rows) {
+      const dateTransfert = parseDate(r["Date de Transfert"]);
+      if (dateTransfert) {
+        if (!earliestDateTransfert || dateTransfert < earliestDateTransfert) {
+          earliestDateTransfert = dateTransfert;
+        }
+      }
+    }
+
+    // Update tranche with the earliest date_emission from CSV if found and not provided by form
+    if (earliestDateTransfert && !dateEmissionForm) {
+      console.log("Mise à jour date_emission de la tranche:", earliestDateTransfert);
+      await supabase
+        .from("tranches")
+        .update({ date_emission: earliestDateTransfert })
+        .eq("id", trancheId);
+    }
+
+    const trancheEmissionDate = earliestDateTransfert || dateEmissionForm || null;
+    console.log("Date d'émission finale de la tranche:", trancheEmissionDate);
 
     let total = 0;
     let createdInvestisseurs = 0;
@@ -350,13 +348,9 @@ Deno.serve(async (req: Request) => {
       total++;
       try {
         console.log(`\n=== TRAITEMENT LIGNE ${total} ===`);
-        console.log("Données brutes:", r);
-        
-        // Determine investor type based on available fields
-        const isPersonneMorale = r["Raison sociale"] || r["N° SIREN"];
-        const investorType = isPersonneMorale ? "morale" : "physique";
-        console.log("Type investisseur:", investorType);
+        console.log("Type:", r._investorType);
 
+        const investorType = r._investorType;
         let investisseurId: string | null = null;
         let investorName = "";
 
@@ -364,17 +358,22 @@ Deno.serve(async (req: Request) => {
           // Physical person
           const prenom = cleanString(r["Prénom(s)"]) || "";
           const nom = cleanString(r["Nom(s)"]) || "";
-          const nomUsage = cleanString(r["Nom d'usage"]);
-          investorName = [prenom, nomUsage || nom].filter(Boolean).join(" ").trim();
-          
+          const nomUsage = cleanString(r["Nom d'usage"]) || "";
+          // Include all three fields: prénom + nom d'usage + nom
+          investorName = [prenom, nomUsage, nom].filter(Boolean).join(" ").trim();
+
           console.log("Nom complet:", investorName);
-          
+
           const email = cleanString(r["Email"])?.toLowerCase() || null;
           console.log("Email:", email);
-          
+
           const dateNaissance = parseDate(r["Né(e) le"]);
-          
-          // Try to find existing investor by email AND name (stricter matching)
+
+          // Extract CGP information
+          const cgpNom = cleanString(r["CGP"]) || null;
+          const cgpEmail = cleanString(r["Email du CGP"])?.toLowerCase() || null;
+
+          // Try to find existing investor by email
           let existing = null;
           if (email) {
             const { data, error: qErr } = await supabase
@@ -390,8 +389,8 @@ Deno.serve(async (req: Request) => {
             existing = data;
             console.log("Investisseur existant trouvé par email:", existing ? "OUI (ID: " + existing.id + ")" : "NON");
           }
-          
-          // If no email match, try by name and birthdate (very strict)
+
+          // If no email match, try by name and birthdate
           if (!existing && investorName && dateNaissance) {
             const { data, error: qErr } = await supabase
               .from("investisseurs")
@@ -420,9 +419,11 @@ Deno.serve(async (req: Request) => {
             lieu_naissance: cleanString(r["Lieu de naissance"]),
             ppe: toBool(r["PPE"]),
             categorie_mifid: cleanString(r["Catégorisation"]),
+            cgp_nom: cgpNom,
+            cgp_email: cgpEmail,
           };
-          
-          console.log("Payload investisseur:", invPayload);
+
+          console.log("Payload investisseur physique");
 
           if (!existing) {
             console.log("Création nouvel investisseur...");
@@ -436,7 +437,6 @@ Deno.serve(async (req: Request) => {
               throw insErr;
             }
             if (!ins || !ins.id) {
-              console.error("Investisseur créé mais pas d'ID retourné!");
               throw new Error("Pas d'ID investisseur retourné");
             }
             investisseurId = ins.id;
@@ -461,14 +461,18 @@ Deno.serve(async (req: Request) => {
           const raisonSociale = cleanString(r["Raison sociale"]) || "";
           investorName = raisonSociale;
           console.log("Raison sociale:", raisonSociale);
-          
+
           const sirenStr = cleanString(r["N° SIREN"]);
           const siren = sirenStr ? parseInt(sirenStr.replace(/\D/g, "")) : null;
           console.log("SIREN:", siren);
-          
+
           const emailRepLegal = cleanString(r["Email du représentant légal"])?.toLowerCase() || null;
           console.log("Email rep legal:", emailRepLegal);
-          
+
+          // Extract CGP information
+          const cgpNomMorale = cleanString(r["CGP"]) || null;
+          const cgpEmailMorale = cleanString(r["Email du CGP"])?.toLowerCase() || null;
+
           // Try to find by SIREN or email
           let existing = null;
           if (siren) {
@@ -485,7 +489,7 @@ Deno.serve(async (req: Request) => {
             existing = data;
             console.log("Société existante trouvée par SIREN:", existing ? "OUI (ID: " + existing.id + ")" : "NON");
           }
-          
+
           // Try by email if no SIREN match
           if (!existing && emailRepLegal) {
             const { data, error: qErr } = await supabase
@@ -518,9 +522,11 @@ Deno.serve(async (req: Request) => {
             departement_naissance: cleanString(r["Département de naissance du représentant"]),
             ppe: toBool(r["PPE"]),
             categorie_mifid: cleanString(r["Catégorisation"]),
+            cgp_nom: cgpNomMorale,
+            cgp_email: cgpEmailMorale,
           };
-          
-          console.log("Payload société:", invPayload);
+
+          console.log("Payload société");
 
           if (!existing) {
             console.log("Création nouvelle société...");
@@ -534,7 +540,6 @@ Deno.serve(async (req: Request) => {
               throw insErr;
             }
             if (!ins || !ins.id) {
-              console.error("Société créée mais pas d'ID retourné!");
               throw new Error("Pas d'ID société retourné");
             }
             investisseurId = ins.id;
@@ -558,20 +563,20 @@ Deno.serve(async (req: Request) => {
 
         // Verify we have an investor ID before creating subscription
         if (!investisseurId) {
-          console.error("❌ PAS D'ID INVESTISSEUR APRÈS CRÉATION/UPDATE!");
+          console.error("❌ PAS D'ID INVESTISSEUR!");
           throw new Error("investisseurId est null");
         }
 
         // Create subscription
         const quantite = toNumber(r["Quantité"]);
         const montant = toNumber(r["Montant"]);
-        
-        // Use tranche emission date if no subscription date in CSV
+
+        // Use Date de Transfert from CSV as subscription date
         const dateSouscriptionCSV = parseDate(r["Date de souscription"]);
-        const dateSouscription = dateSouscriptionCSV || trancheEmissionDate || null;
-        
-        console.log("Date souscription CSV:", dateSouscriptionCSV);
-        console.log("Date souscription finale:", dateSouscription);
+        const dateTransfert = parseDate(r["Date de Transfert"]);
+        const dateSouscription = dateSouscriptionCSV || dateTransfert || trancheEmissionDate || null;
+
+        console.log("Date souscription:", dateSouscription);
 
         const cgp = cleanString(r["CGP"]);
         const emailCgp = cleanString(r["Email du CGP"]);
@@ -579,8 +584,7 @@ Deno.serve(async (req: Request) => {
         const sirenCgpStr = cleanString(r["Siren du CGP"]);
         const sirenCgp = sirenCgpStr ? parseInt(sirenCgpStr.replace(/\D/g, "")) : null;
 
-        console.log("Création souscription pour investisseur:", investisseurId);
-        console.log("Quantité:", quantite, "Montant:", montant);
+        console.log("Création souscription - Quantité:", quantite, "Montant:", montant);
 
         const { error: subErr } = await supabase
           .from("souscriptions")
@@ -592,7 +596,7 @@ Deno.serve(async (req: Request) => {
             nombre_obligations: quantite,
             montant_investi: montant,
             date_validation_bs: parseDate(r["Date de Validation BS"]),
-            date_transfert: parseDate(r["Date de Transfert"]),
+            date_transfert: dateTransfert,
             pea: r["PEA / PEA-PME"] ? true : null,
             pea_compte: cleanString(r["Numéro de Compte PEA / PEA-PME"]),
             cgp,
@@ -625,7 +629,7 @@ Deno.serve(async (req: Request) => {
     if (createdSouscriptions === 0) {
       console.warn("⚠️ Aucune souscription créée, suppression de la tranche");
       await supabase.from("tranches").delete().eq("id", trancheId);
-      
+
       return new Response(
         JSON.stringify({
           success: false,
@@ -633,11 +637,95 @@ Deno.serve(async (req: Request) => {
           total,
           errors,
         }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, "content-type": "application/json" } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, "content-type": "application/json" }
         }
       );
+    }
+
+    // Generate payment schedule (écheancier) for all subscriptions
+    if (tauxNominal && frequence && trancheEmissionDate && maturiteMois) {
+      console.log("=== GÉNÉRATION ÉCHEANCIER ===");
+
+      // Map frequency to months between payments
+      const frequencyMap: Record<string, { months: number; paymentsPerYear: number }> = {
+        "annuel": { months: 12, paymentsPerYear: 1 },
+        "semestriel": { months: 6, paymentsPerYear: 2 },
+        "trimestriel": { months: 3, paymentsPerYear: 4 },
+      };
+
+      const freq = frequencyMap[frequence.toLowerCase()];
+
+      if (!freq) {
+        console.warn("⚠️ Périodicité inconnue:", frequence);
+      } else {
+        // Calculate number of payments
+        const numberOfPayments = Math.ceil(maturiteMois / freq.months);
+
+        console.log("Nombre de paiements:", numberOfPayments);
+        console.log("Taux nominal:", tauxNominal, "%");
+        console.log("Périodicité:", frequence, `(tous les ${freq.months} mois)`);
+
+        // Get all created subscriptions for this tranche
+        const { data: subscriptions, error: subQueryErr } = await supabase
+          .from("souscriptions")
+          .select("id, montant_investi")
+          .eq("tranche_id", trancheId);
+
+        if (subQueryErr) {
+          console.error("Erreur récupération souscriptions:", subQueryErr);
+        } else if (subscriptions && subscriptions.length > 0) {
+          console.log(`Génération des coupons pour ${subscriptions.length} souscriptions...`);
+
+          const couponsToInsert: any[] = [];
+
+          for (const sub of subscriptions) {
+            // Calculate coupon amount per payment
+            // Formula: (montant_investi * taux_nominal / 100) / paymentsPerYear
+            const annualCoupon = (sub.montant_investi * tauxNominal) / 100;
+            const couponPerPayment = annualCoupon / freq.paymentsPerYear;
+
+            console.log(`  Souscription ${sub.id}: Montant=${sub.montant_investi}€, Coupon/période=${couponPerPayment.toFixed(2)}€`);
+
+            // Generate payment dates
+            for (let i = 1; i <= numberOfPayments; i++) {
+              const paymentDate = new Date(trancheEmissionDate);
+              paymentDate.setMonth(paymentDate.getMonth() + (i * freq.months));
+
+              const dateEcheance = paymentDate.toISOString().split('T')[0];
+
+              couponsToInsert.push({
+                souscription_id: sub.id,
+                tranche_id: trancheId,
+                date_echeance: dateEcheance,
+                montant_coupon: Math.round(couponPerPayment * 100) / 100, // Round to 2 decimals
+                statut: 'à venir',
+              });
+            }
+          }
+
+          // Bulk insert coupons
+          if (couponsToInsert.length > 0) {
+            console.log(`Insertion de ${couponsToInsert.length} coupons...`);
+            const { error: couponsErr } = await supabase
+              .from("coupons")
+              .insert(couponsToInsert);
+
+            if (couponsErr) {
+              console.error("❌ Erreur création coupons:", couponsErr);
+            } else {
+              console.log("✅ Écheancier créé avec succès!");
+            }
+          }
+        }
+      }
+    } else {
+      console.log("⚠️ Données manquantes pour générer l'écheancier:");
+      console.log("  - Taux nominal:", tauxNominal);
+      console.log("  - Fréquence:", frequence);
+      console.log("  - Date d'émission:", trancheEmissionDate);
+      console.log("  - Maturité (mois):", maturiteMois);
     }
 
     return new Response(
@@ -651,22 +739,22 @@ Deno.serve(async (req: Request) => {
         createdSouscriptions,
         errors,
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, "content-type": "application/json" } 
+      {
+        status: 200,
+        headers: { ...corsHeaders, "content-type": "application/json" }
       }
     );
 
   } catch (err: any) {
     console.error("Global error:", err);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: false,
-        error: err?.message ?? String(err) 
+        error: err?.message ?? String(err)
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, "content-type": "application/json" } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, "content-type": "application/json" }
       }
     );
   }
