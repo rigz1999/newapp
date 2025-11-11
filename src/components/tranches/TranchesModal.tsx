@@ -28,11 +28,12 @@ export function TranchesModal({
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        console.log('ESC pressed in TranchesModal');
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
   }, [onClose]);
 
   // Enrichir les tranches avec les stats de souscriptions

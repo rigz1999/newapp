@@ -26,11 +26,12 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !confirmDelete) {
+        console.log('ESC pressed in ViewProofsModal');
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
   }, [onClose, confirmDelete]);
 
   const downloadFile = (url: string, filename: string) => {

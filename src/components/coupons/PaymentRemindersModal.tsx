@@ -53,11 +53,12 @@ export default function PaymentRemindersModal({
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen && !saving) {
+        console.log('ESC pressed in PaymentRemindersModal');
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
   }, [isOpen, onClose, saving]);
 
   const fetchReminderSettings = async () => {

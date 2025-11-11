@@ -22,11 +22,12 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        console.log('ESC pressed in PaymentsModal');
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
   }, [onClose]);
 
   const stats = {

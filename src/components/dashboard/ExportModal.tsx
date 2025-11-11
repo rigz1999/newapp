@@ -158,11 +158,12 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen && !exporting) {
+        console.log('ESC pressed in ExportModal');
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
   }, [isOpen, onClose, exporting]);
 
   const handlePresetClick = (preset: ExportPreset) => {

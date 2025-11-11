@@ -69,11 +69,12 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !showUpload) {
+        console.log('ESC pressed in QuickPaymentModal');
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    document.addEventListener('keydown', handleEsc, { capture: true });
+    return () => document.removeEventListener('keydown', handleEsc, { capture: true });
   }, [onClose, showUpload]);
 
   const fetchProjects = async () => {
