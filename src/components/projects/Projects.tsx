@@ -62,9 +62,14 @@ export function Projects({ organization }: ProjectsProps) {
     email_rep_masse: '',
     telephone_rep_masse: '',
   });
-  
+
   const [sirenError, setSirenError] = useState('');
   const [creatingProject, setCreatingProject] = useState(false);
+
+  // For superadmin: organization selection
+  const isSuperAdmin = organization.id === 'admin';
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>('');
 
   useEffect(() => {
     // Clear legacy advanced filters from localStorage
@@ -99,6 +104,20 @@ export function Projects({ organization }: ProjectsProps) {
       setShowCreateModal(true);
     }
   }, [searchParams]);
+
+  // Fetch organizations for superadmin
+  useEffect(() => {
+    if (isSuperAdmin) {
+      const fetchOrganizations = async () => {
+        const { data } = await supabase
+          .from('organizations')
+          .select('id, name')
+          .order('name', { ascending: true });
+        setOrganizations(data || []);
+      };
+      fetchOrganizations();
+    }
+  }, [isSuperAdmin]);
 
   // Apply search filter
   const filteredProjects = useMemo(() => {
@@ -209,9 +228,6 @@ export function Projects({ organization }: ProjectsProps) {
         ? parseInt(newProjectData.base_interet)
         : 360;
 
-      // Check if organization.id is a valid UUID (not "admin" or other string)
-      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(organization.id);
-
       const projectToCreate: any = {
         projet: newProjectData.projet,
         type: newProjectData.type || null,
@@ -232,9 +248,12 @@ export function Projects({ organization }: ProjectsProps) {
         base_interet: baseInteret,
       };
 
-      // Only add org_id if it's a valid UUID (regular users)
-      // Superadmins (organization.id = "admin") create projects without org_id
-      if (isValidUUID) {
+      // Determine org_id based on user type
+      if (isSuperAdmin) {
+        // Superadmin: use selected organization (or null if none selected)
+        projectToCreate.org_id = selectedOrgId || null;
+      } else {
+        // Regular user: automatically assign to their organization
         projectToCreate.org_id = organization.id;
       }
 
@@ -282,6 +301,7 @@ export function Projects({ organization }: ProjectsProps) {
       telephone_rep_masse: '',
     });
     setSirenError('');
+    setSelectedOrgId('');
   };
 
   const isFormValid = newProjectData.projet.trim() !== '' &&
@@ -476,6 +496,31 @@ export function Projects({ organization }: ProjectsProps) {
                       placeholder="Ex: GreenTech 2025"
                     />
                   </div>
+
+                  {/* Organization selection for superadmin */}
+                  {isSuperAdmin && (
+                    <div>
+                      <label htmlFor="organization" className="block text-sm font-medium text-slate-900 mb-2">
+                        Organisation
+                      </label>
+                      <select
+                        id="organization"
+                        value={selectedOrgId}
+                        onChange={(e) => setSelectedOrgId(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                      >
+                        <option value="">Aucune organisation (visible par tous)</option>
+                        {organizations.map((org) => (
+                          <option key={org.id} value={org.id}>
+                            {org.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-xs text-slate-600">
+                        Si aucune organisation n'est sélectionnée, le projet sera visible par tous les utilisateurs
+                      </p>
+                    </div>
+                  )}
 
                   {/* Champs financiers */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
