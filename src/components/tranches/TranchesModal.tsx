@@ -110,29 +110,29 @@ export function TranchesModal({
 
         {/* Table */}
         <div className="flex-1 overflow-y-auto bg-slate-50">
-          <div className="pb-6">
+          <div className="p-6">
             <table className="w-full">
-              <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
+              <thead className="bg-white border-b border-slate-200">
                 <tr>
-                  <th className="px-10 py-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Nom de la tranche
                   </th>
-                  <th className="px-4 py-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Date d'émission
                   </th>
-                  <th className="px-4 py-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Date d'échéance
                   </th>
-                  <th className="px-4 py-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Taux nominal
                   </th>
-                  <th className="px-4 py-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Total investi
                   </th>
-                  <th className="px-4 py-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Souscripteurs
                   </th>
-                  <th className="px-4 py-6 pb-3 pr-10 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -140,25 +140,25 @@ export function TranchesModal({
               <tbody className="bg-white divide-y divide-slate-200">
                 {filteredTranches.map((tranche) => (
                   <tr key={tranche.id} className="bg-white hover:bg-slate-50">
-                    <td className="px-10 py-4 text-sm font-medium text-slate-900">
+                    <td className="px-4 py-3 text-sm font-medium text-slate-900">
                       {tranche.tranche_name}
                     </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">
+                    <td className="px-4 py-3 text-sm text-slate-600">
                       {formatDate(tranche.date_emission)}
                     </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">
+                    <td className="px-4 py-3 text-sm text-slate-600">
                       {tranche.date_echeance_finale ? formatDate(tranche.date_echeance_finale) : '-'}
                     </td>
-                    <td className="px-4 py-4 text-sm text-right font-medium text-slate-900">
+                    <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
                       {tranche.taux_nominal ? `${tranche.taux_nominal}%` : '-'}
                     </td>
-                    <td className="px-4 py-4 text-sm text-right font-medium text-slate-900">
+                    <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
                       {formatCurrency(tranche.totalInvested)}
                     </td>
-                    <td className="px-4 py-4 text-sm text-right text-slate-600">
+                    <td className="px-4 py-3 text-sm text-right text-slate-600">
                       {tranche.subscribersCount}
                     </td>
-                    <td className="px-4 pr-10 py-4">
+                    <td className="px-4 py-3">
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => {
@@ -188,7 +188,7 @@ export function TranchesModal({
             </table>
 
             {filteredTranches.length === 0 && (
-              <div className="text-center py-12 px-10">
+              <div className="text-center py-12">
                 <p className="text-slate-400">Aucune tranche ne correspond à la recherche</p>
               </div>
             )}
