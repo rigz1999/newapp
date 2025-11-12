@@ -170,6 +170,7 @@ export default function Members() {
       setShowRemoveModal(false);
       setSelectedMember(null);
       fetchMembers();
+      fetchInvitations();
 
       // Show success message
       setAlertModalConfig({
