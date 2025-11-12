@@ -608,7 +608,17 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
-                        onChange={() => {}}
+                        onChange={(e) => {
+                          // Handle autocomplete: extract digits from pasted/autocompleted value
+                          const value = e.target.value;
+                          const digitsOnly = value.replace(/\D/g, '');
+                          if (digitsOnly !== newProjectData.montant_global_eur) {
+                            setNewProjectData(prev => ({
+                              ...prev,
+                              montant_global_eur: digitsOnly
+                            }));
+                          }
+                        }}
                         onFocus={moveCaretBeforeEuro}
                         onClick={moveCaretBeforeEuro}
                         onBeforeInput={(e: any) => {
