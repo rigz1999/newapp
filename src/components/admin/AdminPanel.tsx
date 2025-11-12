@@ -359,24 +359,33 @@ export default function AdminPanel() {
 
     console.log('Attempting to remove member (AdminPanel):', deletingItem);
 
-    const { error } = await supabase
-      .from('memberships')
-      .delete()
-      .eq('id', deletingItem.id);
-
-    if (error) {
-      console.error('Error removing member (AdminPanel):', error);
-      setAlertModalConfig({
-        title: 'Erreur de suppression',
-        message: 'Impossible de supprimer ce membre: ' + error.message,
-        type: 'error'
+    try {
+      const { data, error: funcError } = await supabase.functions.invoke('delete-pending-user', {
+        body: { userId: deletingItem.name }
       });
-      setShowAlertModal(true);
-    } else {
-      console.log('Member removed successfully (AdminPanel)');
+
+      if (funcError) throw funcError;
+      if (data?.error) throw new Error(data.error);
+
+      console.log('Member and user account deleted successfully (AdminPanel)');
       setShowRemoveUserModal(false);
       setDeletingItem(null);
       fetchData();
+
+      setAlertModalConfig({
+        title: 'Membre supprimé',
+        message: 'Le membre et son compte ont été supprimés avec succès.',
+        type: 'success'
+      });
+      setShowAlertModal(true);
+    } catch (error) {
+      console.error('Error removing member (AdminPanel):', error);
+      setAlertModalConfig({
+        title: 'Erreur de suppression',
+        message: `Impossible de supprimer ce membre: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        type: 'error'
+      });
+      setShowAlertModal(true);
     }
   };
 
@@ -863,8 +872,8 @@ export default function AdminPanel() {
           setDeletingItem(null);
         }}
         onConfirm={handleRemoveMember}
-        title="Retirer l'utilisateur"
-        message="Êtes-vous sûr de vouloir retirer cet utilisateur de l'organisation ? Il perdra l'accès immédiatement."
+        title="Supprimer l'utilisateur"
+        message="⚠️ Êtes-vous sûr de vouloir supprimer cet utilisateur ? Le compte sera définitivement supprimé. Cette action est irréversible."
       />
 
       <DeleteConfirmModal
