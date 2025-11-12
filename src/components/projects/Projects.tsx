@@ -608,12 +608,27 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
-                        onChange={() => {}}
+                        onChange={(e) => {
+                          // Handle autocomplete: extract digits from pasted/autocompleted value
+                          const value = e.target.value;
+                          const digitsOnly = value.replace(/\D/g, '');
+                          if (digitsOnly !== newProjectData.montant_global_eur) {
+                            setNewProjectData(prev => ({
+                              ...prev,
+                              montant_global_eur: digitsOnly
+                            }));
+                          }
+                        }}
                         onFocus={moveCaretBeforeEuro}
                         onClick={moveCaretBeforeEuro}
                         onBeforeInput={(e: any) => {
                           const data = e.data as string | null;
                           const inputType = e.inputType as string;
+
+                          // Allow multi-character insertions (autocomplete) to go through to onChange
+                          if (inputType === 'insertText' && data && data.length > 1) {
+                            return; // Let onChange handle autocomplete
+                          }
 
                           if (inputType === 'insertText' && data && /^\d$/.test(data)) {
                             e.preventDefault();
