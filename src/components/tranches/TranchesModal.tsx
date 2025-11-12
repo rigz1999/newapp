@@ -109,8 +109,8 @@ export function TranchesModal({
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6 bg-slate-50">
-          <table className="w-full bg-white rounded-lg overflow-hidden mt-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-white">
+          <table className="w-full">
               <thead className="border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">

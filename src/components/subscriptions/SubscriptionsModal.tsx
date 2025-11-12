@@ -179,8 +179,8 @@ export function SubscriptionsModal({
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6 bg-slate-50">
-          <table className="w-full bg-white rounded-lg overflow-hidden mt-6">
+        <div className="flex-1 overflow-y-auto p-6 bg-white">
+          <table className="w-full">
               <thead className="border-b border-slate-200">
               <tr>
                 <th
