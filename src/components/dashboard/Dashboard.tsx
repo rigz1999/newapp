@@ -1202,9 +1202,10 @@ export function Dashboard({ organization }: DashboardProps) {
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="" disabled>Choisir…</option>
-                        <option value="annuel">Annuel</option>
-                        <option value="semestriel">Semestriel</option>
+                        <option value="mensuelle">Mensuelle</option>
                         <option value="trimestriel">Trimestriel</option>
+                        <option value="semestriel">Semestriel</option>
+                        <option value="annuel">Annuel</option>
                       </select>
                     </div>
                   </div>
