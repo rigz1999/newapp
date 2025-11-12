@@ -13,7 +13,6 @@ interface LayoutProps {
 export function Layout({ organization }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [pendingCount, setPendingCount] = useState(0);
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isOrgAdmin, isSuperAdmin, user } = useAuth();
@@ -36,32 +35,6 @@ export function Layout({ organization }: LayoutProps) {
       description: 'Open settings'
     }
   ]);
-
-  useEffect(() => {
-    if (isSuperAdminUser) {
-      fetchPendingCount();
-
-      // Subscribe to changes in profiles and memberships
-      const profilesSubscription = supabase
-        .channel('profiles-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-          fetchPendingCount();
-        })
-        .subscribe();
-
-      const membershipsSubscription = supabase
-        .channel('memberships-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'memberships' }, () => {
-          fetchPendingCount();
-        })
-        .subscribe();
-
-      return () => {
-        profilesSubscription.unsubscribe();
-        membershipsSubscription.unsubscribe();
-      };
-    }
-  }, [isSuperAdminUser]);
 
   // Fetch user profile and listen for changes
   useEffect(() => {
@@ -106,41 +79,6 @@ export function Layout({ organization }: LayoutProps) {
       };
     }
   }, [user]);
-
-  const fetchPendingCount = async () => {
-    // Fetch profiles
-    const { data: profilesData } = await supabase
-      .from('profiles')
-      .select('id, is_superadmin');
-
-    // Fetch memberships with org_id (users who have an organization)
-    const { data: membershipsData } = await supabase
-      .from('memberships')
-      .select('user_id, role, org_id');
-
-    if (profilesData && membershipsData) {
-      // Users with organization
-      const userIdsWithOrg = new Set(
-        membershipsData
-          .filter((m: any) => m.org_id !== null)
-          .map((m: any) => m.user_id)
-      );
-
-      // Super admin is identified by is_superadmin column
-      const superAdminIds = new Set(
-        profilesData
-          .filter((p: any) => p.is_superadmin === true)
-          .map((p: any) => p.id)
-      );
-
-      // Pending users = profiles without org and not super admin
-      const pending = profilesData.filter(
-        (p: any) => !userIdsWithOrg.has(p.id) && !superAdminIds.has(p.id)
-      );
-
-      setPendingCount(pending.length);
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -277,17 +215,12 @@ export function Layout({ organization }: LayoutProps) {
                 <div className="border-t border-slate-700 my-2"></div>
                 <Link
                   to="/admin"
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm relative ${
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                     isActive('/admin') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
                   }`}
                 >
                   <Shield className="w-4 h-4" />
                   <span>Admin Panel</span>
-                  {pendingCount > 0 && (
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-finixar-action-delete text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {pendingCount}
-                    </span>
-                  )}
                 </Link>
               </>
             )}
