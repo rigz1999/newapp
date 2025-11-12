@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import {
   Users, Building2, UserPlus, Shield,
   Trash2, Plus, AlertCircle,
@@ -65,6 +66,7 @@ interface UserDetail {
 }
 
 export default function AdminPanel() {
+  const { isSuperAdmin } = useAuth();
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
@@ -682,8 +684,8 @@ export default function AdminPanel() {
         )}
       </div>
 
-      {/* Pending Users Section */}
-      {pendingUsers.length > 0 && (
+      {/* Pending Users Section - Only visible to super admins */}
+      {isSuperAdmin && pendingUsers.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
           <button
             onClick={() => toggleSection('pending')}
