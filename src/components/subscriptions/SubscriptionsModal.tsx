@@ -179,9 +179,10 @@ export function SubscriptionsModal({
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
-          <table className="w-full bg-white rounded-lg overflow-hidden">
-            <thead className="border-b border-slate-200">
+        <div className="flex-1 overflow-y-auto bg-slate-50">
+          <div className="p-6">
+            <table className="w-full bg-white rounded-lg overflow-hidden">
+              <thead className="border-b border-slate-200">
               <tr>
                 <th
                   className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
@@ -275,13 +276,14 @@ export function SubscriptionsModal({
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
 
-          {filteredSubs.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-slate-400">Aucune souscription ne correspond aux filtres</p>
-            </div>
-          )}
+            {filteredSubs.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-slate-400">Aucune souscription ne correspond aux filtres</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
