@@ -109,85 +109,85 @@ export function TranchesModal({
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-y-auto bg-slate-50">
-          <table className="w-full">
-            <thead className="bg-white border-b border-slate-200">
+        <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
+          <table className="w-full bg-white rounded-lg overflow-hidden">
+            <thead className="border-b border-slate-200">
               <tr>
-                <th className="px-6 pt-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Nom de la tranche
                 </th>
-                <th className="px-4 pt-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Date d'émission
                 </th>
-                <th className="px-4 pt-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Date d'échéance
                 </th>
-                <th className="px-4 pt-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Taux nominal
                 </th>
-                <th className="px-4 pt-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Total investi
                 </th>
-                <th className="px-4 pt-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Souscripteurs
                 </th>
-                <th className="px-6 pt-6 pb-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {filteredTranches.map((tranche, index) => (
-                  <tr key={tranche.id} className="bg-white hover:bg-slate-50">
-                    <td className={`px-6 py-3 text-sm font-medium text-slate-900 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
-                      {tranche.tranche_name}
-                    </td>
-                    <td className={`px-4 py-3 text-sm text-slate-600 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
-                      {formatDate(tranche.date_emission)}
-                    </td>
-                    <td className={`px-4 py-3 text-sm text-slate-600 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
-                      {tranche.date_echeance_finale ? formatDate(tranche.date_echeance_finale) : '-'}
-                    </td>
-                    <td className={`px-4 py-3 text-sm text-right font-medium text-slate-900 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
-                      {tranche.taux_nominal ? `${tranche.taux_nominal}%` : '-'}
-                    </td>
-                    <td className={`px-4 py-3 text-sm text-right font-medium text-slate-900 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
-                      {formatCurrency(tranche.totalInvested)}
-                    </td>
-                    <td className={`px-4 py-3 text-sm text-right text-slate-600 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
-                      {tranche.subscribersCount}
-                    </td>
-                    <td className={`px-6 py-3 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onEdit(tranche);
-                          }}
-                          className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onDelete(tranche);
-                          }}
-                          className="p-1 text-finixar-red hover:bg-red-50 rounded transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <tbody className="divide-y divide-slate-200">
+              {filteredTranches.map((tranche) => (
+                <tr key={tranche.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                    {tranche.tranche_name}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-600">
+                    {formatDate(tranche.date_emission)}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-600">
+                    {tranche.date_echeance_finale ? formatDate(tranche.date_echeance_finale) : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
+                    {tranche.taux_nominal ? `${tranche.taux_nominal}%` : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
+                    {formatCurrency(tranche.totalInvested)}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-right text-slate-600">
+                    {tranche.subscribersCount}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => {
+                          onClose();
+                          onEdit(tranche);
+                        }}
+                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Modifier"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          onClose();
+                          onDelete(tranche);
+                        }}
+                        className="p-1 text-finixar-red hover:bg-red-50 rounded transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
           {filteredTranches.length === 0 && (
-            <div className="text-center py-12 px-6">
+            <div className="text-center py-12">
               <p className="text-slate-400">Aucune tranche ne correspond à la recherche</p>
             </div>
           )}
