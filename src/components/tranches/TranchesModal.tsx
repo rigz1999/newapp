@@ -110,55 +110,54 @@ export function TranchesModal({
 
         {/* Table */}
         <div className="flex-1 overflow-y-auto bg-slate-50">
-          <div className="p-6">
-            <table className="w-full">
-              <thead className="bg-white border-b border-slate-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Nom de la tranche
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Date d'émission
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Date d'échéance
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Taux nominal
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Total investi
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Souscripteurs
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
+          <table className="w-full">
+            <thead className="bg-white border-b border-slate-200">
+              <tr>
+                <th className="px-6 pt-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Nom de la tranche
+                </th>
+                <th className="px-4 pt-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Date d'émission
+                </th>
+                <th className="px-4 pt-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Date d'échéance
+                </th>
+                <th className="px-4 pt-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Taux nominal
+                </th>
+                <th className="px-4 pt-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Total investi
+                </th>
+                <th className="px-4 pt-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Souscripteurs
+                </th>
+                <th className="px-6 pt-6 pb-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
               <tbody className="bg-white divide-y divide-slate-200">
-                {filteredTranches.map((tranche) => (
+                {filteredTranches.map((tranche, index) => (
                   <tr key={tranche.id} className="bg-white hover:bg-slate-50">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                    <td className={`px-6 py-3 text-sm font-medium text-slate-900 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
                       {tranche.tranche_name}
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
+                    <td className={`px-4 py-3 text-sm text-slate-600 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
                       {formatDate(tranche.date_emission)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
+                    <td className={`px-4 py-3 text-sm text-slate-600 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
                       {tranche.date_echeance_finale ? formatDate(tranche.date_echeance_finale) : '-'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
+                    <td className={`px-4 py-3 text-sm text-right font-medium text-slate-900 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
                       {tranche.taux_nominal ? `${tranche.taux_nominal}%` : '-'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
+                    <td className={`px-4 py-3 text-sm text-right font-medium text-slate-900 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
                       {formatCurrency(tranche.totalInvested)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-right text-slate-600">
+                    <td className={`px-4 py-3 text-sm text-right text-slate-600 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
                       {tranche.subscribersCount}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={`px-6 py-3 ${index === filteredTranches.length - 1 ? 'pb-6' : ''}`}>
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => {
@@ -187,12 +186,11 @@ export function TranchesModal({
               </tbody>
             </table>
 
-            {filteredTranches.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-slate-400">Aucune tranche ne correspond à la recherche</p>
-              </div>
-            )}
-          </div>
+          {filteredTranches.length === 0 && (
+            <div className="text-center py-12 px-6">
+              <p className="text-slate-400">Aucune tranche ne correspond à la recherche</p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

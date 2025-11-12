@@ -180,12 +180,11 @@ export function SubscriptionsModal({
 
         {/* Table */}
         <div className="flex-1 overflow-y-auto bg-slate-50">
-          <div className="p-6">
-            <table className="w-full">
-              <thead className="bg-white border-b border-slate-200">
+          <table className="w-full">
+            <thead className="bg-white border-b border-slate-200">
               <tr>
                 <th
-                  className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
+                  className="px-6 pt-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
                   onClick={() => toggleSort('investisseur')}
                 >
                   <div className="flex items-center gap-2">
@@ -193,14 +192,14 @@ export function SubscriptionsModal({
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 pt-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   CGP
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 pt-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Tranche
                 </th>
                 <th
-                  className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
+                  className="px-4 pt-6 pb-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
                   onClick={() => toggleSort('date')}
                 >
                   <div className="flex items-center gap-2">
@@ -209,7 +208,7 @@ export function SubscriptionsModal({
                   </div>
                 </th>
                 <th
-                  className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
+                  className="px-4 pt-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
                   onClick={() => toggleSort('montant')}
                 >
                   <div className="flex items-center justify-end gap-2">
@@ -217,42 +216,42 @@ export function SubscriptionsModal({
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 pt-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Obligations
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-4 pt-6 pb-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Coupon Net
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-6 pt-6 pb-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {filteredSubs.map((sub) => (
+              {filteredSubs.map((sub, index) => (
                 <tr key={sub.id} className="bg-white hover:bg-slate-50">
-                  <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                  <td className={`px-6 py-3 text-sm font-medium text-slate-900 ${index === filteredSubs.length - 1 ? 'pb-6' : ''}`}>
                     {sub.investisseur.nom_raison_sociale}
                   </td>
-                  <td className="px-4 py-3 text-sm text-slate-600">
+                  <td className={`px-4 py-3 text-sm text-slate-600 ${index === filteredSubs.length - 1 ? 'pb-6' : ''}`}>
                     {sub.cgp || sub.investisseur.cgp || '-'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-slate-600">
+                  <td className={`px-4 py-3 text-sm text-slate-600 ${index === filteredSubs.length - 1 ? 'pb-6' : ''}`}>
                     {sub.tranche.tranche_name}
                   </td>
-                  <td className="px-4 py-3 text-sm text-slate-600">
+                  <td className={`px-4 py-3 text-sm text-slate-600 ${index === filteredSubs.length - 1 ? 'pb-6' : ''}`}>
                     {formatDate(sub.date_souscription)}
                   </td>
-                  <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
+                  <td className={`px-4 py-3 text-sm text-right font-medium text-slate-900 ${index === filteredSubs.length - 1 ? 'pb-6' : ''}`}>
                     {formatCurrency(sub.montant_investi)}
                   </td>
-                  <td className="px-4 py-3 text-sm text-right text-slate-600">
+                  <td className={`px-4 py-3 text-sm text-right text-slate-600 ${index === filteredSubs.length - 1 ? 'pb-6' : ''}`}>
                     {sub.nombre_obligations}
                   </td>
-                  <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
+                  <td className={`px-4 py-3 text-sm text-right font-medium text-slate-900 ${index === filteredSubs.length - 1 ? 'pb-6' : ''}`}>
                     {formatCurrency(sub.coupon_net)}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={`px-6 py-3 ${index === filteredSubs.length - 1 ? 'pb-6' : ''}`}>
                     <div className="flex justify-center gap-2">
                       <button
                         onClick={() => {
@@ -278,12 +277,11 @@ export function SubscriptionsModal({
             </tbody>
           </table>
 
-            {filteredSubs.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-slate-400">Aucune souscription ne correspond aux filtres</p>
-              </div>
-            )}
-          </div>
+          {filteredSubs.length === 0 && (
+            <div className="text-center py-12 px-6">
+              <p className="text-slate-400">Aucune souscription ne correspond aux filtres</p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
