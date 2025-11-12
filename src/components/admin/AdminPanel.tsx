@@ -33,13 +33,6 @@ interface Membership {
   };
 }
 
-interface PendingUser {
-  user_id: string;
-  email: string;
-  created_at: string;
-  full_name?: string;
-}
-
 interface Invitation {
   id: string;
   email: string;
@@ -69,7 +62,6 @@ export default function AdminPanel() {
   const { isSuperAdmin } = useAuth();
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingInvitations, setLoadingInvitations] = useState(false);
@@ -80,7 +72,6 @@ export default function AdminPanel() {
   const [showEditOrgModal, setShowEditOrgModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRemoveUserModal, setShowRemoveUserModal] = useState(false);
-  const [showDeletePendingUserModal, setShowDeletePendingUserModal] = useState(false);
   const [showUserDetailModal, setShowUserDetailModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -189,25 +180,6 @@ export default function AdminPanel() {
           .map((m: Membership) => m.user_id)
       );
 
-      // Les utilisateurs en attente sont ceux qui:
-      // 1. N'ont pas de membership avec org_id
-      // 2. Ne sont pas super_admin (super admins n'ont pas d'org_id mais c'est normal)
-      const superAdminIds = new Set(
-        (profilesData || [])
-          .filter((profile: any) => profile.is_superadmin === true)
-          .map((profile: any) => profile.id)
-      );
-
-      const pending = (profilesData || [])
-        .filter((profile: any) => !userIdsWithOrg.has(profile.id) && !superAdminIds.has(profile.id))
-        .map((profile: any) => ({
-          user_id: profile.id,
-          email: profile.email || 'N/A',
-          created_at: profile.created_at,
-          full_name: profile.full_name
-        }));
-
-      setPendingUsers(pending);
     }
 
     setLoading(false);
@@ -228,27 +200,6 @@ export default function AdminPanel() {
       setShowAlertModal(true);
     } else {
       fetchInvitations();
-    }
-  };
-
-  const handleGrantAccess = async (userId: string, orgId: string, role: string) => {
-    const { error } = await supabase
-      .from('memberships')
-      .insert({
-        user_id: userId,
-        org_id: orgId,
-        role: role as 'member' | 'admin' | 'super_admin'
-      });
-
-    if (error) {
-      setAlertModalConfig({
-        title: 'Erreur',
-        message: 'Erreur lors de l\'attribution de l\'accès: ' + error.message,
-        type: 'error'
-      });
-      setShowAlertModal(true);
-    } else {
-      fetchData();
     }
   };
 
@@ -389,61 +340,7 @@ export default function AdminPanel() {
     }
   };
 
-  const confirmDeletePendingUser = (userId: string, userName: string) => {
-    setDeletingItem({ type: 'pending_user', id: userId, name: userName });
-    setShowDeletePendingUserModal(true);
-  };
-
-  const handleDeletePendingUser = async () => {
-    if (!deletingItem || deletingItem.type !== 'pending_user') return;
-
-    try {
-      // Use edge function to delete user from auth (bypasses RLS)
-      const { data, error: funcError } = await supabase.functions.invoke('delete-pending-user', {
-        body: { userId: deletingItem.id }
-      });
-
-      if (funcError) throw funcError;
-      if (data?.error) throw new Error(data.error);
-
-      // Close modal and refresh
-      setShowDeletePendingUserModal(false);
-      setDeletingItem(null);
-      fetchData();
-
-    } catch (error: any) {
-      setAlertModalConfig({
-        title: 'Erreur',
-        message: error.message || 'Erreur lors de la suppression',
-        type: 'error'
-      });
-      setShowAlertModal(true);
-      setShowDeletePendingUserModal(false);
-    }
-  };
-
   const showUserDetail = async (userId: string) => {
-    // Find user in pending or memberships
-    const pendingUser = pendingUsers.find(u => u.user_id === userId);
-    if (pendingUser) {
-      // Fetch profile to get is_superadmin status
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', pendingUser.user_id)
-        .single();
-
-      setSelectedUserDetail({
-        user_id: pendingUser.user_id,
-        email: pendingUser.email,
-        full_name: pendingUser.full_name,
-        created_at: pendingUser.created_at,
-        is_superadmin: profile?.is_superadmin || false
-      });
-      setShowUserDetailModal(true);
-      return;
-    }
-
     const membership = memberships.find(m => m.user_id === userId);
     if (membership) {
       const { data: profile } = await supabase
@@ -588,10 +485,6 @@ export default function AdminPanel() {
             <p className="text-sm text-slate-600 mb-1">Invitations</p>
             <p className="text-2xl font-bold text-blue-600">{invitations.length}</p>
           </div>
-          <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <p className="text-sm text-slate-600 mb-1">En attente</p>
-            <p className="text-2xl font-bold text-finixar-amber">{pendingUsers.length}</p>
-          </div>
         </div>
       </div>
 
@@ -692,43 +585,6 @@ export default function AdminPanel() {
           </div>
         )}
       </div>
-
-      {/* Pending Users Section - Only visible to super admins */}
-      {isSuperAdmin && pendingUsers.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
-          <button
-            onClick={() => toggleSection('pending')}
-            className="w-full p-6 bg-yellow-50 flex items-center justify-between hover:bg-yellow-100 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              {expandedSections.has('pending') ? (
-                <ChevronUp className="w-5 h-5 text-slate-600" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-slate-600" />
-              )}
-              <Clock className="w-6 h-6 text-finixar-amber" />
-              <h2 className="text-xl font-bold text-slate-900">
-                Utilisateurs en attente ({pendingUsers.length})
-              </h2>
-            </div>
-          </button>
-          
-          {expandedSections.has('pending') && (
-            <div className="divide-y divide-slate-200">
-              {pendingUsers.map(user => (
-                <PendingUserRow
-                  key={user.user_id}
-                  user={user}
-                  organizations={organizations}
-                  onGrantAccess={handleGrantAccess}
-                  onViewDetail={showUserDetail}
-                  onDelete={confirmDeletePendingUser}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Super Admins Section */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
@@ -876,17 +732,6 @@ export default function AdminPanel() {
         message="⚠️ Êtes-vous sûr de vouloir supprimer cet utilisateur ? Le compte sera définitivement supprimé. Cette action est irréversible."
       />
 
-      <DeleteConfirmModal
-        isOpen={showDeletePendingUserModal}
-        onClose={() => {
-          setShowDeletePendingUserModal(false);
-          setDeletingItem(null);
-        }}
-        onConfirm={handleDeletePendingUser}
-        title="Supprimer l'utilisateur en attente"
-        message={`Êtes-vous sûr de vouloir supprimer l'utilisateur "${deletingItem?.name}" ? Cette action est irréversible et supprimera définitivement le compte.`}
-      />
-
       <UserDetailModal
         isOpen={showUserDetailModal}
         onClose={() => {
@@ -929,113 +774,6 @@ export default function AdminPanel() {
   );
 }
 
-// Pending User Row Component
-function PendingUserRow({
-  user,
-  organizations,
-  onGrantAccess,
-  onViewDetail,
-  onDelete
-}: {
-  user: PendingUser;
-  organizations: Organization[];
-  onGrantAccess: (userId: string, orgId: string, role: string) => void;
-  onViewDetail: (userId: string) => void;
-  onDelete: (userId: string, userName: string) => void;
-}) {
-  const [selectedOrg, setSelectedOrg] = useState('');
-  const [selectedRole, setSelectedRole] = useState('member');
-
-  // Alert modal state
-  const [showAlert, setShowAlert] = useState(false);
-
-  const handleGrant = () => {
-    if (!selectedOrg) {
-      setShowAlert(true);
-      return;
-    }
-    onGrantAccess(user.user_id, selectedOrg, selectedRole);
-  };
-
-  return (
-    <>
-      <div className="p-6">
-        <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-              <Clock className="w-5 h-5 text-finixar-amber" />
-            </div>
-            <div>
-              <p className="font-medium text-slate-900">
-                {user.full_name || 'Utilisateur'}
-              </p>
-              <p className="text-sm text-slate-600">{user.email}</p>
-            </div>
-          </div>
-          <p className="text-xs text-slate-500 ml-13">
-            Inscrit le {new Date(user.created_at).toLocaleDateString('fr-FR')}
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => onViewDetail(user.user_id)}
-            className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-            title="Voir détails"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-          
-          <select
-            value={selectedOrg}
-            onChange={(e) => setSelectedOrg(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
-          >
-            <option value="">Organisation</option>
-            {organizations.map(org => (
-              <option key={org.id} value={org.id}>{org.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
-            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
-          >
-            <option value="member">Membre</option>
-            <option value="admin">Administrateur</option>
-          </select>
-
-          <button
-            onClick={handleGrant}
-            className="px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors text-sm font-medium flex items-center gap-2 whitespace-nowrap"
-          >
-            <UserPlus className="w-4 h-4" />
-            Valider
-          </button>
-
-          <button
-            onClick={() => onDelete(user.user_id, user.full_name || user.email)}
-            className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
-            title="Supprimer l'utilisateur"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <AlertModal
-      isOpen={showAlert}
-      onClose={() => setShowAlert(false)}
-      title="Sélection requise"
-      message="Veuillez sélectionner une organisation"
-      type="warning"
-    />
-    </>
-  );
-}
 
 // Organization Row Component
 function OrganizationRow({ 
