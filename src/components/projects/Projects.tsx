@@ -607,7 +607,7 @@ export function Projects({ organization }: ProjectsProps) {
                         ref={montantRef}
                         type="text"
                         required
-                        autoComplete="on"
+                        autoComplete="off"
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
                         onInput={(e: any) => {
