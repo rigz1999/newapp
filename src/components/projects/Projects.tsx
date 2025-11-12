@@ -209,6 +209,9 @@ export function Projects({ organization }: ProjectsProps) {
         ? parseInt(newProjectData.base_interet)
         : 360;
 
+      // Check if organization.id is a valid UUID (not "admin" or other string)
+      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(organization.id);
+
       const projectToCreate: any = {
         projet: newProjectData.projet,
         type: newProjectData.type || null,
@@ -220,7 +223,6 @@ export function Projects({ organization }: ProjectsProps) {
         representant_masse: newProjectData.representant_masse || null,
         email_rep_masse: newProjectData.email_rep_masse || null,
         telephone_rep_masse: newProjectData.telephone_rep_masse || null,
-        org_id: organization.id,
         taux_interet: tauxValue,
         taux_nominal: tauxValue,
         montant_global_eur: montantGlobal,
@@ -229,6 +231,11 @@ export function Projects({ organization }: ProjectsProps) {
         duree_mois: maturite,
         base_interet: baseInteret,
       };
+
+      // Only add org_id if it's a valid UUID
+      if (isValidUUID) {
+        projectToCreate.org_id = organization.id;
+      }
 
       console.log('Project to create:', projectToCreate);
 
