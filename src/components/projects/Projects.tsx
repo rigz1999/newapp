@@ -625,6 +625,11 @@ export function Projects({ organization }: ProjectsProps) {
                           const data = e.data as string | null;
                           const inputType = e.inputType as string;
 
+                          // Allow multi-character insertions (autocomplete) to go through to onChange
+                          if (inputType === 'insertText' && data && data.length > 1) {
+                            return; // Let onChange handle autocomplete
+                          }
+
                           if (inputType === 'insertText' && data && /^\d$/.test(data)) {
                             e.preventDefault();
                             setNewProjectData(prev => ({
