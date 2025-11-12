@@ -152,31 +152,41 @@ export default function Members() {
 
     console.log('Attempting to remove member:', selectedMember);
 
-    const { error } = await supabase
-      .from('memberships')
-      .delete()
-      .eq('id', selectedMember.id);
-
-    if (error) {
-      console.error('Error removing member:', error);
-      setAlertModalConfig({
-        title: 'Erreur',
-        message: `Impossible de supprimer le membre: ${formatErrorMessage(error)}`,
-        type: 'error'
+    try {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-pending-user`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: selectedMember.user_id }),
       });
-      setShowAlertModal(true);
-    } else {
-      console.log('Member removed successfully');
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Failed to delete user');
+      }
+
+      console.log('Member and user account deleted successfully');
       setShowRemoveModal(false);
       setSelectedMember(null);
       fetchMembers();
       fetchInvitations();
 
-      // Show success message
       setAlertModalConfig({
         title: 'Membre supprimé',
-        message: 'Le membre a été supprimé avec succès de l\'organisation.',
+        message: 'Le membre et son compte ont été supprimés avec succès.',
         type: 'success'
+      });
+      setShowAlertModal(true);
+    } catch (error) {
+      console.error('Error removing member:', error);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: `Impossible de supprimer le membre: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+        type: 'error'
       });
       setShowAlertModal(true);
     }
@@ -725,10 +735,12 @@ function RemoveMemberModal({
             <AlertCircle className="w-6 h-6 text-finixar-red" />
           </div>
           <div className="flex-1">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Retirer le Membre</h3>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Supprimer le Membre</h3>
             <p className="text-slate-600">
-              Êtes-vous sûr de vouloir retirer <strong>{member.profiles?.full_name || member.profiles?.email}</strong> de l'organisation ?
-              Cette personne perdra l'accès immédiatement.
+              Êtes-vous sûr de vouloir supprimer <strong>{member.profiles?.full_name || member.profiles?.email}</strong> ?
+            </p>
+            <p className="text-red-600 font-medium mt-2">
+              ⚠️ Le compte utilisateur sera définitivement supprimé. Cette action est irréversible.
             </p>
           </div>
         </div>
