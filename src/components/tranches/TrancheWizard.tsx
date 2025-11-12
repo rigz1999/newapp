@@ -137,6 +137,11 @@ export function TrancheWizard({
     }
   };
 
+  const handleRemoveFile = () => {
+    setCsvFile(null);
+    setError("");
+  };
+
   const handleUpdateTranche = async () => {
     if (!editingTranche || !trancheName) {
       setError("Veuillez remplir le nom de la tranche");
@@ -467,11 +472,19 @@ export function TrancheWizard({
                   description="Le fichier sera importé automatiquement"
                 />
                 {csvFile && (
-                  <div className="mt-4 text-center">
-                    <div className="text-sm text-slate-600 flex items-center justify-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
+                  <div className="mt-4 flex items-center justify-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm text-slate-700 font-medium flex-1 text-left">
                       {csvFile.name}
-                    </div>
+                    </span>
+                    <button
+                      onClick={handleRemoveFile}
+                      disabled={processing}
+                      className="p-1 hover:bg-red-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Supprimer le fichier"
+                    >
+                      <X className="w-5 h-5 text-red-500" />
+                    </button>
                   </div>
                 )}
               </div>
