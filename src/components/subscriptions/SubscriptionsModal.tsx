@@ -45,7 +45,7 @@ export function SubscriptionsModal({
   const cgps = useMemo(() => {
     const unique = new Set(
       subscriptions
-        .map(s => s.investisseur.cgp_nom)
+        .map(s => s.cgp || s.investisseur.cgp)
         .filter(Boolean)
     );
     return Array.from(unique).sort();
@@ -58,7 +58,7 @@ export function SubscriptionsModal({
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
       const matchesTranche = filterTranche === 'all' || sub.tranche.tranche_name === filterTranche;
-      const matchesCGP = filterCGP === 'all' || sub.investisseur.cgp_nom === filterCGP;
+      const matchesCGP = filterCGP === 'all' || (sub.cgp || sub.investisseur.cgp) === filterCGP;
       return matchesSearch && matchesTranche && matchesCGP;
     });
 
@@ -83,7 +83,7 @@ export function SubscriptionsModal({
       ['Investisseur', 'CGP', 'Tranche', 'Date', 'Montant', 'Nombre obligations', 'Coupon net'].join(';'),
       ...filteredSubs.map(sub => [
         sub.investisseur.nom_raison_sociale,
-        sub.investisseur.cgp_nom || '-',
+        sub.cgp || sub.investisseur.cgp || '-',
         sub.tranche.tranche_name,
         formatDate(sub.date_souscription),
         sub.montant_investi,
@@ -234,7 +234,7 @@ export function SubscriptionsModal({
                     {sub.investisseur.nom_raison_sociale}
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-600">
-                    {sub.investisseur.cgp_nom || '-'}
+                    {sub.cgp || sub.investisseur.cgp || '-'}
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-600">
                     {sub.tranche.tranche_name}
