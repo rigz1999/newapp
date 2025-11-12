@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { X, CheckCircle, AlertCircle, Loader, Edit } from "lucide-react";
+import { X, CheckCircle, AlertCircle, Loader, Edit, Trash2 } from "lucide-react";
 import { FileUpload } from "../investors/FileUpload";
 
 interface Project {
@@ -480,10 +480,10 @@ export function TrancheWizard({
                     <button
                       onClick={handleRemoveFile}
                       disabled={processing}
-                      className="p-1 hover:bg-red-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-1.5 hover:bg-red-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Supprimer le fichier"
                     >
-                      <X className="w-5 h-5 text-red-500" />
+                      <Trash2 className="w-4 h-4 text-red-600" />
                     </button>
                   </div>
                 )}
