@@ -603,13 +603,26 @@ export function Projects({ organization }: ProjectsProps) {
                       </label>
                       <input
                         id="montant"
+                        name="montant_global"
                         ref={montantRef}
                         type="text"
                         required
+                        autoComplete="on"
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
+                        onInput={(e: any) => {
+                          // onInput catches browser autocomplete better than onChange
+                          const value = e.target.value;
+                          const digitsOnly = value.replace(/\D/g, '');
+                          if (digitsOnly !== newProjectData.montant_global_eur) {
+                            setNewProjectData(prev => ({
+                              ...prev,
+                              montant_global_eur: digitsOnly
+                            }));
+                          }
+                        }}
                         onChange={(e) => {
-                          // Handle autocomplete: extract digits from pasted/autocompleted value
+                          // Fallback for browsers that use onChange for autocomplete
                           const value = e.target.value;
                           const digitsOnly = value.replace(/\D/g, '');
                           if (digitsOnly !== newProjectData.montant_global_eur) {
@@ -625,9 +638,9 @@ export function Projects({ organization }: ProjectsProps) {
                           const data = e.data as string | null;
                           const inputType = e.inputType as string;
 
-                          // Allow multi-character insertions (autocomplete) to go through to onChange
-                          if (inputType === 'insertText' && data && data.length > 1) {
-                            return; // Let onChange handle autocomplete
+                          // Allow insertReplacementText (autocomplete) and multi-character insertions
+                          if (inputType === 'insertReplacementText' || (inputType === 'insertText' && data && data.length > 1)) {
+                            return; // Let onInput/onChange handle autocomplete
                           }
 
                           if (inputType === 'insertText' && data && /^\d$/.test(data)) {
