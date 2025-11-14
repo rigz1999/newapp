@@ -699,138 +699,41 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Generate payment schedule (écheancier) for all subscriptions
-    console.log("\n=== VÉRIFICATION CONDITIONS ÉCHEANCIER ===");
-    console.log("Vérification des paramètres requis:");
-    console.log("  ✓ Taux nominal:", tauxNominal, tauxNominal !== null ? "OK" : "MANQUANT");
-    console.log("  ✓ Périodicité coupons:", periodiciteCoupons, periodiciteCoupons ? "OK" : "MANQUANT");
-    console.log("  ✓ Date d'émission tranche:", trancheEmissionDate, trancheEmissionDate ? "OK" : "MANQUANT");
-    console.log("  ✓ Durée (mois):", dureeMois, dureeMois !== null ? "OK" : "MANQUANT");
+    // Generate payment schedule (écheancier) using the dedicated function
+    console.log("\n=== CALLING REGENERATE-ECHEANCIER ===");
+    try {
+      const regenerateUrl = `${supabaseUrl}/functions/v1/regenerate-echeancier`;
+      console.log("Calling:", regenerateUrl);
 
-    // Use !== null to allow 0 values
-    if (tauxNominal !== null && periodiciteCoupons && trancheEmissionDate && dureeMois !== null) {
-      console.log("\n✅ Tous les paramètres présents! Génération de l'écheancier...");
-      console.log("=== GÉNÉRATION ÉCHEANCIER ===");
+      const regenerateResponse = await fetch(regenerateUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ tranche_id: trancheId }),
+      });
 
-      try {
-        // Map frequency to months between payments
-        const frequencyMap: Record<string, { months: number; paymentsPerYear: number }> = {
-          "annuel": { months: 12, paymentsPerYear: 1 },
-          "semestriel": { months: 6, paymentsPerYear: 2 },
-          "trimestriel": { months: 3, paymentsPerYear: 4 },
-        };
+      const regenerateResult = await regenerateResponse.json();
 
-        const freq = frequencyMap[periodiciteCoupons.toLowerCase()];
-
-        if (!freq) {
-          console.warn("⚠️ Périodicité inconnue:", periodiciteCoupons);
-          throw new Error(`Périodicité inconnue: ${periodiciteCoupons}`);
+      if (regenerateResult.success) {
+        console.log("✅ Écheancier généré avec succès!");
+        console.log(`   Souscriptions mises à jour: ${regenerateResult.updated_souscriptions}`);
+        console.log(`   Coupons créés: ${regenerateResult.created_coupons}`);
+        console.log(`   Date d'échéance finale: ${regenerateResult.final_maturity_date}`);
+      } else {
+        console.warn("⚠️ Écheancier non généré:", regenerateResult.error);
+        if (regenerateResult.missing_params) {
+          console.warn("   Paramètres manquants:", regenerateResult.missing_params.join(", "));
+          console.warn("   💡 Vous pouvez modifier la tranche plus tard pour ajouter ces informations.");
         }
-        // Calculate number of payments
-        const numberOfPayments = Math.ceil(dureeMois / freq.months);
-
-        console.log("Nombre de paiements:", numberOfPayments);
-        console.log("Taux nominal:", tauxNominal, "%");
-        console.log("Périodicité:", periodiciteCoupons, `(tous les ${freq.months} mois)`);
-
-        // Calculate the final maturity date (last coupon date)
-        const finalMaturityDate = new Date(trancheEmissionDate);
-        finalMaturityDate.setMonth(finalMaturityDate.getMonth() + (numberOfPayments * freq.months));
-        const dateEcheanceFinaleCalculee = finalMaturityDate.toISOString().split('T')[0];
-
-        console.log("Date d'échéance finale calculée:", dateEcheanceFinaleCalculee);
-
-        // Update tranche with calculated final maturity date
-        await supabase
-          .from("tranches")
-          .update({ date_echeance_finale: dateEcheanceFinaleCalculee })
-          .eq("id", trancheId);
-
-        // Get all created subscriptions for this tranche
-        const { data: subscriptions, error: subQueryErr } = await supabase
-          .from("souscriptions")
-          .select("id, montant_investi")
-          .eq("tranche_id", trancheId);
-
-        if (subQueryErr) {
-          console.error("❌ Erreur récupération souscriptions:", subQueryErr);
-          throw subQueryErr;
-        }
-
-        if (!subscriptions || subscriptions.length === 0) {
-          console.warn("⚠️ Aucune souscription trouvée pour générer l'écheancier");
-        } else {
-          console.log(`Génération des coupons pour ${subscriptions.length} souscriptions...`);
-
-          const couponsToInsert: any[] = [];
-
-          for (const sub of subscriptions) {
-            // Calculate coupon amount per payment
-            // Formula: (montant_investi * taux_nominal / 100) / paymentsPerYear
-
-            // Ensure montant_investi is a number (may come as string from DB)
-            const montantInvesti = Number(sub.montant_investi);
-
-            const annualCoupon = (montantInvesti * tauxNominal) / 100;
-            const couponPerPayment = annualCoupon / freq.paymentsPerYear;
-
-            console.log(`  Souscription ${sub.id}: Montant=${montantInvesti}€, Coupon/période=${couponPerPayment.toFixed(2)}€`);
-
-            // Generate payment dates
-            for (let i = 1; i <= numberOfPayments; i++) {
-              const paymentDate = new Date(trancheEmissionDate);
-              paymentDate.setMonth(paymentDate.getMonth() + (i * freq.months));
-
-              const dateEcheance = paymentDate.toISOString().split('T')[0];
-
-              // montant_coupon contains ONLY the interest (coupon)
-              // The principal (nominal) is added by the frontend for the last payment
-              const montantCoupon = Math.round(couponPerPayment * 100) / 100;
-
-              couponsToInsert.push({
-                souscription_id: sub.id,
-                date_echeance: dateEcheance,
-                montant_coupon: montantCoupon,
-                statut: 'en_attente',
-              });
-            }
-          }
-
-          // Bulk insert coupons
-          if (couponsToInsert.length > 0) {
-            console.log(`Insertion de ${couponsToInsert.length} coupons dans la base...`);
-
-            const { error: couponsErr } = await supabase
-              .from("coupons_echeances")
-              .insert(couponsToInsert);
-
-            if (couponsErr) {
-              console.error("❌ Erreur création coupons:", couponsErr);
-              throw couponsErr;
-            } else {
-              console.log("✅ Écheancier créé avec succès!");
-              console.log(`   Total coupons insérés: ${couponsToInsert.length}`);
-            }
-          } else {
-            console.warn("⚠️ Aucun coupon à insérer");
-          }
-        }
-      } catch (echeancierError: any) {
-        console.error("❌ ERREUR LORS DE LA GÉNÉRATION DE L'ÉCHEANCIER:", echeancierError);
-        console.error("   Message:", echeancierError?.message);
-        console.error("   Stack:", echeancierError?.stack);
-        // Don't fail the entire import if écheancier generation fails
-        console.warn("⚠️ L'import a réussi mais l'écheancier n'a pas pu être généré.");
-        console.warn("   Vous pouvez le générer manuellement plus tard.");
       }
-    } else {
-      console.warn("\n❌ ÉCHEANCIER NON GÉNÉRÉ - Paramètres manquants");
-      console.warn("Pour générer l'écheancier, assurez-vous de remplir ces champs dans le formulaire:");
-      console.warn("  - Taux nominal:", tauxNominal || "❌ MANQUANT");
-      console.warn("  - Périodicité coupons:", periodiciteCoupons || "❌ MANQUANT");
-      console.warn("  - Date d'émission:", trancheEmissionDate || "❌ MANQUANT (vérifiez le CSV ou le formulaire)");
-      console.warn("  - Durée (mois):", dureeMois || "❌ MANQUANT");
-      console.warn("\n💡 Vous pouvez modifier la tranche plus tard pour ajouter ces informations.");
+    } catch (echeancierError: any) {
+      console.error("❌ ERREUR LORS DE LA GÉNÉRATION DE L'ÉCHEANCIER:", echeancierError);
+      console.error("   Message:", echeancierError?.message);
+      // Don't fail the entire import if écheancier generation fails
+      console.warn("⚠️ L'import a réussi mais l'écheancier n'a pas pu être généré.");
+      console.warn("   Vous pouvez le générer manuellement plus tard.");
     }
 
     console.log("\n=== 🎉 IMPORT TERMINÉ AVEC SUCCÈS ===");

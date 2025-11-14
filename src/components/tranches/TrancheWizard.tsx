@@ -178,13 +178,51 @@ export function TrancheWizard({
 
       if (updateError) throw updateError;
 
-      setSuccessMessage("Tranche mise à jour avec succès");
       console.log("✅ Tranche mise à jour");
+
+      // Call regenerate-echeancier to update payment schedule
+      console.log("Appel de regenerate-echeancier...");
+      try {
+        const regenerateUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-echeancier`;
+        const { data: { session } } = await supabase.auth.getSession();
+
+        const regenerateResponse = await fetch(regenerateUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ tranche_id: editingTranche.id }),
+        });
+
+        const regenerateResult = await regenerateResponse.json();
+
+        if (regenerateResult.success) {
+          console.log("✅ Écheancier régénéré:", regenerateResult);
+          setSuccessMessage(
+            `Tranche mise à jour avec succès!\n` +
+            `Souscriptions recalculées: ${regenerateResult.updated_souscriptions}\n` +
+            `Coupons créés: ${regenerateResult.created_coupons}`
+          );
+        } else {
+          console.warn("⚠️ Écheancier non régénéré:", regenerateResult.error);
+          setSuccessMessage(
+            `Tranche mise à jour avec succès!\n` +
+            `Note: ${regenerateResult.error || "Écheancier non généré (paramètres manquants)"}`
+          );
+        }
+      } catch (regenerateError: any) {
+        console.error("Erreur régénération écheancier:", regenerateError);
+        setSuccessMessage(
+          `Tranche mise à jour avec succès!\n` +
+          `Note: Impossible de régénérer l'écheancier automatiquement.`
+        );
+      }
 
       setTimeout(() => {
         onSuccess();
         onClose();
-      }, 1000);
+      }, 2000);
 
     } catch (err: any) {
       console.error("=== ERREUR MISE À JOUR ===", err);
