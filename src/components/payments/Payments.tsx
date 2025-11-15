@@ -283,44 +283,45 @@ export function Payments({ organization }: PaymentsProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <Euro className="w-8 h-8 text-blue-600" />
+          <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+            <Euro className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Historique des Paiements</h1>
-            <p className="text-slate-600">{filteredPayments.length} paiement{filteredPayments.length > 1 ? 's' : ''}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">Historique des Paiements</h1>
+            <p className="text-slate-600 dark:text-slate-400">{filteredPayments.length} paiement{filteredPayments.length > 1 ? 's' : ''}</p>
           </div>
         </div>
         <button
           onClick={exportToCSV}
-          className="flex items-center gap-2 bg-finixar-action-view text-white px-4 py-2 rounded-lg hover:bg-finixar-action-view-hover transition-colors"
+          className="flex items-center gap-2 bg-finixar-action-view dark:bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-finixar-action-view-hover dark:hover:bg-blue-500 transition-colors whitespace-nowrap"
         >
           <Download className="w-5 h-5" />
-          <span>Exporter CSV</span>
+          <span className="hidden sm:inline">Exporter CSV</span>
+          <span className="sm:hidden">Export</span>
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-600 text-sm">Montant Total Payé</span>
-            <CheckCircle2 className="w-5 h-5 text-finixar-green" />
+            <span className="text-slate-600 dark:text-slate-400 text-sm">Montant Total Payé</span>
+            <CheckCircle2 className="w-5 h-5 text-finixar-green dark:text-green-400" />
           </div>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalPaid)}</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(stats.totalPaid)}</p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-600 text-sm">Nombre de Paiements</span>
-            <Euro className="w-5 h-5 text-blue-600" />
+            <span className="text-slate-600 dark:text-slate-400 text-sm">Nombre de Paiements</span>
+            <Euro className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
-          <p className="text-2xl font-bold text-slate-900">{stats.paymentsCount}</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.paymentsCount}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
         {/* Basic Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
@@ -444,41 +445,47 @@ export function Payments({ organization }: PaymentsProps) {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+            <table className="w-full min-w-max">
               <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">ID</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Projet</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Tranche</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Type</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Montant</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Date</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900">Actions</th>
+                <tr className="border-b border-slate-200 dark:border-slate-700">
+                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 dark:text-slate-100 hidden lg:table-cell">ID</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 dark:text-slate-100">Projet</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 dark:text-slate-100 hidden md:table-cell">Tranche</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 dark:text-slate-100 hidden sm:table-cell">Type</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 dark:text-slate-100">Montant</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 dark:text-slate-100 hidden md:table-cell">Date</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 dark:text-slate-100">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paginate(filteredPayments, currentPage, itemsPerPage).map((payment) => (
-                  <tr key={payment.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900">{payment.id_paiement}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
+                  <tr key={payment.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm font-medium text-slate-900 dark:text-slate-100 hidden lg:table-cell">{payment.id_paiement}</td>
+                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 dark:text-slate-400">
                       <div>
-                        <p className="font-medium text-slate-900">{payment.tranche?.projet?.projet || '-'}</p>
-                        <p className="text-xs text-slate-500">{payment.tranche?.projet?.emetteur || ''}</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">{payment.tranche?.projet?.projet || '-'}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 hidden xl:block">{payment.tranche?.projet?.emetteur || ''}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 md:hidden">{payment.tranche?.tranche_name || '-'}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{payment.tranche?.tranche_name || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{payment.type || 'Coupon'}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-slate-900">{formatCurrency(payment.montant)}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{formatDate(payment.date_paiement)}</td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 dark:text-slate-400 hidden md:table-cell">{payment.tranche?.tranche_name || '-'}</td>
+                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 dark:text-slate-400 hidden sm:table-cell">{payment.type || 'Coupon'}</td>
+                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      <div>
+                        {formatCurrency(payment.montant)}
+                        <p className="text-xs text-slate-500 dark:text-slate-400 md:hidden mt-0.5">{formatDate(payment.date_paiement)}</p>
+                      </div>
+                    </td>
+                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 dark:text-slate-400 hidden md:table-cell">{formatDate(payment.date_paiement)}</td>
+                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleViewProofs(payment)}
-                          className="flex items-center gap-1 px-3 py-1 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-xs font-medium"
+                          className="flex items-center gap-1 px-2 md:px-3 py-1.5 md:py-1 bg-slate-600 dark:bg-slate-500 text-white rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors text-xs font-medium whitespace-nowrap"
                         >
-                          <Eye className="w-4 h-4" />
-                          Voir Justificatifs
+                          <Eye className="w-3 h-3 md:w-4 md:h-4" />
+                          <span className="hidden sm:inline">Voir</span>
                         </button>
                       </div>
                     </td>

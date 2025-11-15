@@ -36,10 +36,19 @@ export default {
           'border': '#e2e8f0',         // Separators, card borders
           'hover': '#f1f5f9',          // Interactive hover effects
 
+          // Dark Mode Colors
+          'dark-bg': '#0a0f1e',        // Dark mode background
+          'dark-card': '#1e293b',      // Dark mode cards
+          'dark-border': '#334155',    // Dark mode borders
+          'dark-hover': '#334155',     // Dark mode hover
+
           // Text Hierarchy
           'text-primary': '#0f172a',   // Headings, important data
           'text-secondary': '#64748b', // Labels, descriptions
           'text-muted': '#94a3b8',     // Timestamps, helper text
+          'dark-text-primary': '#f1f5f9',   // Dark mode headings
+          'dark-text-secondary': '#94a3b8', // Dark mode labels
+          'dark-text-muted': '#64748b',     // Dark mode helper text
 
           // Data Visualization
           'chart-blue': '#3b82f6',

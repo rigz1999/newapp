@@ -290,26 +290,26 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] m-4 flex flex-col" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fade-in" onClick={onClose}>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] m-4 flex flex-col animate-slide-in-right" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="p-6 border-b border-slate-200">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-2xl font-bold text-slate-900">Échéancier Complet des Coupons</h3>
-              <p className="text-sm text-slate-600 mt-1">Tous les paiements de coupons du projet</p>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Échéancier Complet des Coupons</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Tous les paiements de coupons du projet</p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleExportExcel}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
               >
                 <Download className="w-4 h-4" />
                 Exporter Excel
               </button>
               <button
                 onClick={onClose}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -318,36 +318,36 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
 
           {/* Stats Cards */}
           <div className="grid grid-cols-4 gap-4 mt-6">
-            <div className="bg-blue-50 rounded-lg p-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-blue-600" />
-                <p className="text-xs font-medium text-blue-900">Total Échéances</p>
+                <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <p className="text-xs font-medium text-blue-900 dark:text-blue-300">Total Échéances</p>
               </div>
-              <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
+              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.total}</p>
             </div>
 
-            <div className="bg-orange-50 rounded-lg p-4">
+            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-orange-600" />
-                <p className="text-xs font-medium text-orange-900">À Venir</p>
+                <TrendingUp className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                <p className="text-xs font-medium text-orange-900 dark:text-orange-300">À Venir</p>
               </div>
-              <p className="text-2xl font-bold text-orange-900">{stats.aVenir}</p>
+              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{stats.aVenir}</p>
             </div>
 
-            <div className="bg-green-50 rounded-lg p-4">
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Coins className="w-4 h-4 text-finixar-green" />
-                <p className="text-xs font-medium text-green-900">Payés</p>
+                <Coins className="w-4 h-4 text-finixar-green dark:text-green-400" />
+                <p className="text-xs font-medium text-green-900 dark:text-green-300">Payés</p>
               </div>
-              <p className="text-2xl font-bold text-green-900">{stats.paye}</p>
+              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.paye}</p>
             </div>
 
-            <div className="bg-purple-50 rounded-lg p-4">
+            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Coins className="w-4 h-4 text-purple-600" />
-                <p className="text-xs font-medium text-purple-900">Montant Total Net</p>
+                <Coins className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <p className="text-xs font-medium text-purple-900 dark:text-purple-300">Montant Total Net</p>
               </div>
-              <p className="text-lg font-bold text-purple-900">{formatCurrency(stats.montantTotal)}</p>
+              <p className="text-lg font-bold text-purple-900 dark:text-purple-100">{formatCurrency(stats.montantTotal)}</p>
             </div>
           </div>
 
@@ -397,58 +397,89 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
         </div>
 
         {/* Content - Groupé par Tranche puis Date */}
-        <div className="flex-1 overflow-y-auto p-6 bg-white">
+        <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-800">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
             </div>
           ) : trancheGroups.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-slate-400">Aucune échéance à afficher</p>
+              <p className="text-slate-400 dark:text-slate-500">Aucune échéance à afficher</p>
             </div>
           ) : (
             <div className="space-y-3">
               {trancheGroups.map((group) => {
                 const isTrancheExpanded = expandedTranches.has(group.trancheName);
-                
+
+                // Calculate payment progress for this tranche
+                const trancheEcheances = group.dateGroups.flatMap(dg => dg.echeances);
+                const totalCoupons = trancheEcheances.length;
+                const paidCoupons = trancheEcheances.filter(e => e.statut === 'paye').length;
+                const overdueCoupons = trancheEcheances.filter(e => getEcheanceStatus(e) === 'en_retard').length;
+                const progressPercentage = totalCoupons > 0 ? (paidCoupons / totalCoupons) * 100 : 0;
+
                 return (
-                  <div key={group.trancheName} className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div key={group.trancheName} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-700/50">
                     {/* Header de tranche - Cliquable */}
                     <button
                       onClick={() => toggleTranche(group.trancheName)}
-                      className="w-full px-6 py-4 hover:bg-slate-50 transition-colors"
+                      className="w-full px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
                           {isTrancheExpanded ? (
                             <ChevronDown className="w-5 h-5 text-slate-400" />
                           ) : (
                             <ChevronRight className="w-5 h-5 text-slate-400" />
                           )}
-                          <h4 className="text-base font-bold text-slate-900">{group.trancheName}</h4>
-                          <span className="text-sm text-slate-600">
+                          <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">{group.trancheName}</h4>
+                          <span className="text-sm text-slate-600 dark:text-slate-400">
                             ({group.dateGroups.length} échéance{group.dateGroups.length > 1 ? 's' : ''})
                           </span>
                         </div>
                         <div className="flex items-center gap-6">
-                          <div className="text-sm text-slate-600">
+                          <div className="text-sm text-slate-600 dark:text-slate-400">
                             <span className="font-medium">{group.totalCount}</span> coupon{group.totalCount > 1 ? 's' : ''}
                           </div>
                           <div className="text-right">
-                            <div className="text-base font-bold text-finixar-green">
+                            <div className="text-base font-bold text-finixar-green dark:text-green-400">
                               {formatCurrency(group.totalNet)}
                             </div>
-                            <div className="text-xs text-slate-500">
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
                               Brut: {formatCurrency(group.totalBrut)}
                             </div>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                            {paidCoupons} / {totalCoupons} payés
+                          </span>
+                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            {progressPercentage.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              progressPercentage === 100
+                                ? 'bg-gradient-to-r from-green-500 to-green-600'
+                                : overdueCoupons > 0
+                                ? 'bg-gradient-to-r from-orange-500 to-amber-600'
+                                : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                            }`}
+                            style={{ width: `${progressPercentage}%` }}
+                          />
                         </div>
                       </div>
                     </button>
 
                     {/* Dropdown - Dates d'échéance */}
                     {isTrancheExpanded && (
-                      <div className="border-t border-slate-200 bg-slate-50">
+                      <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                         <div className="space-y-2 p-4">
                           {group.dateGroups.map((dateGroup) => {
                             const dateKey = `${group.trancheName}-${dateGroup.date}`;

@@ -1,10 +1,11 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, Euro, Shield, UserCog, Settings, Search } from 'lucide-react';
+import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, Euro, Shield, UserCog, Settings, Search, Moon, Sun } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { GlobalSearch } from '../dashboard/GlobalSearch';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useTheme } from '../../context/ThemeContext';
 
 interface LayoutProps {
   organization: { id: string; name: string; role: string };
@@ -16,6 +17,7 @@ export function Layout({ organization }: LayoutProps) {
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isOrgAdmin, isSuperAdmin, user } = useAuth();
+  const { effectiveTheme, toggleTheme } = useTheme();
 
   // Check if user is super admin (fallback to organization role)
   const isSuperAdminUser = isSuperAdmin || organization.role === 'super_admin';
@@ -102,8 +104,8 @@ export function Layout({ organization }: LayoutProps) {
   };
 
   return (
-    <div className="h-screen bg-finixar-background flex overflow-hidden">
-      <aside className="w-64 bg-finixar-deep-blue text-white flex flex-col flex-shrink-0">
+    <div className="h-screen bg-finixar-background dark:bg-finixar-dark-bg flex overflow-hidden">
+      <aside className="w-64 bg-finixar-deep-blue dark:bg-slate-900 text-white flex flex-col flex-shrink-0">
         {/* Header - Compact */}
         <div className="p-4 flex-shrink-0">
           <div className="flex items-center gap-2 mb-3">
@@ -120,6 +122,20 @@ export function Layout({ organization }: LayoutProps) {
           >
             <Search className="w-4 h-4" />
             <span className="text-sm">Rechercher...</span>
+          </button>
+
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="mt-2 w-full flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-all duration-200 text-slate-400 hover:text-white group"
+            title={effectiveTheme === 'dark' ? 'Passer au mode clair' : 'Passer au mode sombre'}
+          >
+            {effectiveTheme === 'dark' ? (
+              <Sun className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
+            ) : (
+              <Moon className="w-4 h-4 group-hover:-rotate-12 transition-transform duration-300" />
+            )}
+            <span className="text-sm">{effectiveTheme === 'dark' ? 'Mode clair' : 'Mode sombre'}</span>
           </button>
         </div>
 
