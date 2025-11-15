@@ -8,7 +8,7 @@
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self';
-               script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com;
+               script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com blob:;
                style-src 'self' 'unsafe-inline';
                img-src 'self' data: https: blob:;
                font-src 'self' data:;
@@ -20,7 +20,6 @@
     />
     <!-- Security headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-    <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Finixar - Investment Management Platform</title>

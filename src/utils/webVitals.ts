@@ -3,7 +3,7 @@
 // Path: src/utils/webVitals.ts
 // ============================================
 
-import { onCLS, onFID, onFCP, onLCP, onTTFB, type Metric } from 'web-vitals';
+import { onCLS, onINP, onFCP, onLCP, onTTFB, type Metric } from 'web-vitals';
 import { logger } from './logger';
 
 /**
@@ -49,9 +49,9 @@ export function initWebVitals(): void {
     // Good: < 0.1, Needs Improvement: 0.1-0.25, Poor: > 0.25
     onCLS(sendToAnalytics);
 
-    // First Input Delay - measures interactivity
-    // Good: < 100ms, Needs Improvement: 100-300ms, Poor: > 300ms
-    onFID(sendToAnalytics);
+    // Interaction to Next Paint - measures interactivity (replaces FID)
+    // Good: < 200ms, Needs Improvement: 200-500ms, Poor: > 500ms
+    onINP(sendToAnalytics);
 
     // First Contentful Paint - measures loading performance
     // Good: < 1.8s, Needs Improvement: 1.8-3s, Poor: > 3s
