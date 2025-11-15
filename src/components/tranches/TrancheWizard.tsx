@@ -40,6 +40,7 @@ export function TrancheWizard({
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isProcessingOnServer, setIsProcessingOnServer] = useState(false);
 
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [trancheName, setTrancheName] = useState("");
@@ -247,6 +248,7 @@ export function TrancheWizard({
     setError("");
     setSuccessMessage("");
     setProgress(0);
+    setIsProcessingOnServer(false);
 
     try {
       console.log("=== DÉBUT IMPORT ===");
@@ -276,6 +278,10 @@ export function TrancheWizard({
         if (event.lengthComputable) {
           const p = Math.round((event.loaded / event.total) * 100);
           setProgress(p);
+          // When upload reaches 100%, show "processing on server" message
+          if (p === 100) {
+            setIsProcessingOnServer(true);
+          }
         }
       };
 
@@ -532,14 +538,27 @@ export function TrancheWizard({
             {processing && !isEditMode && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-slate-600">
-                  <span>Upload en cours...</span>
-                  <span>{progress}%</span>
+                  <span>
+                    {isProcessingOnServer ? (
+                      <span className="flex items-center gap-2">
+                        <Loader className="w-4 h-4 animate-spin" />
+                        Traitement sur le serveur...
+                      </span>
+                    ) : (
+                      `Upload: ${progress}%`
+                    )}
+                  </span>
+                  {!isProcessingOnServer && <span>{progress}%</span>}
                 </div>
                 <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div
-                    className="h-2 bg-finixar-action-process transition-all duration-150"
-                    style={{ width: `${progress}%` }}
-                  />
+                  {isProcessingOnServer ? (
+                    <div className="h-2 bg-finixar-action-process animate-pulse w-full" />
+                  ) : (
+                    <div
+                      className="h-2 bg-finixar-action-process transition-all duration-150"
+                      style={{ width: `${progress}%` }}
+                    />
+                  )}
                 </div>
               </div>
             )}

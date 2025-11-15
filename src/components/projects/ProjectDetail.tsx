@@ -132,6 +132,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     message: '',
     type: 'info',
   });
+  const [alertIsLoading, setAlertIsLoading] = useState(false);
 
   const TRANCHES_LIMIT = 5;
   const SUBSCRIPTIONS_LIMIT = 5;
@@ -385,7 +386,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       if (hasFinancialChanges) {
         console.log('\n=== REGENERATING ECHEANCIER FOR ALL TRANCHES ===');
 
-        // Show initial success with "processing" message
+        // Show initial success with "processing" message and spinner
+        setAlertIsLoading(true);
         setAlertState({
           isOpen: true,
           title: 'Mise à jour en cours...',
@@ -402,6 +404,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         if (tranchesError) {
           console.error('Error fetching tranches:', tranchesError);
           await fetchProjectData();
+          setAlertIsLoading(false);
           setAlertState({
             isOpen: true,
             title: 'Avertissement',
@@ -414,6 +417,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         if (!projectTranches || projectTranches.length === 0) {
           console.log('No tranches to regenerate');
           await fetchProjectData();
+          setAlertIsLoading(false);
           setAlertState({
             isOpen: true,
             title: 'Succès',
@@ -494,6 +498,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         await fetchProjectData();
 
         // Show final results
+        setAlertIsLoading(false);
         let message = `✅ Projet et écheanciers mis à jour!\n\n`;
         message += `📊 ${projectTranches.length} tranche(s) traitée(s):\n`;
         message += `• Souscriptions recalculées: ${totalUpdated}\n`;
@@ -525,6 +530,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       });
     } catch (err: any) {
       console.error('Error updating project:', err);
+      setAlertIsLoading(false);
       setAlertState({
         isOpen: true,
         title: 'Erreur',
@@ -1510,6 +1516,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         title={alertState.title}
         message={alertState.message}
         type={alertState.type}
+        isLoading={alertIsLoading}
       />
     </>
   );
