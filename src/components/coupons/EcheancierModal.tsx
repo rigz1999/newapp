@@ -54,7 +54,7 @@ interface TrancheGroup {
 function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate }: EcheancierModalProps) {
   const [echeances, setEcheances] = useState<Echeance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'a_venir' | 'paye'>('all');
+  const [filter, setFilter] = useState<'all' | 'a_venir' | 'paye' | 'en_retard'>('all');
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
 
@@ -144,6 +144,23 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
     setExpandedTranches(newExpanded);
   };
 
+  // Helper to determine if an echeance is overdue
+  const isOverdue = (echeance: Echeance) => {
+    if (echeance.statut === 'paye') return false;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const echeanceDate = new Date(echeance.date_echeance);
+    echeanceDate.setHours(0, 0, 0, 0);
+    return echeanceDate < now;
+  };
+
+  // Get visual status for display
+  const getEcheanceStatus = (echeance: Echeance) => {
+    if (echeance.statut === 'paye') return 'paye';
+    if (isOverdue(echeance)) return 'en_retard';
+    return 'a_venir';
+  };
+
   const toggleDate = (key: string) => {
     const newExpanded = new Set(expandedDates);
     if (newExpanded.has(key)) {
@@ -166,7 +183,7 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
       'Total à Payer': e.isLastEcheance 
         ? e.souscription.coupon_net + e.souscription.montant_investi 
         : e.souscription.coupon_net,
-      'Statut': e.statut === 'paye' ? 'Payé' : 'À venir',
+      'Statut': e.statut === 'paye' ? 'Payé' : (isOverdue(e) ? 'En retard' : 'À venir'),
     }));
 
     const workbook = new ExcelJS.Workbook();
@@ -201,8 +218,9 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
 
   const filteredEcheances = echeances.filter((e) => {
     if (filter === 'all') return true;
-    if (filter === 'a_venir') return e.statut === 'a_venir' || e.statut === 'en_attente';
     if (filter === 'paye') return e.statut === 'paye';
+    if (filter === 'en_retard') return getEcheanceStatus(e) === 'en_retard';
+    if (filter === 'a_venir') return getEcheanceStatus(e) === 'a_venir';
     return true;
   });
 
@@ -259,11 +277,15 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
 
   const stats = {
     total: echeances.length,
-    aVenir: echeances.filter((e) => e.statut === 'a_venir' || e.statut === 'en_attente').length,
     paye: echeances.filter((e) => e.statut === 'paye').length,
+    enRetard: echeances.filter((e) => getEcheanceStatus(e) === 'en_retard').length,
+    aVenir: echeances.filter((e) => getEcheanceStatus(e) === 'a_venir').length,
     montantTotal: echeances.reduce((sum, e) => sum + e.souscription.coupon_net, 0),
+    montantEnRetard: echeances
+      .filter((e) => getEcheanceStatus(e) === 'en_retard')
+      .reduce((sum, e) => sum + e.souscription.coupon_net, 0),
     montantAVenir: echeances
-      .filter((e) => e.statut === 'a_venir' || e.statut === 'en_attente')
+      .filter((e) => getEcheanceStatus(e) === 'a_venir')
       .reduce((sum, e) => sum + e.souscription.coupon_net, 0),
   };
 
@@ -340,6 +362,16 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
               }`}
             >
               Tous ({stats.total})
+            </button>
+            <button
+              onClick={() => setFilter('en_retard')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                filter === 'en_retard'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-red-50 text-red-600 hover:bg-red-100'
+              }`}
+            >
+              En retard ({stats.enRetard})
             </button>
             <button
               onClick={() => setFilter('a_venir')}
@@ -540,12 +572,18 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                                             <td className="px-4 py-2 text-center">
                                               <span
                                                 className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                                  echeance.statut === 'paye'
+                                                  getEcheanceStatus(echeance) === 'paye'
                                                     ? 'bg-green-100 text-green-700'
+                                                    : getEcheanceStatus(echeance) === 'en_retard'
+                                                    ? 'bg-red-100 text-red-700'
                                                     : 'bg-orange-100 text-orange-700'
                                                 }`}
                                               >
-                                                {echeance.statut === 'paye' ? 'Payé' : 'À venir'}
+                                                {getEcheanceStatus(echeance) === 'paye'
+                                                  ? 'Payé'
+                                                  : getEcheanceStatus(echeance) === 'en_retard'
+                                                  ? 'En retard'
+                                                  : 'À venir'}
                                               </span>
                                             </td>
                                           </tr>
@@ -572,6 +610,11 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
           <div className="flex justify-between items-center">
             <div className="text-sm text-slate-600">
               {trancheGroups.length} tranche{trancheGroups.length > 1 ? 's' : ''} • {filteredEcheances.length} coupon{filteredEcheances.length > 1 ? 's' : ''}
+              {filter === 'en_retard' && (
+                <span className="ml-2 font-medium text-red-600">
+                  • Montant total en retard: {formatCurrency(stats.montantEnRetard)}
+                </span>
+              )}
               {filter === 'a_venir' && (
                 <span className="ml-2 font-medium text-orange-600">
                   • Montant total à venir: {formatCurrency(stats.montantAVenir)}
