@@ -702,7 +702,7 @@ Deno.serve(async (req: Request) => {
     // Generate payment schedule (écheancier) using the dedicated function
     console.log("\n=== CALLING REGENERATE-ECHEANCIER ===");
     try {
-      const regenerateUrl = `${supabaseUrl}/functions/v1/regenerate-echeancier`;
+      const regenerateUrl = `${SUPABASE_URL}/functions/v1/regenerate-echeancier`;
       console.log("Calling:", regenerateUrl);
 
       const regenerateResponse = await fetch(regenerateUrl, {
