@@ -107,7 +107,7 @@ export default function PaymentRemindersModal({
           remind_14_days: remind14Days,
           remind_30_days: remind30Days,
           updated_at: new Date().toISOString()
-        } as any, {
+        }, {
           onConflict: 'user_id'
         });
 
@@ -126,7 +126,7 @@ export default function PaymentRemindersModal({
           onClose();
         }, 1500);
       }
-    } catch (err: any) {
+    } catch (err) {
       setSaving(false);
       setErrorMessage(formatErrorMessage(err));
     }
@@ -154,7 +154,7 @@ export default function PaymentRemindersModal({
       } else {
         setSuccessMessage('Email de test envoyé avec succès ! Vérifiez votre boîte de réception.');
       }
-    } catch (err: any) {
+    } catch (err) {
       setSendingTestEmail(false);
       setErrorMessage(formatErrorMessage(err));
     }

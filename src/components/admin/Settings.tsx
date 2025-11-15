@@ -207,22 +207,6 @@ export default function Settings() {
 
       if (functionError) {
         console.error('Function error:', functionError);
-        console.error('Function error context:', (functionError as any).context);
-
-        // Try to read the response body if available
-        const response = (functionError as any).context;
-        if (response && typeof response.text === 'function') {
-          try {
-            const errorText = await response.text();
-            console.error('Response body text:', errorText);
-            const errorJson = JSON.parse(errorText);
-            console.error('Response body JSON:', errorJson);
-            setErrorMessage(errorJson.error || 'Erreur lors du changement de mot de passe.');
-            return;
-          } catch (e) {
-            console.error('Could not parse error response:', e);
-          }
-        }
 
         // Fallback error handling
         const errorMsg = data?.error
@@ -250,7 +234,7 @@ export default function Settings() {
         console.error('Full data object:', JSON.stringify(data, null, 2));
         setErrorMessage('Erreur lors du changement de mot de passe.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Caught error:', err);
       setSaving(false);
       setErrorMessage('Une erreur s\'est produite. Veuillez réessayer ou contacter le support.');
@@ -280,7 +264,7 @@ export default function Settings() {
           remind_14_days: remind14Days,
           remind_30_days: remind30Days,
           updated_at: new Date().toISOString()
-        } as any, {
+        }, {
           onConflict: 'user_id'
         });
 
@@ -292,7 +276,7 @@ export default function Settings() {
         setSuccessMessage('Préférences de rappel mises à jour avec succès');
         setShowSuccessModal(true);
       }
-    } catch (err: any) {
+    } catch (err) {
       setSaving(false);
       setErrorMessage(formatErrorMessage(err));
     }
@@ -320,7 +304,7 @@ export default function Settings() {
         setSuccessMessage('Email de test envoyé avec succès ! Vérifiez votre boîte de réception.');
         setShowSuccessModal(true);
       }
-    } catch (err: any) {
+    } catch (err) {
       setSendingTestEmail(false);
       setErrorMessage(formatErrorMessage(err));
     }

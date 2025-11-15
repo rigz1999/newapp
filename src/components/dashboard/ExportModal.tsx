@@ -9,6 +9,13 @@ import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { supabase } from '../../lib/supabase';
 
+// Type declaration for jsPDF with autoTable extension
+interface JsPDFWithAutoTable extends jsPDF {
+  lastAutoTable: {
+    finalY: number;
+  };
+}
+
 // Format currency for PDF (replaces non-breaking spaces with regular spaces)
 const formatCurrencyForPDF = (amount: number): string => {
   return formatCurrency(amount).replace(/\u00A0/g, ' ');
@@ -524,7 +531,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         headStyles: { fillColor: [37, 99, 235] },
       });
 
-      yPos = (doc as any).lastAutoTable.finalY + 15;
+      yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
     }
 
     // Payments
@@ -553,7 +560,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         headStyles: { fillColor: [37, 99, 235] },
       });
 
-      yPos = (doc as any).lastAutoTable.finalY + 15;
+      yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
     }
 
     // Coupons
@@ -587,7 +594,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         headStyles: { fillColor: [37, 99, 235] },
       });
 
-      yPos = (doc as any).lastAutoTable.finalY + 15;
+      yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
     }
 
     // Alerts

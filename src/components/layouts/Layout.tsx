@@ -67,8 +67,8 @@ export function Layout({ organization }: LayoutProps) {
             filter: `id=eq.${user.id}`
           },
           (payload) => {
-            if (payload.new) {
-              setUserProfile({ full_name: (payload.new as any).full_name });
+            if (payload.new && 'full_name' in payload.new) {
+              setUserProfile({ full_name: payload.new.full_name as string });
             }
           }
         )

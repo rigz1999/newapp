@@ -7,6 +7,7 @@ import { Layout } from './components/layouts/Layout';
 import { InvitationAccept } from './components/auth/InvitationAccept';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
+import { ThemeProvider } from './context/ThemeContext';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
@@ -34,8 +35,9 @@ function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
+    <ThemeProvider>
+      <ErrorBoundary>
+        <BrowserRouter>
         <Routes>
           {/* Public Routes - No authentication required */}
           <Route
@@ -188,6 +190,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </ErrorBoundary>
+    </ThemeProvider>
   );
 }
 
