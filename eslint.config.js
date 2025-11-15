@@ -5,12 +5,12 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'supabase/functions/**'] },
+  { ignores: ['dist', 'supabase/functions/**', 'node_modules', 'coverage'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      ecmaVersion: 2020,
+      ecmaVersion: 2022,
       globals: globals.browser,
     },
     plugins: {
@@ -19,23 +19,83 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
+
+      // React specific rules
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      'react-hooks/exhaustive-deps': 'warn',
+
+      // TypeScript rules
+      '@typescript-eslint/no-explicit-any': 'error', // Changed from 'warn' to 'error'
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
       ],
-      '@typescript-eslint/no-unused-expressions': ['error', {
-        allowShortCircuit: true,
-        allowTernary: true,
-        allowTaggedTemplates: true,
-      }],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['error', {
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-      }],
-      'no-empty': ['error', { allowEmptyCatch: true }],
+      '@typescript-eslint/no-unused-expressions': [
+        'error',
+        {
+          allowShortCircuit: true,
+          allowTernary: true,
+          allowTaggedTemplates: true,
+        },
+      ],
+      '@typescript-eslint/explicit-function-return-type': [
+        'warn',
+        {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+          allowHigherOrderFunctions: true,
+        },
+      ],
+      // Type-aware rules disabled (require parserOptions.project)
+      // '@typescript-eslint/no-floating-promises': 'error',
+      // '@typescript-eslint/no-misused-promises': 'error',
+      // '@typescript-eslint/await-thenable': 'error',
+      // '@typescript-eslint/prefer-nullish-coalescing': 'warn',
+      // '@typescript-eslint/prefer-optional-chain': 'warn',
       '@typescript-eslint/no-empty-object-type': 'warn',
+
+      // General code quality
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-debugger': 'error',
+      'no-alert': 'warn',
+      'no-var': 'error',
+      'prefer-const': 'error',
+      'prefer-template': 'warn',
+      eqeqeq: ['error', 'always', { null: 'ignore' }],
+      'no-empty': ['error', { allowEmptyCatch: true }],
       'no-control-regex': 'warn',
+
+      // Security rules
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-new-func': 'error',
+      'no-script-url': 'error',
+
+      // Best practices
+      curly: ['error', 'all'],
+      'default-case': 'warn',
+      'dot-notation': 'warn',
+      'no-duplicate-imports': 'error',
+      'no-return-await': 'error',
+      'require-await': 'warn',
+      'no-throw-literal': 'error',
+
+      // Code style (basic)
+      'arrow-body-style': ['warn', 'as-needed'],
+      'prefer-arrow-callback': 'warn',
+    },
+  },
+  // Test files have more lenient rules
+  {
+    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      'no-console': 'off',
     },
   }
 );
