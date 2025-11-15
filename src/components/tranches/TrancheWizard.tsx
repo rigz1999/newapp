@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 import { X, CheckCircle, AlertCircle, Loader, Edit, Trash2 } from "lucide-react";
 import { FileUpload } from "../investors/FileUpload";
 import { Tooltip } from "../common/Tooltip";
+import { isValidDateRange } from "../../utils/validators";
 
 interface Project {
   id: string;
@@ -147,6 +148,19 @@ export function TrancheWizard({
   const handleUpdateTranche = async () => {
     if (!editingTranche || !trancheName) {
       setError("Veuillez remplir le nom de la tranche");
+      return;
+    }
+
+    // Validate dates
+    if (dateEmission && dateEcheanceFinale) {
+      if (!isValidDateRange(dateEmission, dateEcheanceFinale)) {
+        setError("La date d'émission doit être antérieure à la date d'échéance finale");
+        return;
+      }
+    }
+
+    if (dateEcheanceFinale && new Date(dateEcheanceFinale) < new Date()) {
+      setError("La date d'échéance finale ne peut pas être dans le passé");
       return;
     }
 
