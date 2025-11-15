@@ -5,6 +5,7 @@ import { FolderOpen, Plus, Layers, Search, Eye, Users, X, Trash2 } from 'lucide-
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { CardSkeleton } from '../common/Skeleton';
 import { ConfirmModal } from '../common/Modals';
+import { toast } from '../../utils/toast';
 import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
@@ -187,6 +188,8 @@ export function Projects({ organization }: ProjectsProps) {
 
       if (error) throw error;
 
+      toast.success('Projet supprimé avec succès !');
+
       // Close modal and reset state
       setShowDeleteModal(false);
       setProjectToDelete(null);
@@ -196,7 +199,7 @@ export function Projects({ organization }: ProjectsProps) {
       triggerCacheInvalidation();
     } catch (err: any) {
       console.error('Erreur lors de la suppression du projet:', err);
-      alert(`Erreur lors de la suppression: ${err.message}`);
+      toast.error(`Erreur lors de la suppression: ${err.message}`);
     } finally {
       setDeletingProject(false);
     }
@@ -272,11 +275,12 @@ export function Projects({ organization }: ProjectsProps) {
       // Invalidate dashboard cache since new project affects stats
       triggerCacheInvalidation(organization.id);
 
+      toast.success('Projet créé avec succès !');
       setShowCreateModal(false);
       resetNewProjectForm();
       fetchProjects(); // Refresh la liste
     } catch (err: any) {
-      alert('Erreur lors de la création du projet: ' + err.message);
+      toast.error('Erreur lors de la création du projet: ' + err.message);
     } finally {
       setCreatingProject(false);
     }
