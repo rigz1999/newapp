@@ -7,10 +7,20 @@ import { getDashboardCacheKey, onCacheInvalidated } from '../../utils/cacheManag
 import { AlertModal } from '../common/Modals';
 import { DashboardSkeleton } from '../common/Skeleton';
 import { ExportModal } from './ExportModal';
-import { formatCurrency, formatDate, getRelativeDate, formatMontantDisplay } from '../../utils/formatters';
+import {
+  formatCurrency,
+  formatDate,
+  getRelativeDate,
+  formatMontantDisplay,
+} from '../../utils/formatters';
 import Decimal from 'decimal.js';
 import { isValidSIREN } from '../../utils/validators';
-import { generateAlerts, type Alert, type Payment, type UpcomingCoupon } from '../../utils/dashboardAlerts';
+import {
+  generateAlerts,
+  type Alert,
+  type Payment,
+  type UpcomingCoupon,
+} from '../../utils/dashboardAlerts';
 import {
   TrendingUp,
   CheckCircle2,
@@ -25,7 +35,7 @@ import {
   Plus,
   Euro,
   FileText,
-  Download
+  Download,
 } from 'lucide-react';
 
 // generateAlerts function now imported from utils/dashboardAlerts.ts
@@ -66,10 +76,12 @@ export function Dashboard({ organization }: DashboardProps) {
   const CACHE_DURATION = 5 * 60 * 1000;
 
   // Cache getter - defined early for useState initializer
-  const checkCachedData = () => {
+  const checkCachedData = (): unknown => {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
-      if (!cached) return null;
+      if (!cached) {
+        return null;
+      }
       const { data, timestamp } = JSON.parse(cached);
       if (Date.now() - timestamp > CACHE_DURATION) {
         localStorage.removeItem(CACHE_KEY);
@@ -82,8 +94,10 @@ export function Dashboard({ organization }: DashboardProps) {
   };
 
   // Fonction pour gérer les clics sur les alertes
-  const handleAlertClick = (alertId: string) => {
-    if (alertId === 'no-alerts') return; // Ne rien faire si message positif
+  const handleAlertClick = (alertId: string): void => {
+    if (alertId === 'no-alerts') {
+      return;
+    } // Ne rien faire si message positif
 
     if (alertId === 'late-payments') {
       navigate('/paiements');
@@ -126,7 +140,9 @@ export function Dashboard({ organization }: DashboardProps) {
   const [startMonth, setStartMonth] = useState(0);
   const [endMonth, setEndMonth] = useState(11);
   const [viewMode, setViewMode] = useState<'monthly' | 'cumulative'>('monthly');
-  const [chartSubscriptionsAll, setChartSubscriptionsAll] = useState<{ montant_investi: any; date_souscription: string }[]>([]);
+  const [chartSubscriptionsAll, setChartSubscriptionsAll] = useState<
+    { montant_investi: number; date_souscription: string }[]
+  >([]);
 
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
   const [showQuickPayment, setShowQuickPayment] = useState(false);
@@ -136,21 +152,21 @@ export function Dashboard({ organization }: DashboardProps) {
   const [newProjectData, setNewProjectData] = useState({
     projet: '',
     // Champs financiers (strings for inputs)
-    type: 'obligations_simples',  // NEW
-    taux_interet: '',           // % ex "8.50"
-    montant_global_eur: '',     // digits only
-    periodicite_coupon: '',     // 'annuel' | 'semestriel' | 'trimestriel'
-    maturite_mois: '',          // NEW
-    base_interet: '360',        // NEW
+    type: 'obligations_simples', // NEW
+    taux_interet: '', // % ex "8.50"
+    montant_global_eur: '', // digits only
+    periodicite_coupon: '', // 'annuel' | 'semestriel' | 'trimestriel'
+    maturite_mois: '', // NEW
+    base_interet: '360', // NEW
     // Autres champs
     emetteur: '',
-    siren_emetteur: '',         // keep as string to preserve leading zeros
+    siren_emetteur: '', // keep as string to preserve leading zeros
     nom_representant: '',
     prenom_representant: '',
     email_representant: '',
     representant_masse: '',
     email_rep_masse: '',
-    telephone_rep_masse: ''     // keep as string (leading zeros, +33, etc.)
+    telephone_rep_masse: '', // keep as string (leading zeros, +33, etc.)
   });
 
   const [sirenError, setSirenError] = useState<string>('');
@@ -167,7 +183,7 @@ export function Dashboard({ organization }: DashboardProps) {
   // getCachedData is now defined early in the component as checkCachedData
   const getCachedData = checkCachedData;
 
-  const setCachedData = (data: any) => {
+  const setCachedData = (data: unknown): void => {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
     } catch {
@@ -176,9 +192,11 @@ export function Dashboard({ organization }: DashboardProps) {
   };
 
   // Mask caret before " €"
-  const moveCaretBeforeEuro = () => {
+  const moveCaretBeforeEuro = (): void => {
     const el = montantRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const display = el.value;
     const pos = Math.max(0, display.length - 2);
     requestAnimationFrame(() => {
@@ -186,7 +204,7 @@ export function Dashboard({ organization }: DashboardProps) {
     });
   };
 
- const resetNewProjectForm = useCallback(() => {
+  const resetNewProjectForm = useCallback(() => {
     setNewProjectData({
       projet: '',
       type: 'obligations_simples',
@@ -202,7 +220,7 @@ export function Dashboard({ organization }: DashboardProps) {
       email_representant: '',
       representant_masse: '',
       email_rep_masse: '',
-      telephone_rep_masse: ''
+      telephone_rep_masse: '',
     });
     setSirenError('');
     requestAnimationFrame(() => moveCaretBeforeEuro());
@@ -213,26 +231,36 @@ export function Dashboard({ organization }: DashboardProps) {
     if (showNewProject || showTrancheWizard || showQuickPayment || showExportModal) {
       const original = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = original; };
+      return () => {
+        document.body.style.overflow = original;
+      };
     }
   }, [showNewProject, showTrancheWizard, showQuickPayment, showExportModal]);
 
   // Focus trap + Escape close for New Project modal
   useEffect(() => {
-    if (!showNewProject) return;
+    if (!showNewProject) {
+      return;
+    }
 
-    const handleKey = (e: KeyboardEvent) => {
+    const handleKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
-        console.log('ESC pressed in New Project Modal');
         resetNewProjectForm();
         setShowNewProject(false);
         return;
       }
-      if (e.key === 'Tab' && modalRef.current && firstFocusableRef.current && lastFocusableRef.current) {
+      if (
+        e.key === 'Tab' &&
+        modalRef.current &&
+        firstFocusableRef.current &&
+        lastFocusableRef.current
+      ) {
         const focusable = modalRef.current.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
-        if (!focusable.length) return;
+        if (!focusable.length) {
+          return;
+        }
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
         if (e.shiftKey && document.activeElement === first) {
@@ -251,7 +279,6 @@ export function Dashboard({ organization }: DashboardProps) {
   // Listen for cache invalidation events from other components
   useEffect(() => {
     const cleanup = onCacheInvalidated(() => {
-      console.log('[Dashboard] Cache invalidated, refreshing data...');
       handleRefresh();
     });
     return cleanup;
@@ -259,7 +286,9 @@ export function Dashboard({ organization }: DashboardProps) {
 
   const fetchData = async () => {
     const isRefresh = !loading;
-    if (isRefresh) setRefreshing(true);
+    if (isRefresh) {
+      setRefreshing(true);
+    }
 
     try {
       const cachedData = getCachedData();
@@ -279,13 +308,20 @@ export function Dashboard({ organization }: DashboardProps) {
       const in90Days = new Date();
       in90Days.setDate(today.getDate() + 90);
 
-      const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes, chartSubsRes] = await Promise.all([
-        supabase.from('projets').select('id'),
-        supabase.from('tranches').select('id, projet_id'),
-        supabase.from('souscriptions').select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
-        supabase.from('paiements').select('montant, statut').eq('statut', 'payé').gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
-        supabase.from('souscriptions').select('montant_investi, date_souscription')
-      ]);
+      const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes, chartSubsRes] =
+        await Promise.all([
+          supabase.from('projets').select('id'),
+          supabase.from('tranches').select('id, projet_id'),
+          supabase
+            .from('souscriptions')
+            .select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
+          supabase
+            .from('paiements')
+            .select('montant, statut')
+            .eq('statut', 'payé')
+            .gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
+          supabase.from('souscriptions').select('montant_investi, date_souscription'),
+        ]);
 
       // Check for critical errors
       const errors = [
@@ -293,7 +329,7 @@ export function Dashboard({ organization }: DashboardProps) {
         tranchesRes.error && 'Erreur lors du chargement des tranches',
         subscriptionsRes.error && 'Erreur lors du chargement des souscriptions',
         monthPaymentsRes.error && 'Erreur lors du chargement des paiements',
-        chartSubsRes.error && 'Erreur lors du chargement des données graphiques'
+        chartSubsRes.error && 'Erreur lors du chargement des données graphiques',
       ].filter(Boolean);
 
       if (errors.length > 0) {
@@ -302,7 +338,7 @@ export function Dashboard({ organization }: DashboardProps) {
           tranches: tranchesRes.error,
           subscriptions: subscriptionsRes.error,
           payments: monthPaymentsRes.error,
-          chart: chartSubsRes.error
+          chart: chartSubsRes.error,
         });
         setError(errors.join(', '));
       } else {
@@ -315,14 +351,23 @@ export function Dashboard({ organization }: DashboardProps) {
       const monthPayments = monthPaymentsRes.data || [];
       const chartSubscriptions = chartSubsRes.data || [];
 
-      const trancheIds = tranches.map((t: any) => t.id);
+      const trancheIds = tranches.map((t: { id: string }) => t.id);
 
-      const totalInvested = subscriptions.reduce((sum: number, s: any) => sum + parseFloat(s.montant_investi?.toString() || '0'), 0);
-      const couponsPaidThisMonth = monthPayments.reduce((sum: number, p: any) => sum + parseFloat(p.montant?.toString() || '0'), 0);
+      const totalInvested = subscriptions.reduce(
+        (sum: number, s: { montant_investi?: number | string }) =>
+          sum + parseFloat(s.montant_investi?.toString() || '0'),
+        0
+      );
+      const couponsPaidThisMonth = monthPayments.reduce(
+        (sum: number, p: { montant?: number | string }) =>
+          sum + parseFloat(p.montant?.toString() || '0'),
+        0
+      );
       const upcomingCount = subscriptions.filter(
-        (s: any) => s.prochaine_date_coupon &&
-             s.prochaine_date_coupon >= today.toISOString().split('T')[0] &&
-             s.prochaine_date_coupon <= in90Days.toISOString().split('T')[0]
+        (s: { prochaine_date_coupon?: string }) =>
+          s.prochaine_date_coupon &&
+          s.prochaine_date_coupon >= today.toISOString().split('T')[0] &&
+          s.prochaine_date_coupon <= in90Days.toISOString().split('T')[0]
       ).length;
 
       setStats({
@@ -333,46 +378,81 @@ export function Dashboard({ organization }: DashboardProps) {
         nextCouponDays: 90,
       });
 
-      let recentPaymentsData: any[] = [];
-      let groupedCoupons: any[] = [];
+      let recentPaymentsData: Payment[] = [];
+      let groupedCoupons: UpcomingCoupon[] = [];
 
       if (trancheIds.length > 0) {
         const [paymentsRes2, couponsRes] = await Promise.all([
-          supabase.from('paiements').select(`
+          supabase
+            .from('paiements')
+            .select(
+              `
               id, id_paiement, montant, date_paiement, statut,
               tranche:tranches(tranche_name, projet_id)
-            `).in('tranche_id', trancheIds).eq('statut', 'payé').order('date_paiement', { ascending: false }).limit(5),
-          supabase.from('souscriptions').select(`
+            `
+            )
+            .in('tranche_id', trancheIds)
+            .eq('statut', 'payé')
+            .order('date_paiement', { ascending: false })
+            .limit(5),
+          supabase
+            .from('souscriptions')
+            .select(
+              `
               id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
               tranche:tranches(
                 tranche_name, projet_id,
                 projet:projets(projet)
               )
-            `).in('tranche_id', trancheIds).gte('prochaine_date_coupon', today.toISOString().split('T')[0]).order('prochaine_date_coupon', { ascending: true }).limit(10)
+            `
+            )
+            .in('tranche_id', trancheIds)
+            .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
+            .order('prochaine_date_coupon', { ascending: true })
+            .limit(10),
         ]);
 
-        if (paymentsRes2.error) console.warn('Supabase error paiements 2:', paymentsRes2.error);
-        if (couponsRes.error) console.warn('Supabase error coupons:', couponsRes.error);
+        if (paymentsRes2.error) {
+          console.warn('Supabase error paiements 2:', paymentsRes2.error);
+        }
+        if (couponsRes.error) {
+          console.warn('Supabase error coupons:', couponsRes.error);
+        }
 
         recentPaymentsData = paymentsRes2.data || [];
 
-        groupedCoupons = (couponsRes.data || []).reduce((acc: any[], coupon: any) => {
+        interface CouponData {
+          tranche_id: string;
+          prochaine_date_coupon: string;
+          coupon_brut: number;
+          investor_count?: number;
+          [key: string]: unknown;
+        }
+
+        groupedCoupons = (couponsRes.data || []).reduce((acc: CouponData[], coupon: CouponData) => {
           const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
           const existing = acc.find(c => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
 
           if (existing) {
-            existing.investor_count += 1;
-            existing.coupon_brut = new Decimal(existing.coupon_brut).plus(new Decimal(coupon.coupon_brut)).toNumber();
+            existing.investor_count = (existing.investor_count || 0) + 1;
+            existing.coupon_brut = new Decimal(existing.coupon_brut)
+              .plus(new Decimal(coupon.coupon_brut))
+              .toNumber();
           } else {
             acc.push({ ...coupon, investor_count: 1 });
           }
           return acc;
-        }, []);
+        }, []) as UpcomingCoupon[];
       }
 
       // Precompute monthly data locally from cached chartSubscriptions
       setChartSubscriptionsAll(chartSubscriptions);
-      const monthlyDataResult = processMonthlyData(chartSubscriptions, selectedYear, startMonth, endMonth);
+      const monthlyDataResult = processMonthlyData(
+        chartSubscriptions,
+        selectedYear,
+        startMonth,
+        endMonth
+      );
       setMonthlyData(monthlyDataResult);
 
       // Récupérer les RIB manquants
@@ -393,36 +473,64 @@ export function Dashboard({ organization }: DashboardProps) {
         recentPayments: recentPaymentsData,
         upcomingCoupons: groupedCoupons.slice(0, 5),
         monthlyData: monthlyDataResult,
-        chartSubscriptionsAll: chartSubscriptions
+        chartSubscriptionsAll: chartSubscriptions,
       };
       setRecentPayments(recentPaymentsData);
       setUpcomingCoupons(groupedCoupons.slice(0, 5));
       // Générer les alertes dynamiques
-      const dynamicAlerts = generateAlerts(groupedCoupons.slice(0, 5), recentPaymentsData, ribManquantsCount);
+      const dynamicAlerts = generateAlerts(
+        groupedCoupons.slice(0, 5),
+        recentPaymentsData,
+        ribManquantsCount
+      );
       setAlerts(dynamicAlerts);
       setCachedData(cacheData);
 
       setLoading(false);
-      if (isRefresh) setRefreshing(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      }
     } catch (error) {
       console.error('Dashboard: Error fetching data', error);
       localStorage.removeItem(CACHE_KEY);
       setLoading(false);
-      if (isRefresh) setRefreshing(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      }
     }
   };
 
-  const processMonthlyData = (subscriptions: any[], year: number, start: number, end: number) => {
-    if (!subscriptions || subscriptions.length === 0) return [];
+  const processMonthlyData = (
+    subscriptions: { montant_investi?: number | string; date_souscription?: string }[],
+    year: number,
+    start: number,
+    end: number
+  ): MonthlyData[] => {
+    if (!subscriptions || subscriptions.length === 0) {
+      return [];
+    }
     const monthlyTotals: { [key: string]: number } = {};
-    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+    const monthNames = [
+      'Jan',
+      'Fév',
+      'Mar',
+      'Avr',
+      'Mai',
+      'Juin',
+      'Juil',
+      'Août',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Déc',
+    ];
 
     for (let month = start; month <= end; month++) {
       const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
       monthlyTotals[monthKey] = 0;
     }
 
-    subscriptions.forEach((sub) => {
+    subscriptions.forEach(sub => {
       if (sub.date_souscription) {
         const date = new Date(sub.date_souscription);
         const subYear = date.getFullYear();
@@ -430,7 +538,8 @@ export function Dashboard({ organization }: DashboardProps) {
         const monthKey = `${subYear}-${String(subMonth + 1).padStart(2, '0')}`;
 
         if (subYear === year && subMonth >= start && subMonth <= end) {
-          monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + parseFloat(sub.montant_investi?.toString() || '0');
+          monthlyTotals[monthKey] =
+            (monthlyTotals[monthKey] || 0) + parseFloat(sub.montant_investi?.toString() || '0');
         }
       }
     });
@@ -453,7 +562,11 @@ export function Dashboard({ organization }: DashboardProps) {
 
   useEffect(() => {
     let mounted = true;
-    (async () => { if (mounted) await fetchData(); })();
+    (async () => {
+      if (mounted) {
+        await fetchData();
+      }
+    })();
     return () => {
       mounted = false;
       setStats({
@@ -471,20 +584,21 @@ export function Dashboard({ organization }: DashboardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organization.id]);
 
-  const handleRefresh = () => window.location.reload();
+  const handleRefresh = (): void => window.location.reload();
 
   // Recompute monthly data locally when year/range changes
   useEffect(() => {
     const data = processMonthlyData(chartSubscriptionsAll, selectedYear, startMonth, endMonth);
     setMonthlyData(data);
-     
   }, [selectedYear, startMonth, endMonth, chartSubscriptionsAll]);
 
   // Chart max computed once
   const chartMax = useMemo(() => {
-    if (!monthlyData.length) return 1;
+    if (!monthlyData.length) {
+      return 1;
+    }
     return Math.max(
-      ...monthlyData.map(d => (viewMode === 'cumulative' ? (d.cumulative || 0) : d.amount)),
+      ...monthlyData.map(d => (viewMode === 'cumulative' ? d.cumulative || 0 : d.amount)),
       1
     );
   }, [monthlyData, viewMode]);
@@ -566,7 +680,9 @@ export function Dashboard({ organization }: DashboardProps) {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-amber-600" />
-                    <h3 className="text-lg font-bold text-slate-900">Alertes et Actions Requises</h3>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Alertes et Actions Requises
+                    </h3>
                   </div>
                   <button
                     onClick={() => setAlerts([])}
@@ -576,48 +692,54 @@ export function Dashboard({ organization }: DashboardProps) {
                   </button>
                 </div>
                 <div className="space-y-3">
-                  {alerts.map((alert) => (
+                  {alerts.map(alert => (
                     <div
                       key={alert.id}
                       onClick={() => handleAlertClick(alert.id)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                        alert.type === 'late_payment' 
-                          ? 'bg-red-50 hover:bg-red-100 border border-red-200' 
+                        alert.type === 'late_payment'
+                          ? 'bg-red-50 hover:bg-red-100 border border-red-200'
                           : alert.type === 'upcoming_coupons'
-                          ? 'bg-blue-50 hover:bg-blue-100 border border-blue-200'
-                          : 'bg-orange-50 hover:bg-orange-100 border border-orange-200'
+                            ? 'bg-blue-50 hover:bg-blue-100 border border-blue-200'
+                            : 'bg-orange-50 hover:bg-orange-100 border border-orange-200'
                       } ${
-                        alert.id !== 'no-alerts' 
-                          ? 'cursor-pointer hover:shadow-md transform hover:scale-[1.01]' 
+                        alert.id !== 'no-alerts'
+                          ? 'cursor-pointer hover:shadow-md transform hover:scale-[1.01]'
                           : ''
                       }`}
                     >
-                      <AlertCircle className={`w-5 h-5 flex-shrink-0 ${
-                        alert.type === 'late_payment' 
-                          ? 'text-finixar-red' 
-                          : alert.type === 'upcoming_coupons'
-                          ? 'text-blue-600'
-                          : 'text-orange-600'
-                      }`} />
-                      
-                      <p className={`text-sm font-medium flex-1 ${
-                        alert.type === 'late_payment' 
-                          ? 'text-red-900' 
-                          : alert.type === 'upcoming_coupons'
-                          ? 'text-blue-900'
-                          : 'text-orange-900'
-                      }`}>
+                      <AlertCircle
+                        className={`w-5 h-5 flex-shrink-0 ${
+                          alert.type === 'late_payment'
+                            ? 'text-finixar-red'
+                            : alert.type === 'upcoming_coupons'
+                              ? 'text-blue-600'
+                              : 'text-orange-600'
+                        }`}
+                      />
+
+                      <p
+                        className={`text-sm font-medium flex-1 ${
+                          alert.type === 'late_payment'
+                            ? 'text-red-900'
+                            : alert.type === 'upcoming_coupons'
+                              ? 'text-blue-900'
+                              : 'text-orange-900'
+                        }`}
+                      >
                         {alert.message}
                       </p>
-                      
+
                       {alert.id !== 'no-alerts' && (
-                        <ArrowRight className={`w-4 h-4 ${
-                          alert.type === 'late_payment' 
-                            ? 'text-finixar-red' 
-                            : alert.type === 'upcoming_coupons'
-                            ? 'text-blue-600'
-                            : 'text-orange-600'
-                        }`} />
+                        <ArrowRight
+                          className={`w-4 h-4 ${
+                            alert.type === 'late_payment'
+                              ? 'text-finixar-red'
+                              : alert.type === 'upcoming_coupons'
+                                ? 'text-blue-600'
+                                : 'text-orange-600'
+                          }`}
+                        />
                       )}
                     </div>
                   ))}
@@ -630,7 +752,9 @@ export function Dashboard({ organization }: DashboardProps) {
             <h2 className="text-xl font-bold text-slate-900 mb-4">Actions Rapides</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <button
-                onClick={() => { setShowNewProject(true); }}
+                onClick={() => {
+                  setShowNewProject(true);
+                }}
                 className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
               >
                 <div className="bg-finixar-brand-blue p-2 rounded-lg group-hover:scale-110 transition-transform">
@@ -683,39 +807,70 @@ export function Dashboard({ organization }: DashboardProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-            <div className="bg-white rounded-lg p-5 border border-slate-200">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-4 h-4 text-slate-400" />
-                <span className="text-xs font-medium text-slate-500">MONTANT TOTAL INVESTI</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-blue-100 hover:scale-[1.02] transition-all duration-200 group">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <span className="text-blue-700 text-sm font-medium block mb-2">
+                    Montant total investi
+                  </span>
+                  <p className="text-3xl font-bold text-blue-900 mb-1">
+                    {formatCurrency(stats.totalInvested)}
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
               </div>
-              <p className="text-2xl font-semibold text-slate-900">{formatCurrency(stats.totalInvested)}</p>
             </div>
 
-            <div className="bg-white rounded-lg p-5 border border-slate-200">
-              <div className="flex items-center gap-2 mb-3">
-                <CheckCircle2 className="w-4 h-4 text-slate-400" />
-                <span className="text-xs font-medium text-slate-500">COUPONS PAYÉS CE MOIS</span>
+            <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-green-100 hover:scale-[1.02] transition-all duration-200 group">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <span className="text-green-700 text-sm font-medium block mb-2">
+                    Coupons payés ce mois
+                  </span>
+                  <p className="text-3xl font-bold text-green-900 mb-1">
+                    {formatCurrency(stats.couponsPaidThisMonth)}
+                  </p>
+                  <p className="text-sm text-green-600 font-medium">
+                    {stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                  <CheckCircle2 className="w-6 h-6 text-white" />
+                </div>
               </div>
-              <p className="text-2xl font-semibold text-slate-900">{formatCurrency(stats.couponsPaidThisMonth)}</p>
             </div>
 
-            <div className="bg-white rounded-lg p-5 border border-slate-200">
-              <div className="flex items-center gap-2 mb-3">
-                <Folder className="w-4 h-4 text-slate-400" />
-                <span className="text-xs font-medium text-slate-500">PROJETS ACTIFS</span>
+            <div className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-purple-100 hover:scale-[1.02] transition-all duration-200 group">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <span className="text-purple-700 text-sm font-medium block mb-2">
+                    Projets actifs
+                  </span>
+                  <p className="text-3xl font-bold text-purple-900">{stats.activeProjects}</p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                  <Folder className="w-6 h-6 text-white" />
+                </div>
               </div>
-              <p className="text-2xl font-semibold text-slate-900">{stats.activeProjects}</p>
             </div>
 
-            <div className="bg-white rounded-lg p-5 border border-slate-200">
-              <div className="flex items-center gap-2 mb-3">
-                <Clock className="w-4 h-4 text-slate-400" />
-                <span className="text-xs font-medium text-slate-500">COUPONS À VENIR</span>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl font-semibold text-slate-900">{stats.upcomingCoupons}</p>
-                <span className="text-sm text-slate-400">({stats.nextCouponDays}j)</span>
+            <div className="bg-gradient-to-br from-amber-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-amber-100 hover:scale-[1.02] transition-all duration-200 group">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <span className="text-amber-700 text-sm font-medium block mb-2">
+                    Coupons à venir
+                  </span>
+                  <p className="text-3xl font-bold text-amber-900">{stats.upcomingCoupons}</p>
+                  <p className="text-sm text-amber-600 font-medium">
+                    {stats.nextCouponDays} prochains jours
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
               </div>
             </div>
           </div>
@@ -727,7 +882,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 <select
                   aria-label="Mode d'affichage"
                   value={viewMode}
-                  onChange={(e) => setViewMode(e.target.value as 'monthly' | 'cumulative')}
+                  onChange={e => setViewMode(e.target.value as 'monthly' | 'cumulative')}
                   className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent font-medium"
                 >
                   <option value="monthly">Vue par mois</option>
@@ -736,7 +891,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 <select
                   aria-label="Année"
                   value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+                  onChange={e => setSelectedYear(parseInt(e.target.value, 10))}
                   className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
                 >
                   <option value={2024}>2024</option>
@@ -746,7 +901,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 <select
                   aria-label="Plage de mois"
                   value={`${startMonth}-${endMonth}`}
-                  onChange={(e) => {
+                  onChange={e => {
                     const [start, end] = e.target.value.split('-').map(Number);
                     setStartMonth(start);
                     setEndMonth(end);
@@ -774,8 +929,12 @@ export function Dashboard({ organization }: DashboardProps) {
             ) : (
               <div className="h-80 flex items-end justify-between gap-2 px-4 pb-4">
                 {monthlyData.map((data, index) => {
-                  const displayAmount = viewMode === 'cumulative' ? (data.cumulative || 0) : data.amount;
-                  const heightPercentage = Math.max((displayAmount / chartMax) * 85, displayAmount > 0 ? 5 : 0);
+                  const displayAmount =
+                    viewMode === 'cumulative' ? data.cumulative || 0 : data.amount;
+                  const heightPercentage = Math.max(
+                    (displayAmount / chartMax) * 85,
+                    displayAmount > 0 ? 5 : 0
+                  );
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full">
                       <div className="relative group flex-1 w-full flex flex-col justify-end items-center">
@@ -786,8 +945,12 @@ export function Dashboard({ organization }: DashboardProps) {
                               <div>{formatCurrency(data.amount)}</div>
                             ) : (
                               <>
-                                <div className="text-slate-300">Mensuel: {formatCurrency(data.amount)}</div>
-                                <div className="font-semibold">Cumulé: {formatCurrency(data.cumulative || 0)}</div>
+                                <div className="text-slate-300">
+                                  Mensuel: {formatCurrency(data.amount)}
+                                </div>
+                                <div className="font-semibold">
+                                  Cumulé: {formatCurrency(data.cumulative || 0)}
+                                </div>
                               </>
                             )}
                           </div>
@@ -830,8 +993,11 @@ export function Dashboard({ organization }: DashboardProps) {
                 <p className="text-slate-500 text-center py-8">Aucun paiement récent</p>
               ) : (
                 <div className="space-y-3">
-                  {recentPayments.map((payment) => (
-                    <div key={payment.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  {recentPayments.map(payment => (
+                    <div
+                      key={payment.id}
+                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                    >
                       <div className="flex-1">
                         <p className="font-medium text-slate-900 text-sm">
                           {payment.tranche?.tranche_name || 'Tranche'}
@@ -841,16 +1007,21 @@ export function Dashboard({ organization }: DashboardProps) {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-slate-900 text-sm">{formatCurrency(payment.montant)}</p>
-                        <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                          payment.statut?.toLowerCase() === 'payé' || payment.statut?.toLowerCase() === 'paid'
-                            ? 'bg-green-100 text-green-700'
-                            : payment.statut?.toLowerCase() === 'en attente'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : payment.statut?.toLowerCase() === 'en retard'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
+                        <p className="font-bold text-slate-900 text-sm">
+                          {formatCurrency(payment.montant)}
+                        </p>
+                        <span
+                          className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            payment.statut?.toLowerCase() === 'payé' ||
+                            payment.statut?.toLowerCase() === 'paid'
+                              ? 'bg-green-100 text-green-700'
+                              : payment.statut?.toLowerCase() === 'en attente'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : payment.statut?.toLowerCase() === 'en retard'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
                           {payment.statut}
                         </span>
                       </div>
@@ -874,17 +1045,23 @@ export function Dashboard({ organization }: DashboardProps) {
                 <p className="text-slate-500 text-center py-8">Aucun coupon à venir</p>
               ) : (
                 <div className="space-y-3">
-                  {upcomingCoupons.map((coupon) => {
+                  {upcomingCoupons.map(coupon => {
                     const daysUntil = Math.ceil(
-                      (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                      (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) /
+                        (1000 * 60 * 60 * 24)
                     );
                     const isUrgent = daysUntil <= 7;
 
                     return (
-                      <div key={coupon.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <div
+                        key={coupon.id}
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                      >
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <p className="font-bold text-slate-900">{formatCurrency(parseFloat(coupon.coupon_brut.toString()))}</p>
+                            <p className="font-bold text-slate-900">
+                              {formatCurrency(parseFloat(coupon.coupon_brut.toString()))}
+                            </p>
                             {isUrgent && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
                                 <AlertCircle className="w-3 h-3" />
@@ -893,16 +1070,24 @@ export function Dashboard({ organization }: DashboardProps) {
                             )}
                           </div>
                           <p className="text-xs text-slate-600 mt-1">
-                            {coupon.tranche?.projet?.projet || 'Projet'} • {coupon.tranche?.tranche_name || 'Tranche'}
+                            {coupon.tranche?.projet?.projet || 'Projet'} •{' '}
+                            {coupon.tranche?.tranche_name || 'Tranche'}
                           </p>
                           <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
                             <Users className="w-3 h-3" />
-                            <span>{coupon.investor_count || 1} investisseur{(coupon.investor_count || 1) > 1 ? 's' : ''}</span>
+                            <span>
+                              {coupon.investor_count || 1} investisseur
+                              {(coupon.investor_count || 1) > 1 ? 's' : ''}
+                            </span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium text-slate-900">{formatDate(coupon.prochaine_date_coupon)}</p>
-                          <p className="text-xs text-slate-600">{getRelativeDate(coupon.prochaine_date_coupon)}</p>
+                          <p className="text-sm font-medium text-slate-900">
+                            {formatDate(coupon.prochaine_date_coupon)}
+                          </p>
+                          <p className="text-xs text-slate-600">
+                            {getRelativeDate(coupon.prochaine_date_coupon)}
+                          </p>
                         </div>
                       </div>
                     );
@@ -939,7 +1124,7 @@ export function Dashboard({ organization }: DashboardProps) {
       {showNewProject && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onMouseDown={(e) => {
+          onMouseDown={e => {
             // backdrop click to close (but not if clicking inside modal)
             if (e.target === e.currentTarget) {
               resetNewProjectForm();
@@ -957,12 +1142,17 @@ export function Dashboard({ organization }: DashboardProps) {
             <div className="p-6 border-b border-slate-200">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 id="new-project-title" className="text-xl font-bold text-slate-900">Nouveau Projet</h3>
+                  <h3 id="new-project-title" className="text-xl font-bold text-slate-900">
+                    Nouveau Projet
+                  </h3>
                   <p className="text-sm text-slate-600 mt-1">Créer un nouveau projet obligataire</p>
                 </div>
                 <button
                   ref={firstFocusableRef}
-                  onClick={() => { resetNewProjectForm(); setShowNewProject(false); }}
+                  onClick={() => {
+                    resetNewProjectForm();
+                    setShowNewProject(false);
+                  }}
                   className="text-slate-400 hover:text-slate-600"
                   aria-label="Fermer"
                 >
@@ -972,62 +1162,71 @@ export function Dashboard({ organization }: DashboardProps) {
             </div>
 
             <div className="p-6">
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                setCreatingProject(true);
+              <form
+                onSubmit={async e => {
+                  e.preventDefault();
+                  setCreatingProject(true);
 
-                if (!isValidSIREN(newProjectData.siren_emetteur)) {
-                  setSirenError('SIREN invalide (9 chiffres + clé Luhn).');
-                  setCreatingProject(false);
-                  return;
-                }
+                  if (!isValidSIREN(newProjectData.siren_emetteur)) {
+                    setSirenError('SIREN invalide (9 chiffres + clé Luhn).');
+                    setCreatingProject(false);
+                    return;
+                  }
 
-                try {
-                  const projectToCreate: any = {
-                    projet: newProjectData.projet,
-                    emetteur: newProjectData.emetteur,
-                    type: newProjectData.type,
-                    taux_interet: parseFloat(newProjectData.taux_interet),
-                    montant_global_eur: newProjectData.montant_global_eur ? parseFloat(newProjectData.montant_global_eur) : null,
-                    periodicite_coupons: newProjectData.periodicite_coupon,
-                    maturite_mois: parseInt(newProjectData.maturite_mois, 10),
-                    base_interet: parseInt(newProjectData.base_interet, 10),
-                    // keep identifiers as strings
-                    siren_emetteur: newProjectData.siren_emetteur || null,
-                    nom_representant: newProjectData.nom_representant || null,
-                    prenom_representant: newProjectData.prenom_representant || null,
-                    email_representant: newProjectData.email_representant || null,
-                    representant_masse: newProjectData.representant_masse || null,
-                    email_rep_masse: newProjectData.email_rep_masse || null,
-                    telephone_rep_masse: newProjectData.telephone_rep_masse || null,
-                  };
+                  try {
+                    const projectToCreate = {
+                      projet: newProjectData.projet,
+                      emetteur: newProjectData.emetteur,
+                      type: newProjectData.type,
+                      taux_interet: parseFloat(newProjectData.taux_interet),
+                      montant_global_eur: newProjectData.montant_global_eur
+                        ? parseFloat(newProjectData.montant_global_eur)
+                        : null,
+                      periodicite_coupons: newProjectData.periodicite_coupon,
+                      maturite_mois: parseInt(newProjectData.maturite_mois, 10),
+                      base_interet: parseInt(newProjectData.base_interet, 10),
+                      // keep identifiers as strings
+                      siren_emetteur: newProjectData.siren_emetteur || null,
+                      nom_representant: newProjectData.nom_representant || null,
+                      prenom_representant: newProjectData.prenom_representant || null,
+                      email_representant: newProjectData.email_representant || null,
+                      representant_masse: newProjectData.representant_masse || null,
+                      email_rep_masse: newProjectData.email_rep_masse || null,
+                      telephone_rep_masse: newProjectData.telephone_rep_masse || null,
+                    };
 
-                  const { data, error } = await supabase
-                    .from('projets')
-                    .insert([projectToCreate])
-                    .select()
-                    .single();
+                    const { data, error } = await supabase
+                      .from('projets')
+                      .insert([projectToCreate])
+                      .select()
+                      .single();
 
-                  if (error) throw error;
+                    if (error) {
+                      throw error;
+                    }
 
-                  setShowNewProject(false);
-                  resetNewProjectForm();
-                  navigate(`/projets/${data.id}`);
-                } catch (err: any) {
-                  console.error('Error creating project:', err);
-                  setAlertModalConfig({
-                    title: 'Erreur',
-                    message: 'Erreur lors de la création du projet: ' + err.message,
-                    type: 'error'
-                  });
-                  setShowAlertModal(true);
-                } finally {
-                  setCreatingProject(false);
-                }
-              }}>
+                    setShowNewProject(false);
+                    resetNewProjectForm();
+                    navigate(`/projets/${data.id}`);
+                  } catch (err: unknown) {
+                    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+                    setAlertModalConfig({
+                      title: 'Erreur',
+                      message: `Erreur lors de la création du projet: ${errorMessage}`,
+                      type: 'error',
+                    });
+                    setShowAlertModal(true);
+                  } finally {
+                    setCreatingProject(false);
+                  }
+                }}
+              >
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="projet" className="block text-sm font-medium text-slate-900 mb-2">
+                    <label
+                      htmlFor="projet"
+                      className="block text-sm font-medium text-slate-900 mb-2"
+                    >
                       Nom du projet <span className="text-finixar-red">*</span>
                     </label>
                     <input
@@ -1035,7 +1234,9 @@ export function Dashboard({ organization }: DashboardProps) {
                       type="text"
                       required
                       value={newProjectData.projet}
-                      onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
+                      onChange={e =>
+                        setNewProjectData({ ...newProjectData, projet: e.target.value })
+                      }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: GreenTech 2025"
                     />
@@ -1044,14 +1245,19 @@ export function Dashboard({ organization }: DashboardProps) {
                   {/* Champs financiers requis */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="type" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="type"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Type d'obligations <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="type"
                         required
                         value={newProjectData.type}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, type: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, type: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="obligations_simples">Obligations Simples</option>
@@ -1060,7 +1266,10 @@ export function Dashboard({ organization }: DashboardProps) {
                     </div>
 
                     <div>
-                      <label htmlFor="taux" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="taux"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Taux d'intérêt (%) <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -1072,7 +1281,9 @@ export function Dashboard({ organization }: DashboardProps) {
                         max="100"
                         inputMode="decimal"
                         value={newProjectData.taux_interet}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, taux_interet: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 8.50"
                       />
@@ -1081,7 +1292,10 @@ export function Dashboard({ organization }: DashboardProps) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="maturite" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="maturite"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Maturité (mois) <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -1090,7 +1304,9 @@ export function Dashboard({ organization }: DashboardProps) {
                         required
                         min="1"
                         value={newProjectData.maturite_mois}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 60 (5 ans)"
                       />
@@ -1098,14 +1314,19 @@ export function Dashboard({ organization }: DashboardProps) {
                     </div>
 
                     <div>
-                      <label htmlFor="base_interet" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="base_interet"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Base de calcul <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="base_interet"
                         required
                         value={newProjectData.base_interet}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, base_interet: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, base_interet: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="360">360 jours (30/360) - Standard</option>
@@ -1117,7 +1338,10 @@ export function Dashboard({ organization }: DashboardProps) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="montant" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="montant"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Montant global à lever (€) <span className="text-finixar-red">*</span>
                       </label>
                       {/* Masked input */}
@@ -1131,15 +1355,16 @@ export function Dashboard({ organization }: DashboardProps) {
                         onChange={() => {}}
                         onFocus={moveCaretBeforeEuro}
                         onClick={moveCaretBeforeEuro}
-                        onBeforeInput={(e: any) => {
-                          const data = e.data as string | null;
-                          const inputType = e.inputType as string;
+                        onBeforeInput={(e: React.FormEvent<HTMLInputElement>) => {
+                          const event = e.nativeEvent as InputEvent;
+                          const data = event.data;
+                          const inputType = event.inputType;
 
                           if (inputType === 'insertText' && data && /^\d$/.test(data)) {
                             e.preventDefault();
                             setNewProjectData(prev => ({
                               ...prev,
-                              montant_global_eur: (prev.montant_global_eur || '') + data
+                              montant_global_eur: (prev.montant_global_eur || '') + data,
                             }));
                             requestAnimationFrame(moveCaretBeforeEuro);
                             return;
@@ -1149,15 +1374,25 @@ export function Dashboard({ organization }: DashboardProps) {
                             return;
                           }
                         }}
-                        onKeyDown={(e) => {
-                          const navKeys = ['Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
-                          if (navKeys.includes(e.key)) return;
+                        onKeyDown={e => {
+                          const navKeys = [
+                            'Tab',
+                            'ArrowLeft',
+                            'ArrowRight',
+                            'ArrowUp',
+                            'ArrowDown',
+                            'Home',
+                            'End',
+                          ];
+                          if (navKeys.includes(e.key)) {
+                            return;
+                          }
 
                           if (/^\d$/.test(e.key)) {
                             e.preventDefault();
                             setNewProjectData(prev => ({
                               ...prev,
-                              montant_global_eur: (prev.montant_global_eur || '') + e.key
+                              montant_global_eur: (prev.montant_global_eur || '') + e.key,
                             }));
                             requestAnimationFrame(moveCaretBeforeEuro);
                             return;
@@ -1167,7 +1402,7 @@ export function Dashboard({ organization }: DashboardProps) {
                             e.preventDefault();
                             setNewProjectData(prev => ({
                               ...prev,
-                              montant_global_eur: prev.montant_global_eur.slice(0, -1)
+                              montant_global_eur: prev.montant_global_eur.slice(0, -1),
                             }));
                             requestAnimationFrame(moveCaretBeforeEuro);
                             return;
@@ -1175,14 +1410,14 @@ export function Dashboard({ organization }: DashboardProps) {
 
                           e.preventDefault();
                         }}
-                        onPaste={(e) => {
+                        onPaste={e => {
                           e.preventDefault();
                           const clipboardData = e.clipboardData;
                           const text = clipboardData?.getData('text') || '';
                           const digits = text.replace(/\D/g, '');
                           setNewProjectData(prev => ({
                             ...prev,
-                            montant_global_eur: digits
+                            montant_global_eur: digits,
                           }));
                           requestAnimationFrame(moveCaretBeforeEuro);
                         }}
@@ -1192,17 +1427,27 @@ export function Dashboard({ organization }: DashboardProps) {
                     </div>
 
                     <div>
-                      <label htmlFor="periodicite" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="periodicite"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Périodicité du coupon <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="periodicite"
                         required
                         value={newProjectData.periodicite_coupon}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({
+                            ...newProjectData,
+                            periodicite_coupon: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
-                        <option value="" disabled>Choisir…</option>
+                        <option value="" disabled>
+                          Choisir…
+                        </option>
                         <option value="mensuelle">Mensuelle</option>
                         <option value="trimestriel">Trimestriel</option>
                         <option value="semestriel">Semestriel</option>
@@ -1212,7 +1457,10 @@ export function Dashboard({ organization }: DashboardProps) {
                   </div>
 
                   <div>
-                    <label htmlFor="emetteur" className="block text-sm font-medium text-slate-900 mb-2">
+                    <label
+                      htmlFor="emetteur"
+                      className="block text-sm font-medium text-slate-900 mb-2"
+                    >
                       Émetteur <span className="text-finixar-red">*</span>
                     </label>
                     <input
@@ -1220,14 +1468,19 @@ export function Dashboard({ organization }: DashboardProps) {
                       type="text"
                       required
                       value={newProjectData.emetteur}
-                      onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
+                      onChange={e =>
+                        setNewProjectData({ ...newProjectData, emetteur: e.target.value })
+                      }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: GreenTech SAS"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="siren" className="block text-sm font-medium text-slate-900 mb-2">
+                    <label
+                      htmlFor="siren"
+                      className="block text-sm font-medium text-slate-900 mb-2"
+                    >
                       SIREN de l'émetteur <span className="text-finixar-red">*</span>
                     </label>
                     <input
@@ -1237,14 +1490,16 @@ export function Dashboard({ organization }: DashboardProps) {
                       pattern="^\d{9}$"
                       title="Le SIREN doit comporter exactement 9 chiffres."
                       value={newProjectData.siren_emetteur}
-                      onChange={(e) => {
+                      onChange={e => {
                         const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
                         setNewProjectData({ ...newProjectData, siren_emetteur: digits });
                         setSirenError('');
                       }}
-                      onBlur={(e) => {
+                      onBlur={e => {
                         const v = e.target.value;
-                        setSirenError(isValidSIREN(v) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).');
+                        setSirenError(
+                          isValidSIREN(v) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).'
+                        );
                       }}
                       aria-invalid={!!sirenError}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue ${
@@ -1254,14 +1509,15 @@ export function Dashboard({ organization }: DashboardProps) {
                       maxLength={9}
                       inputMode="numeric"
                     />
-                    {sirenError && (
-                      <p className="mt-1 text-sm text-finixar-red">{sirenError}</p>
-                    )}
+                    {sirenError && <p className="mt-1 text-sm text-finixar-red">{sirenError}</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="prenom" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="prenom"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Prénom du représentant <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -1269,13 +1525,21 @@ export function Dashboard({ organization }: DashboardProps) {
                         type="text"
                         required
                         value={newProjectData.prenom_representant}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({
+                            ...newProjectData,
+                            prenom_representant: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Jean"
                       />
                     </div>
                     <div>
-                      <label htmlFor="nom" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="nom"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Nom du représentant <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -1283,7 +1547,9 @@ export function Dashboard({ organization }: DashboardProps) {
                         type="text"
                         required
                         value={newProjectData.nom_representant}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, nom_representant: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Dupont"
                       />
@@ -1291,7 +1557,10 @@ export function Dashboard({ organization }: DashboardProps) {
                   </div>
 
                   <div>
-                    <label htmlFor="emailrep" className="block text-sm font-medium text-slate-900 mb-2">
+                    <label
+                      htmlFor="emailrep"
+                      className="block text-sm font-medium text-slate-900 mb-2"
+                    >
                       Email du représentant <span className="text-finixar-red">*</span>
                     </label>
                     <input
@@ -1299,17 +1568,24 @@ export function Dashboard({ organization }: DashboardProps) {
                       type="email"
                       required
                       value={newProjectData.email_representant}
-                      onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
+                      onChange={e =>
+                        setNewProjectData({ ...newProjectData, email_representant: e.target.value })
+                      }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: jean.dupont@example.com"
                     />
                   </div>
 
                   <div className="border-t border-slate-200 pt-4 mt-4">
-                    <h4 className="text-sm font-semibold text-slate-900 mb-3">Représentant de la masse</h4>
+                    <h4 className="text-sm font-semibold text-slate-900 mb-3">
+                      Représentant de la masse
+                    </h4>
 
                     <div>
-                      <label htmlFor="repmasse" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="repmasse"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Nom du représentant de la masse <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -1317,29 +1593,43 @@ export function Dashboard({ organization }: DashboardProps) {
                         type="text"
                         required
                         value={newProjectData.representant_masse}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({
+                            ...newProjectData,
+                            representant_masse: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Cabinet Lefevre"
                       />
                     </div>
 
                     <div className="mt-4">
-                      <label htmlFor="emailmasse" className="block text-sm font-medium text-slate-900 mb-2">
-                        Email du représentant de la masse <span className="text-finixar-red">*</span>
+                      <label
+                        htmlFor="emailmasse"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
+                        Email du représentant de la masse{' '}
+                        <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="emailmasse"
                         type="email"
                         required
                         value={newProjectData.email_rep_masse}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: contact@cabinet-lefevre.fr"
                       />
                     </div>
 
                     <div className="mt-4">
-                      <label htmlFor="telmasse" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="telmasse"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Téléphone du représentant de la masse
                       </label>
                       <input
@@ -1347,7 +1637,12 @@ export function Dashboard({ organization }: DashboardProps) {
                         type="tel"
                         pattern="[0-9]*"
                         value={newProjectData.telephone_rep_masse}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
+                        onChange={e =>
+                          setNewProjectData({
+                            ...newProjectData,
+                            telephone_rep_masse: e.target.value.replace(/\D/g, ''),
+                          })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 0123456789"
                         maxLength={10}
@@ -1359,7 +1654,10 @@ export function Dashboard({ organization }: DashboardProps) {
                 <div className="flex gap-3 mt-6">
                   <button
                     type="button"
-                    onClick={() => { resetNewProjectForm(); setShowNewProject(false); }}
+                    onClick={() => {
+                      resetNewProjectForm();
+                      setShowNewProject(false);
+                    }}
                     className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
                     disabled={creatingProject}
                   >
