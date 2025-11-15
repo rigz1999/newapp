@@ -684,53 +684,57 @@ export function Dashboard({ organization }: DashboardProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-blue-100 transition-shadow duration-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <span className="text-blue-700 text-sm font-medium block mb-2">Montant total investi</span>
-                  <p className="text-3xl font-bold text-blue-900 mb-1">{formatCurrency(stats.totalInvested)}</p>
+            <div className="bg-white rounded-lg p-6 border-l-4 border-blue-600 shadow-sm border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-blue-50 rounded-lg">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-600 uppercase tracking-wide">Montant total investi</span>
                 </div>
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-md">
-                  <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <p className="text-3xl font-bold text-slate-900">{formatCurrency(stats.totalInvested)}</p>
+            </div>
+
+            <div className="bg-white rounded-lg p-6 border-l-4 border-emerald-600 shadow-sm border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-emerald-50 rounded-lg">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-600 uppercase tracking-wide">Coupons payés</span>
                 </div>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-bold text-slate-900">{formatCurrency(stats.couponsPaidThisMonth)}</p>
+                <span className="text-sm text-slate-500">ce mois</span>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-green-100 transition-shadow duration-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <span className="text-green-700 text-sm font-medium block mb-2">Coupons payés ce mois</span>
-                  <p className="text-3xl font-bold text-green-900 mb-1">{formatCurrency(stats.couponsPaidThisMonth)}</p>
-                  <p className="text-sm text-green-600 font-medium">{stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}</p>
-                </div>
-                <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl shadow-md">
-                  <CheckCircle2 className="w-6 h-6 text-white" />
+            <div className="bg-white rounded-lg p-6 border-l-4 border-indigo-600 shadow-sm border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-50 rounded-lg">
+                    <Folder className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-600 uppercase tracking-wide">Projets actifs</span>
                 </div>
               </div>
+              <p className="text-3xl font-bold text-slate-900">{stats.activeProjects}</p>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-purple-100 transition-shadow duration-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <span className="text-purple-700 text-sm font-medium block mb-2">Projets actifs</span>
-                  <p className="text-3xl font-bold text-purple-900">{stats.activeProjects}</p>
-                </div>
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-xl shadow-md">
-                  <Folder className="w-6 h-6 text-white" />
+            <div className="bg-white rounded-lg p-6 border-l-4 border-orange-600 shadow-sm border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-orange-50 rounded-lg">
+                    <Clock className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-600 uppercase tracking-wide">Coupons à venir</span>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-amber-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-amber-100 transition-shadow duration-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <span className="text-amber-700 text-sm font-medium block mb-2">Coupons à venir</span>
-                  <p className="text-3xl font-bold text-amber-900">{stats.upcomingCoupons}</p>
-                  <p className="text-sm text-amber-600 font-medium">{stats.nextCouponDays} prochains jours</p>
-                </div>
-                <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-3 rounded-xl shadow-md">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
+                <span className="text-sm text-slate-500">{stats.nextCouponDays} jours</span>
               </div>
             </div>
           </div>
