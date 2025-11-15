@@ -5,6 +5,7 @@ import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, Ale
 import ExcelJS from 'exceljs';
 import { ConfirmModal, AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
+import { toast } from '../../utils/toast';
 import { Pagination, paginate } from '../common/Pagination';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { isValidSIREN } from '../../utils/validators';
@@ -431,12 +432,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
     if (isMorale(editFormData.type) && editFormData.siren) {
       const sirenString = String(editFormData.siren);
       if (!isValidSIREN(sirenString)) {
-        setAlertModalConfig({
-          title: 'SIREN Invalide',
-          message: 'Le numéro SIREN doit contenir 9 chiffres et être valide selon l\'algorithme de Luhn.',
-          type: 'error'
-        });
-        setShowAlertModal(true);
+        toast.error('Le numéro SIREN doit contenir 9 chiffres et être valide selon l\'algorithme de Luhn.');
         return;
       }
     }
@@ -447,15 +443,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
       .eq('id', selectedInvestor.id);
 
     if (error) {
-      setAlertModalConfig({
-        title: 'Erreur',
-        message: 'Erreur lors de la mise à jour',
-        type: 'error'
-      });
-      setShowAlertModal(true);
+      toast.error('Erreur lors de la mise à jour');
       return;
     }
 
+    toast.success('Investisseur mis à jour avec succès !');
     setShowEditModal(false);
     fetchInvestors();
   };
@@ -522,21 +514,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
       .in('id', idsToDelete);
 
     if (error) {
-      setAlertModalConfig({
-        title: 'Erreur',
-        message: `Erreur lors de la suppression: ${error.message}`,
-        type: 'error'
-      });
-      setShowAlertModal(true);
+      toast.error(`Erreur lors de la suppression: ${error.message}`);
       return;
     }
 
-    setAlertModalConfig({
-      title: 'Succès',
-      message: `${idsToDelete.length} investisseur(s) supprimé(s) avec succès`,
-      type: 'success'
-    });
-    setShowAlertModal(true);
+    toast.success(`${idsToDelete.length} investisseur(s) supprimé(s) avec succès`);
     setShowBulkDeleteModal(false);
     setSelectedInvestorIds(new Set());
     fetchInvestors();
@@ -713,20 +695,10 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
           if (updateError) throw updateError;
 
-          setAlertModalConfig({
-            title: 'Succès',
-            message: 'RIB supprimé avec succès !',
-            type: 'success'
-          });
-          setShowAlertModal(true);
+          toast.success('RIB supprimé avec succès !');
           fetchInvestors();
         } catch {
-          setAlertModalConfig({
-            title: 'Erreur',
-            message: 'Erreur lors de la suppression du RIB',
-            type: 'error'
-          });
-          setShowAlertModal(true);
+          toast.error('Erreur lors de la suppression du RIB');
         }
       }
     });
