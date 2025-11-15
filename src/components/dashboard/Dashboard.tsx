@@ -626,69 +626,69 @@ export function Dashboard({ organization }: DashboardProps) {
             </div>
           )}
 
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-8 mt-8">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Actions Rapides</h2>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8 mt-8">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Actions Rapides</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <button
                 onClick={() => { setShowNewProject(true); }}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900/40 dark:hover:to-blue-800/40 rounded-lg transition-all group border border-blue-200 dark:border-blue-700"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
               >
                 <div className="bg-finixar-brand-blue p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Plus className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Nouveau Projet</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Créer un projet</p>
+                  <p className="font-semibold text-slate-900 text-sm">Nouveau Projet</p>
+                  <p className="text-xs text-slate-600">Créer un projet</p>
                 </div>
               </button>
 
               <button
                 onClick={() => setShowTrancheWizard(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/30 hover:from-emerald-100 hover:to-emerald-200 dark:hover:from-emerald-900/40 dark:hover:to-emerald-800/40 rounded-lg transition-all group border border-emerald-200 dark:border-emerald-700"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 rounded-lg transition-all group border border-emerald-200"
               >
                 <div className="bg-finixar-action-create p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <FileText className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Nouvelle Tranche</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Ajouter une tranche</p>
+                  <p className="font-semibold text-slate-900 text-sm">Nouvelle Tranche</p>
+                  <p className="text-xs text-slate-600">Ajouter une tranche</p>
                 </div>
               </button>
 
               <button
                 onClick={() => setShowQuickPayment(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 hover:from-amber-100 hover:to-amber-200 dark:hover:from-amber-900/40 dark:hover:to-amber-800/40 rounded-lg transition-all group border border-amber-200 dark:border-amber-700"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 rounded-lg transition-all group border border-amber-200"
               >
                 <div className="bg-amber-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Euro className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Nouveau paiement</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Téléverser le justificatif</p>
+                  <p className="font-semibold text-slate-900 text-sm">Nouveau paiement</p>
+                  <p className="text-xs text-slate-600">Téléverser le justificatif</p>
                 </div>
               </button>
 
               <button
                 onClick={() => setShowExportModal(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700/50 dark:to-slate-600/50 hover:from-slate-100 hover:to-slate-200 dark:hover:from-slate-700/60 dark:hover:to-slate-600/60 rounded-lg transition-all group border border-slate-200 dark:border-slate-600"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
               >
-                <div className="bg-slate-600 dark:bg-slate-500 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bg-slate-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
                   <Download className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Exporter Synthèse</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Télécharger rapport</p>
+                  <p className="font-semibold text-slate-900 text-sm">Exporter Synthèse</p>
+                  <p className="text-xs text-slate-600">Télécharger rapport</p>
                 </div>
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-xl border border-blue-100 dark:border-blue-800 hover:scale-[1.02] transition-all duration-200 group">
+            <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-blue-100 hover:scale-[1.02] transition-all duration-200 group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <span className="text-blue-700 dark:text-blue-400 text-sm font-medium block mb-2">Montant total investi</span>
-                  <p className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-1">{formatCurrency(stats.totalInvested)}</p>
+                  <span className="text-blue-700 text-sm font-medium block mb-2">Montant total investi</span>
+                  <p className="text-3xl font-bold text-blue-900 mb-1">{formatCurrency(stats.totalInvested)}</p>
                 </div>
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
                   <TrendingUp className="w-6 h-6 text-white" />
@@ -696,12 +696,12 @@ export function Dashboard({ organization }: DashboardProps) {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-white dark:from-green-900/20 dark:to-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-xl border border-green-100 dark:border-green-800 hover:scale-[1.02] transition-all duration-200 group">
+            <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-green-100 hover:scale-[1.02] transition-all duration-200 group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <span className="text-green-700 dark:text-green-400 text-sm font-medium block mb-2">Coupons payés ce mois</span>
-                  <p className="text-3xl font-bold text-green-900 dark:text-green-100 mb-1">{formatCurrency(stats.couponsPaidThisMonth)}</p>
-                  <p className="text-sm text-green-600 dark:text-green-400 font-medium">{stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}</p>
+                  <span className="text-green-700 text-sm font-medium block mb-2">Coupons payés ce mois</span>
+                  <p className="text-3xl font-bold text-green-900 mb-1">{formatCurrency(stats.couponsPaidThisMonth)}</p>
+                  <p className="text-sm text-green-600 font-medium">{stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}</p>
                 </div>
                 <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
                   <CheckCircle2 className="w-6 h-6 text-white" />
@@ -709,11 +709,11 @@ export function Dashboard({ organization }: DashboardProps) {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-xl border border-purple-100 dark:border-purple-800 hover:scale-[1.02] transition-all duration-200 group">
+            <div className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-purple-100 hover:scale-[1.02] transition-all duration-200 group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <span className="text-purple-700 dark:text-purple-400 text-sm font-medium block mb-2">Projets actifs</span>
-                  <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{stats.activeProjects}</p>
+                  <span className="text-purple-700 text-sm font-medium block mb-2">Projets actifs</span>
+                  <p className="text-3xl font-bold text-purple-900">{stats.activeProjects}</p>
                 </div>
                 <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
                   <Folder className="w-6 h-6 text-white" />
@@ -721,12 +721,12 @@ export function Dashboard({ organization }: DashboardProps) {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-xl border border-amber-100 dark:border-amber-800 hover:scale-[1.02] transition-all duration-200 group">
+            <div className="bg-gradient-to-br from-amber-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-amber-100 hover:scale-[1.02] transition-all duration-200 group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <span className="text-amber-700 dark:text-amber-400 text-sm font-medium block mb-2">Coupons à venir</span>
-                  <p className="text-3xl font-bold text-amber-900 dark:text-amber-100">{stats.upcomingCoupons}</p>
-                  <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">{stats.nextCouponDays} prochains jours</p>
+                  <span className="text-amber-700 text-sm font-medium block mb-2">Coupons à venir</span>
+                  <p className="text-3xl font-bold text-amber-900">{stats.upcomingCoupons}</p>
+                  <p className="text-sm text-amber-600 font-medium">{stats.nextCouponDays} prochains jours</p>
                 </div>
                 <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
                   <Clock className="w-6 h-6 text-white" />
@@ -735,15 +735,15 @@ export function Dashboard({ organization }: DashboardProps) {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-8">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Évolution des Montants Levés</h2>
+              <h2 className="text-xl font-bold text-slate-900">Évolution des Montants Levés</h2>
               <div className="flex items-center gap-4">
                 <select
                   aria-label="Mode d'affichage"
                   value={viewMode}
                   onChange={(e) => setViewMode(e.target.value as 'monthly' | 'cumulative')}
-                  className="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent font-medium"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent font-medium"
                 >
                   <option value="monthly">Vue par mois</option>
                   <option value="cumulative">Vue cumulée</option>
@@ -752,7 +752,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   aria-label="Année"
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-                  className="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
                 >
                   <option value={2024}>2024</option>
                   <option value={2025}>2025</option>
@@ -766,7 +766,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     setStartMonth(start);
                     setEndMonth(end);
                   }}
-                  className="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
+                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
                 >
                   <option value="0-11">Année complète</option>
                   <option value="0-2">Q1 (Jan-Mar)</option>
@@ -780,8 +780,8 @@ export function Dashboard({ organization }: DashboardProps) {
             </div>
 
             {monthlyData.length === 0 ? (
-              <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/10 dark:to-slate-800 rounded-lg">
-                <div className="text-center text-slate-400 dark:text-slate-500">
+              <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white rounded-lg">
+                <div className="text-center text-slate-400">
                   <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>Aucune donnée disponible</p>
                 </div>
@@ -809,7 +809,7 @@ export function Dashboard({ organization }: DashboardProps) {
                           <div className="w-2 h-2 bg-slate-900 transform rotate-45 mx-auto -mt-1"></div>
                         </div>
                         {displayAmount > 0 && (
-                          <div className="mb-1 text-xs font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                          <div className="mb-1 text-xs font-semibold text-slate-700 whitespace-nowrap">
                             {formatCurrency(displayAmount)}
                           </div>
                         )}
@@ -822,7 +822,7 @@ export function Dashboard({ organization }: DashboardProps) {
                           style={{ height: `${heightPercentage}%` }}
                         />
                       </div>
-                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{data.month}</span>
+                      <span className="text-xs font-medium text-slate-600">{data.month}</span>
                     </div>
                   );
                 })}
@@ -831,32 +831,32 @@ export function Dashboard({ organization }: DashboardProps) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Derniers Paiements</h2>
+                <h2 className="text-xl font-bold text-slate-900">Derniers Paiements</h2>
                 <button
                   onClick={() => navigate('/paiements')}
-                  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm flex items-center gap-1"
+                  className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
                 >
                   Voir tout <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
               {recentPayments.length === 0 ? (
-                <p className="text-slate-500 dark:text-slate-400 text-center py-8">Aucun paiement récent</p>
+                <p className="text-slate-500 text-center py-8">Aucun paiement récent</p>
               ) : (
                 <div className="space-y-3">
                   {recentPayments.map((payment) => (
-                    <div key={payment.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                    <div key={payment.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <div className="flex-1">
-                        <p className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+                        <p className="font-medium text-slate-900 text-sm">
                           {payment.tranche?.tranche_name || 'Tranche'}
                         </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">
+                        <p className="text-xs text-slate-600">
                           {formatDate(payment.date_paiement)} • {payment.type || 'Coupon'}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">{formatCurrency(payment.montant)}</p>
+                        <p className="font-bold text-slate-900 text-sm">{formatCurrency(payment.montant)}</p>
                         <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                           payment.statut?.toLowerCase() === 'payé' || payment.statut?.toLowerCase() === 'paid'
                             ? 'bg-green-100 text-green-700'
@@ -875,18 +875,18 @@ export function Dashboard({ organization }: DashboardProps) {
               )}
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Coupons à Venir</h2>
+                <h2 className="text-xl font-bold text-slate-900">Coupons à Venir</h2>
                 <button
                   onClick={() => navigate('/coupons')}
-                  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm flex items-center gap-1"
+                  className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
                 >
                   Voir tout <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
               {upcomingCoupons.length === 0 ? (
-                <p className="text-slate-500 dark:text-slate-400 text-center py-8">Aucun coupon à venir</p>
+                <p className="text-slate-500 text-center py-8">Aucun coupon à venir</p>
               ) : (
                 <div className="space-y-3">
                   {upcomingCoupons.map((coupon) => {
@@ -896,10 +896,10 @@ export function Dashboard({ organization }: DashboardProps) {
                     const isUrgent = daysUntil <= 7;
 
                     return (
-                      <div key={coupon.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                      <div key={coupon.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <p className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(parseFloat(coupon.coupon_brut.toString()))}</p>
+                            <p className="font-bold text-slate-900">{formatCurrency(parseFloat(coupon.coupon_brut.toString()))}</p>
                             {isUrgent && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
                                 <AlertCircle className="w-3 h-3" />
@@ -907,17 +907,17 @@ export function Dashboard({ organization }: DashboardProps) {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                          <p className="text-xs text-slate-600 mt-1">
                             {coupon.tranche?.projet?.projet || 'Projet'} • {coupon.tranche?.tranche_name || 'Tranche'}
                           </p>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
                             <Users className="w-3 h-3" />
                             <span>{coupon.investor_count || 1} investisseur{(coupon.investor_count || 1) > 1 ? 's' : ''}</span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{formatDate(coupon.prochaine_date_coupon)}</p>
-                          <p className="text-xs text-slate-600 dark:text-slate-400">{getRelativeDate(coupon.prochaine_date_coupon)}</p>
+                          <p className="text-sm font-medium text-slate-900">{formatDate(coupon.prochaine_date_coupon)}</p>
+                          <p className="text-xs text-slate-600">{getRelativeDate(coupon.prochaine_date_coupon)}</p>
                         </div>
                       </div>
                     );
