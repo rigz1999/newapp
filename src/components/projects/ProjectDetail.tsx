@@ -1078,10 +1078,20 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               setShowTrancheWizard(false);
               setEditingTranche(null);
             }}
-            onSuccess={() => {
+            onSuccess={(message) => {
               setShowTrancheWizard(false);
               setEditingTranche(null);
               fetchProjectData();
+
+              // Show success message outside modal
+              if (message) {
+                setAlertState({
+                  isOpen: true,
+                  title: 'Succès',
+                  message: message,
+                  type: 'success',
+                });
+              }
             }}
             preselectedProjectId={projectId}
             editingTranche={editingTranche}
