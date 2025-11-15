@@ -23,7 +23,7 @@ import {
   AlertTriangle,
   X,
   Plus,
-  DollarSign,
+  Euro,
   FileText,
   Download
 } from 'lucide-react';
@@ -660,7 +660,7 @@ export function Dashboard({ organization }: DashboardProps) {
                 className="flex items-center gap-3 p-4 bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 rounded-lg transition-all group border border-amber-200"
               >
                 <div className="bg-amber-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                  <DollarSign className="w-5 h-5 text-white" />
+                  <Euro className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
                   <p className="font-semibold text-slate-900 text-sm">Nouveau paiement</p>

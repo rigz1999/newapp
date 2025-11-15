@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, DollarSign, Shield, UserCog, Settings, Search } from 'lucide-react';
+import { Home, Receipt, FolderOpen, Users, TrendingUp, FileText, Euro, Shield, UserCog, Settings, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
@@ -177,7 +177,7 @@ export function Layout({ organization }: LayoutProps) {
                 isActive('/paiements') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
               }`}
             >
-              <DollarSign className="w-4 h-4" />
+              <Euro className="w-4 h-4" />
               <span>Paiements</span>
             </Link>
 

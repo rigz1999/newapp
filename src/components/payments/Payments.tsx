@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Download, Search, DollarSign, CheckCircle2, Eye, Filter, X, AlertCircle } from 'lucide-react';
+import { Download, Search, Euro, CheckCircle2, Eye, Filter, X, AlertCircle } from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
@@ -286,7 +286,7 @@ export function Payments({ organization }: PaymentsProps) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-100 rounded-xl">
-            <DollarSign className="w-8 h-8 text-blue-600" />
+            <Euro className="w-8 h-8 text-blue-600" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Historique des Paiements</h1>
@@ -314,7 +314,7 @@ export function Payments({ organization }: PaymentsProps) {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-600 text-sm">Nombre de Paiements</span>
-            <DollarSign className="w-5 h-5 text-blue-600" />
+            <Euro className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-2xl font-bold text-slate-900">{stats.paymentsCount}</p>
         </div>
@@ -435,7 +435,7 @@ export function Payments({ organization }: PaymentsProps) {
           </div>
         ) : filteredPayments.length === 0 ? (
           <div className="text-center py-12">
-            <DollarSign className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <Euro className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun paiement</h3>
             <p className="text-slate-600">
               {searchTerm || hasActiveFilters
