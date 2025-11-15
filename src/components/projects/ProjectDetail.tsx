@@ -7,6 +7,7 @@ import { EcheancierCard } from '../coupons/EcheancierCard';
 import { SubscriptionsModal } from '../subscriptions/SubscriptionsModal';
 import { TranchesModal } from '../tranches/TranchesModal';
 import { AlertModal } from '../common/AlertModal';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { toast } from '../../utils/toast';
 import { copyToClipboard } from '../../utils/clipboard';
 import { Tooltip } from '../common/Tooltip';
@@ -137,6 +138,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     type: 'info',
   });
   const [alertIsLoading, setAlertIsLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    tranche: Tranche | null;
+  }>({ isOpen: false, tranche: null });
 
   const TRANCHES_LIMIT = 5;
   const SUBSCRIPTIONS_LIMIT = 5;
@@ -286,45 +291,23 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   };
 
   const handleDeleteTranche = async (tranche: Tranche) => {
-    const trancheSubscriptions = subscriptions.filter(s => s.tranche.tranche_name === tranche.tranche_name);
+    // Show modern confirm dialog instead of old AlertModal
+    setDeleteConfirm({ isOpen: true, tranche });
+  };
 
-    let confirmMessage = `Êtes-vous sûr de vouloir supprimer la tranche "${tranche.tranche_name}" ?`;
+  const confirmDeleteTranche = async () => {
+    if (!deleteConfirm.tranche) return;
 
-    if (trancheSubscriptions.length > 0) {
-      confirmMessage += `\n\nATTENTION : Cette tranche contient ${trancheSubscriptions.length} souscription(s) pour un montant total de ${formatCurrency(
-        trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0)
-      )}.`;
-      confirmMessage += '\n\nToutes les souscriptions et échéances associées seront également supprimées.';
+    try {
+      const { error } = await supabase.from('tranches').delete().eq('id', deleteConfirm.tranche.id);
+      if (error) throw error;
+
+      toast.success('Tranche supprimée avec succès');
+      fetchProjectData();
+    } catch (err: any) {
+      console.error('Error deleting tranche:', err);
+      toast.error('Erreur lors de la suppression : ' + err.message);
     }
-
-    setAlertState({
-      isOpen: true,
-      title: 'Confirmer la suppression',
-      message: confirmMessage,
-      type: 'confirm',
-      onConfirm: async () => {
-        try {
-          const { error } = await supabase.from('tranches').delete().eq('id', tranche.id);
-          if (error) throw error;
-
-          setAlertState({
-            isOpen: true,
-            title: 'Succès',
-            message: 'Tranche supprimée avec succès',
-            type: 'success',
-          });
-          fetchProjectData();
-        } catch (err: any) {
-          console.error('Error deleting tranche:', err);
-          setAlertState({
-            isOpen: true,
-            title: 'Erreur',
-            message: 'Erreur lors de la suppression de la tranche : ' + err.message,
-            type: 'error',
-          });
-        }
-      },
-    });
   };
 
   // 2) AJOUTÉ : toggle pour développer / réduire une tranche
@@ -1536,6 +1519,20 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         message={alertState.message}
         type={alertState.type}
         isLoading={alertIsLoading}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, tranche: null })}
+        onConfirm={confirmDeleteTranche}
+        title="Supprimer la tranche?"
+        message={
+          deleteConfirm.tranche
+            ? `Voulez-vous vraiment supprimer la tranche "${deleteConfirm.tranche.tranche_name}"?\n\nToutes les souscriptions et échéances associées seront également supprimées.`
+            : ''
+        }
+        confirmText="Supprimer"
+        isDangerous
       />
     </>
   );
