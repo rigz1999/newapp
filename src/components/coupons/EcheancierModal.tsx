@@ -453,7 +453,10 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                           {group.dateGroups.map((dateGroup) => {
                             const dateKey = `${group.trancheName}-${dateGroup.date}`;
                             const isDateExpanded = expandedDates.has(dateKey);
-                            
+
+                            // Check if this date has any overdue coupons
+                            const hasOverdueCoupons = dateGroup.echeances.some((e) => getEcheanceStatus(e) === 'en_retard');
+
                             return (
                               <div key={dateKey} className={`border rounded-lg overflow-hidden bg-white ${
                                 dateGroup.isLastEcheance ? 'border-amber-300 shadow-sm' : 'border-slate-200'
@@ -474,6 +477,9 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
                                       <span className="text-sm font-semibold text-slate-900">
                                         {formatDate(dateGroup.date)}
                                       </span>
+                                      {hasOverdueCoupons && (
+                                        <AlertCircle className="w-4 h-4 text-red-600" />
+                                      )}
                                       {dateGroup.isLastEcheance && (
                                         <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
                                           <AlertCircle className="w-3 h-3" />
