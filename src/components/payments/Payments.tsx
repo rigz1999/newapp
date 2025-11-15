@@ -126,7 +126,7 @@ export function Payments({ organization }: PaymentsProps) {
           )
         `)
         .order('date_paiement', { ascending: false })
-        .limit(2000); // Safety limit to prevent loading too much data
+        .limit(500); // Optimized limit for better performance
 
       if (error) throw error;
 
