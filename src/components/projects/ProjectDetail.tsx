@@ -7,6 +7,10 @@ import { EcheancierCard } from '../coupons/EcheancierCard';
 import { SubscriptionsModal } from '../subscriptions/SubscriptionsModal';
 import { TranchesModal } from '../tranches/TranchesModal';
 import { AlertModal } from '../common/AlertModal';
+import { toast } from '../../utils/toast';
+import { copyToClipboard } from '../../utils/clipboard';
+import { Tooltip } from '../common/Tooltip';
+import { Copy } from 'lucide-react';
 import { EcheancierModal } from '../coupons/EcheancierModal';
 import { PaymentsModal } from '../payments/PaymentsModal';  // ✅ AJOUT
 import {
@@ -520,14 +524,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         return;
       }
 
-      // No financial changes - just refresh and show success
+      // No financial changes - just refresh and show toast
       await fetchProjectData();
-      setAlertState({
-        isOpen: true,
-        title: 'Succès',
-        message: 'Projet mis à jour avec succès',
-        type: 'success',
-      });
+      toast.success('Projet mis à jour avec succès');
     } catch (err: any) {
       console.error('Error updating project:', err);
       setAlertIsLoading(false);
@@ -635,7 +634,17 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               <ArrowLeft className="w-5 h-5 text-slate-600" />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">{project.projet}</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-slate-900">{project.projet}</h1>
+                <Tooltip content="Copier l'ID du projet">
+                  <button
+                    onClick={() => copyToClipboard(project.id, 'ID du projet copié!')}
+                    className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                  >
+                    <Copy className="w-4 h-4 text-slate-400" />
+                  </button>
+                </Tooltip>
+              </div>
               <p className="text-slate-600 mt-1">{project.emetteur}</p>
             </div>
           </div>

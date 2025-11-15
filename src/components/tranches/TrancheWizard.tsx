@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { X, CheckCircle, AlertCircle, Loader, Edit, Trash2 } from "lucide-react";
 import { FileUpload } from "../investors/FileUpload";
+import { Tooltip } from "../common/Tooltip";
 
 interface Project {
   id: string;
@@ -569,9 +570,20 @@ export function TrancheWizard({
             {/* Error message */}
             {error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">{error}</p>
+                  <div className="flex-1">
+                    <p className="text-sm text-red-700 mb-2">{error}</p>
+                    <button
+                      onClick={() => {
+                        setError("");
+                        handleSubmit();
+                      }}
+                      className="text-sm font-medium text-red-700 hover:text-red-800 underline"
+                    >
+                      Réessayer
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -586,24 +598,36 @@ export function TrancheWizard({
             >
               Annuler
             </button>
-            <button
-              onClick={handleSubmit}
-              disabled={
-                processing ||
-                !trancheName ||
-                (isEditMode ? false : (!selectedProjectId || !csvFile))
+            <Tooltip
+              content={
+                !trancheName
+                  ? "Le nom de la tranche est requis"
+                  : !isEditMode && !selectedProjectId
+                  ? "Veuillez sélectionner un projet"
+                  : !isEditMode && !csvFile
+                  ? "Veuillez sélectionner un fichier CSV/Excel"
+                  : ""
               }
-              className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {processing ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin" />
-                  {isEditMode ? "Mise à jour..." : `Import... ${progress}%`}
-                </>
-              ) : (
-                isEditMode ? "Mettre à jour" : "Créer et importer"
-              )}
-            </button>
+              <button
+                onClick={handleSubmit}
+                disabled={
+                  processing ||
+                  !trancheName ||
+                  (isEditMode ? false : (!selectedProjectId || !csvFile))
+                }
+                className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {processing ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" />
+                    {isEditMode ? "Mise à jour..." : `Import... ${progress}%`}
+                  </>
+                ) : (
+                  isEditMode ? "Mettre à jour" : "Créer et importer"
+                )}
+              </button>
+            </Tooltip>
           </div>
         </div>
       </div>
