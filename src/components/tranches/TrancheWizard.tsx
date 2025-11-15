@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { X, CheckCircle, AlertCircle, Loader, Edit, Trash2 } from "lucide-react";
 import { FileUpload } from "../investors/FileUpload";
+import { Tooltip } from "../common/Tooltip";
 
 interface Project {
   id: string;
@@ -22,7 +23,7 @@ interface Tranche {
 
 interface TrancheWizardProps {
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (message?: string) => void;
   preselectedProjectId?: string;
   editingTranche?: Tranche | null;
   isEditMode?: boolean;
@@ -200,30 +201,31 @@ export function TrancheWizard({
 
         if (regenerateResult.success) {
           console.log("✅ Écheancier régénéré:", regenerateResult);
-          setSuccessMessage(
+          const successMsg =
             `Tranche mise à jour avec succès!\n` +
             `Souscriptions recalculées: ${regenerateResult.updated_souscriptions}\n` +
-            `Coupons créés: ${regenerateResult.created_coupons}`
-          );
+            `Coupons créés: ${regenerateResult.created_coupons}`;
+
+          onClose();
+          onSuccess(successMsg);
         } else {
           console.warn("⚠️ Écheancier non régénéré:", regenerateResult.error);
-          setSuccessMessage(
+          const successMsg =
             `Tranche mise à jour avec succès!\n` +
-            `Note: ${regenerateResult.error || "Écheancier non généré (paramètres manquants)"}`
-          );
+            `Note: ${regenerateResult.error || "Écheancier non généré (paramètres manquants)"}`;
+
+          onClose();
+          onSuccess(successMsg);
         }
       } catch (regenerateError: any) {
         console.error("Erreur régénération écheancier:", regenerateError);
-        setSuccessMessage(
+        const successMsg =
           `Tranche mise à jour avec succès!\n` +
-          `Note: Impossible de régénérer l'écheancier automatiquement.`
-        );
-      }
+          `Note: Impossible de régénérer l'écheancier automatiquement.`;
 
-      setTimeout(() => {
-        onSuccess();
         onClose();
-      }, 2000);
+        onSuccess(successMsg);
+      }
 
     } catch (err: any) {
       console.error("=== ERREUR MISE À JOUR ===", err);
@@ -297,16 +299,18 @@ export function TrancheWizard({
             console.log("Résultat parsé:", result);
             
             if (result.success && result.createdSouscriptions > 0) {
-              setSuccessMessage(
+              // Close modal and show success outside
+              const successMsg =
                 `Import terminé!\n` +
                 `${result.createdSouscriptions || 0} souscriptions créées\n` +
                 `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
-                `${result.updatedInvestisseurs || 0} investisseurs mis à jour`
-              );
+                `${result.updatedInvestisseurs || 0} investisseurs mis à jour`;
+
+              onClose();
+              onSuccess(successMsg);
 
               if (result.errors && result.errors.length > 0) {
                 console.warn("Erreurs d'import:", result.errors);
-                setError(`${result.errors.length} ligne(s) en erreur (voir console)`);
               }
             } else if (result.success && result.createdSouscriptions === 0) {
               setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
@@ -563,24 +567,23 @@ export function TrancheWizard({
               </div>
             )}
 
-            {/* Success message */}
-            {successMessage && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-green-700 whitespace-pre-line">
-                    {successMessage}
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Error message */}
             {error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">{error}</p>
+                  <div className="flex-1">
+                    <p className="text-sm text-red-700 mb-2">{error}</p>
+                    <button
+                      onClick={() => {
+                        setError("");
+                        handleSubmit();
+                      }}
+                      className="text-sm font-medium text-red-700 hover:text-red-800 underline"
+                    >
+                      Réessayer
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -588,46 +591,43 @@ export function TrancheWizard({
 
           {/* Footer */}
           <div className="flex-shrink-0 bg-white p-6 border-t border-slate-200 flex gap-3">
-            {successMessage ? (
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+              disabled={processing}
+            >
+              Annuler
+            </button>
+            <Tooltip
+              content={
+                !trancheName
+                  ? "Le nom de la tranche est requis"
+                  : !isEditMode && !selectedProjectId
+                  ? "Veuillez sélectionner un projet"
+                  : !isEditMode && !csvFile
+                  ? "Veuillez sélectionner un fichier CSV/Excel"
+                  : ""
+              }
+            >
               <button
-                onClick={() => {
-                  onSuccess();
-                  onClose();
-                  navigate(`/projets/${selectedProjectId}`);
-                }}
-                className="w-full px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors"
+                onClick={handleSubmit}
+                disabled={
+                  processing ||
+                  !trancheName ||
+                  (isEditMode ? false : (!selectedProjectId || !csvFile))
+                }
+                className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Voir le projet
+                {processing ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" />
+                    {isEditMode ? "Mise à jour..." : `Import... ${progress}%`}
+                  </>
+                ) : (
+                  isEditMode ? "Mettre à jour" : "Créer et importer"
+                )}
               </button>
-            ) : (
-              <>
-                <button
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
-                  disabled={processing}
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={
-                    processing ||
-                    !trancheName ||
-                    (isEditMode ? false : (!selectedProjectId || !csvFile))
-                  }
-                  className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {processing ? (
-                    <>
-                      <Loader className="w-5 h-5 animate-spin" />
-                      {isEditMode ? "Mise à jour..." : `Import... ${progress}%`}
-                    </>
-                  ) : (
-                    isEditMode ? "Mettre à jour" : "Créer et importer"
-                  )}
-                </button>
-              </>
-            )}
+            </Tooltip>
           </div>
         </div>
       </div>
