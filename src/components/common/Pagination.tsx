@@ -11,7 +11,9 @@ interface PaginationProps {
   totalItems: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
+  onItemsPerPageChange?: (itemsPerPage: number) => void;
   itemName?: string; // ex: "investisseurs", "projets", "membres"
+  itemsPerPageOptions?: number[];
 }
 
 export function Pagination({
@@ -20,7 +22,9 @@ export function Pagination({
   totalItems,
   itemsPerPage,
   onPageChange,
-  itemName = 'éléments'
+  onItemsPerPageChange,
+  itemName = 'éléments',
+  itemsPerPageOptions = [10, 25, 50, 100]
 }: PaginationProps) {
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -65,12 +69,31 @@ export function Pagination({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-slate-200">
-      {/* Informations */}
-      <div className="text-sm text-slate-600">
-        Affichage de <span className="font-medium text-slate-900">{startItem}</span> à{' '}
-        <span className="font-medium text-slate-900">{endItem}</span> sur{' '}
-        <span className="font-medium text-slate-900">{totalItems}</span> {itemName}
+    <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-slate-200 flex-wrap gap-4">
+      {/* Informations & Items per page */}
+      <div className="flex items-center gap-4">
+        <div className="text-sm text-slate-600">
+          Affichage de <span className="font-medium text-slate-900">{startItem}</span> à{' '}
+          <span className="font-medium text-slate-900">{endItem}</span> sur{' '}
+          <span className="font-medium text-slate-900">{totalItems}</span> {itemName}
+        </div>
+
+        {onItemsPerPageChange && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-slate-600">Par page:</label>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+              className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              {itemsPerPageOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Controls */}

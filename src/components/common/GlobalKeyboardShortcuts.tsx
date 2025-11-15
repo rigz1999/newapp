@@ -1,10 +1,21 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from '../../utils/toast';
+// DISABLED - Global keyboard shortcuts
+// This component is currently disabled per user request
+// To re-enable, uncomment the code below and add <GlobalKeyboardShortcuts /> to your App component
 
 interface GlobalKeyboardShortcutsProps {
   onSearch?: () => void;
 }
+
+export function GlobalKeyboardShortcuts({ onSearch }: GlobalKeyboardShortcutsProps) {
+  // Disabled - no functionality
+  return null;
+}
+
+/* DISABLED CODE - Uncomment to re-enable
+
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from '../../utils/toast';
 
 export function GlobalKeyboardShortcuts({ onSearch }: GlobalKeyboardShortcutsProps) {
   const navigate = useNavigate();
@@ -61,3 +72,4 @@ export function GlobalKeyboardShortcuts({ onSearch }: GlobalKeyboardShortcutsPro
 
   return null;
 }
+*/

@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { validateField, ValidationRule } from '../../utils/formValidation';
+import { validate, ValidationRule } from '../../utils/validation';
 
 interface ValidatedInputProps {
   label: string;
@@ -40,9 +40,9 @@ export function ValidatedInput({
 
   useEffect(() => {
     if (rules && touched && validateOnChange) {
-      const result = validateField(value, rules);
-      setError(result.error);
-      setIsValid(result.isValid && value !== '');
+      const errorMsg = validate(value, rules);
+      setError(errorMsg || undefined);
+      setIsValid(!errorMsg && value !== '');
     }
   }, [value, rules, touched, validateOnChange]);
 
@@ -53,9 +53,9 @@ export function ValidatedInput({
   const handleBlur = () => {
     setTouched(true);
     if (rules) {
-      const result = validateField(value, rules);
-      setError(result.error);
-      setIsValid(result.isValid && value !== '');
+      const errorMsg = validate(value, rules);
+      setError(errorMsg || undefined);
+      setIsValid(!errorMsg && value !== '');
     }
   };
 
