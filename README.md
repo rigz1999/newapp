@@ -1,4 +1,4 @@
-# InvestFlow - Investment Management Platform
+# Finixar - Investment Management Platform
 
 A comprehensive React-based investment management platform for tracking projects, investors, subscriptions, payments, and coupons. Built with React, TypeScript, Vite, and Supabase.
 
@@ -259,7 +259,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 For issues and questions:
 - Create an issue in the GitHub repository
-- Contact support: support@investflow.com
+- Contact support: support@finixar.com
 
 ## License
 

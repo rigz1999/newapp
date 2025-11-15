@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within InvestFlow, please send an email to security@investflow.com. All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability within Finixar, please send an email to security@finixar.com. All security vulnerabilities will be promptly addressed.
 
 Please do not publicly disclose the issue until it has been addressed by our team.
 
@@ -143,8 +143,8 @@ Please do not publicly disclose the issue until it has been addressed by our tea
 ## Contact
 
 For security concerns, contact:
-- Email: security@investflow.com
-- For urgent issues: security-urgent@investflow.com
+- Email: security@finixar.com
+- For urgent issues: security-urgent@finixar.com
 
 ## Changelog
 
