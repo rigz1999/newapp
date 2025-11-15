@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, FileText, DollarSign, Calendar, AlertTriangle, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, FileText, Euro, Calendar, AlertTriangle, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import ExcelJS from 'exceljs';
 // @ts-ignore
 import jsPDF from 'jspdf';
@@ -703,7 +703,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="w-5 h-5 text-finixar-teal" />
+                  <Euro className="w-5 h-5 text-finixar-teal" />
                   <span className="font-semibold text-slate-900">Paiements</span>
                 </div>
                 <p className="text-xs text-slate-600">Paiements uniquement</p>

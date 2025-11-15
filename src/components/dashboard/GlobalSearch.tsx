@@ -4,7 +4,7 @@
 // ============================================
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, X, Folder, Users, Layers, FileText, DollarSign, Receipt, TrendingUp, Clock } from 'lucide-react';
+import { Search, X, Folder, Users, Layers, FileText, Euro, Receipt, TrendingUp, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -416,7 +416,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
           formatCurrency(p.montant),
           p.type || 'Paiement'
         ],
-        icon: <DollarSign className="w-5 h-5 text-emerald-600" />,
+        icon: <Euro className="w-5 h-5 text-emerald-600" />,
         link: `/paiements?id=${p.id}`
       }));
 
@@ -510,7 +510,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       { key: 'investors', title: 'Investisseurs', icon: <Users className="w-4 h-4" />, color: 'text-finixar-green', results: results.investors },
       { key: 'tranches', title: 'Tranches', icon: <Layers className="w-4 h-4" />, color: 'text-purple-600', results: results.tranches },
       { key: 'subscriptions', title: 'Souscriptions', icon: <FileText className="w-4 h-4" />, color: 'text-orange-600', results: results.subscriptions },
-      { key: 'payments', title: 'Paiements', icon: <DollarSign className="w-4 h-4" />, color: 'text-emerald-600', results: results.payments },
+      { key: 'payments', title: 'Paiements', icon: <Euro className="w-4 h-4" />, color: 'text-emerald-600', results: results.payments },
       { key: 'coupons', title: 'Coupons', icon: <Receipt className="w-4 h-4" />, color: 'text-pink-600', results: results.coupons }
     ];
 
