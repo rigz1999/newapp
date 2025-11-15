@@ -366,6 +366,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
   const performProjectUpdate = async (hasFinancialChanges: boolean) => {
     try {
+      console.log('=== UPDATING PROJECT ===');
+      console.log('Financial changes detected:', hasFinancialChanges);
+
       const { error } = await supabase
         .from('projets')
         .update(editedProject as never)
@@ -373,13 +376,106 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
       if (error) throw error;
 
+      console.log('✅ Project updated in database');
+
+      // If financial parameters changed, regenerate echeancier for ALL tranches
+      if (hasFinancialChanges) {
+        console.log('\n=== REGENERATING ECHEANCIER FOR ALL TRANCHES ===');
+
+        // Get all tranches for this project
+        const { data: projectTranches, error: tranchesError } = await supabase
+          .from('tranches')
+          .select('id, tranche_name')
+          .eq('projet_id', project!.id);
+
+        if (tranchesError) {
+          console.error('Error fetching tranches:', tranchesError);
+          throw new Error('Erreur lors de la récupération des tranches');
+        }
+
+        if (!projectTranches || projectTranches.length === 0) {
+          console.log('No tranches to regenerate');
+        } else {
+          console.log(`Found ${projectTranches.length} tranches to regenerate`);
+
+          // Regenerate echeancier for each tranche
+          const regenerateUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-echeancier`;
+          const { data: { session } } = await supabase.auth.getSession();
+
+          let totalUpdated = 0;
+          let totalDeleted = 0;
+          let totalCreated = 0;
+          const errors: string[] = [];
+
+          for (const tranche of projectTranches) {
+            console.log(`\nRegenerating tranche: ${tranche.tranche_name}`);
+
+            try {
+              const regenerateResponse = await fetch(regenerateUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session?.access_token}`,
+                },
+                body: JSON.stringify({ tranche_id: tranche.id }),
+              });
+
+              const regenerateResult = await regenerateResponse.json();
+
+              if (regenerateResult.success) {
+                console.log(`✅ ${tranche.tranche_name}:`, regenerateResult);
+                totalUpdated += regenerateResult.updated_souscriptions || 0;
+                totalDeleted += regenerateResult.deleted_coupons || 0;
+                totalCreated += regenerateResult.created_coupons || 0;
+              } else {
+                console.warn(`⚠️ ${tranche.tranche_name}:`, regenerateResult.error);
+                errors.push(`${tranche.tranche_name}: ${regenerateResult.error}`);
+              }
+            } catch (fetchError: any) {
+              console.error(`❌ Error regenerating ${tranche.tranche_name}:`, fetchError);
+              errors.push(`${tranche.tranche_name}: ${fetchError.message}`);
+            }
+          }
+
+          console.log('\n=== REGENERATION SUMMARY ===');
+          console.log(`Tranches processed: ${projectTranches.length}`);
+          console.log(`Souscriptions updated: ${totalUpdated}`);
+          console.log(`Coupons deleted: ${totalDeleted}`);
+          console.log(`Coupons created: ${totalCreated}`);
+          console.log(`Errors: ${errors.length}`);
+
+          // Show detailed results
+          let message = `Projet mis à jour avec succès!\n\n`;
+          message += `📊 Écheanciers régénérés pour ${projectTranches.length} tranche(s):\n`;
+          message += `• Souscriptions recalculées: ${totalUpdated}\n`;
+          message += `• Coupons en attente supprimés: ${totalDeleted}\n`;
+          message += `• Nouveaux coupons créés: ${totalCreated}`;
+
+          if (errors.length > 0) {
+            message += `\n\n⚠️ Erreurs (${errors.length}):\n` + errors.join('\n');
+          }
+
+          setShowEditProject(false);
+          await fetchProjectData();
+
+          setAlertState({
+            isOpen: true,
+            title: 'Succès',
+            message: message,
+            type: errors.length > 0 ? 'warning' : 'success',
+          });
+
+          return;
+        }
+      }
+
       setShowEditProject(false);
       await fetchProjectData();
-      
+
       setAlertState({
         isOpen: true,
         title: 'Succès',
-        message: 'Projet mis à jour avec succès' + (hasFinancialChanges ? '\n\nLes coupons et échéances ont été recalculés automatiquement.' : ''),
+        message: 'Projet mis à jour avec succès',
         type: 'success',
       });
     } catch (err: any) {
