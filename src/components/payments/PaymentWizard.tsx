@@ -243,7 +243,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
             canvas.height = viewport.height;
             canvas.width = viewport.width;
 
-            await page.render({ canvasContext: context, viewport } as any).promise;
+            await page.render({ canvasContext: context, viewport }).promise;
             
             const imageDataUrl = canvas.toDataURL('image/png');
             const compressed = await compressImage(imageDataUrl, 0.7);
@@ -308,7 +308,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       if (!data.succes) throw new Error(data.erreur || 'Erreur lors de l\'analyse des paiements');
       if (!data.correspondances) throw new Error('Données de correspondance manquantes');
 
-      const enrichedMatches = data.correspondances.map((match: any) => {
+      const enrichedMatches = data.correspondances.map((match: Omit<PaymentMatch, 'matchedSubscription'>) => {
         const subscription = subscriptions.find(
           s => s.investisseur.nom_raison_sociale.toLowerCase() === match.paiement.beneficiaire.toLowerCase()
         );
@@ -342,7 +342,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
       console.timeEnd('⏱️ TOTAL');
 
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erreur analyse:', err);
       setError(err.message || 'Erreur lors de l\'analyse');
     } finally {
@@ -450,7 +450,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
       setShowConfirmModal(false);
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Erreur lors de la validation');
     } finally {
       setProcessing(false);
@@ -522,7 +522,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
       onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Erreur lors de la validation');
     } finally {
       setProcessing(false);
