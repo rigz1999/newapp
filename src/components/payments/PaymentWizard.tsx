@@ -66,6 +66,7 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   const [tempFileNames, setTempFileNames] = useState<string[]>([]);
   const [selectedMatches, setSelectedMatches] = useState<Set<number>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [step, setStep] = useState<'select' | 'upload' | 'results'>('select');
 
@@ -182,6 +183,41 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
 
   const handleRemoveFile = (indexToRemove: number) => {
     setFiles(files.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (analyzing) return;
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    const validFiles: File[] = [];
+
+    for (const file of droppedFiles) {
+      const validation = validateFile(file, FILE_VALIDATION_PRESETS.documents);
+      if (!validation.valid) {
+        setError(validation.error || 'Fichier invalide');
+        return;
+      }
+      validFiles.push(file);
+    }
+
+    setFiles(validFiles);
+    setError('');
   };
 
   const compressImage = (imageDataUrl: string, quality: number = 0.7): Promise<string> => {
@@ -651,8 +687,17 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                 </div>
               </div>
 
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
-                <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${
+                  isDragging
+                    ? 'border-blue-500 bg-blue-50 scale-105'
+                    : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50'
+                }`}
+              >
+                <Upload className={`w-12 h-12 mx-auto mb-4 transition-colors ${isDragging ? 'text-blue-500' : 'text-slate-400'}`} />
                 <input
                   type="file"
                   multiple
@@ -662,9 +707,12 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
                   disabled={analyzing}
                 />
                 <label htmlFor="file-upload" className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium">
-                  Choisir des fichiers
+                  {isDragging ? 'Déposez vos fichiers ici' : 'Choisir des fichiers'}
                 </label>
-                <p className="text-sm text-slate-500 mt-2">PDF, PNG, JPG ou WEBP (max 10MB par fichier)</p>
+                <p className="text-sm text-slate-500 mt-2">
+                  {isDragging ? 'Relâchez pour téléverser' : 'ou glissez-déposez vos fichiers'}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">PDF, PNG, JPG ou WEBP (max 10MB par fichier)</p>
               </div>
 
               {files.length > 0 && (

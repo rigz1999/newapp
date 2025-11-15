@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Download, Search, Euro, CheckCircle2, Eye, Filter, X, AlertCircle } from 'lucide-react';
+import { Download, Search, Euro, CheckCircle2, Eye, Filter, X, AlertCircle, Trash2, FileDown } from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
@@ -9,6 +9,7 @@ import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { DateRangePicker } from '../filters/DateRangePicker';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { logger } from '../../utils/logger';
 import { formatErrorMessage } from '../../utils/errorMessages';
 
@@ -62,6 +63,10 @@ export function Payments({ organization }: PaymentsProps) {
     persistKey: 'payments-filters',
   });
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Bulk selection
+  const [selectedPayments, setSelectedPayments] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Get unique values for filters
   const uniqueProjects = Array.from(
@@ -256,6 +261,82 @@ export function Payments({ organization }: PaymentsProps) {
     URL.revokeObjectURL(url);
   };
 
+  // Bulk selection handlers
+  const toggleSelectAll = () => {
+    const currentPagePayments = paginate(filteredPayments, currentPage, itemsPerPage);
+    const currentPageIds = currentPagePayments.map(p => p.id);
+
+    if (currentPageIds.every(id => selectedPayments.has(id))) {
+      // Deselect all on current page
+      setSelectedPayments(prev => {
+        const newSet = new Set(prev);
+        currentPageIds.forEach(id => newSet.delete(id));
+        return newSet;
+      });
+    } else {
+      // Select all on current page
+      setSelectedPayments(prev => {
+        const newSet = new Set(prev);
+        currentPageIds.forEach(id => newSet.add(id));
+        return newSet;
+      });
+    }
+  };
+
+  const toggleSelectPayment = (paymentId: string) => {
+    setSelectedPayments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(paymentId)) {
+        newSet.delete(paymentId);
+      } else {
+        newSet.add(paymentId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from('paiements')
+        .delete()
+        .in('id', Array.from(selectedPayments));
+
+      if (error) throw error;
+
+      // Refresh data
+      await fetchPayments();
+      setSelectedPayments(new Set());
+    } catch (err) {
+      console.error('Bulk delete failed:', err);
+      setError('Échec de la suppression des paiements sélectionnés');
+    }
+  };
+
+  const exportSelectedToCSV = () => {
+    const selected = filteredPayments.filter(p => selectedPayments.has(p.id));
+    const headers = ['ID Paiement', 'Projet', 'Émetteur', 'Tranche', 'Investisseur', 'Type', 'Montant', 'Date'];
+    const rows = selected.map((payment) => [
+      payment.id_paiement,
+      payment.tranche?.projet?.projet || '',
+      payment.tranche?.projet?.emetteur || '',
+      payment.tranche?.tranche_name || '',
+      payment.investisseur?.nom_raison_sociale || '',
+      payment.type || 'Coupon',
+      payment.montant,
+      formatDate(payment.date_paiement),
+    ]);
+
+    const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `paiements_selection_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const hasActiveFilters = 
     advancedFilters.filters.dateRange.startDate ||
     advancedFilters.filters.dateRange.endDate ||
@@ -445,23 +526,76 @@ export function Payments({ organization }: PaymentsProps) {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
-            <table className="w-full min-w-max">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden lg:table-cell">ID</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">Projet</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">Tranche</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden sm:table-cell">Type</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">Montant</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">Date</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginate(filteredPayments, currentPage, itemsPerPage).map((payment) => (
-                  <tr key={payment.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm font-medium text-slate-900 hidden lg:table-cell">{payment.id_paiement}</td>
+          <>
+            {/* Bulk Actions Bar */}
+            {selectedPayments.size > 0 && (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-blue-900">
+                    {selectedPayments.size} élément{selectedPayments.size > 1 ? 's' : ''} sélectionné{selectedPayments.size > 1 ? 's' : ''}
+                  </span>
+                  <button
+                    onClick={() => setSelectedPayments(new Set())}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Tout désélectionner
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={exportSelectedToCSV}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    Exporter sélection
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+              <table className="w-full min-w-max">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="px-2 md:px-4 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        checked={
+                          paginate(filteredPayments, currentPage, itemsPerPage).length > 0 &&
+                          paginate(filteredPayments, currentPage, itemsPerPage).every(p => selectedPayments.has(p.id))
+                        }
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                      />
+                    </th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden lg:table-cell">ID</th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">Projet</th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">Tranche</th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden sm:table-cell">Type</th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">Montant</th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">Date</th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginate(filteredPayments, currentPage, itemsPerPage).map((payment) => (
+                    <tr key={payment.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                      <td className="px-2 md:px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedPayments.has(payment.id)}
+                          onChange={() => toggleSelectPayment(payment.id)}
+                          className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm font-medium text-slate-900 hidden lg:table-cell">{payment.id_paiement}</td>
                     <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600">
                       <div>
                         <p className="font-medium text-slate-900">{payment.tranche?.projet?.projet || '-'}</p>
@@ -503,6 +637,7 @@ export function Payments({ organization }: PaymentsProps) {
               itemName="paiements"
             />
           </div>
+          </>
         )}
       </div>
 
@@ -517,6 +652,18 @@ export function Payments({ organization }: PaymentsProps) {
           }}
         />
       )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleBulkDelete}
+        title="Supprimer les paiements sélectionnés"
+        message="Êtes-vous sûr de vouloir supprimer ces paiements ? Cette action est irréversible."
+        variant="danger"
+        impact={`Cette action supprimera ${selectedPayments.size} paiement${selectedPayments.size > 1 ? 's' : ''}.`}
+        confirmText="Supprimer"
+      />
     </div>
   );
 }
