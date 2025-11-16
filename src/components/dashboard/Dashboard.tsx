@@ -807,69 +807,69 @@ export function Dashboard({ organization }: DashboardProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-            <div className="bg-white rounded-xl p-6 border-l-4 border-indigo-500 shadow-sm hover:shadow-md transition-all group">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-blue-100 hover:scale-[1.02] transition-all duration-200 group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <span className="text-slate-600 text-xs font-semibold uppercase tracking-wide block mb-3">
+                  <span className="text-blue-700 text-sm font-medium block mb-2">
                     Montant total investi
                   </span>
-                  <p className="text-3xl font-bold text-slate-900 mb-1">
+                  <p className="text-3xl font-bold text-blue-900 mb-1">
                     {formatCurrency(stats.totalInvested)}
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-3 rounded-xl">
-                  <TrendingUp className="w-5 h-5 text-white" />
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-6 h-6 text-white" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 border-l-4 border-emerald-500 shadow-sm hover:shadow-md transition-all group">
+            <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-green-100 hover:scale-[1.02] transition-all duration-200 group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <span className="text-slate-600 text-xs font-semibold uppercase tracking-wide block mb-3">
+                  <span className="text-green-700 text-sm font-medium block mb-2">
                     Coupons payés ce mois
                   </span>
-                  <p className="text-3xl font-bold text-slate-900 mb-1">
+                  <p className="text-3xl font-bold text-green-900 mb-1">
                     {formatCurrency(stats.couponsPaidThisMonth)}
                   </p>
-                  <p className="text-sm text-emerald-700 font-medium">
+                  <p className="text-sm text-green-600 font-medium">
                     {stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-3 rounded-xl">
-                  <CheckCircle2 className="w-5 h-5 text-white" />
+                <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                  <CheckCircle2 className="w-6 h-6 text-white" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 border-l-4 border-violet-500 shadow-sm hover:shadow-md transition-all group">
+            <div className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-purple-100 hover:scale-[1.02] transition-all duration-200 group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <span className="text-slate-600 text-xs font-semibold uppercase tracking-wide block mb-3">
+                  <span className="text-purple-700 text-sm font-medium block mb-2">
                     Projets actifs
                   </span>
-                  <p className="text-3xl font-bold text-slate-900">{stats.activeProjects}</p>
+                  <p className="text-3xl font-bold text-purple-900">{stats.activeProjects}</p>
                 </div>
-                <div className="bg-gradient-to-br from-violet-500 to-violet-600 p-3 rounded-xl">
-                  <Folder className="w-5 h-5 text-white" />
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                  <Folder className="w-6 h-6 text-white" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 border-l-4 border-amber-500 shadow-sm hover:shadow-md transition-all group">
+            <div className="bg-gradient-to-br from-amber-50 to-white rounded-2xl p-6 shadow-lg hover:shadow-xl border border-amber-100 hover:scale-[1.02] transition-all duration-200 group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <span className="text-slate-600 text-xs font-semibold uppercase tracking-wide block mb-3">
+                  <span className="text-amber-700 text-sm font-medium block mb-2">
                     Coupons à venir
                   </span>
-                  <p className="text-3xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
-                  <p className="text-sm text-amber-700 font-medium">
+                  <p className="text-3xl font-bold text-amber-900">{stats.upcomingCoupons}</p>
+                  <p className="text-sm text-amber-600 font-medium">
                     {stats.nextCouponDays} prochains jours
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-3 rounded-xl">
-                  <Clock className="w-5 h-5 text-white" />
+                <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                  <Clock className="w-6 h-6 text-white" />
                 </div>
               </div>
             </div>
