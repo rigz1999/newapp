@@ -818,9 +818,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     {formatCurrency(stats.totalInvested)}
                   </p>
                 </div>
-                <div className="bg-slate-600 p-3 rounded-xl shadow-sm transition-transform">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
+                <TrendingUp className="w-6 h-6" style={{ color: '#3B82F6' }} />
               </div>
             </div>
 
@@ -837,9 +835,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     {stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}
                   </p>
                 </div>
-                <div className="bg-slate-600 p-3 rounded-xl shadow-sm transition-transform">
-                  <CheckCircle2 className="w-6 h-6 text-white" />
-                </div>
+                <CheckCircle2 className="w-6 h-6" style={{ color: '#10B981' }} />
               </div>
             </div>
 
@@ -851,9 +847,7 @@ export function Dashboard({ organization }: DashboardProps) {
                   </span>
                   <p className="text-3xl font-bold text-slate-900">{stats.activeProjects}</p>
                 </div>
-                <div className="bg-slate-600 p-3 rounded-xl shadow-sm transition-transform">
-                  <Folder className="w-6 h-6 text-white" />
-                </div>
+                <Folder className="w-6 h-6" style={{ color: '#3B82F6' }} />
               </div>
             </div>
 
@@ -868,9 +862,7 @@ export function Dashboard({ organization }: DashboardProps) {
                     {stats.nextCouponDays} prochains jours
                   </p>
                 </div>
-                <div className="bg-slate-600 p-3 rounded-xl shadow-sm transition-transform">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
+                <Clock className="w-6 h-6" style={{ color: '#F59E0B' }} />
               </div>
             </div>
           </div>
