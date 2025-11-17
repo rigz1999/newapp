@@ -68,6 +68,29 @@ const getColumn = (row: Record<string, string>, ...columnNames: string[]): strin
   return undefined;
 };
 
+// Calculate period ratio based on periodicite and base_interet
+const getPeriodRatio = (periodicite: string | null, baseInteret: number): number => {
+  const base = baseInteret || 360;
+
+  switch (periodicite?.toLowerCase()) {
+    case 'annuel':
+    case 'annuelle':
+      return base / base; // 1.0
+    case 'semestriel':
+    case 'semestrielle':
+      return base === 365 ? 182.5 / 365 : 180 / 360;
+    case 'trimestriel':
+    case 'trimestrielle':
+      return base === 365 ? 91.25 / 365 : 90 / 360;
+    case 'mensuel':
+    case 'mensuelle':
+      return base === 365 ? 30.42 / 365 : 30 / 360;
+    default:
+      console.warn(`Périodicité inconnue: ${periodicite}, utilisation annuelle par défaut`);
+      return 1.0;
+  }
+};
+
 // Parse CSV with dual sections (Personnes Physiques / Personnes Morales)
 function parseCSV(text: string): Array<Record<string, string> & { _investorType: string }> {
   const lines = text.split(/\r?\n/);
@@ -224,6 +247,27 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
+
+    // Fetch project to get base_interet
+    const { data: projectData, error: projectError } = await supabase
+      .from('projets')
+      .select('base_interet')
+      .eq('id', projetId)
+      .single();
+
+    if (projectError) {
+      console.error("Erreur récupération projet:", projectError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Erreur récupération projet: ${projectError.message}`
+        }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    const baseInteret = projectData?.base_interet || 360;
+    console.log("Base de calcul:", baseInteret);
 
     // 1) CREATE TRANCHE FIRST
     console.log("Création de la tranche...");
@@ -630,14 +674,22 @@ Deno.serve(async (req: Request) => {
 
         console.log("📋 CGP Info:", { cgp, emailCgp, codeCgp, sirenCgp });
 
-        // Calculate annual coupon amounts
-        const couponBrut = tauxNominal ? (montant * tauxNominal) / 100 : 0;
+        // Calculate coupon amounts with period adjustment
+        const couponAnnuel = tauxNominal ? (montant * tauxNominal) / 100 : 0;
+        const periodRatio = getPeriodRatio(periodiciteCoupons, baseInteret);
+        const couponBrut = couponAnnuel * periodRatio;
         // Physique: 30% flat tax -> net = brut * 0.7
         // Morale: no flat tax -> net = brut
         const couponNet = investorType === 'physique' ? couponBrut * 0.7 : couponBrut;
 
         console.log("Création souscription - Quantité:", quantite, "Montant:", montant);
-        console.log("Calcul coupons annuels - Type:", investorType, "Brut:", couponBrut, "Net:", couponNet);
+        console.log("Calcul coupons:");
+        console.log("  - Coupon annuel:", couponAnnuel);
+        console.log("  - Périodicité:", periodiciteCoupons, "Ratio:", periodRatio);
+        console.log("  - Base:", baseInteret);
+        console.log("  - Coupon par période (brut):", couponBrut);
+        console.log("  - Type investisseur:", investorType);
+        console.log("  - Coupon net:", couponNet);
 
         const { error: subErr } = await supabase
           .from("souscriptions")
