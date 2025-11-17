@@ -46,9 +46,10 @@ interface PaymentMatch {
 interface PaymentWizardProps {
   onClose: () => void;
   onSuccess: () => void;
+  preselectedProjectId?: string;
 }
 
-export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
+export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: PaymentWizardProps) {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -103,6 +104,13 @@ export function PaymentWizard({ onClose, onSuccess }: PaymentWizardProps) {
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  // Pre-select project if provided
+  useEffect(() => {
+    if (preselectedProjectId && projects.length > 0) {
+      setSelectedProjectId(preselectedProjectId);
+    }
+  }, [preselectedProjectId, projects]);
 
   useEffect(() => {
     if (selectedProjectId) {

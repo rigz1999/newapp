@@ -660,6 +660,7 @@ export function EcheancierContent({
             setShowPaymentWizard(false);
             fetchEcheances();
           }}
+          preselectedProjectId={projectId}
         />
       )}
     </>
