@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Calendar, AlertCircle, Download } from 'lucide-react';
 import ExcelJS from 'exceljs';
@@ -19,6 +20,7 @@ interface EcheancierCardProps {
 }
 
 export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll }: EcheancierCardProps) {
+  const navigate = useNavigate();
   const [globalStats, setGlobalStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -330,7 +332,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
             <h2 className="text-xl font-bold text-slate-900">Échéancier des Coupons</h2>
           </div>
           <button
-            onClick={() => onViewAll?.()}
+            onClick={() => navigate(`/projets/${projectId}/echeancier`)}
             className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
           >
             Voir tout
@@ -352,7 +354,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
       ) : (
         <div className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer">
           <button
-            onClick={() => onViewAll?.()}
+            onClick={() => navigate(`/projets/${projectId}/echeancier`)}
             className="w-full px-6 py-5 hover:bg-slate-50 transition-colors text-left"
           >
             {/* Zone haute : Prochain versement */}
