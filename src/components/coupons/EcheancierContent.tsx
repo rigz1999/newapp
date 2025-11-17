@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle } from 'lucide-react';
+import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ExcelJS from 'exceljs';
+import { PaymentWizard } from '../payments/PaymentWizard';
 
 interface EcheancierContentProps {
   projectId: string;
@@ -63,6 +64,7 @@ export function EcheancierContent({
   const [filter, setFilter] = useState<'all' | 'a_venir' | 'paye' | 'en_retard'>('all');
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [showPaymentWizard, setShowPaymentWizard] = useState(false);
 
   useEffect(() => {
     fetchEcheances();
@@ -293,6 +295,13 @@ export function EcheancierContent({
             >
               <Download className="w-4 h-4" />
               Exporter Excel
+            </button>
+            <button
+              onClick={() => setShowPaymentWizard(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              Importer virements
             </button>
             {!isFullPage && onOpenFullPage && (
               <button
@@ -642,6 +651,17 @@ export function EcheancierContent({
           </div>
         </div>
       </div>
+
+      {/* Payment Wizard Modal */}
+      {showPaymentWizard && (
+        <PaymentWizard
+          onClose={() => setShowPaymentWizard(false)}
+          onSuccess={() => {
+            setShowPaymentWizard(false);
+            fetchEcheances();
+          }}
+        />
+      )}
     </>
   );
 }
