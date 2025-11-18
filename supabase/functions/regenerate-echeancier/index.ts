@@ -5,6 +5,29 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper function to calculate period ratio based on periodicite and base_interet
+function getPeriodRatio(periodicite: string | null, baseInteret: number): number {
+  const base = baseInteret || 360;
+
+  switch (periodicite?.toLowerCase()) {
+    case 'annuel':
+    case 'annuelle':
+      return 1.0;
+    case 'semestriel':
+    case 'semestrielle':
+      return base === 365 ? 182.5 / 365 : 180 / 360;
+    case 'trimestriel':
+    case 'trimestrielle':
+      return base === 365 ? 91.25 / 365 : 90 / 360;
+    case 'mensuel':
+    case 'mensuelle':
+      return base === 365 ? 30.42 / 365 : 30 / 360;
+    default:
+      console.warn(`Périodicité inconnue: ${periodicite}, utilisation annuelle par défaut`);
+      return 1.0;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -42,7 +65,8 @@ Deno.serve(async (req) => {
           taux_nominal,
           periodicite_coupons,
           date_emission,
-          duree_mois
+          duree_mois,
+          base_interet
         )
       `)
       .eq("id", tranche_id)
@@ -62,12 +86,14 @@ Deno.serve(async (req) => {
     const periodiciteCoupons = tranche.periodicite_coupons ?? project?.periodicite_coupons;
     const dateEmission = tranche.date_emission ?? project?.date_emission;
     const dureeMois = tranche.duree_mois ?? project?.duree_mois;
+    const baseInteret = project?.base_interet ?? 360;
 
     console.log("Tranche parameters:");
     console.log("  Taux nominal:", tauxNominal);
     console.log("  Périodicité:", periodiciteCoupons);
     console.log("  Date émission:", dateEmission);
     console.log("  Durée (mois):", dureeMois);
+    console.log("  Base de calcul:", baseInteret);
 
     // Validate required parameters
     if (tauxNominal === null || !periodiciteCoupons || !dateEmission || dureeMois === null) {
@@ -117,10 +143,14 @@ Deno.serve(async (req) => {
     console.log(`Found ${souscriptions.length} souscriptions`);
 
     // Update each souscription with recalculated coupons
+    const periodRatio = getPeriodRatio(periodiciteCoupons, baseInteret);
+    console.log(`Period ratio: ${periodRatio} (${periodiciteCoupons}, base ${baseInteret})`);
+
     let updatedSouscriptions = 0;
     for (const sub of souscriptions) {
       const montant = Number(sub.montant_investi);
-      const couponBrut = (montant * tauxNominal) / 100;
+      const couponAnnuel = (montant * tauxNominal) / 100;
+      const couponBrut = couponAnnuel * periodRatio;
       const investorType = (sub.investisseurs as any)?.type;
       const couponNet = investorType === 'physique' ? couponBrut * 0.7 : couponBrut;
 
@@ -136,7 +166,7 @@ Deno.serve(async (req) => {
         console.error(`Error updating souscription ${sub.id}:`, updateError);
       } else {
         updatedSouscriptions++;
-        console.log(`  ✓ Souscription ${sub.id}: Brut=${couponBrut.toFixed(2)}, Net=${couponNet.toFixed(2)}`);
+        console.log(`  ✓ Souscription ${sub.id}: Annuel=${couponAnnuel.toFixed(2)}, Ratio=${periodRatio}, Brut=${couponBrut.toFixed(2)}, Net=${couponNet.toFixed(2)}`);
       }
     }
 
