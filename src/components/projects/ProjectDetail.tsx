@@ -8,6 +8,7 @@ import { SubscriptionsModal } from '../subscriptions/SubscriptionsModal';
 import { TranchesModal } from '../tranches/TranchesModal';
 import { AlertModal } from '../common/AlertModal';
 import { ConfirmDialog } from '../common/ConfirmDialog';
+import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
 import { copyToClipboard } from '../../utils/clipboard';
 import { Tooltip } from '../common/Tooltip';
@@ -190,7 +191,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       const paymentsData = paymentsRes.data || [];
       const prochainsCouponsData = prochainsCouponsRes.data || [];
 
-      console.log('📊 Données récupérées:', {
+      logger.debug('Données récupérées', {
         projet: projectData?.projet,
         tranches: tranchesData.length,
         souscriptions: subscriptionsData.length,
@@ -235,7 +236,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           nextCouponAmount,
         });
 
-        console.log('✅ Stats calculées:', {
+        logger.debug('Stats calculées', {
           totalLeve,
           investisseursCount: uniqueInvestors,
           tranchesCount: tranchesData.length,
@@ -249,11 +250,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           nextCouponAmount: 0,
         });
         
-        console.log('⚠️ Aucune souscription trouvée');
+        logger.warn('Aucune souscription trouvée');
       }
 
     } catch (error: any) {
-      console.error('❌ Erreur chargement:', error);
+      logger.error(new Error('Erreur chargement'), { error });
       setAlertState({
         isOpen: true,
         title: 'Erreur',
@@ -305,7 +306,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       toast.success('Tranche supprimée avec succès');
       fetchProjectData();
     } catch (err: any) {
-      console.error('Error deleting tranche:', err);
+      logger.error(err instanceof Error ? err : new Error('Error deleting tranche'));
       toast.error('Erreur lors de la suppression : ' + err.message);
     }
   };
@@ -354,8 +355,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
   const performProjectUpdate = async (hasFinancialChanges: boolean) => {
     try {
-      console.log('=== UPDATING PROJECT ===');
-      console.log('Financial changes detected:', hasFinancialChanges);
+      logger.info('Updating project', { hasFinancialChanges });
 
       const { error } = await supabase
         .from('projets')
@@ -364,14 +364,14 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
       if (error) throw error;
 
-      console.log('✅ Project updated in database');
+      logger.info('Project updated in database');
 
       // Close modal and show initial success immediately
       setShowEditProject(false);
 
       // If financial parameters changed, regenerate echeancier for ALL tranches in background
       if (hasFinancialChanges) {
-        console.log('\n=== REGENERATING ECHEANCIER FOR ALL TRANCHES ===');
+        logger.info('Regenerating echeancier for all tranches');
 
         // Show initial success with "processing" message and spinner
         setAlertIsLoading(true);
@@ -389,7 +389,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           .eq('projet_id', project!.id);
 
         if (tranchesError) {
-          console.error('Error fetching tranches:', tranchesError);
+          logger.error(new Error('Error fetching tranches'), { error: tranchesError });
           await fetchProjectData();
           setAlertIsLoading(false);
           setAlertState({
@@ -402,7 +402,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         }
 
         if (!projectTranches || projectTranches.length === 0) {
-          console.log('No tranches to regenerate');
+          logger.info('No tranches to regenerate');
           await fetchProjectData();
           setAlertIsLoading(false);
           setAlertState({
@@ -414,7 +414,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           return;
         }
 
-        console.log(`Found ${projectTranches.length} tranches to regenerate`);
+        logger.info(`Found ${projectTranches.length} tranches to regenerate`);
 
         // Regenerate echeancier for each tranche IN PARALLEL for better performance
         const regenerateUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-echeancier`;
@@ -422,7 +422,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
         // Process all tranches in parallel
         const regenerationPromises = projectTranches.map(async (tranche) => {
-          console.log(`Regenerating tranche: ${tranche.tranche_name}`);
+          logger.debug(`Regenerating tranche: ${tranche.tranche_name}`);
 
           try {
             const regenerateResponse = await fetch(regenerateUrl, {
@@ -437,7 +437,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             const regenerateResult = await regenerateResponse.json();
 
             if (regenerateResult.success) {
-              console.log(`✅ ${tranche.tranche_name}:`, regenerateResult);
+              logger.info(`Tranche ${tranche.tranche_name} régénérée`);
               return {
                 success: true,
                 tranche: tranche.tranche_name,
@@ -446,7 +446,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 created: regenerateResult.created_coupons || 0,
               };
             } else {
-              console.warn(`⚠️ ${tranche.tranche_name}:`, regenerateResult.error);
+              logger.warn(`Tranche ${tranche.tranche_name}`, { error: regenerateResult.error });
               return {
                 success: false,
                 tranche: tranche.tranche_name,
@@ -454,7 +454,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               };
             }
           } catch (fetchError: any) {
-            console.error(`❌ Error regenerating ${tranche.tranche_name}:`, fetchError);
+            logger.error(new Error(`Error regenerating ${tranche.tranche_name}`), { error: fetchError });
             return {
               success: false,
               tranche: tranche.tranche_name,
@@ -473,13 +473,14 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         const totalDeleted = successful.reduce((sum, r) => sum + (r.deleted || 0), 0);
         const totalCreated = successful.reduce((sum, r) => sum + (r.created || 0), 0);
 
-        console.log('\n=== REGENERATION SUMMARY ===');
-        console.log(`Tranches processed: ${projectTranches.length}`);
-        console.log(`Successful: ${successful.length}`);
-        console.log(`Failed: ${failed.length}`);
-        console.log(`Souscriptions updated: ${totalUpdated}`);
-        console.log(`Coupons deleted: ${totalDeleted}`);
-        console.log(`Coupons created: ${totalCreated}`);
+        logger.info('Regeneration summary', {
+          tranchesProcessed: projectTranches.length,
+          successful: successful.length,
+          failed: failed.length,
+          souscriptionsUpdated: totalUpdated,
+          couponsDeleted: totalDeleted,
+          couponsCreated: totalCreated
+        });
 
         // Refresh project data
         await fetchProjectData();
@@ -511,7 +512,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       await fetchProjectData();
       toast.success('Projet mis à jour avec succès');
     } catch (err: any) {
-      console.error('Error updating project:', err);
+      logger.error(err instanceof Error ? err : new Error('Error updating project'));
       setAlertIsLoading(false);
       setAlertState({
         isOpen: true,
@@ -547,7 +548,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         type: 'success',
       });
     } catch (err: any) {
-      console.error('Error updating subscription:', err);
+      logger.error(err instanceof Error ? err : new Error('Error updating subscription'));
       setAlertState({
         isOpen: true,
         title: 'Erreur',
@@ -580,7 +581,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           });
           fetchProjectData();
         } catch (err: any) {
-          console.error('Error deleting subscription:', err);
+          logger.error(err instanceof Error ? err : new Error('Error deleting subscription'));
           setAlertState({
             isOpen: true,
             title: 'Erreur',

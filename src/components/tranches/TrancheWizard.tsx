@@ -5,6 +5,7 @@ import { X, CheckCircle, AlertCircle, Loader, Edit, Trash2 } from "lucide-react"
 import { FileUpload } from "../investors/FileUpload";
 import { Tooltip } from "../common/Tooltip";
 import { isValidDateRange } from "../../utils/validators";
+import { logger } from "../../utils/logger";
 
 interface Project {
   id: string;
@@ -67,7 +68,7 @@ export function TrancheWizard({
 
   useEffect(() => {
     if (editingTranche && isEditMode) {
-      console.log("🎯 Mode édition activé avec:", editingTranche);
+      logger.debug("Mode édition activé avec:", editingTranche);
       setSelectedProjectId(editingTranche.projet_id);
       setTrancheName(editingTranche.tranche_name);
       setTauxNominal(editingTranche.taux_nominal?.toString() || "");
@@ -82,7 +83,7 @@ export function TrancheWizard({
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !processing) {
-        console.log('ESC pressed in TrancheWizard');
+        logger.debug('ESC pressed in TrancheWizard');
         onClose();
       }
     };
@@ -132,7 +133,7 @@ export function TrancheWizard({
         .single();
 
       if (project) {
-        console.log("Auto-populating from project:", project);
+        logger.debug("Auto-populating from project:", project);
         if (project.taux_interet) setTauxNominal(project.taux_interet.toString());
         if (project.periodicite_coupons) setPeriodiciteCoupons(project.periodicite_coupons);
         if (project.maturite_mois) setDureeMois(project.maturite_mois.toString());
@@ -169,16 +170,26 @@ export function TrancheWizard({
     setSuccessMessage("");
 
     try {
-      console.log("=== MISE À JOUR TRANCHE ===");
-      console.log("Tranche ID:", editingTranche.id);
-      console.log("Nouvelles données:", {
+      // Validate dates
+      if (dateEmission && dateEcheanceFinale) {
+        const emissionDate = new Date(dateEmission);
+        const echeanceDate = new Date(dateEcheanceFinale);
+
+        if (emissionDate >= echeanceDate) {
+          setError("La date d'émission doit être antérieure à la date d'échéance finale");
+          setProcessing(false);
+          return;
+        }
+      }
+
+      logger.info("Mise à jour tranche", { trancheId: editingTranche.id, data: {
         tranche_name: trancheName,
         taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
         periodicite_coupons: periodiciteCoupons || null,
         date_emission: dateEmission || null,
         date_echeance_finale: dateEcheanceFinale || null,
         duree_mois: dureeMois ? parseInt(dureeMois) : null,
-      });
+      }});
 
       const { error: updateError } = await supabase
         .from("tranches")
@@ -194,10 +205,10 @@ export function TrancheWizard({
 
       if (updateError) throw updateError;
 
-      console.log("✅ Tranche mise à jour");
+      logger.info("Tranche mise à jour avec succès");
 
       // Call regenerate-echeancier to update payment schedule
-      console.log("Appel de regenerate-echeancier...");
+      logger.info("Appel de regenerate-echeancier");
       try {
         const regenerateUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-echeancier`;
         const { data: { session } } = await supabase.auth.getSession();
@@ -214,7 +225,7 @@ export function TrancheWizard({
         const regenerateResult = await regenerateResponse.json();
 
         if (regenerateResult.success) {
-          console.log("✅ Écheancier régénéré:", regenerateResult);
+          logger.info("Écheancier régénéré avec succès");
           const successMsg =
             `Tranche mise à jour avec succès!\n` +
             `Souscriptions recalculées: ${regenerateResult.updated_souscriptions}\n` +
@@ -223,7 +234,7 @@ export function TrancheWizard({
           onClose();
           onSuccess(successMsg);
         } else {
-          console.warn("⚠️ Écheancier non régénéré:", regenerateResult.error);
+          logger.warn("Écheancier non régénéré:", regenerateResult.error);
           const successMsg =
             `Tranche mise à jour avec succès!\n` +
             `Note: ${regenerateResult.error || "Écheancier non généré (paramètres manquants)"}`;
@@ -232,7 +243,7 @@ export function TrancheWizard({
           onSuccess(successMsg);
         }
       } catch (regenerateError: any) {
-        console.error("Erreur régénération écheancier:", regenerateError);
+        logger.error(new Error("Erreur régénération écheancier"), { error: regenerateError });
         const successMsg =
           `Tranche mise à jour avec succès!\n` +
           `Note: Impossible de régénérer l'écheancier automatiquement.`;
@@ -242,7 +253,7 @@ export function TrancheWizard({
       }
 
     } catch (err: any) {
-      console.error("=== ERREUR MISE À JOUR ===", err);
+      logger.error(err instanceof Error ? err : new Error(String(err)));
       setError(err.message || "Erreur lors de la mise à jour");
     } finally {
       setProcessing(false);
@@ -267,10 +278,7 @@ export function TrancheWizard({
     setIsProcessingOnServer(false);
 
     try {
-      console.log("=== DÉBUT IMPORT ===");
-      console.log("Projet ID:", selectedProjectId);
-      console.log("Nom tranche:", trancheName);
-      console.log("Fichier:", csvFile.name);
+      logger.info("Début import", { projectId: selectedProjectId, trancheName, fileName: csvFile.name });
 
       const form = new FormData();
       form.append("projet_id", selectedProjectId);
@@ -285,7 +293,7 @@ export function TrancheWizard({
       if (dureeMois) form.append("duree_mois", dureeMois);
 
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
-      console.log("URL Edge Function:", url);
+      logger.debug("URL Edge Function:", url);
 
       const xhr = new XMLHttpRequest();
       xhr.open("POST", url, true);
@@ -303,14 +311,12 @@ export function TrancheWizard({
 
       xhr.onload = () => {
         setProcessing(false);
-        console.log("=== RÉPONSE SERVEUR ===");
-        console.log("Status:", xhr.status);
-        console.log("Response:", xhr.responseText);
+        logger.debug("Réponse serveur", { status: xhr.status });
 
         try {
           if (xhr.status >= 200 && xhr.status < 300) {
             const result = JSON.parse(xhr.responseText);
-            console.log("Résultat parsé:", result);
+            logger.info("Import terminé", { result });
             
             if (result.success && result.createdSouscriptions > 0) {
               // Close modal and show success outside
@@ -324,34 +330,34 @@ export function TrancheWizard({
               onSuccess(successMsg);
 
               if (result.errors && result.errors.length > 0) {
-                console.warn("Erreurs d'import:", result.errors);
+                logger.warn("Erreurs d'import", { errors: result.errors });
               }
             } else if (result.success && result.createdSouscriptions === 0) {
               setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
-              console.error("Import terminé mais 0 souscriptions créées:", result);
+              logger.error(new Error("Import terminé mais 0 souscriptions créées"), { result });
             } else {
               setError(result.error || "Erreur lors de l'import");
             }
           } else {
-            console.error("Erreur HTTP:", xhr.status, xhr.responseText);
+            logger.error(new Error(`Erreur HTTP ${xhr.status}`), { response: xhr.responseText });
             setError(`Erreur serveur (${xhr.status}): Voir la console pour plus de détails`);
           }
         } catch (parseErr) {
-          console.error("Erreur de parsing de la réponse:", parseErr);
+          logger.error(new Error("Erreur de parsing de la réponse"), { error: parseErr });
           setError("Réponse invalide du serveur");
         }
       };
 
       xhr.onerror = () => {
         setProcessing(false);
-        console.error("Erreur réseau XHR");
+        logger.error(new Error("Erreur réseau XHR"));
         setError("Erreur réseau pendant l'upload");
       };
 
       xhr.send(form);
 
     } catch (err: any) {
-      console.error("=== ERREUR GLOBALE ===", err);
+      logger.error(err instanceof Error ? err : new Error(String(err)));
       setError(err.message || "Erreur lors de l'import");
       setProcessing(false);
     }

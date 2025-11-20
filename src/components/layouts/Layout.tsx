@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { GlobalSearch } from '../dashboard/GlobalSearch';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { logger } from '../../utils/logger';
 
 interface LayoutProps {
   organization: { id: string; name: string; role: string };
@@ -84,10 +85,10 @@ export function Layout({ organization }: LayoutProps) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Logout error:', error);
+        logger.error(new Error('Logout error'), { error });
       }
     } catch (err) {
-      console.error('Unexpected logout error:', err);
+      logger.error(err instanceof Error ? err : new Error('Unexpected logout error'));
     } finally {
       // Always navigate to login page, even if signOut fails
       navigate('/', { replace: true });

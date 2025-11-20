@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { logger } from '../../utils/logger';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Users, Building2, UserPlus, Shield,
@@ -110,10 +111,10 @@ export default function AdminPanel() {
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
-    console.log('fetchInvitations result:', { data, error, count: data?.length });
+    logger.debug('fetchInvitations result', { count: data?.length, hasError: !!error });
 
     if (error) {
-      console.error('Error fetching invitations:', error);
+      logger.error(new Error('Error fetching invitations'), { error });
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors du chargement des invitations: ' + error.message,
@@ -158,9 +159,9 @@ export default function AdminPanel() {
       .order('created_at', { ascending: false });
 
     if (membershipsError) {
-      console.error('Error loading memberships:', membershipsError);
+      logger.error(new Error('Error loading memberships'), { error: membershipsError });
     } else {
-      console.log('Loaded memberships with profiles:', membershipData);
+      logger.debug('Loaded memberships with profiles', { count: membershipData?.length });
       setMemberships((membershipData || []) as Membership[]);
     }
 
@@ -308,7 +309,7 @@ export default function AdminPanel() {
   const handleRemoveMember = async () => {
     if (!deletingItem || deletingItem.type !== 'user') return;
 
-    console.log('Attempting to remove member (AdminPanel):', deletingItem);
+    logger.info('Attempting to remove member', { item: deletingItem });
 
     try {
       const { data, error: funcError } = await supabase.functions.invoke('delete-pending-user', {
@@ -318,7 +319,7 @@ export default function AdminPanel() {
       if (funcError) throw funcError;
       if (data?.error) throw new Error(data.error);
 
-      console.log('Member and user account deleted successfully (AdminPanel)');
+      logger.info('Member and user account deleted successfully');
       setShowRemoveUserModal(false);
       setDeletingItem(null);
       fetchData();
@@ -330,7 +331,7 @@ export default function AdminPanel() {
       });
       setShowAlertModal(true);
     } catch (error) {
-      console.error('Error removing member (AdminPanel):', error);
+      logger.error(new Error('Error removing member'), { error });
       setAlertModalConfig({
         title: 'Erreur de suppression',
         message: `Impossible de supprimer ce membre: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,

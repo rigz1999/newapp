@@ -4,6 +4,7 @@ import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, A
 import * as pdfjsLib from 'pdfjs-dist';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { isValidAmount } from '../../utils/validators';
+import { logger } from '../../utils/logger';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
@@ -265,14 +266,14 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
   const handleAnalyze = async () => {
     if (files.length === 0) return;
 
-    console.time('⏱️ TOTAL');
+    const startTime = Date.now();
     setAnalyzing(true);
     setError('');
 
     try {
       const base64Images: string[] = [];
       
-      console.time('🖼️ Conversion Base64');
+      const conversionStart = Date.now();
 
       for (const file of files) {
         if (file.type === 'application/pdf') {
@@ -312,12 +313,12 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
         }
       }
 
-      console.timeEnd('🖼️ Conversion Base64');
-      console.log(`📦 ${base64Images.length} image(s) converties`);
+      const conversionTime = Date.now() - conversionStart;
+      logger.debug('Images converties', { count: base64Images.length, timeMs: conversionTime });
 
       const totalSize = base64Images.reduce((sum, img) => sum + img.length, 0);
       const totalSizeMB = (totalSize * 0.75 / 1024 / 1024).toFixed(2);
-      console.log(`📊 Taille totale: ${totalSizeMB} MB`);
+      logger.debug('Taille totale des images', { sizeMB: totalSizeMB });
 
       if (totalSize > 5 * 1024 * 1024) {
         throw new Error(`Les images sont trop volumineuses (${totalSizeMB} MB). Limite: 5 MB. Réduisez le nombre de fichiers.`);
@@ -330,7 +331,7 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
         investisseurId: sub.investisseur_id
       }));
 
-      console.time('🤖 Analyse IA');
+      const analysisStart = Date.now();
 
       const { data, error: funcError } = await supabase.functions.invoke('analyze-payment-batch', {
         body: {
@@ -339,7 +340,8 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
         }
       });
 
-      console.timeEnd('🤖 Analyse IA');
+      const analysisTime = Date.now() - analysisStart;
+      logger.info('Analyse IA terminée', { timeMs: analysisTime });
 
       if (funcError) {
         // Check if the function doesn't exist
@@ -365,7 +367,7 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
       );
 
       if (invalidAmounts.length > 0) {
-        console.warn('⚠️ Montants invalides détectés:', invalidAmounts);
+        logger.warn('Montants invalides détectés', { count: invalidAmounts.length });
         // Continue but user will see validation error when trying to save
       }
 
@@ -384,10 +386,11 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
       
       setStep('results');
 
-      console.timeEnd('⏱️ TOTAL');
+      const totalTime = Date.now() - startTime;
+      logger.info('Analyse complète', { totalTimeMs: totalTime });
 
     } catch (err) {
-      console.error('Erreur analyse:', err);
+      logger.error(err instanceof Error ? err : new Error(String(err)));
       setError(err.message || 'Erreur lors de l\'analyse');
     } finally {
       setAnalyzing(false);

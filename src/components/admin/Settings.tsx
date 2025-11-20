@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { CardSkeleton } from '../common/Skeleton';
+import { logger } from '../../utils/logger';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -171,12 +172,12 @@ export default function Settings() {
     setErrorMessage('');
 
     try {
-      console.log('Starting password change process...');
+      logger.debug('Starting password change process');
 
       // Get the current session to pass the auth token
       const { data: { session } } = await supabase.auth.getSession();
 
-      console.log('Session check:', { hasSession: !!session, userId: session?.user?.id });
+      logger.debug('Session check', { hasSession: !!session, userId: session?.user?.id });
 
       if (!session) {
         setErrorMessage('Session expirée. Veuillez vous reconnecter.');
@@ -184,7 +185,7 @@ export default function Settings() {
         return;
       }
 
-      console.log('Calling change-password function...');
+      logger.debug('Calling change-password function');
 
       // Call the Edge Function to verify current password and update to new one
       const { data, error: functionError } = await supabase.functions.invoke('change-password', {
@@ -197,16 +198,12 @@ export default function Settings() {
         },
       });
 
-      console.log('Function response:', { data, functionError });
-      console.log('Data type:', typeof data);
-      console.log('Data keys:', data ? Object.keys(data) : 'null');
-      console.log('Data.success:', data?.success);
-      console.log('Data.message:', data?.message);
+      logger.debug('Function response', { data, functionError, dataType: typeof data });
 
       setSaving(false);
 
       if (functionError) {
-        console.error('Function error:', functionError);
+        logger.error(new Error('Function error'), { error: functionError });
 
         // Fallback error handling
         const errorMsg = data?.error
@@ -217,25 +214,24 @@ export default function Settings() {
       }
 
       if (data?.error) {
-        console.error('Data error:', data.error);
+        logger.error(new Error('Data error'), { error: data.error });
         setErrorMessage(data.error);
         return;
       }
 
       if (data?.success) {
-        console.log('Password changed successfully');
+        logger.info('Password changed successfully');
         setSuccessMessage('Mot de passe changé avec succès');
         setShowSuccessModal(true);
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        console.error('Unexpected response:', data);
-        console.error('Full data object:', JSON.stringify(data, null, 2));
+        logger.error(new Error('Unexpected response'), { data });
         setErrorMessage('Erreur lors du changement de mot de passe.');
       }
     } catch (err) {
-      console.error('Caught error:', err);
+      logger.error(err instanceof Error ? err : new Error(String(err)));
       setSaving(false);
       setErrorMessage('Une erreur s\'est produite. Veuillez réessayer ou contacter le support.');
     }
