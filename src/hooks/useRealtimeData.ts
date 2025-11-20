@@ -1,8 +1,8 @@
 // ============================================
-// Realtime Data Hooks
+// Realtime Data Hooks with Pagination
 // Path: src/hooks/useRealtimeData.ts
 //
-// Specific hooks for key tables with auto-refresh
+// Specific hooks for key tables with auto-refresh and pagination
 // ============================================
 
 import { useState, useEffect, useCallback } from 'react';
@@ -13,6 +13,8 @@ interface UseRealtimeDataOptions<T> {
   initialData?: T[];
   enabled?: boolean;
   onDataChange?: (data: T[]) => void;
+  pageSize?: number;
+  page?: number;
 }
 
 interface UseRealtimeDataReturn<T> {
@@ -22,41 +24,65 @@ interface UseRealtimeDataReturn<T> {
   isLive: boolean;
   lastUpdate: Date | null;
   refresh: () => Promise<void>;
+  // Pagination
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasMore: boolean;
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
+  nextPage: () => void;
+  prevPage: () => void;
 }
 
 // ============================================
-// Payments Realtime Hook
+// Payments Realtime Hook with Pagination
 // ============================================
 export function useRealtimePayments(
   options: UseRealtimeDataOptions<any> = {}
 ): UseRealtimeDataReturn<any> {
-  const { initialData = [], enabled = true, onDataChange } = options;
+  const {
+    initialData = [],
+    enabled = true,
+    onDataChange,
+    pageSize: initialPageSize = 50,
+    page: initialPage = 1
+  } = options;
+
   const [data, setData] = useState<any[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [page, setPage] = useState(initialPage);
+  const [pageSize, setPageSize] = useState(initialPageSize);
+  const [totalCount, setTotalCount] = useState(0);
 
   const fetchPayments = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: payments, error: fetchError } = await supabase
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      const { data: payments, error: fetchError, count } = await supabase
         .from('paiements')
         .select(`
           *,
           tranche:tranches(tranche_name),
           investisseur:investisseurs(nom_raison_sociale)
-        `)
+        `, { count: 'exact' })
         .order('date_paiement', { ascending: false })
-        .limit(1000); // Limit to prevent loading too many records
+        .range(start, end);
 
       if (fetchError) throw fetchError;
       setData(payments || []);
+      setTotalCount(count || 0);
       if (onDataChange) onDataChange(payments || []);
     } catch (err) {
       setError(err as Error);
     } finally {
       setLoading(false);
     }
-  }, [onDataChange]);
+  }, [page, pageSize, onDataChange]);
 
   useEffect(() => {
     if (enabled) {
@@ -72,6 +98,9 @@ export function useRealtimePayments(
     },
   });
 
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasMore = page < totalPages;
+
   return {
     data,
     loading,
@@ -79,38 +108,65 @@ export function useRealtimePayments(
     isLive: isConnected,
     lastUpdate,
     refresh: fetchPayments,
+    // Pagination
+    page,
+    pageSize,
+    totalCount,
+    totalPages,
+    hasMore,
+    setPage,
+    setPageSize: (size: number) => {
+      setPageSize(size);
+      setPage(1); // Reset to first page when changing page size
+    },
+    nextPage: () => setPage((prev: number) => Math.min(prev + 1, totalPages)),
+    prevPage: () => setPage((prev: number) => Math.max(prev - 1, 1)),
   };
 }
 
 // ============================================
-// Investors Realtime Hook
+// Investors Realtime Hook with Pagination
 // ============================================
 export function useRealtimeInvestors(
   options: UseRealtimeDataOptions<any> = {}
 ): UseRealtimeDataReturn<any> {
-  const { initialData = [], enabled = true, onDataChange } = options;
+  const {
+    initialData = [],
+    enabled = true,
+    onDataChange,
+    pageSize: initialPageSize = 50,
+    page: initialPage = 1
+  } = options;
+
   const [data, setData] = useState<any[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [page, setPage] = useState(initialPage);
+  const [pageSize, setPageSize] = useState(initialPageSize);
+  const [totalCount, setTotalCount] = useState(0);
 
   const fetchInvestors = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: investors, error: fetchError } = await supabase
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      const { data: investors, error: fetchError, count } = await supabase
         .from('investisseurs')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .limit(1000); // Limit to prevent loading too many records
+        .range(start, end);
 
       if (fetchError) throw fetchError;
       setData(investors || []);
+      setTotalCount(count || 0);
       if (onDataChange) onDataChange(investors || []);
     } catch (err) {
       setError(err as Error);
     } finally {
       setLoading(false);
     }
-  }, [onDataChange]);
+  }, [page, pageSize, onDataChange]);
 
   useEffect(() => {
     if (enabled) {
@@ -126,6 +182,9 @@ export function useRealtimeInvestors(
     },
   });
 
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasMore = page < totalPages;
+
   return {
     data,
     loading,
@@ -133,38 +192,65 @@ export function useRealtimeInvestors(
     isLive: isConnected,
     lastUpdate,
     refresh: fetchInvestors,
+    // Pagination
+    page,
+    pageSize,
+    totalCount,
+    totalPages,
+    hasMore,
+    setPage,
+    setPageSize: (size: number) => {
+      setPageSize(size);
+      setPage(1);
+    },
+    nextPage: () => setPage((prev: number) => Math.min(prev + 1, totalPages)),
+    prevPage: () => setPage((prev: number) => Math.max(prev - 1, 1)),
   };
 }
 
 // ============================================
-// Projects Realtime Hook
+// Projects Realtime Hook with Pagination
 // ============================================
 export function useRealtimeProjects(
   options: UseRealtimeDataOptions<any> = {}
 ): UseRealtimeDataReturn<any> {
-  const { initialData = [], enabled = true, onDataChange } = options;
+  const {
+    initialData = [],
+    enabled = true,
+    onDataChange,
+    pageSize: initialPageSize = 50,
+    page: initialPage = 1
+  } = options;
+
   const [data, setData] = useState<any[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [page, setPage] = useState(initialPage);
+  const [pageSize, setPageSize] = useState(initialPageSize);
+  const [totalCount, setTotalCount] = useState(0);
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: projects, error: fetchError } = await supabase
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      const { data: projects, error: fetchError, count } = await supabase
         .from('projets')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .limit(500); // Limit to prevent loading too many records
+        .range(start, end);
 
       if (fetchError) throw fetchError;
       setData(projects || []);
+      setTotalCount(count || 0);
       if (onDataChange) onDataChange(projects || []);
     } catch (err) {
       setError(err as Error);
     } finally {
       setLoading(false);
     }
-  }, [onDataChange]);
+  }, [page, pageSize, onDataChange]);
 
   useEffect(() => {
     if (enabled) {
@@ -180,6 +266,9 @@ export function useRealtimeProjects(
     },
   });
 
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasMore = page < totalPages;
+
   return {
     data,
     loading,
@@ -187,42 +276,69 @@ export function useRealtimeProjects(
     isLive: isConnected,
     lastUpdate,
     refresh: fetchProjects,
+    // Pagination
+    page,
+    pageSize,
+    totalCount,
+    totalPages,
+    hasMore,
+    setPage,
+    setPageSize: (size: number) => {
+      setPageSize(size);
+      setPage(1);
+    },
+    nextPage: () => setPage((prev: number) => Math.min(prev + 1, totalPages)),
+    prevPage: () => setPage((prev: number) => Math.max(prev - 1, 1)),
   };
 }
 
 // ============================================
-// Subscriptions Realtime Hook
+// Subscriptions Realtime Hook with Pagination
 // ============================================
 export function useRealtimeSubscriptions(
   options: UseRealtimeDataOptions<any> = {}
 ): UseRealtimeDataReturn<any> {
-  const { initialData = [], enabled = true, onDataChange } = options;
+  const {
+    initialData = [],
+    enabled = true,
+    onDataChange,
+    pageSize: initialPageSize = 50,
+    page: initialPage = 1
+  } = options;
+
   const [data, setData] = useState<any[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [page, setPage] = useState(initialPage);
+  const [pageSize, setPageSize] = useState(initialPageSize);
+  const [totalCount, setTotalCount] = useState(0);
 
   const fetchSubscriptions = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: subscriptions, error: fetchError } = await supabase
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      const { data: subscriptions, error: fetchError, count } = await supabase
         .from('souscriptions')
         .select(`
           *,
           investisseur:investisseurs(nom_raison_sociale),
           tranche:tranches(tranche_name)
-        `)
+        `, { count: 'exact' })
         .order('created_at', { ascending: false })
-        .limit(1000); // Limit to prevent loading too many records
+        .range(start, end);
 
       if (fetchError) throw fetchError;
       setData(subscriptions || []);
+      setTotalCount(count || 0);
       if (onDataChange) onDataChange(subscriptions || []);
     } catch (err) {
       setError(err as Error);
     } finally {
       setLoading(false);
     }
-  }, [onDataChange]);
+  }, [page, pageSize, onDataChange]);
 
   useEffect(() => {
     if (enabled) {
@@ -238,6 +354,9 @@ export function useRealtimeSubscriptions(
     },
   });
 
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasMore = page < totalPages;
+
   return {
     data,
     loading,
@@ -245,5 +364,18 @@ export function useRealtimeSubscriptions(
     isLive: isConnected,
     lastUpdate,
     refresh: fetchSubscriptions,
+    // Pagination
+    page,
+    pageSize,
+    totalCount,
+    totalPages,
+    hasMore,
+    setPage,
+    setPageSize: (size: number) => {
+      setPageSize(size);
+      setPage(1);
+    },
+    nextPage: () => setPage((prev: number) => Math.min(prev + 1, totalPages)),
+    prevPage: () => setPage((prev: number) => Math.max(prev - 1, 1)),
   };
 }
