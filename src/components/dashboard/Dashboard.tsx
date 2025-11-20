@@ -29,6 +29,7 @@ import {
   RefreshCw,
   AlertCircle,
   X,
+  TrendingUp,
 } from 'lucide-react';
 
 // generateAlerts function now imported from utils/dashboardAlerts.ts
