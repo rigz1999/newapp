@@ -302,7 +302,7 @@ export function Dashboard({ organization }: DashboardProps) {
       const in90Days = new Date();
       in90Days.setDate(today.getDate() + 90);
 
-      const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes, chartSubsRes] =
+      const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes] =
         await Promise.all([
           supabase.from('projets').select('id'),
           supabase.from('tranches').select('id, projet_id'),
@@ -314,7 +314,6 @@ export function Dashboard({ organization }: DashboardProps) {
             .select('montant, statut')
             .eq('statut', 'payé')
             .gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
-          supabase.from('souscriptions').select('montant_investi, date_souscription'),
         ]);
 
       // Check for critical errors
@@ -323,7 +322,6 @@ export function Dashboard({ organization }: DashboardProps) {
         tranchesRes.error && 'Erreur lors du chargement des tranches',
         subscriptionsRes.error && 'Erreur lors du chargement des souscriptions',
         monthPaymentsRes.error && 'Erreur lors du chargement des paiements',
-        chartSubsRes.error && 'Erreur lors du chargement des données graphiques',
       ].filter(Boolean);
 
       if (errors.length > 0) {
@@ -332,7 +330,6 @@ export function Dashboard({ organization }: DashboardProps) {
           tranches: tranchesRes.error,
           subscriptions: subscriptionsRes.error,
           payments: monthPaymentsRes.error,
-          chart: chartSubsRes.error,
         });
         setError(errors.join(', '));
       } else {
@@ -343,7 +340,7 @@ export function Dashboard({ organization }: DashboardProps) {
       const tranches = tranchesRes.data || [];
       const subscriptions = subscriptionsRes.data || [];
       const monthPayments = monthPaymentsRes.data || [];
-      const chartSubscriptions = chartSubsRes.data || [];
+      const chartSubscriptions = subscriptions;
 
       const trancheIds = tranches.map((t: { id: string }) => t.id);
 

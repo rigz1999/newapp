@@ -1,16 +1,23 @@
 import { useState, useEffect } from 'react';
 import { X, FileText, Euro, Calendar, AlertTriangle, Download, ChevronDown, ChevronUp } from 'lucide-react';
-import ExcelJS from 'exceljs';
-// @ts-ignore
-import jsPDF from 'jspdf';
 import Decimal from 'decimal.js';
-// @ts-ignore
-import autoTable from 'jspdf-autotable';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { supabase } from '../../lib/supabase';
 
-// Type declaration for jsPDF with autoTable extension
-interface JsPDFWithAutoTable extends jsPDF {
+type ExcelJS = any;
+type JsPDF = any;
+
+interface JsPDFWithAutoTable {
+  text: (text: string, x: number, y: number) => void;
+  setFontSize: (size: number) => void;
+  setTextColor: (r: number, g: number, b: number) => void;
+  save: (filename: string) => void;
+  internal: {
+    pageSize: {
+      width: number;
+      height: number;
+    };
+  };
   lastAutoTable: {
     finalY: number;
   };
@@ -330,9 +337,17 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
   };
 
   const exportToExcel = async () => {
-    const { payments, coupons } = await fetchFilteredData();
+    setExporting(true);
+    setExportProgress(10);
 
-    const workbook = new ExcelJS.Workbook();
+    try {
+      const ExcelJS = (await import('exceljs')).default;
+      setExportProgress(20);
+
+      const { payments, coupons } = await fetchFilteredData();
+      setExportProgress(40);
+
+      const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Dashboard';
     workbook.created = new Date();
 
@@ -481,23 +496,47 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       chartSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     }
 
-    // Generate and download
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dashboard-synthese-${new Date().toISOString().split('T')[0]}.xlsx`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+      // Generate and download
+      setExportProgress(80);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dashboard-synthese-${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
 
-    onClose();
+      setExportProgress(100);
+      setTimeout(() => {
+        onClose();
+      }, 500);
+    } catch (error) {
+      console.error('Excel export error:', error);
+      alert('Erreur lors de l\'export Excel. Veuillez réessayer.');
+    } finally {
+      setExporting(false);
+      setExportProgress(0);
+    }
   };
 
   const exportToPDF = async () => {
-    const { payments, coupons } = await fetchFilteredData();
+    setExporting(true);
+    setExportProgress(10);
 
-    const doc = new jsPDF();
+    try {
+      const [jsPDFModule, autoTableModule] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable')
+      ]);
+      const jsPDF = jsPDFModule.default;
+      const autoTable = autoTableModule.default;
+      setExportProgress(25);
+
+      const { payments, coupons } = await fetchFilteredData();
+      setExportProgress(45);
+
+      const doc = new jsPDF() as JsPDFWithAutoTable;
     let yPos = 20;
 
     // Title
@@ -618,10 +657,21 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       });
     }
 
-    // Save PDF
-    doc.save(`dashboard-synthese-${new Date().toISOString().split('T')[0]}.pdf`);
+      // Save PDF
+      setExportProgress(90);
+      doc.save(`dashboard-synthese-${new Date().toISOString().split('T')[0]}.pdf`);
 
-    onClose();
+      setExportProgress(100);
+      setTimeout(() => {
+        onClose();
+      }, 500);
+    } catch (error) {
+      console.error('PDF export error:', error);
+      alert('Erreur lors de l\'export PDF. Veuillez réessayer.');
+    } finally {
+      setExporting(false);
+      setExportProgress(0);
+    }
   };
 
   const getPreviewData = () => {

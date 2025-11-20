@@ -178,7 +178,8 @@ export function Coupons({ organization: _organization }: CouponsProps) {
             )
           )
         `)
-        .order('date_echeance', { ascending: true });
+        .order('date_echeance', { ascending: true })
+        .limit(1000);
 
       if (error) throw error;
 
