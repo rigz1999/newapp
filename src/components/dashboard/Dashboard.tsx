@@ -7,6 +7,10 @@ import { getDashboardCacheKey, onCacheInvalidated } from '../../utils/cacheManag
 import { AlertModal } from '../common/Modals';
 import { DashboardSkeleton } from '../common/Skeleton';
 import { ExportModal } from './ExportModal';
+import { DashboardStats } from './DashboardStats';
+import { DashboardAlerts } from './DashboardAlerts';
+import { DashboardQuickActions } from './DashboardQuickActions';
+import { DashboardRecentPayments } from './DashboardRecentPayments';
 import {
   formatCurrency,
   formatDate,
@@ -22,20 +26,9 @@ import {
   type UpcomingCoupon,
 } from '../../utils/dashboardAlerts';
 import {
-  TrendingUp,
-  CheckCircle2,
-  Folder,
-  Clock,
   RefreshCw,
-  ArrowRight,
   AlertCircle,
-  Users,
-  AlertTriangle,
   X,
-  Plus,
-  Euro,
-  FileText,
-  Download,
 } from 'lucide-react';
 
 // generateAlerts function now imported from utils/dashboardAlerts.ts
@@ -674,198 +667,20 @@ export function Dashboard({ organization }: DashboardProps) {
         <DashboardSkeleton />
       ) : (
         <>
-          {alerts.length > 0 && (
-            <div className="mb-6 mt-6">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-amber-600" />
-                    <h3 className="text-lg font-bold text-slate-900">
-                      Alertes et Actions Requises
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setAlerts([])}
-                    className="text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {alerts.map(alert => (
-                    <div
-                      key={alert.id}
-                      onClick={() => handleAlertClick(alert.id)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                        alert.type === 'late_payment'
-                          ? 'bg-red-50 hover:bg-red-100 border border-red-200'
-                          : alert.type === 'upcoming_coupons'
-                            ? 'bg-blue-50 hover:bg-blue-100 border border-blue-200'
-                            : 'bg-orange-50 hover:bg-orange-100 border border-orange-200'
-                      } ${
-                        alert.id !== 'no-alerts'
-                          ? 'cursor-pointer hover:shadow-md transform hover:scale-[1.01]'
-                          : ''
-                      }`}
-                    >
-                      <AlertCircle
-                        className={`w-5 h-5 flex-shrink-0 ${
-                          alert.type === 'late_payment'
-                            ? 'text-finixar-red'
-                            : alert.type === 'upcoming_coupons'
-                              ? 'text-blue-600'
-                              : 'text-orange-600'
-                        }`}
-                      />
+          <DashboardAlerts
+            alerts={alerts}
+            onAlertClick={handleAlertClick}
+            onDismiss={() => setAlerts([])}
+          />
 
-                      <p
-                        className={`text-sm font-medium flex-1 ${
-                          alert.type === 'late_payment'
-                            ? 'text-red-900'
-                            : alert.type === 'upcoming_coupons'
-                              ? 'text-blue-900'
-                              : 'text-orange-900'
-                        }`}
-                      >
-                        {alert.message}
-                      </p>
+          <DashboardQuickActions
+            onNewProject={() => setShowNewProject(true)}
+            onNewTranche={() => setShowTrancheWizard(true)}
+            onNewPayment={() => setShowQuickPayment(true)}
+            onExport={() => setShowExportModal(true)}
+          />
 
-                      {alert.id !== 'no-alerts' && (
-                        <ArrowRight
-                          className={`w-4 h-4 ${
-                            alert.type === 'late_payment'
-                              ? 'text-finixar-red'
-                              : alert.type === 'upcoming_coupons'
-                                ? 'text-blue-600'
-                                : 'text-orange-600'
-                          }`}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8 mt-8">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Actions Rapides</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <button
-                onClick={() => {
-                  setShowNewProject(true);
-                }}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
-              >
-                <div className="bg-finixar-brand-blue p-2 rounded-lg group-hover:scale-110 transition-transform">
-                  <Plus className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-slate-900 text-sm">Nouveau Projet</p>
-                  <p className="text-xs text-slate-600">Créer un projet</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setShowTrancheWizard(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 rounded-lg transition-all group border border-emerald-200"
-              >
-                <div className="bg-finixar-action-create p-2 rounded-lg group-hover:scale-110 transition-transform">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-slate-900 text-sm">Nouvelle Tranche</p>
-                  <p className="text-xs text-slate-600">Ajouter une tranche</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setShowQuickPayment(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 rounded-lg transition-all group border border-amber-200"
-              >
-                <div className="bg-amber-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                  <Euro className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-slate-900 text-sm">Nouveau paiement</p>
-                  <p className="text-xs text-slate-600">Téléverser le justificatif</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setShowExportModal(true)}
-                className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-200 rounded-lg transition-all group border border-slate-200"
-              >
-                <div className="bg-slate-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                  <Download className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-slate-900 text-sm">Exporter Synthèse</p>
-                  <p className="text-xs text-slate-600">Télécharger rapport</p>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <span className="text-slate-600 text-sm font-medium block mb-2">
-                    Montant total investi
-                  </span>
-                  <p className="text-3xl font-bold text-slate-900 mb-1">
-                    {formatCurrency(stats.totalInvested)}
-                  </p>
-                </div>
-                <TrendingUp className="w-6 h-6" style={{ color: '#3B82F6' }} />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <span className="text-slate-600 text-sm font-medium block mb-2">
-                    Coupons payés ce mois
-                  </span>
-                  <p className="text-3xl font-bold text-slate-900 mb-1">
-                    {formatCurrency(stats.couponsPaidThisMonth)}
-                  </p>
-                  <p className="text-sm text-slate-500 font-medium">
-                    {stats.couponsPaidThisMonth > 0 ? 'paiement' : '0 paiement'}
-                  </p>
-                </div>
-                <CheckCircle2 className="w-6 h-6" style={{ color: '#10B981' }} />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <span className="text-slate-600 text-sm font-medium block mb-2">
-                    Projets actifs
-                  </span>
-                  <p className="text-3xl font-bold text-slate-900">{stats.activeProjects}</p>
-                </div>
-                <Folder className="w-6 h-6" style={{ color: '#3B82F6' }} />
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <span className="text-slate-600 text-sm font-medium block mb-2">
-                    Coupons à venir
-                  </span>
-                  <p className="text-3xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
-                  <p className="text-sm text-slate-500 font-medium">
-                    {stats.nextCouponDays} prochains jours
-                  </p>
-                </div>
-                <Clock className="w-6 h-6" style={{ color: '#F59E0B' }} />
-              </div>
-            </div>
-          </div>
+          <DashboardStats stats={stats} />
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
             <div className="flex items-center justify-between mb-6">
@@ -970,124 +785,12 @@ export function Dashboard({ organization }: DashboardProps) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-900">Derniers Paiements</h2>
-                <button
-                  onClick={() => navigate('/paiements')}
-                  className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
-                >
-                  Voir tout <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-              {recentPayments.length === 0 ? (
-                <p className="text-slate-500 text-center py-8">Aucun paiement récent</p>
-              ) : (
-                <div className="space-y-3">
-                  {recentPayments.map(payment => (
-                    <div
-                      key={payment.id}
-                      className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900 text-sm">
-                          {payment.tranche?.tranche_name || 'Tranche'}
-                        </p>
-                        <p className="text-xs text-slate-600">
-                          {formatDate(payment.date_paiement)} • {payment.type || 'Coupon'}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-slate-900 text-sm">
-                          {formatCurrency(payment.montant)}
-                        </p>
-                        <span
-                          className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                            payment.statut?.toLowerCase() === 'payé' ||
-                            payment.statut?.toLowerCase() === 'paid'
-                              ? 'bg-green-100 text-green-700'
-                              : payment.statut?.toLowerCase() === 'en attente'
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : payment.statut?.toLowerCase() === 'en retard'
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          {payment.statut}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-slate-900">Coupons à Venir</h2>
-                <button
-                  onClick={() => navigate('/coupons')}
-                  className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
-                >
-                  Voir tout <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-              {upcomingCoupons.length === 0 ? (
-                <p className="text-slate-500 text-center py-8">Aucun coupon à venir</p>
-              ) : (
-                <div className="space-y-3">
-                  {upcomingCoupons.map(coupon => {
-                    const daysUntil = Math.ceil(
-                      (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) /
-                        (1000 * 60 * 60 * 24)
-                    );
-                    const isUrgent = daysUntil <= 7;
-
-                    return (
-                      <div
-                        key={coupon.id}
-                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-bold text-slate-900">
-                              {formatCurrency(parseFloat(coupon.coupon_brut.toString()))}
-                            </p>
-                            {isUrgent && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
-                                <AlertCircle className="w-3 h-3" />
-                                Urgent
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-600 mt-1">
-                            {coupon.tranche?.projet?.projet || 'Projet'} •{' '}
-                            {coupon.tranche?.tranche_name || 'Tranche'}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
-                            <Users className="w-3 h-3" />
-                            <span>
-                              {coupon.investor_count || 1} investisseur
-                              {(coupon.investor_count || 1) > 1 ? 's' : ''}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-slate-900">
-                            {formatDate(coupon.prochaine_date_coupon)}
-                          </p>
-                          <p className="text-xs text-slate-600">
-                            {getRelativeDate(coupon.prochaine_date_coupon)}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
+          <DashboardRecentPayments
+            recentPayments={recentPayments}
+            upcomingCoupons={upcomingCoupons}
+            onViewAllPayments={() => navigate('/paiements')}
+            onViewAllCoupons={() => navigate('/coupons')}
+          />
         </>
       )}
 

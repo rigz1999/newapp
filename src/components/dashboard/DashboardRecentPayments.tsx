@@ -1,0 +1,135 @@
+import { ArrowRight, AlertCircle, Users } from 'lucide-react';
+import { formatCurrency, formatDate } from '../../utils/formatters';
+import type { Payment, UpcomingCoupon } from '../../utils/dashboardAlerts';
+
+interface DashboardRecentPaymentsProps {
+  recentPayments: Payment[];
+  upcomingCoupons: UpcomingCoupon[];
+  onViewAllPayments: () => void;
+  onViewAllCoupons: () => void;
+}
+
+export function DashboardRecentPayments({
+  recentPayments,
+  upcomingCoupons,
+  onViewAllPayments,
+  onViewAllCoupons,
+}: DashboardRecentPaymentsProps) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-slate-900">Derniers Paiements</h2>
+          <button
+            onClick={onViewAllPayments}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+          >
+            Voir tout <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+        {recentPayments.length === 0 ? (
+          <p className="text-slate-500 text-center py-8">Aucun paiement récent</p>
+        ) : (
+          <div className="space-y-3">
+            {recentPayments.map(payment => (
+              <div
+                key={payment.id}
+                className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+              >
+                <div className="flex-1">
+                  <p className="font-medium text-slate-900 text-sm">
+                    {payment.tranche?.tranche_name || 'Tranche'}
+                  </p>
+                  <p className="text-xs text-slate-600">
+                    {formatDate(payment.date_paiement)} • {payment.type || 'Coupon'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-slate-900 text-sm">
+                    {formatCurrency(payment.montant)}
+                  </p>
+                  <span
+                    className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      payment.statut?.toLowerCase() === 'payé' ||
+                      payment.statut?.toLowerCase() === 'paid'
+                        ? 'bg-green-100 text-green-700'
+                        : payment.statut?.toLowerCase() === 'en attente'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : payment.statut?.toLowerCase() === 'en retard'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {payment.statut}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-slate-900">Coupons à Venir</h2>
+          <button
+            onClick={onViewAllCoupons}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+          >
+            Voir tout <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+        {upcomingCoupons.length === 0 ? (
+          <p className="text-slate-500 text-center py-8">Aucun coupon à venir</p>
+        ) : (
+          <div className="space-y-3">
+            {upcomingCoupons.map(coupon => {
+              const daysUntil = Math.ceil(
+                (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) /
+                  (1000 * 60 * 60 * 24)
+              );
+              const isUrgent = daysUntil <= 7;
+
+              return (
+                <div
+                  key={coupon.id}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-bold text-slate-900">
+                        {formatCurrency(parseFloat(coupon.coupon_brut.toString()))}
+                      </p>
+                      {isUrgent && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                          <AlertCircle className="w-3 h-3" />
+                          Urgent
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-600 mt-1">
+                      {coupon.tranche?.projet?.projet || 'Projet'} •{' '}
+                      {coupon.tranche?.tranche_name || 'Tranche'}
+                    </p>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
+                      <Users className="w-3 h-3" />
+                      {coupon.investisseur?.nom_raison_sociale}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-slate-700">
+                      {formatDate(coupon.prochaine_date_coupon)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {daysUntil === 0 ? "Aujourd'hui" : `Dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''}`}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
