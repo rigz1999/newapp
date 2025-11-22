@@ -187,7 +187,10 @@ export function InvitationAccept() {
       }, 3000);
 
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de la création du compte. Veuillez réessayer.');
+      console.error('Caught error:', err);
+      const errorMessage = err.message || 'Erreur lors de la création du compte. Veuillez réessayer.';
+      console.error('Error message to display:', errorMessage);
+      setError(errorMessage);
     } finally {
       setCreating(false);
     }
