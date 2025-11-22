@@ -108,10 +108,11 @@ export function Layout({ organization }: LayoutProps) {
         {/* Header - Compact */}
         <div className="p-4 flex-shrink-0">
           <div className="flex items-center gap-2 mb-3">
-            <div className="bg-finixar-brand-blue p-1.5 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-lg font-bold">Finixar</span>
+            <img
+              src="/logo png.png"
+              alt="Finixar"
+              className="h-7 w-auto object-contain"
+            />
           </div>
 
           {/* Global Search Button */}

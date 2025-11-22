@@ -157,6 +157,13 @@ export function Login() {
   if (user && !hasAccess) {
     return (
       <div className="min-h-screen bg-finixar-background flex items-center justify-center p-4">
+        <div className="absolute top-6 left-6">
+          <img
+            src="/logo png.png"
+            alt="Finixar"
+            className="h-8 w-auto object-contain opacity-90"
+          />
+        </div>
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="flex items-center justify-center mb-6">
@@ -216,6 +223,13 @@ export function Login() {
   if (isForgotPassword) {
     return (
       <div className="min-h-screen bg-finixar-background flex items-center justify-center p-4">
+        <div className="absolute top-6 left-6">
+          <img
+            src="/logo png.png"
+            alt="Finixar"
+            className="h-8 w-auto object-contain opacity-90"
+          />
+        </div>
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="flex items-center justify-center mb-8">
@@ -304,6 +318,13 @@ export function Login() {
   // Normal login/signup form
   return (
     <div className="min-h-screen bg-finixar-background flex items-center justify-center p-4">
+      <div className="absolute top-6 left-6">
+        <img
+          src="/logo png.png"
+          alt="Finixar"
+          className="h-8 w-auto object-contain opacity-90"
+        />
+      </div>
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="flex items-center justify-center mb-8">
@@ -317,7 +338,7 @@ export function Login() {
           </div>
 
           <h1 className="text-2xl font-bold text-center text-finixar-text mb-2">
-            Finixar
+            Connexion
           </h1>
           <p className="text-center text-slate-600 mb-8">
             {isSignUp ? 'Créez votre compte' : 'Connectez-vous à votre compte'}
