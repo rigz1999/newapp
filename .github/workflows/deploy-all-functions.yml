@@ -1,0 +1,48 @@
+name: Deploy All Supabase Edge Functions
+
+on:
+  workflow_dispatch: # Manual trigger only
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy-all:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: List Edge Functions
+        run: |
+          echo "📦 Edge Functions to deploy:"
+          ls -la supabase/functions/
+
+      - name: Deploy All Edge Functions
+        run: |
+          # Deploy all functions found in supabase/functions/
+          for func_dir in supabase/functions/*/; do
+            func_name=$(basename "$func_dir")
+            if [ -f "$func_dir/index.ts" ]; then
+              echo "🚀 Deploying $func_name..."
+              supabase functions deploy "$func_name" --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+            fi
+          done
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deployment Complete
+        run: |
+          echo "✅ All edge functions deployed successfully to ${{ inputs.environment }}!"

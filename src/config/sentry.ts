@@ -6,7 +6,7 @@ const ENVIRONMENT = import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE;
 export function initSentry() {
   // Only initialize Sentry if DSN is provided
   if (!SENTRY_DSN) {
-    console.warn('Sentry DSN not configured. Error tracking disabled.');
+    // Silently skip Sentry initialization if not configured
     return;
   }
 
