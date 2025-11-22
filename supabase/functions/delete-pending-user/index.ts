@@ -26,10 +26,25 @@ Deno.serve(async (req: Request) => {
       throw new Error('userId is required');
     }
 
-    // Delete user from auth.users (this will cascade to profiles and memberships)
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    console.log('Deleting user:', userId);
 
-    if (error) throw error;
+    // Step 1: Sign out user from all devices/sessions
+    // This invalidates all refresh tokens
+    const { error: signOutError } = await supabaseAdmin.auth.admin.signOut(userId);
+    if (signOutError) {
+      console.error('Error signing out user:', signOutError);
+      // Continue anyway - we still want to delete the user
+    }
+
+    // Step 2: Delete user from auth.users (this will cascade to profiles and memberships)
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+    if (deleteError) {
+      console.error('Error deleting user:', deleteError);
+      throw deleteError;
+    }
+
+    console.log('User deleted successfully:', userId);
 
     return new Response(
       JSON.stringify({ success: true, message: 'User deleted successfully' }),
