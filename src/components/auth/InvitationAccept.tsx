@@ -139,33 +139,36 @@ export function InvitationAccept() {
     setError('');
 
     try {
-      // Call the Edge Function to create account and bypass email confirmation
-      const { data, error: functionError } = await supabase.functions.invoke('accept-invitation', {
-        body: {
+      // Make a direct fetch call to get better error handling
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/accept-invitation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
           token: token,
           password: password,
-        },
+        }),
       });
 
-      // Log the full response for debugging
-      console.log('Edge function response:', { data, functionError });
+      const data = await response.json();
+      console.log('Edge function response:', { status: response.status, data });
 
-      if (functionError) {
-        console.error('Function error:', functionError);
-        // The actual error message is often in the response data
-        const errorMessage = data?.error || functionError.message || 'Erreur lors de la création du compte.';
-        throw new Error(errorMessage);
-      }
+      if (!response.ok) {
+        console.error('Error response:', data);
 
-      if (data?.error) {
-        console.error('Data error:', data.error);
         // Handle specific errors from the Edge Function
         if (data.userExists) {
           setError('Un compte existe déjà avec cet email. Veuillez vous connecter.');
           setCreating(false);
           return;
         }
-        throw new Error(data.error);
+
+        throw new Error(data.error || 'Erreur lors de la création du compte.');
       }
 
       if (!data?.success) {
