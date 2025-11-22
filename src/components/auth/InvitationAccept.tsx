@@ -147,11 +147,18 @@ export function InvitationAccept() {
         },
       });
 
+      // Log the full response for debugging
+      console.log('Edge function response:', { data, functionError });
+
       if (functionError) {
-        throw new Error(functionError.message || 'Erreur lors de la création du compte.');
+        console.error('Function error:', functionError);
+        // The actual error message is often in the response data
+        const errorMessage = data?.error || functionError.message || 'Erreur lors de la création du compte.';
+        throw new Error(errorMessage);
       }
 
       if (data?.error) {
+        console.error('Data error:', data.error);
         // Handle specific errors from the Edge Function
         if (data.userExists) {
           setError('Un compte existe déjà avec cet email. Veuillez vous connecter.');
@@ -162,6 +169,7 @@ export function InvitationAccept() {
       }
 
       if (!data?.success) {
+        console.error('No success flag in response:', data);
         throw new Error('Erreur lors de la création du compte.');
       }
 
