@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { LogIn, UserPlus, Clock, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Clock, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 
 export function Login() {
@@ -14,8 +14,6 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [fullName, setFullName] = useState('');
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -102,38 +100,6 @@ export function Login() {
       }
       setLoading(false);
     }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    if (!fullName.trim()) {
-      setError('Le nom complet est requis');
-      setLoading(false);
-      return;
-    }
-
-    // Just create the user account - NO organization creation
-    const { error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName.trim(),
-        },
-      },
-    });
-
-    if (authError) {
-      setError(formatErrorMessage(authError));
-      setLoading(false);
-      return;
-    }
-
-    // Success - user created, they'll see waiting state
-    setLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -328,11 +294,7 @@ export function Login() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="flex items-center justify-center mb-8">
             <div className="bg-finixar-deep-blue p-3 rounded-xl">
-              {isSignUp ? (
-                <UserPlus className="w-8 h-8 text-white" />
-              ) : (
-                <LogIn className="w-8 h-8 text-white" />
-              )}
+              <LogIn className="w-8 h-8 text-white" />
             </div>
           </div>
 
@@ -340,26 +302,10 @@ export function Login() {
             Finixar
           </h1>
           <p className="text-center text-slate-600 mb-8">
-            {isSignUp ? 'Créez votre compte' : 'Connectez-vous à votre compte'}
+            Connectez-vous à votre compte
           </p>
 
-          <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="space-y-6">
-            {isSignUp && (
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-slate-700 mb-2">
-                  Nom complet
-                </label>
-                <input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent transition-all"
-                  placeholder="Jean Dupont"
-                />
-              </div>
-            )}
+          <form onSubmit={handleLogin} className="space-y-6">
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
@@ -381,15 +327,13 @@ export function Login() {
                 <label htmlFor="password" className="block text-sm font-medium text-slate-700">
                   Mot de passe
                 </label>
-                {!isSignUp && (
-                  <button
-                    type="button"
-                    onClick={() => setIsForgotPassword(true)}
-                    className="text-xs text-finixar-brand-blue hover:underline transition-colors"
-                  >
-                    Mot de passe oublié?
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setIsForgotPassword(true)}
+                  className="text-xs text-finixar-brand-blue hover:underline transition-colors"
+                >
+                  Mot de passe oublié?
+                </button>
               </div>
               <div className="relative">
                 <input
@@ -415,9 +359,6 @@ export function Login() {
                   )}
                 </button>
               </div>
-              {isSignUp && (
-                <p className="text-xs text-slate-500 mt-1">Minimum 6 caractères</p>
-              )}
             </div>
 
             {error && (
@@ -431,21 +372,14 @@ export function Login() {
               disabled={loading}
               className="w-full bg-finixar-action-process text-white py-3 rounded-lg font-medium hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? (isSignUp ? 'Création...' : 'Connexion...') : (isSignUp ? 'Créer mon compte' : 'Se connecter')}
+              {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setError('');
-                setFullName('');
-              }}
-              className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors"
-            >
-              {isSignUp ? 'Déjà un compte ? Se connecter' : 'Pas encore de compte ? S\'inscrire'}
-            </button>
+            <p className="text-sm text-slate-500">
+              Pas encore de compte ? Contactez votre administrateur pour recevoir une invitation.
+            </p>
           </div>
         </div>
       </div>
