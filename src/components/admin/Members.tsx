@@ -152,6 +152,9 @@ export default function Members() {
 
     console.log('Attempting to remove member:', selectedMember);
 
+    // Check if user is deleting themselves
+    const isDeletingSelf = selectedMember.user_id === user?.id;
+
     try {
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-pending-user`;
       const response = await fetch(apiUrl, {
@@ -172,6 +175,16 @@ export default function Members() {
       console.log('Member and user account deleted successfully');
       setShowRemoveModal(false);
       setSelectedMember(null);
+
+      // If user deleted themselves, sign out and redirect to login
+      if (isDeletingSelf) {
+        console.log('User deleted themselves, logging out...');
+        await supabase.auth.signOut();
+        window.location.href = '/login';
+        return;
+      }
+
+      // Otherwise, just refresh the member list
       fetchMembers();
       fetchInvitations();
 
@@ -725,7 +738,10 @@ function RemoveMemberModal({
   member: Member | null;
   onConfirm: () => void;
 }) {
+  const { user } = useAuth();
   if (!isOpen || !member) return null;
+
+  const isDeletingSelf = member.user_id === user?.id;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -735,13 +751,31 @@ function RemoveMemberModal({
             <AlertCircle className="w-6 h-6 text-finixar-red" />
           </div>
           <div className="flex-1">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Supprimer le Membre</h3>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
+              {isDeletingSelf ? 'Supprimer Votre Compte' : 'Supprimer le Membre'}
+            </h3>
             <p className="text-slate-600">
-              Êtes-vous sûr de vouloir supprimer <strong>{member.profiles?.full_name || member.profiles?.email}</strong> ?
+              {isDeletingSelf ? (
+                <>
+                  Êtes-vous sûr de vouloir supprimer <strong>votre propre compte</strong> ?
+                </>
+              ) : (
+                <>
+                  Êtes-vous sûr de vouloir supprimer <strong>{member.profiles?.full_name || member.profiles?.email}</strong> ?
+                </>
+              )}
             </p>
-            <p className="text-red-600 font-medium mt-2">
-              ⚠️ Le compte utilisateur sera définitivement supprimé. Cette action est irréversible.
-            </p>
+            {isDeletingSelf ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
+                <p className="text-red-700 font-medium text-sm">
+                  ⚠️ ATTENTION : Vous serez immédiatement déconnecté et ne pourrez plus accéder à cette organisation.
+                </p>
+              </div>
+            ) : (
+              <p className="text-red-600 font-medium mt-2">
+                ⚠️ Le compte utilisateur sera définitivement supprimé. Cette action est irréversible.
+              </p>
+            )}
           </div>
         </div>
         <div className="flex gap-3 mt-6">
@@ -755,7 +789,7 @@ function RemoveMemberModal({
             onClick={onConfirm}
             className="flex-1 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors"
           >
-            Confirmer
+            {isDeletingSelf ? 'Oui, Supprimer Mon Compte' : 'Confirmer'}
           </button>
         </div>
       </div>
