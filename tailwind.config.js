@@ -7,17 +7,17 @@ export default {
         finixar: {
           // Primary Brand
           'deep-blue': '#0f172a',      // Sidebar, headers, main navigation
-          'brand-blue': '#3b82f6',     // Primary CTAs, active states
+          'brand-blue': '#1f5eea',     // Primary CTAs, active states
           'brand-blue-hover': '#2563eb', // Darker blue for hover
 
           // Quick Action Buttons
           'action-create': '#10b981',  // Create/Add buttons
           'action-create-hover': '#059669', // Hover state
-          'action-view': '#3b82f6',    // View/Details buttons
+          'action-view': '#1f5eea',    // View/Details buttons
           'action-view-hover': '#2563eb',
           'action-edit': '#f59e0b',    // Edit/Modify buttons
           'action-edit-hover': '#d97706',
-          'action-process': '#3b82f6', // Process/Execute buttons (changed to blue)
+          'action-process': '#1f5eea', // Process/Execute buttons (changed to blue)
           'action-process-hover': '#2563eb', // Changed to blue hover
           'action-delete': '#ef4444',  // Delete/Critical buttons
           'action-delete-hover': '#dc2626',
@@ -41,7 +41,7 @@ export default {
           'text-muted': '#94a3b8',     // Timestamps, helper text
 
           // Data Visualization
-          'chart-blue': '#3b82f6',
+          'chart-blue': '#1f5eea',
           'chart-teal': '#06b6d4',
           'chart-green': '#10b981',
           'chart-orange': '#f59e0b',
@@ -49,14 +49,14 @@ export default {
           // Backwards compatibility mappings
           sidebar: '#0f172a',          // Maps to deep-blue
           navy: '#0f172a',            // Maps to deep-blue
-          cta: '#3b82f6',             // Maps to brand-blue
+          cta: '#1f5eea',             // Maps to brand-blue
           'cta-hover': '#2563eb',     // Maps to brand-blue-hover
-          teal: '#3b82f6',            // Maps to brand-blue
+          teal: '#1f5eea',            // Maps to brand-blue
           'teal-hover': '#2563eb',    // Maps to brand-blue-hover
           green: '#10b981',           // Maps to action-create
           amber: '#f59e0b',           // Maps to action-edit
           red: '#ef4444',             // Maps to action-delete
-          purple: '#3b82f6',          // Maps to brand-blue (removed purple)
+          purple: '#1f5eea',          // Maps to brand-blue (removed purple)
           'purple-hover': '#2563eb',  // Maps to brand-blue-hover
           background: '#f9fafb',      // Light background
           text: '#0f172a',            // Maps to text-primary

@@ -371,7 +371,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       statsSheet.getRow(1).fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF2563EB' },
+        fgColor: { argb: 'FF1F5EEA' },
       };
       statsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     }
@@ -402,7 +402,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       paymentsSheet.getRow(1).fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF2563EB' },
+        fgColor: { argb: 'FF1F5EEA' },
       };
       paymentsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     }
@@ -439,7 +439,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       couponsSheet.getRow(1).fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF2563EB' },
+        fgColor: { argb: 'FF1F5EEA' },
       };
       couponsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     }
@@ -491,7 +491,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       chartSheet.getRow(1).fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF2563EB' },
+        fgColor: { argb: 'FF1F5EEA' },
       };
       chartSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     }
@@ -567,7 +567,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           ['Coupons à venir (90j)', dashboardData.stats.upcomingCoupons.toString()],
         ],
         theme: 'grid',
-        headStyles: { fillColor: [37, 99, 235] },
+        headStyles: { fillColor: [31, 94, 234] },
       });
 
       yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
@@ -596,7 +596,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           p.statut,
         ]),
         theme: 'grid',
-        headStyles: { fillColor: [37, 99, 235] },
+        headStyles: { fillColor: [31, 94, 234] },
       });
 
       yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
@@ -630,7 +630,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           ];
         }),
         theme: 'grid',
-        headStyles: { fillColor: [37, 99, 235] },
+        headStyles: { fillColor: [31, 94, 234] },
       });
 
       yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
