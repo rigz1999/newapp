@@ -18,10 +18,31 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed. Use POST.' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
-    const { token, password } = await req.json();
+    // Parse request body safely
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid request format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { token, password } = requestBody;
 
     if (!token || !password) {
+      console.error('Missing required fields:', { hasToken: !!token, hasPassword: !!password });
       return new Response(
         JSON.stringify({ error: 'Token et mot de passe requis' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
