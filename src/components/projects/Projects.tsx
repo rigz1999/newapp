@@ -796,9 +796,8 @@ export function Projects({ organization }: ProjectsProps) {
                         setNewProjectData({ ...newProjectData, siren_emetteur: digits });
                         setSirenError('');
                       }}
-                      onBlur={(e) => {
-                        const v = e.target.value;
-                        setSirenError(isValidSIREN(v) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).');
+                      onBlur={() => {
+                        setSirenError(isValidSIREN(newProjectData.siren_emetteur) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).');
                       }}
                       aria-invalid={!!sirenError}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue ${

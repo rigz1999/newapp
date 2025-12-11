@@ -1208,10 +1208,9 @@ export function Dashboard({ organization }: DashboardProps) {
                         setNewProjectData({ ...newProjectData, siren_emetteur: digits });
                         setSirenError('');
                       }}
-                      onBlur={e => {
-                        const v = e.target.value;
+                      onBlur={() => {
                         setSirenError(
-                          isValidSIREN(v) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).'
+                          isValidSIREN(newProjectData.siren_emetteur) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).'
                         );
                       }}
                       aria-invalid={!!sirenError}
