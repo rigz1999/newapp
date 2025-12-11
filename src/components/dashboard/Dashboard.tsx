@@ -11,12 +11,7 @@ import { DashboardStats } from './DashboardStats';
 import { DashboardAlerts } from './DashboardAlerts';
 import { DashboardQuickActions } from './DashboardQuickActions';
 import { DashboardRecentPayments } from './DashboardRecentPayments';
-import {
-  formatCurrency,
-  formatDate,
-  getRelativeDate,
-  formatMontantDisplay,
-} from '../../utils/formatters';
+import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
 import Decimal from 'decimal.js';
 import { isValidSIREN } from '../../utils/validators';
 import {
@@ -25,12 +20,7 @@ import {
   type Payment,
   type UpcomingCoupon,
 } from '../../utils/dashboardAlerts';
-import {
-  RefreshCw,
-  AlertCircle,
-  X,
-  TrendingUp,
-} from 'lucide-react';
+import { RefreshCw, AlertCircle, X, TrendingUp } from 'lucide-react';
 
 // generateAlerts function now imported from utils/dashboardAlerts.ts
 
@@ -62,7 +52,7 @@ interface MonthlyData {
    Component
 =========================== */
 
-export function Dashboard({ organization }: DashboardProps) {
+export function Dashboard({ organization }: DashboardProps): JSX.Element {
   const navigate = useNavigate();
 
   // Cache key and duration - defined early
@@ -289,7 +279,7 @@ export function Dashboard({ organization }: DashboardProps) {
     return cleanup;
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (): Promise<void> => {
     const isRefresh = !loading;
     if (isRefresh) {
       setRefreshing(true);
@@ -303,6 +293,7 @@ export function Dashboard({ organization }: DashboardProps) {
         setUpcomingCoupons(cachedData.upcomingCoupons || []);
         setMonthlyData(cachedData.monthlyData || []);
         setChartSubscriptionsAll(cachedData.chartSubscriptionsAll || []);
+        setAlerts(cachedData.alerts || []);
         setLoading(false);
       }
 
@@ -313,19 +304,18 @@ export function Dashboard({ organization }: DashboardProps) {
       const in90Days = new Date();
       in90Days.setDate(today.getDate() + 90);
 
-      const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes] =
-        await Promise.all([
-          supabase.from('projets').select('id'),
-          supabase.from('tranches').select('id, projet_id'),
-          supabase
-            .from('souscriptions')
-            .select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
-          supabase
-            .from('paiements')
-            .select('montant, statut')
-            .eq('statut', 'payé')
-            .gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
-        ]);
+      const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes] = await Promise.all([
+        supabase.from('projets').select('id'),
+        supabase.from('tranches').select('id, projet_id'),
+        supabase
+          .from('souscriptions')
+          .select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
+        supabase
+          .from('paiements')
+          .select('montant, statut')
+          .eq('statut', 'payé')
+          .gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
+      ]);
 
       // Check for critical errors
       const errors = [
@@ -464,6 +454,14 @@ export function Dashboard({ organization }: DashboardProps) {
         .or('rib_file_path.is.null,rib_status.eq.manquant');
 
       const ribManquantsCount = ribManquantsData?.length || 0;
+
+      // Générer les alertes dynamiques
+      const dynamicAlerts = generateAlerts(
+        groupedCoupons.slice(0, 5),
+        recentPaymentsData,
+        ribManquantsCount
+      );
+
       const cacheData = {
         stats: {
           totalInvested,
@@ -476,15 +474,10 @@ export function Dashboard({ organization }: DashboardProps) {
         upcomingCoupons: groupedCoupons.slice(0, 5),
         monthlyData: monthlyDataResult,
         chartSubscriptionsAll: chartSubscriptions,
+        alerts: dynamicAlerts,
       };
       setRecentPayments(recentPaymentsData);
       setUpcomingCoupons(groupedCoupons.slice(0, 5));
-      // Générer les alertes dynamiques
-      const dynamicAlerts = generateAlerts(
-        groupedCoupons.slice(0, 5),
-        recentPaymentsData,
-        ribManquantsCount
-      );
       setAlerts(dynamicAlerts);
       setCachedData(cacheData);
 
