@@ -221,7 +221,7 @@ export function Login() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleForgotPassword} className="space-y-6" autoComplete="off">
+              <form onSubmit={handleForgotPassword} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
                     Adresse email
@@ -232,7 +232,6 @@ export function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    autoComplete="off"
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent transition-all"
                     placeholder="votre@email.fr"
                   />
@@ -290,7 +289,7 @@ export function Login() {
             Connectez-vous à votre compte
           </p>
 
-          <form onSubmit={handleLogin} className="space-y-6" autoComplete="off">
+          <form onSubmit={handleLogin} className="space-y-6">
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
@@ -302,7 +301,6 @@ export function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                autoComplete="off"
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent transition-all"
                 placeholder="votre@email.fr"
               />
