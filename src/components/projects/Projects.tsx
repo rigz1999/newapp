@@ -120,6 +120,21 @@ export function Projects({ organization }: ProjectsProps) {
     }
   }, [isSuperAdmin]);
 
+  // ESC key handler for modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showCreateModal) {
+        resetNewProjectForm();
+        setShowCreateModal(false);
+      }
+    };
+
+    if (showCreateModal) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [showCreateModal]);
+
   // Apply search filter
   const filteredProjects = useMemo(() => {
     let filtered = [...projects];
@@ -465,7 +480,15 @@ export function Projects({ organization }: ProjectsProps) {
 
       {/* MODAL EXACT DU DASHBOARD */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              resetNewProjectForm();
+              setShowCreateModal(false);
+            }
+          }}
+        >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-white">
               <div>
