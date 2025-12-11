@@ -494,6 +494,7 @@ export function Projects({ organization }: ProjectsProps) {
                       id="projet"
                       type="text"
                       required
+                      autoComplete="off"
                       value={newProjectData.projet}
                       onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -556,6 +557,7 @@ export function Projects({ organization }: ProjectsProps) {
                         min="0"
                         max="100"
                         inputMode="decimal"
+                        autoComplete="off"
                         value={newProjectData.taux_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -574,6 +576,7 @@ export function Projects({ organization }: ProjectsProps) {
                         type="number"
                         required
                         min="1"
+                        autoComplete="off"
                         value={newProjectData.maturite_mois}
                         onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -731,6 +734,7 @@ export function Projects({ organization }: ProjectsProps) {
                       id="emetteur"
                       type="text"
                       required
+                      autoComplete="off"
                       value={newProjectData.emetteur}
                       onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -748,6 +752,7 @@ export function Projects({ organization }: ProjectsProps) {
                       required
                       pattern="^\d{9}$"
                       title="Le SIREN doit comporter exactement 9 chiffres."
+                      autoComplete="off"
                       value={newProjectData.siren_emetteur}
                       onChange={(e) => {
                         const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
@@ -780,6 +785,7 @@ export function Projects({ organization }: ProjectsProps) {
                         id="prenom"
                         type="text"
                         required
+                        autoComplete="off"
                         value={newProjectData.prenom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -794,6 +800,7 @@ export function Projects({ organization }: ProjectsProps) {
                         id="nom"
                         type="text"
                         required
+                        autoComplete="off"
                         value={newProjectData.nom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -810,6 +817,7 @@ export function Projects({ organization }: ProjectsProps) {
                       id="emailrep"
                       type="email"
                       required
+                      autoComplete="off"
                       value={newProjectData.email_representant}
                       onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -828,6 +836,7 @@ export function Projects({ organization }: ProjectsProps) {
                         id="repmasse"
                         type="text"
                         required
+                        autoComplete="off"
                         value={newProjectData.representant_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -843,6 +852,7 @@ export function Projects({ organization }: ProjectsProps) {
                         id="emailmasse"
                         type="email"
                         required
+                        autoComplete="off"
                         value={newProjectData.email_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -858,6 +868,7 @@ export function Projects({ organization }: ProjectsProps) {
                         id="telmasse"
                         type="tel"
                         pattern="[0-9]*"
+                        autoComplete="off"
                         value={newProjectData.telephone_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
