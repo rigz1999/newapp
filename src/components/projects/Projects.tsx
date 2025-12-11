@@ -732,12 +732,15 @@ export function Projects({ organization }: ProjectsProps) {
                     </label>
                     <input
                       id="emetteur"
+                      name="company_issuer"
                       type="text"
                       required
+                      autoComplete="nope"
                       value={newProjectData.emetteur}
                       onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: GreenTech SAS"
+                      data-form-type="other"
                     />
                   </div>
 
@@ -747,8 +750,10 @@ export function Projects({ organization }: ProjectsProps) {
                     </label>
                     <input
                       id="siren"
+                      name="company_siren"
                       type="text"
                       required
+                      autoComplete="nope"
                       pattern="^\d{9}$"
                       title="Le SIREN doit comporter exactement 9 chiffres."
                       value={newProjectData.siren_emetteur}
@@ -768,6 +773,7 @@ export function Projects({ organization }: ProjectsProps) {
                       placeholder="Ex: 123456789"
                       maxLength={9}
                       inputMode="numeric"
+                      data-form-type="other"
                     />
                     {sirenError && (
                       <p className="mt-1 text-sm text-finixar-red">{sirenError}</p>
@@ -781,12 +787,15 @@ export function Projects({ organization }: ProjectsProps) {
                       </label>
                       <input
                         id="prenom"
+                        name="rep_given_name"
                         type="text"
                         required
+                        autoComplete="nope"
                         value={newProjectData.prenom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Jean"
+                        data-form-type="other"
                       />
                     </div>
                     <div>
@@ -795,12 +804,15 @@ export function Projects({ organization }: ProjectsProps) {
                       </label>
                       <input
                         id="nom"
+                        name="rep_family_name"
                         type="text"
                         required
+                        autoComplete="nope"
                         value={newProjectData.nom_representant}
                         onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Dupont"
+                        data-form-type="other"
                       />
                     </div>
                   </div>
@@ -811,12 +823,15 @@ export function Projects({ organization }: ProjectsProps) {
                     </label>
                     <input
                       id="emailrep"
+                      name="rep_contact_email"
                       type="email"
                       required
+                      autoComplete="nope"
                       value={newProjectData.email_representant}
                       onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: jean.dupont@example.com"
+                      data-form-type="other"
                     />
                   </div>
 
@@ -829,12 +844,15 @@ export function Projects({ organization }: ProjectsProps) {
                       </label>
                       <input
                         id="repmasse"
+                        name="masse_rep_name"
                         type="text"
                         required
+                        autoComplete="nope"
                         value={newProjectData.representant_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Cabinet Lefevre"
+                        data-form-type="other"
                       />
                     </div>
 
@@ -844,12 +862,15 @@ export function Projects({ organization }: ProjectsProps) {
                       </label>
                       <input
                         id="emailmasse"
+                        name="masse_contact_email"
                         type="email"
                         required
+                        autoComplete="nope"
                         value={newProjectData.email_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: contact@cabinet-lefevre.fr"
+                        data-form-type="other"
                       />
                     </div>
 
@@ -859,13 +880,16 @@ export function Projects({ organization }: ProjectsProps) {
                       </label>
                       <input
                         id="telmasse"
+                        name="masse_phone"
                         type="tel"
                         pattern="[0-9]*"
+                        autoComplete="nope"
                         value={newProjectData.telephone_rep_masse}
                         onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 0123456789"
                         maxLength={10}
+                        data-form-type="other"
                       />
                     </div>
                   </div>
