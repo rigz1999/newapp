@@ -492,13 +492,15 @@ export function Projects({ organization }: ProjectsProps) {
                     </label>
                     <input
                       id="projet"
+                      name="project_title"
                       type="text"
                       required
-                      autoComplete="off"
+                      autoComplete="nope"
                       value={newProjectData.projet}
                       onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: GreenTech 2025"
+                      data-form-type="other"
                     />
                   </div>
 
