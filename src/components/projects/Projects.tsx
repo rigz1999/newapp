@@ -484,7 +484,7 @@ export function Projects({ organization }: ProjectsProps) {
             </div>
 
             <div className="flex-1 overflow-y-auto bg-white">
-              <form onSubmit={handleCreateProject} className="p-6 bg-white">
+              <form onSubmit={handleCreateProject} className="p-6 bg-white" autoComplete="off">
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="projet" className="block text-sm font-medium text-slate-900 mb-2">
@@ -553,12 +553,14 @@ export function Projects({ organization }: ProjectsProps) {
                       </label>
                       <input
                         id="taux"
+                        name="interest_rate_field"
                         type="number"
                         required
                         step="0.01"
                         min="0"
                         max="100"
                         inputMode="decimal"
+                        autoComplete="off"
                         value={newProjectData.taux_interet}
                         onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -574,9 +576,11 @@ export function Projects({ organization }: ProjectsProps) {
                       </label>
                       <input
                         id="maturite"
+                        name="maturity_months_field"
                         type="number"
                         required
                         min="1"
+                        autoComplete="off"
                         value={newProjectData.maturite_mois}
                         onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
