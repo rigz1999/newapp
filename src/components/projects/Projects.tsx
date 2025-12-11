@@ -234,7 +234,10 @@ export function Projects({ organization }: ProjectsProps) {
   // Fonction identique au Dashboard
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    console.log('=== STARTING PROJECT CREATION ===');
+    console.log('Organization:', organization);
+
     if (newProjectData.siren_emetteur && !isValidSIREN(newProjectData.siren_emetteur)) {
       setSirenError('SIREN invalide (9 chiffres + clé Luhn).');
       return;
