@@ -231,6 +231,17 @@ export function Dashboard({ organization }: DashboardProps) {
     }
   }, [showNewProject, showTrancheWizard, showQuickPayment, showExportModal]);
 
+  // Validate SIREN whenever it changes
+  useEffect(() => {
+    if (newProjectData.siren_emetteur && newProjectData.siren_emetteur.length === 9) {
+      setSirenError(
+        isValidSIREN(newProjectData.siren_emetteur) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).'
+      );
+    } else if (newProjectData.siren_emetteur) {
+      setSirenError('');
+    }
+  }, [newProjectData.siren_emetteur]);
+
   // Focus trap + Escape close for New Project modal
   useEffect(() => {
     if (!showNewProject) {
@@ -1199,19 +1210,12 @@ export function Dashboard({ organization }: DashboardProps) {
                       onChange={e => {
                         const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
                         setNewProjectData({ ...newProjectData, siren_emetteur: digits });
-                        setSirenError('');
                       }}
                       onPaste={e => {
                         e.preventDefault();
                         const pastedText = e.clipboardData.getData('text');
                         const digits = pastedText.replace(/\D/g, '').slice(0, 9);
                         setNewProjectData({ ...newProjectData, siren_emetteur: digits });
-                        setSirenError('');
-                      }}
-                      onBlur={() => {
-                        setSirenError(
-                          isValidSIREN(newProjectData.siren_emetteur) ? '' : 'SIREN invalide (9 chiffres + clé Luhn).'
-                        );
                       }}
                       aria-invalid={!!sirenError}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue ${
