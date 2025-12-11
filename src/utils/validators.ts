@@ -9,11 +9,12 @@
 export const isValidSIREN = (value: string): boolean => {
   if (!/^\d{9}$/.test(value)) return false;
 
-  // Luhn algorithm for SIREN
+  // Luhn algorithm for SIREN (process from RIGHT to LEFT)
   let sum = 0;
-  for (let i = 0; i < 9; i++) {
+  for (let i = 8; i >= 0; i--) {
     let digit = parseInt(value.charAt(i), 10);
-    if ((i % 2) === 0) {
+    // Multiply every other digit starting from the rightmost (position 8 is index 0 from right)
+    if ((8 - i) % 2 === 1) {
       digit *= 2;
       if (digit > 9) digit -= 9;
     }
