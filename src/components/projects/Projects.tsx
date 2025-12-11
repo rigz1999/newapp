@@ -288,6 +288,16 @@ export function Projects({ organization }: ProjectsProps) {
 
       console.log('Project to create:', projectToCreate);
 
+      // DEBUG: Test the RPC function
+      const { data: canAccess, error: rpcError } = await supabase
+        .rpc('user_can_access_org', { check_org_id: projectToCreate.org_id });
+      console.log('user_can_access_org result:', canAccess, 'error:', rpcError);
+
+      // DEBUG: Check current user
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user ID:', user?.id);
+      console.log('Org ID to insert:', projectToCreate.org_id);
+
       const { data: _data, error } = await supabase
         .from('projets')
         .insert([projectToCreate] as never)
