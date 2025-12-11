@@ -8,6 +8,7 @@ import { InvitationAccept } from './components/auth/InvitationAccept';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
 import { ThemeProvider } from './context/ThemeContext';
+import { DiagnosticPage } from './pages/DiagnosticPage';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
@@ -52,6 +53,7 @@ function App() {
             }
           />
           <Route path="/invitation/accept" element={<InvitationAccept />} />
+          <Route path="/diagnostic" element={user ? <DiagnosticPage /> : <Navigate to="/login" replace />} />
 
           {/* Protected Routes - Authentication required */}
           <Route
