@@ -1201,6 +1201,13 @@ export function Dashboard({ organization }: DashboardProps) {
                         setNewProjectData({ ...newProjectData, siren_emetteur: digits });
                         setSirenError('');
                       }}
+                      onPaste={e => {
+                        e.preventDefault();
+                        const pastedText = e.clipboardData.getData('text');
+                        const digits = pastedText.replace(/\D/g, '').slice(0, 9);
+                        setNewProjectData({ ...newProjectData, siren_emetteur: digits });
+                        setSirenError('');
+                      }}
                       onBlur={e => {
                         const v = e.target.value;
                         setSirenError(
