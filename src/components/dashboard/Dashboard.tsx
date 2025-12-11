@@ -632,8 +632,7 @@ export function Dashboard({ organization }: DashboardProps) {
     <div className="max-w-7xl mx-auto px-8 py-8">
       <div className="flex items-center justify-between mb-2">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-600 mt-1">Voici ce qui se passe cette semaine</p>
+          <h1 className="text-3xl font-bold text-slate-900">Tableau de bord</h1>
         </div>
         <button
           onClick={handleRefresh}

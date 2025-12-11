@@ -26,7 +26,7 @@ export function Sidebar({ organization, activePage, onNavigate, onLogout }: Side
             }`}
           >
             <Home className="w-5 h-5" />
-            <span>Dashboard</span>
+            <span>Tableau de bord</span>
           </button>
           <button
             onClick={() => onNavigate('coupons')}
