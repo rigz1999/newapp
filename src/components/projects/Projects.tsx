@@ -494,6 +494,7 @@ export function Projects({ organization }: ProjectsProps) {
                       id="projet"
                       type="text"
                       required
+                      autoComplete="off"
                       value={newProjectData.projet}
                       onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
