@@ -221,7 +221,7 @@ export function Login() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleForgotPassword} className="space-y-6">
+              <form onSubmit={handleForgotPassword} className="space-y-6" autoComplete="off">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
                     Adresse email
@@ -290,7 +290,7 @@ export function Login() {
             Connectez-vous à votre compte
           </p>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6" autoComplete="off">
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
@@ -329,7 +329,7 @@ export function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  autoComplete="new-password"
+                  autoComplete="off"
                   className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent transition-all"
                   placeholder="••••••••"
                 />
