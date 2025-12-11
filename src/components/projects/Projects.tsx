@@ -296,6 +296,8 @@ export function Projects({ organization }: ProjectsProps) {
         .rpc('user_can_access_org', { check_org_id: projectToCreate.org_id });
       console.log('user_can_access_org result:', canAccess, 'error:', rpcError);
 
+      alert(`DEBUG: user_can_access_org returned: ${canAccess}, error: ${rpcError?.message || 'none'}`);
+
       // DEBUG: Check current user
       const { data: { user } } = await supabase.auth.getUser();
       console.log('Current user ID:', user?.id);
