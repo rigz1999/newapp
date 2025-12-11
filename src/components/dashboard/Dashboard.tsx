@@ -856,6 +856,7 @@ export function Dashboard({ organization }: DashboardProps) {
 
             <div className="p-6">
               <form
+                autoComplete="off"
                 onSubmit={async e => {
                   e.preventDefault();
                   setCreatingProject(true);
@@ -924,8 +925,10 @@ export function Dashboard({ organization }: DashboardProps) {
                     </label>
                     <input
                       id="projet"
+                      name="project_title_dash"
                       type="text"
                       required
+                      autoComplete="off"
                       value={newProjectData.projet}
                       onChange={e =>
                         setNewProjectData({ ...newProjectData, projet: e.target.value })
@@ -967,12 +970,14 @@ export function Dashboard({ organization }: DashboardProps) {
                       </label>
                       <input
                         id="taux"
+                        name="interest_rate_dash"
                         type="number"
                         required
                         step="0.01"
                         min="0"
                         max="100"
                         inputMode="decimal"
+                        autoComplete="off"
                         value={newProjectData.taux_interet}
                         onChange={e =>
                           setNewProjectData({ ...newProjectData, taux_interet: e.target.value })
@@ -993,9 +998,11 @@ export function Dashboard({ organization }: DashboardProps) {
                       </label>
                       <input
                         id="maturite"
+                        name="maturity_months_dash"
                         type="number"
                         required
                         min="1"
+                        autoComplete="off"
                         value={newProjectData.maturite_mois}
                         onChange={e =>
                           setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })
@@ -1040,9 +1047,11 @@ export function Dashboard({ organization }: DashboardProps) {
                       {/* Masked input */}
                       <input
                         id="montant"
+                        name="global_amount_dash"
                         ref={montantRef}
                         type="text"
                         required
+                        autoComplete="off"
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
                         onChange={() => {}}
@@ -1158,8 +1167,10 @@ export function Dashboard({ organization }: DashboardProps) {
                     </label>
                     <input
                       id="emetteur"
+                      name="company_issuer_dash"
                       type="text"
                       required
+                      autoComplete="off"
                       value={newProjectData.emetteur}
                       onChange={e =>
                         setNewProjectData({ ...newProjectData, emetteur: e.target.value })
@@ -1178,8 +1189,10 @@ export function Dashboard({ organization }: DashboardProps) {
                     </label>
                     <input
                       id="siren"
+                      name="company_siren_dash"
                       type="text"
                       required
+                      autoComplete="off"
                       pattern="^\d{9}$"
                       title="Le SIREN doit comporter exactement 9 chiffres."
                       value={newProjectData.siren_emetteur}
@@ -1215,8 +1228,10 @@ export function Dashboard({ organization }: DashboardProps) {
                       </label>
                       <input
                         id="prenom"
+                        name="rep_given_name_dash"
                         type="text"
                         required
+                        autoComplete="off"
                         value={newProjectData.prenom_representant}
                         onChange={e =>
                           setNewProjectData({
@@ -1237,8 +1252,10 @@ export function Dashboard({ organization }: DashboardProps) {
                       </label>
                       <input
                         id="nom"
+                        name="rep_family_name_dash"
                         type="text"
                         required
+                        autoComplete="off"
                         value={newProjectData.nom_representant}
                         onChange={e =>
                           setNewProjectData({ ...newProjectData, nom_representant: e.target.value })
@@ -1258,8 +1275,10 @@ export function Dashboard({ organization }: DashboardProps) {
                     </label>
                     <input
                       id="emailrep"
+                      name="rep_contact_email_dash"
                       type="email"
                       required
+                      autoComplete="off"
                       value={newProjectData.email_representant}
                       onChange={e =>
                         setNewProjectData({ ...newProjectData, email_representant: e.target.value })
@@ -1283,8 +1302,10 @@ export function Dashboard({ organization }: DashboardProps) {
                       </label>
                       <input
                         id="repmasse"
+                        name="masse_rep_name_dash"
                         type="text"
                         required
+                        autoComplete="off"
                         value={newProjectData.representant_masse}
                         onChange={e =>
                           setNewProjectData({
@@ -1307,8 +1328,10 @@ export function Dashboard({ organization }: DashboardProps) {
                       </label>
                       <input
                         id="emailmasse"
+                        name="masse_contact_email_dash"
                         type="email"
                         required
+                        autoComplete="off"
                         value={newProjectData.email_rep_masse}
                         onChange={e =>
                           setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })
@@ -1327,8 +1350,10 @@ export function Dashboard({ organization }: DashboardProps) {
                       </label>
                       <input
                         id="telmasse"
+                        name="masse_phone_dash"
                         type="tel"
                         pattern="[0-9]*"
+                        autoComplete="off"
                         value={newProjectData.telephone_rep_masse}
                         onChange={e =>
                           setNewProjectData({
