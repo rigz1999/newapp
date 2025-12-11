@@ -890,6 +890,8 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
                       representant_masse: newProjectData.representant_masse || null,
                       email_rep_masse: newProjectData.email_rep_masse || null,
                       telephone_rep_masse: newProjectData.telephone_rep_masse || null,
+                      // FIX: Add org_id for RLS policy
+                      org_id: organization.id,
                     };
 
                     const { data, error } = await supabase
