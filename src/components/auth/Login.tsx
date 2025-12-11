@@ -4,9 +4,9 @@
 // Replace your existing Login.tsx with this
 // ============================================
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { LogIn, Clock, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Eye, EyeOff } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 
 export function Login() {
@@ -17,54 +17,6 @@ export function Login() {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  // Check if user is logged in and has access
-  const [user, setUser] = useState<any>(null);
-  const [hasAccess, setHasAccess] = useState(false);
-  const [checkingAccess, setCheckingAccess] = useState(true);
-
-  useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        checkUserAccess(session.user.id);
-      } else {
-        setCheckingAccess(false);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setCheckingAccess(true);  // Set to true BEFORE checking access
-        setUser(session.user);
-        checkUserAccess(session.user.id);
-      } else {
-        setUser(null);
-        setHasAccess(false);
-        setCheckingAccess(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkUserAccess = async (userId: string) => {
-    setCheckingAccess(true);
-    const { data: memberships } = await supabase
-      .from('memberships')
-      .select('id, role, org_id')
-      .eq('user_id', userId);
-
-    if (memberships && memberships.length > 0) {
-      setHasAccess(true);
-      // Redirect will happen in parent component
-    } else {
-      setHasAccess(false);
-    }
-    setCheckingAccess(false);
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,84 +55,6 @@ export function Login() {
       setLoading(false);
     }
   };
-
-  const handleRefresh = () => {
-    if (user) {
-      checkUserAccess(user.id);
-    }
-  };
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
-
-  // Loading state - also show when user has access (prevents flash before redirect)
-  if (checkingAccess || (user && hasAccess)) {
-    return (
-      <div className="min-h-screen bg-finixar-background flex items-center justify-center">
-        <RefreshCw className="w-12 h-12 text-finixar-text animate-spin" />
-      </div>
-    );
-  }
-
-  // User logged in but no access - show waiting state
-  if (user && !hasAccess) {
-    return (
-      <div className="min-h-screen bg-finixar-background flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="flex items-center justify-center mb-6">
-              <div className="bg-yellow-100 p-4 rounded-full">
-                <Clock className="w-12 h-12 text-finixar-amber" />
-              </div>
-            </div>
-
-            <h1 className="text-2xl font-bold text-center text-slate-900 mb-2">
-              En attente d'approbation
-            </h1>
-            <p className="text-center text-slate-600 mb-6">
-              Votre compte a été créé avec succès !
-            </p>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-yellow-800">
-                <strong>Prochaine étape :</strong> Un administrateur doit vous donner accès à une
-                organisation avant que vous puissiez utiliser la plateforme.
-              </p>
-            </div>
-
-            <div className="bg-slate-50 rounded-lg p-4 mb-6">
-              <p className="text-sm text-slate-700 mb-1">
-                <strong>Votre email :</strong>
-              </p>
-              <p className="text-sm text-slate-600">{user.email}</p>
-            </div>
-
-            <button
-              onClick={handleRefresh}
-              className="w-full bg-finixar-action-process text-white py-3 rounded-lg font-medium hover:bg-finixar-action-process-hover transition-colors mb-3 flex items-center justify-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Vérifier l'accès
-            </button>
-
-            <button
-              onClick={handleSignOut}
-              className="w-full text-slate-600 hover:text-slate-900 py-2 transition-colors text-sm"
-            >
-              Se déconnecter
-            </button>
-          </div>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-slate-500">
-              Besoin d'aide ? Contactez votre administrateur.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Forgot password form
   if (isForgotPassword) {
