@@ -71,30 +71,14 @@ export function Login() {
     setLoading(true);
     setError('');
 
-    // First check if user exists
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email.toLowerCase().trim())
-      .maybeSingle();
-
-    if (!profiles) {
-      // User doesn't exist
-      setError('Compte inexistant. Vérifiez votre adresse email ou créez un compte.');
-      setLoading(false);
-      return;
-    }
-
-    // User exists, try to sign in
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.toLowerCase().trim(),
       password,
     });
 
     if (error) {
-      // Since we know user exists, this must be wrong password
       if (error.message.includes('Invalid login credentials')) {
-        setError('Mot de passe incorrect.');
+        setError('Email ou mot de passe incorrect.');
       } else {
         setError(formatErrorMessage(error));
       }
