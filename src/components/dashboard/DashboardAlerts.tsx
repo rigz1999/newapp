@@ -8,7 +8,10 @@ interface DashboardAlertsProps {
 }
 
 export function DashboardAlerts({ alerts, onAlertClick, onDismiss }: DashboardAlertsProps) {
-  if (alerts.length === 0) return null;
+  // Reserve space even when no alerts to prevent layout shift
+  if (alerts.length === 0) {
+    return <div className="mb-6 mt-6" aria-hidden="true" />;
+  }
 
   return (
     <div className="mb-6 mt-6">
@@ -16,9 +19,7 @@ export function DashboardAlerts({ alerts, onAlertClick, onDismiss }: DashboardAl
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-600" />
-            <h3 className="text-lg font-bold text-slate-900">
-              Alertes et Actions Requises
-            </h3>
+            <h3 className="text-lg font-bold text-slate-900">Alertes et Actions Requises</h3>
           </div>
           <button
             onClick={onDismiss}
