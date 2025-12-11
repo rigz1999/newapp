@@ -134,7 +134,7 @@ export function Layout({ organization }: LayoutProps) {
               }`}
             >
               <Home className="w-4 h-4" />
-              <span>Dashboard</span>
+              <span>Tableau de bord</span>
             </Link>
             <Link
               to="/coupons"
