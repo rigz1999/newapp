@@ -117,7 +117,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
           <div className="p-6 border-b border-slate-200">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-xl font-bold text-slate-900">Justificatifs de Paiement</h3>
+                <h3 className="text-xl font-bold text-slate-900">Justificatifs de paiement</h3>
                 <p className="text-sm text-slate-600 mt-1">
                   {payment.tranche?.tranche_name} • {payment.investisseur?.nom_raison_sociale}
                 </p>
