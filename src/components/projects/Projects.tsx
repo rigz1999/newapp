@@ -286,7 +286,7 @@ export function Projects({ organization }: ProjectsProps) {
         projectToCreate.org_id = organization.id;
       }
 
-      const { data: _data, error } = await supabase
+      const { data, error } = await supabase
         .from('projets')
         .insert([projectToCreate] as never)
         .select()
@@ -300,7 +300,11 @@ export function Projects({ organization }: ProjectsProps) {
       toast.success('Projet créé avec succès !');
       setShowCreateModal(false);
       resetNewProjectForm();
-      fetchProjects(); // Refresh la liste
+
+      // Navigate to the project detail page
+      if (data) {
+        navigate(`/projets/${data.id}`);
+      }
     } catch (err: any) {
       toast.error('Erreur lors de la création du projet: ' + err.message);
     } finally {
