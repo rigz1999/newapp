@@ -6,7 +6,20 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { CheckCircle, AlertCircle, Lock, Mail, User, RefreshCw, Eye, EyeOff, Check, X } from 'lucide-react';
+
+// Create a fresh anonymous client without any stored session
+const anonSupabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  {
+    auth: {
+      persistSession: false, // Don't use stored sessions
+      autoRefreshToken: false,
+    },
+  }
+);
 
 interface Invitation {
   id: string;
@@ -52,8 +65,8 @@ export function InvitationAccept() {
     setError('');
 
     try {
-      // Récupérer l'invitation avec le token
-      const { data: invitationData, error: invitationError } = await supabase
+      // Récupérer l'invitation avec le token (using anonymous client)
+      const { data: invitationData, error: invitationError } = await anonSupabase
         .from('invitations')
         .select(`
           *,
@@ -86,8 +99,8 @@ export function InvitationAccept() {
       const now = new Date();
 
       if (expiresAt < now) {
-        // Marquer comme expirée
-        await supabase
+        // Marquer comme expirée (using anonymous client)
+        await anonSupabase
           .from('invitations')
           .update({ status: 'expired' } as never)
           .eq('id', invitationData.id);
