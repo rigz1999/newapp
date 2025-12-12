@@ -101,10 +101,7 @@ export function Projects({ organization }: ProjectsProps) {
   }, [organization.id]);
 
   useEffect(() => {
-    const createParam = searchParams.get('create');
-    console.log('[Projects] URL param create:', createParam);
-    if (createParam === 'true') {
-      console.log('[Projects] Opening create modal');
+    if (searchParams.get('create') === 'true') {
       setShowCreateModal(true);
     }
   }, [searchParams]);
