@@ -380,7 +380,7 @@ export function TrancheWizard({
             <div className="flex items-center gap-2">
               {isEditMode && <Edit className="w-5 h-5 text-blue-600" />}
               <h3 className="text-xl font-bold text-slate-900">
-                {isEditMode ? "Modifier la Tranche" : "Nouvelle Tranche"}
+                {isEditMode ? "Modifier la tranche" : "Nouvelle tranche"}
               </h3>
             </div>
             <button 

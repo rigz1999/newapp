@@ -264,7 +264,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
                 </div>
               </div>
 
-              <h4 className="font-medium text-slate-900 mb-3">Détails des Paiements ({subscriptions.length})</h4>
+              <h4 className="font-medium text-slate-900 mb-3">Détails des paiements ({subscriptions.length})</h4>
               <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
                 {subscriptions.map((subscription) => (
                   <div

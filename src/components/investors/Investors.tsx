@@ -1131,7 +1131,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   <p className="text-2xl font-bold text-finixar-green">{formatCurrency(selectedInvestor.total_investi)}</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-lg">
-                  <p className="text-sm text-slate-600 mb-1">Nombre de Souscriptions</p>
+                  <p className="text-sm text-slate-600 mb-1">Nombre de souscriptions</p>
                   <p className="text-2xl font-bold text-slate-900">{selectedInvestor.nb_souscriptions}</p>
                 </div>
               </div>

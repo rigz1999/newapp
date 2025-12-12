@@ -15,7 +15,7 @@ export function DashboardQuickActions({
 }: DashboardQuickActionsProps) {
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8 mt-8">
-      <h2 className="text-xl font-bold text-slate-900 mb-4">Actions Rapides</h2>
+      <h2 className="text-xl font-bold text-slate-900 mb-4">Actions rapides</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <button
           onClick={onNewProject}
@@ -25,7 +25,7 @@ export function DashboardQuickActions({
             <Plus className="w-5 h-5 text-white" />
           </div>
           <div className="text-left">
-            <p className="font-semibold text-slate-900 text-sm">Nouveau Projet</p>
+            <p className="font-semibold text-slate-900 text-sm">Nouveau projet</p>
             <p className="text-xs text-slate-600">Créer un projet</p>
           </div>
         </button>
@@ -38,7 +38,7 @@ export function DashboardQuickActions({
             <FileText className="w-5 h-5 text-white" />
           </div>
           <div className="text-left">
-            <p className="font-semibold text-slate-900 text-sm">Nouvelle Tranche</p>
+            <p className="font-semibold text-slate-900 text-sm">Nouvelle tranche</p>
             <p className="text-xs text-slate-600">Ajouter une tranche</p>
           </div>
         </button>
@@ -64,7 +64,7 @@ export function DashboardQuickActions({
             <Download className="w-5 h-5 text-white" />
           </div>
           <div className="text-left">
-            <p className="font-semibold text-slate-900 text-sm">Exporter Synthèse</p>
+            <p className="font-semibold text-slate-900 text-sm">Exporter synthèse</p>
             <p className="text-xs text-slate-600">Télécharger rapport</p>
           </div>
         </button>

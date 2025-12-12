@@ -86,7 +86,7 @@ export function TranchesModal({
         <div className="p-6 border-b border-slate-200">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Toutes les Tranches</h2>
+              <h2 className="text-2xl font-bold text-slate-900">Toutes les tranches</h2>
               <p className="text-sm text-slate-600 mt-1">
                 {filteredTranches.length} tranche{filteredTranches.length > 1 ? 's' : ''}
                 {filteredTranches.length !== tranches.length && ` sur ${tranches.length}`}

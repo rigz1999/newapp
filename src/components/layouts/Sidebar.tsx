@@ -35,7 +35,7 @@ export function Sidebar({ organization, activePage, onNavigate, onLogout }: Side
             }`}
           >
             <Receipt className="w-5 h-5" />
-            <span>Tous les Coupons</span>
+            <span>Tous les coupons</span>
           </button>
           <button
             onClick={() => onNavigate('projects')}

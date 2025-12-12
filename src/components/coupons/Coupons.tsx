@@ -490,7 +490,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
             <Receipt className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Tous les Coupons</h1>
+            <h1 className="text-3xl font-bold text-slate-900">Tous les coupons</h1>
             <p className="text-slate-600">
               {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total: <span className="font-bold text-finixar-green">{formatCurrency(totalAmount)}</span>
             </p>

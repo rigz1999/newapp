@@ -44,7 +44,7 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
         <div className="p-6 border-b border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-2xl font-bold text-slate-900">Historique des Paiements</h3>
+              <h3 className="text-2xl font-bold text-slate-900">Historique des paiements</h3>
               <p className="text-sm text-slate-600 mt-1">Tous les paiements du projet</p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -57,7 +57,7 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Calendar className="w-4 h-4 text-blue-600" />
-                <p className="text-xs font-medium text-blue-900">Total Paiements</p>
+                <p className="text-xs font-medium text-blue-900">Total paiements</p>
               </div>
               <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
             </div>
@@ -73,7 +73,7 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
             <div className="bg-purple-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Coins className="w-4 h-4 text-purple-600" />
-                <p className="text-xs font-medium text-purple-900">Montant Total</p>
+                <p className="text-xs font-medium text-purple-900">Montant total</p>
               </div>
               <p className="text-lg font-bold text-purple-900">{formatCurrency(stats.montantTotal)}</p>
             </div>

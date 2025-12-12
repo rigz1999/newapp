@@ -284,11 +284,13 @@ export function EcheancierContent({
       {/* Header */}
       <div className="p-6 border-b border-slate-200 bg-white">
         <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-2xl font-bold text-slate-900">Échéancier Complet des Coupons</h3>
-            <p className="text-sm text-slate-600 mt-1">Tous les paiements de coupons du projet</p>
-          </div>
-          <div className="flex items-center gap-2">
+          {!isFullPage && (
+            <div>
+              <h3 className="text-2xl font-bold text-slate-900">Échéancier complet des coupons</h3>
+              <p className="text-sm text-slate-600 mt-1">Tous les paiements de coupons du projet</p>
+            </div>
+          )}
+          <div className={`flex items-center gap-2 ${isFullPage ? 'w-full justify-end' : ''}`}>
             <button
               onClick={handleExportExcel}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
@@ -319,7 +321,7 @@ export function EcheancierContent({
           <div className="bg-blue-50 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="w-4 h-4 text-blue-600" />
-              <p className="text-xs font-medium text-blue-900">Total Échéances</p>
+              <p className="text-xs font-medium text-blue-900">Total échéances</p>
             </div>
             <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
           </div>
@@ -327,7 +329,7 @@ export function EcheancierContent({
           <div className="bg-orange-50 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-4 h-4 text-orange-600" />
-              <p className="text-xs font-medium text-orange-900">À Venir</p>
+              <p className="text-xs font-medium text-orange-900">À venir</p>
             </div>
             <p className="text-2xl font-bold text-orange-900">{stats.aVenir}</p>
           </div>
@@ -343,7 +345,7 @@ export function EcheancierContent({
           <div className="bg-purple-50 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <Coins className="w-4 h-4 text-purple-600" />
-              <p className="text-xs font-medium text-purple-900">Montant Total Net</p>
+              <p className="text-xs font-medium text-purple-900">Montant total net</p>
             </div>
             <p className="text-lg font-bold text-purple-900">{formatCurrency(stats.montantTotal)}</p>
           </div>

@@ -616,9 +616,9 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
             )}
             <div>
               <h3 className="text-xl font-bold text-slate-900">
-                {step === 'select' && 'Enregistrer un Paiement de Tranche'}
-                {step === 'upload' && 'Télécharger Justificatif de Paiement'}
-                {step === 'results' && 'Résultats de l\'Analyse'}
+                {step === 'select' && 'Enregistrer un paiement de tranche'}
+                {step === 'upload' && 'Télécharger justificatif de paiement'}
+                {step === 'results' && 'Résultats de l\'analyse'}
               </h3>
               <p className="text-sm text-slate-600 mt-1">
                 {step === 'select' && 'Sélectionnez un projet et une tranche à payer'}
@@ -671,7 +671,7 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
           {step === 'upload' && (
             <div className="space-y-6">
               <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Paiement de Tranche</h4>
+                <h4 className="font-semibold text-blue-900 mb-2">Paiement de tranche</h4>
                 <p className="text-sm text-blue-700 mb-3">
                   Cette tranche contient {subscriptions.length} investisseur{subscriptions.length > 1 ? 's' : ''}. 
                   Le justificatif de paiement doit contenir tous les paiements individuels.
@@ -683,7 +683,7 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
               </div>
 
               <div>
-                <h4 className="font-semibold text-slate-900 mb-3">Détails des Paiements ({subscriptions.length})</h4>
+                <h4 className="font-semibold text-slate-900 mb-3">Détails des paiements ({subscriptions.length})</h4>
                 <div className="space-y-2">
                   {subscriptions.map((sub) => (
                     <div key={sub.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
