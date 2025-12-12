@@ -611,7 +611,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('Coupons à Venir', 15, yPos);
+      doc.text('Coupons à venir', 15, yPos);
       yPos += 10;
 
       autoTable(doc, {

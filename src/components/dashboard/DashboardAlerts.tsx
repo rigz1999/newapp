@@ -24,7 +24,7 @@ export function DashboardAlerts({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-600" />
-            <h3 className="text-lg font-bold text-slate-900">Alertes et Actions Requises</h3>
+            <h3 className="text-lg font-bold text-slate-900">Alertes et actions requises</h3>
           </div>
           <button
             onClick={onDismiss}

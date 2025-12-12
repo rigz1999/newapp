@@ -19,7 +19,7 @@ export function DashboardRecentPayments({
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-slate-900">Derniers Paiements</h2>
+          <h2 className="text-xl font-bold text-slate-900">Derniers paiements</h2>
           <button
             onClick={onViewAllPayments}
             className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
@@ -71,7 +71,7 @@ export function DashboardRecentPayments({
 
       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-slate-900">Coupons à Venir</h2>
+          <h2 className="text-xl font-bold text-slate-900">Coupons à venir</h2>
           <button
             onClick={onViewAllCoupons}
             className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
