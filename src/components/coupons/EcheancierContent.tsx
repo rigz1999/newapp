@@ -343,7 +343,7 @@ export function EcheancierContent({
           <div className="bg-purple-50 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <Coins className="w-4 h-4 text-purple-600" />
-              <p className="text-xs font-medium text-purple-900">Montant Total Net</p>
+              <p className="text-xs font-medium text-purple-900">Montant total net</p>
             </div>
             <p className="text-lg font-bold text-purple-900">{formatCurrency(stats.montantTotal)}</p>
           </div>

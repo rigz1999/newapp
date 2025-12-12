@@ -363,7 +363,7 @@ export function Projects({ organization }: ProjectsProps) {
             <FolderOpen className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Tous les Projets</h1>
+            <h1 className="text-3xl font-bold text-slate-900">Tous les projets</h1>
             <p className="text-slate-600">{projects.length} projet{projects.length > 1 ? 's' : ''}</p>
           </div>
         </div>
@@ -372,7 +372,7 @@ export function Projects({ organization }: ProjectsProps) {
           className="flex items-center gap-2 bg-finixar-action-create text-white px-4 py-2 rounded-lg hover:bg-finixar-action-create-hover transition-colors"
         >
           <Plus className="w-5 h-5" />
-          <span>Nouveau Projet</span>
+          <span>Nouveau projet</span>
         </button>
       </div>
 

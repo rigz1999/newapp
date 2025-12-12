@@ -239,7 +239,7 @@ export function Payments({ organization }: PaymentsProps) {
   };
 
   const exportToCSV = () => {
-    const headers = ['ID Paiement', 'Projet', 'Émetteur', 'Tranche', 'Investisseur', 'Type', 'Montant', 'Date'];
+    const headers = ['ID paiement', 'Projet', 'Émetteur', 'Tranche', 'Investisseur', 'Type', 'Montant', 'Date'];
     const rows = filteredPayments.map((payment) => [
       payment.id_paiement,
       payment.tranche?.projet?.projet || '',
@@ -315,7 +315,7 @@ export function Payments({ organization }: PaymentsProps) {
 
   const exportSelectedToCSV = () => {
     const selected = filteredPayments.filter(p => selectedPayments.has(p.id));
-    const headers = ['ID Paiement', 'Projet', 'Émetteur', 'Tranche', 'Investisseur', 'Type', 'Montant', 'Date'];
+    const headers = ['ID paiement', 'Projet', 'Émetteur', 'Tranche', 'Investisseur', 'Type', 'Montant', 'Date'];
     const rows = selected.map((payment) => [
       payment.id_paiement,
       payment.tranche?.projet?.projet || '',
@@ -370,7 +370,7 @@ export function Payments({ organization }: PaymentsProps) {
             <Euro className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Historique des Paiements</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Historique des paiements</h1>
             <p className="text-slate-600">{filteredPayments.length} paiement{filteredPayments.length > 1 ? 's' : ''}</p>
           </div>
         </div>
@@ -387,7 +387,7 @@ export function Payments({ organization }: PaymentsProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-600 text-sm">Montant Total Payé</span>
+            <span className="text-slate-600 text-sm">Montant total payé</span>
             <CheckCircle2 className="w-5 h-5 text-finixar-green" />
           </div>
           <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalPaid)}</p>
@@ -395,7 +395,7 @@ export function Payments({ organization }: PaymentsProps) {
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-600 text-sm">Nombre de Paiements</span>
+            <span className="text-slate-600 text-sm">Nombre de paiements</span>
             <Euro className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-2xl font-bold text-slate-900">{stats.paymentsCount}</p>

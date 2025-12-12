@@ -300,7 +300,7 @@ export default function Members() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors"
           >
             <UserPlus className="w-4 h-4" />
-            Inviter un Membre
+            Inviter un membre
           </button>
         </div>
 
@@ -620,7 +620,7 @@ function InviteMemberModal({
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-slate-900">Inviter un Membre</h3>
+            <h3 className="text-xl font-bold text-slate-900">Inviter un membre</h3>
           <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
             <X className="w-5 h-5 text-slate-600" />
           </button>

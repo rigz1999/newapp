@@ -649,7 +649,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-slate-600 text-sm">Montant Total Levé</p>
+                <p className="text-slate-600 text-sm">Montant total levé</p>
                 <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(stats.totalLeve)}</p>
               </div>
               <div className="p-2 bg-green-50 rounded-lg">
@@ -773,7 +773,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4" />
-              Nouvelle Tranche
+              Nouvelle tranche
             </button>
           </div>
 
@@ -1017,10 +1017,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           }}
         />
 
-        {/* ✅ SECTION MODIFIÉE - Historique des Paiements */}
+        {/* ✅ SECTION MODIFIÉE - Historique des paiements */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-baseline gap-3 mb-4">
-            <h2 className="text-xl font-bold text-slate-900">Historique des Paiements</h2>
+            <h2 className="text-xl font-bold text-slate-900">Historique des paiements</h2>
             <button
               onClick={() => setShowPaymentsModal(true)}
               className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"

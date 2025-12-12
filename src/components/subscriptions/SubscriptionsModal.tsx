@@ -120,9 +120,9 @@ export function SubscriptionsModal({
         <div className="p-6 border-b border-slate-200">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Toutes les Souscriptions</h2>
+              <h2 className="text-2xl font-bold text-slate-900">Toutes les souscriptions</h2>
               <p className="text-sm text-slate-600 mt-1">
-                {filteredSubs.length} souscription{filteredSubs.length > 1 ? 's' : ''} 
+                {filteredSubs.length} souscription{filteredSubs.length > 1 ? 's' : ''}
                 {filteredSubs.length !== subscriptions.length && ` sur ${subscriptions.length}`}
               </p>
             </div>
