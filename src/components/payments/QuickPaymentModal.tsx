@@ -193,7 +193,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
         <div className="p-6 border-b border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-xl font-bold text-slate-900">Enregistrer un Paiement de Tranche</h3>
+              <h3 className="text-xl font-bold text-slate-900">Enregistrer un paiement de tranche</h3>
               <p className="text-sm text-slate-600 mt-1">Sélectionnez un projet et une tranche à payer</p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -253,7 +253,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
           {!loading && subscriptions.length > 0 && (
             <div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Paiement de Tranche</h4>
+                <h4 className="font-semibold text-blue-900 mb-2">Paiement de tranche</h4>
                 <p className="text-sm text-blue-700 mb-3">
                   Cette tranche contient {subscriptions.length} investisseur{subscriptions.length > 1 ? 's' : ''}.
                   Le justificatif de paiement doit contenir tous les paiements individuels.
@@ -291,7 +291,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
                 onClick={() => setShowUpload(true)}
                 className="w-full px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors font-medium"
               >
-                Télécharger le Justificatif de Paiement
+                Télécharger le justificatif de paiement
               </button>
             </div>
           )}

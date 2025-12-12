@@ -549,7 +549,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
 
           <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900">Évolution des Montants Levés</h2>
+              <h2 className="text-xl font-bold text-slate-900">Évolution des montants levés</h2>
               <div className="flex items-center gap-4">
                 <select
                   aria-label="Mode d'affichage"
