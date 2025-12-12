@@ -539,10 +539,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           />
 
           <DashboardQuickActions
-            onNewProject={() => {
-              console.log('[Dashboard] Navigating to /projets?create=true');
-              navigate('/projets?create=true');
-            }}
+            onNewProject={() => navigate('/projets?create=true')}
             onNewTranche={() => setShowTrancheWizard(true)}
             onNewPayment={() => setShowQuickPayment(true)}
             onExport={() => setShowExportModal(true)}
