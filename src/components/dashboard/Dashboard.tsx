@@ -14,6 +14,7 @@ import { DashboardRecentPayments } from './DashboardRecentPayments';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
 import Decimal from 'decimal.js';
 import { isValidSIREN } from '../../utils/validators';
+import { logger } from '../../utils/logger';
 import {
   generateAlerts,
   type Alert,
@@ -212,7 +213,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       ].filter(Boolean);
 
       if (errors.length > 0) {
-        console.warn('Dashboard data errors:', {
+        logger.warn('Dashboard data errors:', {
           projects: projectsRes.error,
           tranches: tranchesRes.error,
           subscriptions: subscriptionsRes.error,
@@ -291,10 +292,10 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         ]);
 
         if (paymentsRes2.error) {
-          console.warn('Supabase error paiements 2:', paymentsRes2.error);
+          logger.warn('Supabase error paiements 2:', paymentsRes2.error);
         }
         if (couponsRes.error) {
-          console.warn('Supabase error coupons:', couponsRes.error);
+          logger.warn('Supabase error coupons:', couponsRes.error);
         }
 
         recentPaymentsData = paymentsRes2.data || [];
@@ -372,7 +373,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         setRefreshing(false);
       }
     } catch (error) {
-      console.error('Dashboard: Error fetching data', error);
+      logger.error(error instanceof Error ? error : new Error('Dashboard: Error fetching data'));
       localStorage.removeItem(CACHE_KEY);
       setLoading(false);
       if (isRefresh) {
