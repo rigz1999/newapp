@@ -69,6 +69,9 @@ function getEnvVarAsBoolean(key: string, defaultValue: boolean): boolean {
   return value === 'true' || value === '1';
 }
 
+// Production-specific validation
+const isProduction = import.meta.env.PROD;
+
 // Validate and export environment configuration
 export const env: EnvConfig = {
   supabase: {
@@ -96,6 +99,24 @@ export const env: EnvConfig = {
     supportEmail: getEnvVar('VITE_SUPPORT_EMAIL', false) || 'support@finixar.com',
   },
 };
+
+// Production-specific warnings
+if (isProduction) {
+  // Warn if Sentry is not configured in production
+  if (!import.meta.env.VITE_SENTRY_DSN) {
+    console.warn('[Production Warning] VITE_SENTRY_DSN is not configured. Error tracking is disabled.');
+  }
+
+  // Warn if using default support email
+  if (env.contact.supportEmail === 'support@finixar.com') {
+    console.warn('[Production Warning] Using default support email. Set VITE_SUPPORT_EMAIL.');
+  }
+
+  // Validate Supabase URL format
+  if (!env.supabase.url.includes('.supabase.co')) {
+    console.error('[Production Error] Invalid Supabase URL format.');
+  }
+}
 
 // Log configuration in development (without sensitive data)
 if (import.meta.env.DEV) {

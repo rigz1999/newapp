@@ -40,9 +40,9 @@ export function DiagnosticPage() {
       results.projets = {
         data: projets,
         error: projetsError?.message,
-        code: (projetsError as any)?.code,
-        details: (projetsError as any)?.details,
-        hint: (projetsError as any)?.hint
+        code: projetsError?.code,
+        details: projetsError?.details,
+        hint: projetsError?.hint
       };
 
       // 5. Try to insert a test projet
@@ -59,9 +59,9 @@ export function DiagnosticPage() {
       results.insertTest = {
         data: insertResult,
         error: insertError?.message,
-        code: (insertError as any)?.code,
-        details: (insertError as any)?.details,
-        hint: (insertError as any)?.hint
+        code: insertError?.code,
+        details: insertError?.details,
+        hint: insertError?.hint
       };
 
       // Clean up test projet if it was created

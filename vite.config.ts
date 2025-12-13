@@ -31,8 +31,8 @@ export default defineConfig({
     },
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
-    // Enable source maps for production debugging
-    sourcemap: true,
+    // Disable source maps in production for security (use 'hidden' for error tracking)
+    sourcemap: process.env.NODE_ENV === 'development' ? true : 'hidden',
   },
   // Performance optimizations
   server: {

@@ -315,19 +315,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (showDetailsModal) {
-          console.log('ESC pressed in Investor Details Modal');
           setShowDetailsModal(false);
         } else if (showEditModal) {
-          console.log('ESC pressed in Investor Edit Modal');
           setShowEditModal(false);
         } else if (showDeleteModal) {
-          console.log('ESC pressed in Investor Delete Modal');
           setShowDeleteModal(false);
         } else if (showRibModal) {
-          console.log('ESC pressed in RIB Upload Modal');
           setShowRibModal(false);
         } else if (showRibViewModal) {
-          console.log('ESC pressed in RIB View Modal');
           setShowRibViewModal(false);
         }
       }

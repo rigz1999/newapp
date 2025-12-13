@@ -66,13 +66,13 @@ export function useRealtimeSubscription<T extends { [key: string]: any } = any>(
 
     // Subscribe to changes
     const subscription = newChannel.on(
-      'postgres_changes' as any,
+      'postgres_changes',
       {
         event,
         schema: 'public',
         table,
         filter,
-      } as any,
+      },
       (payload: RealtimePostgresChangesPayload<T>) => {
         setLastUpdate(new Date());
 
