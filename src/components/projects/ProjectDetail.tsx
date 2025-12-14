@@ -358,9 +358,26 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     try {
       logger.info('Updating project', { hasFinancialChanges });
 
+      // Filter to only include editable fields (exclude id, created_at, etc.)
+      const updateData: any = {};
+      if (editedProject.projet !== undefined) updateData.projet = editedProject.projet;
+      if (editedProject.emetteur !== undefined) updateData.emetteur = editedProject.emetteur;
+      if (editedProject.siren_emetteur !== undefined) updateData.siren_emetteur = editedProject.siren_emetteur;
+      if (editedProject.nom_representant !== undefined) updateData.nom_representant = editedProject.nom_representant;
+      if (editedProject.prenom_representant !== undefined) updateData.prenom_representant = editedProject.prenom_representant;
+      if (editedProject.email_representant !== undefined) updateData.email_representant = editedProject.email_representant;
+      if (editedProject.representant_masse !== undefined) updateData.representant_masse = editedProject.representant_masse;
+      if (editedProject.email_rep_masse !== undefined) updateData.email_rep_masse = editedProject.email_rep_masse;
+      if (editedProject.taux_nominal !== undefined) updateData.taux_nominal = editedProject.taux_nominal;
+      if (editedProject.periodicite_coupons !== undefined) updateData.periodicite_coupons = editedProject.periodicite_coupons;
+      if (editedProject.duree_mois !== undefined) updateData.duree_mois = editedProject.duree_mois;
+      if (editedProject.date_emission !== undefined) updateData.date_emission = editedProject.date_emission;
+      if (editedProject.base_interet !== undefined) updateData.base_interet = editedProject.base_interet;
+      if (editedProject.type !== undefined) updateData.type = editedProject.type;
+
       const { error } = await supabase
         .from('projets')
-        .update(editedProject as never)
+        .update(updateData)
         .eq('id', project!.id);
 
       if (error) throw error;
