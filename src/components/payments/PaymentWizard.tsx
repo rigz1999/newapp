@@ -357,9 +357,10 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
       if (!data.correspondances) throw new Error('Données de correspondance manquantes');
 
       const enrichedMatches = data.correspondances.map((match: Omit<PaymentMatch, 'matchedSubscription'>) => {
-        const subscription = subscriptions.find(
-          s => s.investisseur.nom_raison_sociale.toLowerCase() === match.paiement.beneficiaire.toLowerCase()
-        );
+        // Use the subscriptionId from backend's fuzzy matching result
+        const subscription = match.attendu?.subscriptionId
+          ? subscriptions.find(s => s.id === match.attendu.subscriptionId)
+          : undefined;
         return { ...match, matchedSubscription: subscription };
       });
 
