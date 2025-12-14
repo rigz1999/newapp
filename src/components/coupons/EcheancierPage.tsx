@@ -182,13 +182,41 @@ export function EcheancierPage() {
 
   const handleViewPaymentProof = async (echeance: Echeance) => {
     // First, we need to find the paiement_id from the echeance
-    const { data: echeanceData } = await supabase
+    const { data: echeanceData, error: echeanceError } = await supabase
       .from('coupons_echeances')
       .select('paiement_id')
       .eq('id', echeance.id)
       .single();
 
+    console.log('Écheance data:', echeanceData, 'Error:', echeanceError);
+
     if (!echeanceData?.paiement_id) {
+      console.warn('No paiement_id found for écheance:', echeance.id);
+      // Try to find payment by matching subscription and date
+      const { data: paymentByMatch } = await supabase
+        .from('paiements')
+        .select(`
+          *,
+          tranche:tranches(tranche_name),
+          investisseur:investisseurs(nom_raison_sociale)
+        `)
+        .eq('souscription_id', echeance.souscription_id)
+        .eq('date_paiement', echeance.date_echeance)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (paymentByMatch) {
+        console.log('Found payment by matching:', paymentByMatch);
+        const { data: proofsData } = await supabase
+          .from('payment_proofs')
+          .select('*')
+          .eq('paiement_id', paymentByMatch.id)
+          .order('validated_at', { ascending: false });
+
+        setSelectedPaymentForProof(paymentByMatch);
+        setPaymentProofs(proofsData || []);
+      }
       return;
     }
 
@@ -203,6 +231,8 @@ export function EcheancierPage() {
       .eq('id', echeanceData.paiement_id)
       .single();
 
+    console.log('Payment data:', paymentData);
+
     if (!paymentData) return;
 
     // Fetch payment proofs
@@ -211,6 +241,8 @@ export function EcheancierPage() {
       .select('*')
       .eq('paiement_id', echeanceData.paiement_id)
       .order('validated_at', { ascending: false });
+
+    console.log('Proofs data:', proofsData);
 
     setSelectedPaymentForProof(paymentData);
     setPaymentProofs(proofsData || []);
