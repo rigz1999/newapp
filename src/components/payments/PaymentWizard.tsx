@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, ArrowLeft, Trash2 } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Loader, FileText, AlertTriangle, Upload, ArrowLeft, Trash2, Calendar } from 'lucide-react';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { isValidAmount } from '../../utils/validators';
 import { logger } from '../../utils/logger';
@@ -27,6 +27,23 @@ interface Subscription {
   };
 }
 
+interface Echeance {
+  id: string;
+  date_echeance: string;
+  montant_coupon: number;
+  statut: string;
+  souscription_id: string;
+}
+
+interface EcheanceGroup {
+  date: string;
+  totalAmount: number;
+  count: number;
+  statut: 'paye' | 'en_retard' | 'a_venir';
+  daysOverdue?: number;
+  echeances: Echeance[];
+}
+
 interface PaymentMatch {
   paiement: {
     beneficiaire: string;
@@ -47,9 +64,21 @@ interface PaymentWizardProps {
   onClose: () => void;
   onSuccess: () => void;
   preselectedProjectId?: string;
+  preselectedTrancheId?: string;
+  preselectedEcheanceDate?: string;
+  showProjectName?: string;
+  showTrancheName?: string;
 }
 
-export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: PaymentWizardProps) {
+export function PaymentWizard({
+  onClose,
+  onSuccess,
+  preselectedProjectId,
+  preselectedTrancheId,
+  preselectedEcheanceDate,
+  showProjectName,
+  showTrancheName
+}: PaymentWizardProps) {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -58,9 +87,11 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
   const [projects, setProjects] = useState<Project[]>([]);
   const [tranches, setTranches] = useState<Tranche[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [echeanceGroups, setEcheanceGroups] = useState<EcheanceGroup[]>([]);
 
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedTrancheId, setSelectedTrancheId] = useState('');
+  const [selectedEcheanceDate, setSelectedEcheanceDate] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [matches, setMatches] = useState<PaymentMatch[]>([]);
   const [uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
@@ -69,7 +100,21 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  const [step, setStep] = useState<'select' | 'upload' | 'results'>('select');
+  // Determine initial step based on preselected values
+  const getInitialStep = (): 'select' | 'tranche' | 'echeance' | 'upload' | 'results' => {
+    if (preselectedEcheanceDate && preselectedTrancheId && preselectedProjectId) {
+      return 'upload';
+    }
+    if (preselectedTrancheId && preselectedProjectId) {
+      return 'echeance';
+    }
+    if (preselectedProjectId) {
+      return 'tranche';
+    }
+    return 'select';
+  };
+
+  const [step, setStep] = useState<'select' | 'tranche' | 'echeance' | 'upload' | 'results'>(getInitialStep());
 
   // Close modal on ESC key
   useEffect(() => {
@@ -90,9 +135,19 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
   }, [onClose, showConfirmModal]);
 
   const handleBackToSelect = () => {
-    setStep('select');
-    setSelectedProjectId('');
-    setSelectedTrancheId('');
+    if (!preselectedProjectId) {
+      setStep('select');
+      setSelectedProjectId('');
+      setSelectedTrancheId('');
+      setSelectedEcheanceDate('');
+    } else if (!preselectedTrancheId) {
+      setStep('tranche');
+      setSelectedTrancheId('');
+      setSelectedEcheanceDate('');
+    } else if (!preselectedEcheanceDate) {
+      setStep('echeance');
+      setSelectedEcheanceDate('');
+    }
     setFiles([]);
     setMatches([]);
     setSelectedMatches(new Set());
@@ -105,12 +160,24 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
     fetchProjects();
   }, []);
 
-  // Pre-select project if provided
+  // Pre-select values if provided
   useEffect(() => {
     if (preselectedProjectId && projects.length > 0) {
       setSelectedProjectId(preselectedProjectId);
     }
   }, [preselectedProjectId, projects]);
+
+  useEffect(() => {
+    if (preselectedTrancheId && tranches.length > 0) {
+      setSelectedTrancheId(preselectedTrancheId);
+    }
+  }, [preselectedTrancheId, tranches]);
+
+  useEffect(() => {
+    if (preselectedEcheanceDate) {
+      setSelectedEcheanceDate(preselectedEcheanceDate);
+    }
+  }, [preselectedEcheanceDate]);
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -123,12 +190,26 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
 
   useEffect(() => {
     if (selectedTrancheId) {
-      fetchSubscriptions(selectedTrancheId);
-      setStep('upload');
+      fetchEcheances(selectedTrancheId);
+      if (!preselectedEcheanceDate) {
+        setStep('echeance');
+      }
+    } else {
+      setEcheanceGroups([]);
+      setSelectedEcheanceDate('');
+    }
+  }, [selectedTrancheId]);
+
+  useEffect(() => {
+    if (selectedEcheanceDate && selectedTrancheId) {
+      fetchSubscriptionsForEcheance(selectedTrancheId, selectedEcheanceDate);
+      if (!preselectedEcheanceDate) {
+        setStep('upload');
+      }
     } else {
       setSubscriptions([]);
     }
-  }, [selectedTrancheId]);
+  }, [selectedEcheanceDate, selectedTrancheId]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -153,21 +234,146 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
     setLoading(false);
   };
 
-  const fetchSubscriptions = async (trancheId: string) => {
+  const fetchEcheances = async (trancheId: string) => {
     setLoading(true);
-    const { data } = await supabase
-      .from('souscriptions')
-      .select(`
-        id,
-        investisseur_id,
-        montant_investi,
-        coupon_net,
-        investisseur:investisseurs(nom_raison_sociale)
-      `)
-      .eq('tranche_id', trancheId);
+    try {
+      // Get all subscriptions for this tranche
+      const { data: subs } = await supabase
+        .from('souscriptions')
+        .select('id')
+        .eq('tranche_id', trancheId);
 
-    setSubscriptions((data || []) as Subscription[]);
-    setLoading(false);
+      if (!subs || subs.length === 0) {
+        setEcheanceGroups([]);
+        setLoading(false);
+        return;
+      }
+
+      const subscriptionIds = subs.map(s => s.id);
+
+      // Get all échéances for these subscriptions
+      const { data: echeances } = await supabase
+        .from('coupons_echeances')
+        .select('*')
+        .in('souscription_id', subscriptionIds)
+        .order('date_echeance', { ascending: true });
+
+      if (!echeances || echeances.length === 0) {
+        setEcheanceGroups([]);
+        setLoading(false);
+        return;
+      }
+
+      // Group by date
+      const grouped = new Map<string, Echeance[]>();
+      echeances.forEach((ech: Echeance) => {
+        const existing = grouped.get(ech.date_echeance) || [];
+        grouped.set(ech.date_echeance, [...existing, ech]);
+      });
+
+      // Create groups with status
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      const groups: EcheanceGroup[] = Array.from(grouped.entries()).map(([date, echs]) => {
+        const totalAmount = echs.reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+        const echeanceDate = new Date(date);
+        echeanceDate.setHours(0, 0, 0, 0);
+
+        const allPaid = echs.every(e => e.statut === 'paye');
+        const isOverdue = echeanceDate < now;
+
+        let statut: 'paye' | 'en_retard' | 'a_venir';
+        let daysOverdue: number | undefined;
+
+        if (allPaid) {
+          statut = 'paye';
+        } else if (isOverdue) {
+          statut = 'en_retard';
+          daysOverdue = Math.floor((now.getTime() - echeanceDate.getTime()) / (1000 * 60 * 60 * 24));
+        } else {
+          statut = 'a_venir';
+        }
+
+        return {
+          date,
+          totalAmount,
+          count: echs.length,
+          statut,
+          daysOverdue,
+          echeances: echs
+        };
+      });
+
+      setEcheanceGroups(groups);
+    } catch (err) {
+      console.error('Error fetching écheances:', err);
+      setEcheanceGroups([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSubscriptionsForEcheance = async (trancheId: string, echeanceDate: string) => {
+    setLoading(true);
+    try {
+      // Get all subscriptions for this tranche
+      const { data: subs } = await supabase
+        .from('souscriptions')
+        .select('id')
+        .eq('tranche_id', trancheId);
+
+      if (!subs || subs.length === 0) {
+        setSubscriptions([]);
+        setLoading(false);
+        return;
+      }
+
+      const subscriptionIds = subs.map(s => s.id);
+
+      // Get échéances for this specific date
+      const { data: echeances } = await supabase
+        .from('coupons_echeances')
+        .select(`
+          id,
+          souscription_id,
+          montant_coupon,
+          statut
+        `)
+        .in('souscription_id', subscriptionIds)
+        .eq('date_echeance', echeanceDate);
+
+      if (!echeances || echeances.length === 0) {
+        setSubscriptions([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get full subscription details
+      const { data: fullSubs } = await supabase
+        .from('souscriptions')
+        .select(`
+          id,
+          investisseur_id,
+          montant_investi,
+          coupon_net,
+          investisseur:investisseurs(nom_raison_sociale)
+        `)
+        .in('id', echeances.map(e => e.souscription_id));
+
+      // Map échéance amounts to subscriptions
+      const subsWithEcheanceAmounts = (fullSubs || []).map(sub => ({
+        ...sub,
+        coupon_net: echeances.find(e => e.souscription_id === sub.id)?.montant_coupon || sub.coupon_net
+      })) as Subscription[];
+
+      setSubscriptions(subsWithEcheanceAmounts);
+    } catch (err) {
+      console.error('Error fetching subscriptions for échéance:', err);
+      setSubscriptions([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -442,7 +648,7 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
       }
 
       for (const match of validMatches) {
-        const { data: paymentData, error: paymentError } = await supabase
+        const { data: paymentData, error: paymentError} = await supabase
           .from('paiements')
           .insert({
             id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -452,12 +658,30 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
             investisseur_id: match.matchedSubscription!.investisseur_id,
             souscription_id: match.matchedSubscription!.id,
             montant: match.paiement.montant,
-            date_paiement: match.paiement.date || new Date().toISOString().split('T')[0]
+            date_paiement: selectedEcheanceDate || new Date().toISOString().split('T')[0]
           })
           .select()
           .single();
 
         if (paymentError) throw paymentError;
+
+        // Update coupons_echeances to link this payment
+        if (selectedEcheanceDate) {
+          const { error: echeanceError } = await supabase
+            .from('coupons_echeances')
+            .update({
+              statut: 'paye',
+              date_paiement: new Date().toISOString(),
+              montant_paye: match.paiement.montant,
+              paiement_id: paymentData.id
+            })
+            .eq('souscription_id', match.matchedSubscription!.id)
+            .eq('date_echeance', selectedEcheanceDate);
+
+          if (echeanceError) {
+            console.error('Error updating échéance:', echeanceError);
+          }
+        }
 
         if (tempFileNames.length > 0) {
           const firstTempFile = tempFileNames[0];
@@ -525,12 +749,30 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
             investisseur_id: match.matchedSubscription!.investisseur_id,
             souscription_id: match.matchedSubscription!.id,
             montant: match.paiement.montant,
-            date_paiement: match.paiement.date || new Date().toISOString().split('T')[0]
+            date_paiement: selectedEcheanceDate || new Date().toISOString().split('T')[0]
           })
           .select()
           .single();
 
         if (paymentError) throw paymentError;
+
+        // Update coupons_echeances to link this payment
+        if (selectedEcheanceDate) {
+          const { error: echeanceError } = await supabase
+            .from('coupons_echeances')
+            .update({
+              statut: 'paye',
+              date_paiement: new Date().toISOString(),
+              montant_paye: match.paiement.montant,
+              paiement_id: paymentData.id
+            })
+            .eq('souscription_id', match.matchedSubscription!.id)
+            .eq('date_echeance', selectedEcheanceDate);
+
+          if (echeanceError) {
+            console.error('Error updating échéance:', echeanceError);
+          }
+        }
 
         if (tempFileNames.length > 0) {
           const firstTempFile = tempFileNames[0];
@@ -605,11 +847,11 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
         <div className="relative bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl z-10">
           <div className="flex items-center gap-3">
-            {(step === 'upload' || step === 'results') && (
+            {(step === 'tranche' || step === 'echeance' || step === 'upload' || step === 'results') && (
               <button
                 onClick={handleBackToSelect}
                 className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                title="Retour à la sélection"
+                title="Retour"
               >
                 <ArrowLeft className="w-5 h-5" />
                 <span className="text-sm font-medium">Retour</span>
@@ -618,12 +860,16 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
             <div>
               <h3 className="text-xl font-bold text-slate-900">
                 {step === 'select' && 'Enregistrer un paiement de tranche'}
+                {step === 'tranche' && (showProjectName || 'Sélection de la tranche')}
+                {step === 'echeance' && 'Sélection de l\'échéance'}
                 {step === 'upload' && 'Télécharger justificatif de paiement'}
                 {step === 'results' && 'Résultats de l\'analyse'}
               </h3>
               <p className="text-sm text-slate-600 mt-1">
-                {step === 'select' && 'Sélectionnez un projet et une tranche à payer'}
-                {step === 'upload' && `Paiement de tranche - ${subscriptions.length} investisseur${subscriptions.length > 1 ? 's' : ''}`}
+                {step === 'select' && 'Sélectionnez un projet et une tranche'}
+                {step === 'tranche' && (preselectedProjectId ? `Projet: ${showProjectName || 'Sélectionné'}` : 'Choisissez une tranche')}
+                {step === 'echeance' && 'Quelle échéance payez-vous?'}
+                {step === 'upload' && `${subscriptions.length} paiement${subscriptions.length > 1 ? 's' : ''} attendu${subscriptions.length > 1 ? 's' : ''}`}
                 {step === 'results' && `${selectedMatches.size} paiement${selectedMatches.size > 1 ? 's' : ''} sélectionné${selectedMatches.size > 1 ? 's' : ''}`}
               </p>
             </div>
@@ -634,14 +880,17 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
         </div>
 
         <div className="p-6">
-          {/* STEP 1: SELECT */}
+          {/* STEP 1: SELECT PROJECT */}
           {step === 'select' && (
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-900 mb-2">Projet</label>
                 <select
                   value={selectedProjectId}
-                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedProjectId(e.target.value);
+                    if (e.target.value) setStep('tranche');
+                  }}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white"
                 >
                   <option value="">Sélectionnez un projet</option>
@@ -650,14 +899,27 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
                   ))}
                 </select>
               </div>
+            </div>
+          )}
+
+          {/* STEP 2: SELECT TRANCHE */}
+          {step === 'tranche' && (
+            <div className="space-y-4">
+              {preselectedProjectId && showProjectName && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-900">
+                    <span className="font-semibold">Projet:</span> {showProjectName}
+                    {preselectedProjectId && <span className="ml-2 text-blue-600 text-xs">🔒 Présélectionné</span>}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-slate-900 mb-2">Tranche</label>
                 <select
                   value={selectedTrancheId}
                   onChange={(e) => setSelectedTrancheId(e.target.value)}
-                  disabled={!selectedProjectId}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white disabled:bg-slate-100"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white"
                 >
                   <option value="">Sélectionnez une tranche</option>
                   {tranches.map((tranche) => (
@@ -668,18 +930,172 @@ export function PaymentWizard({ onClose, onSuccess, preselectedProjectId }: Paym
             </div>
           )}
 
-          {/* STEP 2: UPLOAD */}
+          {/* STEP 3: SELECT ÉCHÉANCE */}
+          {step === 'echeance' && (
+            <div className="space-y-4">
+              {/* Context card */}
+              {(showProjectName || showTrancheName) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="space-y-1">
+                    {showProjectName && (
+                      <p className="text-sm text-blue-900">
+                        <span className="font-semibold">📁 Projet:</span> {showProjectName}
+                        {preselectedProjectId && <span className="ml-2 text-blue-600 text-xs">🔒</span>}
+                      </p>
+                    )}
+                    {showTrancheName && (
+                      <p className="text-sm text-blue-900">
+                        <span className="font-semibold">📊 Tranche:</span> {showTrancheName}
+                        {preselectedTrancheId && <span className="ml-2 text-blue-600 text-xs">🔒</span>}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <h4 className="text-lg font-semibold text-slate-900 mb-4">Quelle échéance payez-vous?</h4>
+
+                {/* Group by status */}
+                {echeanceGroups.filter(g => g.statut === 'en_retard').length > 0 && (
+                  <div className="mb-6">
+                    <h5 className="text-sm font-semibold text-red-700 flex items-center gap-2 mb-3">
+                      <AlertCircle className="w-4 h-4" />
+                      En retard ({echeanceGroups.filter(g => g.statut === 'en_retard').length})
+                    </h5>
+                    <div className="space-y-2">
+                      {echeanceGroups.filter(g => g.statut === 'en_retard').map((group) => (
+                        <button
+                          key={group.date}
+                          onClick={() => setSelectedEcheanceDate(group.date)}
+                          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                            selectedEcheanceDate === group.date
+                              ? 'border-red-500 bg-red-50'
+                              : 'border-red-200 bg-red-50 hover:border-red-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-slate-900">
+                                {new Date(group.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                              </p>
+                              <p className="text-xs text-red-700 mt-1">
+                                🔴 En retard - {group.daysOverdue} jour{group.daysOverdue! > 1 ? 's' : ''}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-slate-600">{group.count} investisseur{group.count > 1 ? 's' : ''}</p>
+                              <p className="font-bold text-slate-900">{formatCurrency(group.totalAmount)}</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {echeanceGroups.filter(g => g.statut === 'a_venir').length > 0 && (
+                  <div className="mb-6">
+                    <h5 className="text-sm font-semibold text-slate-700 mb-3">
+                      À venir ({echeanceGroups.filter(g => g.statut === 'a_venir').length})
+                    </h5>
+                    <div className="space-y-2">
+                      {echeanceGroups.filter(g => g.statut === 'a_venir').map((group) => (
+                        <button
+                          key={group.date}
+                          onClick={() => setSelectedEcheanceDate(group.date)}
+                          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                            selectedEcheanceDate === group.date
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-slate-900">
+                                {new Date(group.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-1">À venir</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-slate-600">{group.count} investisseur{group.count > 1 ? 's' : ''}</p>
+                              <p className="font-bold text-slate-900">{formatCurrency(group.totalAmount)}</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {echeanceGroups.filter(g => g.statut === 'paye').length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-semibold text-green-700 mb-3">
+                      Payées ({echeanceGroups.filter(g => g.statut === 'paye').length})
+                    </h5>
+                    <div className="space-y-2">
+                      {echeanceGroups.filter(g => g.statut === 'paye').slice(0, 3).map((group) => (
+                        <div
+                          key={group.date}
+                          className="p-4 rounded-lg border border-green-200 bg-green-50 opacity-60"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-slate-900">
+                                {new Date(group.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                              </p>
+                              <p className="text-xs text-green-700 mt-1">✅ Payée</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-slate-600">{group.count} investisseur{group.count > 1 ? 's' : ''}</p>
+                              <p className="font-bold text-slate-900">{formatCurrency(group.totalAmount)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {echeanceGroups.length === 0 && (
+                  <div className="text-center py-8">
+                    <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+                    <p className="text-slate-500">Aucune échéance trouvée pour cette tranche</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: UPLOAD */}
           {step === 'upload' && (
             <div className="space-y-6">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Paiement de tranche</h4>
-                <p className="text-sm text-blue-700 mb-3">
-                  Cette tranche contient {subscriptions.length} investisseur{subscriptions.length > 1 ? 's' : ''}. 
-                  Le justificatif de paiement doit contenir tous les paiements individuels.
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-blue-600">Montant total à payer:</span>
-                  <span className="text-lg font-bold text-blue-900">{formatCurrency(totalExpected)}</span>
+              {/* Context Header */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="space-y-2">
+                  {showProjectName && (
+                    <p className="text-sm text-blue-900">
+                      <span className="font-semibold">📁 Projet:</span> {showProjectName}
+                      {preselectedProjectId && <span className="ml-2 text-blue-600 text-xs">🔒</span>}
+                    </p>
+                  )}
+                  {showTrancheName && (
+                    <p className="text-sm text-blue-900">
+                      <span className="font-semibold">📊 Tranche:</span> {showTrancheName}
+                      {preselectedTrancheId && <span className="ml-2 text-blue-600 text-xs">🔒</span>}
+                    </p>
+                  )}
+                  {selectedEcheanceDate && (
+                    <p className="text-sm text-blue-900">
+                      <span className="font-semibold">📅 Échéance:</span> {new Date(selectedEcheanceDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      {preselectedEcheanceDate && <span className="ml-2 text-blue-600 text-xs">🔒</span>}
+                    </p>
+                  )}
+                  <div className="pt-2 border-t border-blue-200">
+                    <p className="text-sm text-blue-700">
+                      💰 <span className="font-semibold">Total attendu:</span> {formatCurrency(totalExpected)} pour {subscriptions.length} investisseur{subscriptions.length > 1 ? 's' : ''}
+                    </p>
+                  </div>
                 </div>
               </div>
 
