@@ -67,6 +67,7 @@ Retourne UNIQUEMENT du JSON valide (pas de markdown, pas de code blocks):
 
 {
   "emetteur": "société émettrice",
+  "date_virement": "JJ-MM-AAAA",
   "paiements": [
     {
       "beneficiaire": "nom exact du bénéficiaire",
@@ -78,6 +79,7 @@ Retourne UNIQUEMENT du JSON valide (pas de markdown, pas de code blocks):
 }
 
 CRITIQUE - EXTRAIS TOUS LES PAIEMENTS:
+- date_virement: LA DATE DU VIREMENT/ORDRE DE PAIEMENT (cherche "Date", "Date de virement", "Date d'exécution", en haut du document)
 - Format date: JJ-MM-AAAA (ex: 05-09-2025 pour 5 septembre 2025)
 - Montant: nombre pur sans symbole (ex: 1000.50)
 - Extrais TOUS les paiements visibles (peut être 1, 3, 5 ou plus)
