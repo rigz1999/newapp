@@ -7,15 +7,6 @@ import { logger } from '../../utils/logger';
 
 type PDFJSLib = any;
 
-// Helper function to parse French date format (DD-MM-YYYY)
-function parseFrenchDate(dateStr: string): Date | null {
-  const parts = dateStr.split('-');
-  if (parts.length !== 3) return null;
-  const [day, month, year] = parts.map(p => parseInt(p, 10));
-  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-  return new Date(year, month - 1, day);
-}
-
 interface Project {
   id: string;
   projet: string;
@@ -108,7 +99,6 @@ export function PaymentWizard({
   const [selectedMatches, setSelectedMatches] = useState<Set<number>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [suggestedEcheanceDate, setSuggestedEcheanceDate] = useState<string | null>(null);
 
   // Determine initial step based on preselected values
   const getInitialStep = (): 'select' | 'tranche' | 'echeance' | 'upload' | 'results' => {
@@ -572,40 +562,6 @@ export function PaymentWizard({
       if (!data.succes) throw new Error(data.erreur || 'Erreur lors de l\'analyse des paiements');
       if (!data.correspondances) throw new Error('Données de correspondance manquantes');
 
-      // AI Auto-detection: If no échéance was selected, suggest one based on PDF date
-      if (!selectedEcheanceDate && data.donneesExtraites?.date_virement && echeanceGroups.length > 0) {
-        const extractedDate = data.donneesExtraites.date_virement;
-        logger.info('AI extracted transfer date', { date: extractedDate });
-
-        // Try to find exact match
-        let matchingEcheance = echeanceGroups.find(g => {
-          const groupDate = new Date(g.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).split('/').join('-');
-          return groupDate === extractedDate;
-        });
-
-        // If no exact match, find closest date
-        if (!matchingEcheance && echeanceGroups.length > 0) {
-          const extractedDateObj = parseFrenchDate(extractedDate);
-          if (extractedDateObj) {
-            let closestDiff = Infinity;
-            echeanceGroups.forEach(g => {
-              const groupDateObj = new Date(g.date);
-              const diff = Math.abs(groupDateObj.getTime() - extractedDateObj.getTime());
-              if (diff < closestDiff) {
-                closestDiff = diff;
-                matchingEcheance = g;
-              }
-            });
-          }
-        }
-
-        if (matchingEcheance) {
-          setSuggestedEcheanceDate(matchingEcheance.date);
-          setSelectedEcheanceDate(matchingEcheance.date);
-          logger.info('AI suggested échéance', { date: matchingEcheance.date, extracted: extractedDate });
-        }
-      }
-
       const enrichedMatches = data.correspondances.map((match: Omit<PaymentMatch, 'matchedSubscription'>) => {
         // Use the subscriptionId from backend's fuzzy matching result
         const subscription = match.attendu?.subscriptionId
@@ -882,6 +838,21 @@ export function PaymentWizard({
 
   return (
     <>
+    <style>{`
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.3s ease-out;
+      }
+    `}</style>
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
@@ -926,7 +897,7 @@ export function PaymentWizard({
         <div className="p-6">
           {/* STEP 1: SELECT PROJECT */}
           {step === 'select' && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-in">
               <div>
                 <label className="block text-sm font-semibold text-slate-900 mb-2">Projet</label>
                 <select
@@ -948,7 +919,7 @@ export function PaymentWizard({
 
           {/* STEP 2: SELECT TRANCHE */}
           {step === 'tranche' && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-in">
               {preselectedProjectId && showProjectName && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-900">
@@ -976,7 +947,7 @@ export function PaymentWizard({
 
           {/* STEP 3: SELECT ÉCHÉANCE */}
           {step === 'echeance' && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-in">
               {/* Context card */}
               {(showProjectName || showTrancheName) && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -1107,32 +1078,13 @@ export function PaymentWizard({
                     <p className="text-slate-500">Aucune échéance trouvée pour cette tranche</p>
                   </div>
                 )}
-
-                {/* AI Auto-detect option */}
-                {echeanceGroups.length > 0 && !preselectedEcheanceDate && (
-                  <div className="mt-6 pt-6 border-t border-slate-200">
-                    <button
-                      onClick={() => {
-                        setSelectedEcheanceDate('');
-                        setStep('upload');
-                      }}
-                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-600 transition-all flex items-center justify-center gap-2"
-                    >
-                      <AlertCircle className="w-5 h-5" />
-                      Passer et laisser l'IA détecter l'échéance
-                    </button>
-                    <p className="text-xs text-slate-500 text-center mt-2">
-                      L'IA analysera la date du virement et suggérera l'échéance correspondante
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           )}
 
           {/* STEP 4: UPLOAD */}
           {step === 'upload' && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-fade-in">
               {/* Context Header */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="space-y-2">
@@ -1261,7 +1213,7 @@ export function PaymentWizard({
 
           {/* STEP 3: RESULTS */}
           {step === 'results' && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-in">
               {/* Summary Header */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center justify-between">
@@ -1289,11 +1241,6 @@ export function PaymentWizard({
                           </p>
                         </div>
                       </>
-                    )}
-                    {suggestedEcheanceDate && (
-                      <div className="ml-2 px-2 py-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs rounded-full">
-                        ✨ Détectée par IA
-                      </div>
                     )}
                   </div>
                   <button
