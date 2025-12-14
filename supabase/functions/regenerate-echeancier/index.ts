@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     console.log("\n=== RECALCULATING SOUSCRIPTIONS ===");
     const { data: souscriptions, error: souscriptionsError } = await supabase
       .from("souscriptions")
-      .select("id, investisseur_id, montant_investi, investisseurs(type)")
+      .select("id, investisseur_id, montant_investi, coupon_net, investisseurs(type)")
       .eq("tranche_id", tranche_id);
 
     if (souscriptionsError) {
@@ -249,12 +249,19 @@ Deno.serve(async (req) => {
     // Generate coupons for all souscriptions
     const couponsToInsert: any[] = [];
 
-    for (const sub of souscriptions) {
-      const montantInvesti = Number(sub.montant_investi);
-      const annualCoupon = (montantInvesti * tauxNominal) / 100;
-      const couponPerPayment = annualCoupon / freq.paymentsPerYear;
+    // Refetch souscriptions with updated coupon_net values
+    const { data: updatedSouscriptions } = await supabase
+      .from("souscriptions")
+      .select("id, montant_investi, coupon_net")
+      .in("id", souscriptions.map(s => s.id));
 
-      console.log(`  Souscription ${sub.id}: Montant=${montantInvesti}€, Coupon/période=${couponPerPayment.toFixed(2)}€`);
+    const souscriptionsMap = new Map(updatedSouscriptions?.map(s => [s.id, s]) || []);
+
+    for (const sub of souscriptions) {
+      const updatedSub = souscriptionsMap.get(sub.id);
+      const montantCoupon = updatedSub?.coupon_net || 0;
+
+      console.log(`  Souscription ${sub.id}: Coupon net (already calculated)=${montantCoupon.toFixed(2)}€`);
 
       const paidDates = paidCouponDates.get(sub.id);
 
@@ -270,12 +277,10 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const montantCoupon = Math.round(couponPerPayment * 100) / 100;
-
         couponsToInsert.push({
           souscription_id: sub.id,
           date_echeance: dateEcheance,
-          montant_coupon: montantCoupon,
+          montant_coupon: Math.round(montantCoupon * 100) / 100,
           statut: 'en_attente',
         });
       }
