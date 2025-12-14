@@ -99,6 +99,8 @@ export function PaymentWizard({
   const [selectedMatches, setSelectedMatches] = useState<Set<number>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [displayProjectName, setDisplayProjectName] = useState(showProjectName || '');
+  const [displayTrancheName, setDisplayTrancheName] = useState(showTrancheName || '');
 
   // Determine initial step based on preselected values
   const getInitialStep = (): 'select' | 'echeance' | 'upload' | 'results' => {
@@ -139,26 +141,63 @@ export function PaymentWizard({
       setSelectedMatches(new Set());
     } else if (step === 'upload') {
       // Go back to écheance selection (unless it was preselected)
-      if (preselectedEcheanceDate && preselectedTrancheId && preselectedProjectId) {
-        // All preselected, go back to select
-        setStep('select');
+      if (preselectedEcheanceDate) {
+        // Echeance was preselected, can't go back to it
+        // Go back to select if tranche was also preselected
+        if (preselectedTrancheId) {
+          setStep('select');
+        } else {
+          setStep('echeance');
+        }
       } else {
         setStep('echeance');
       }
       setFiles([]);
       setError('');
     } else if (step === 'echeance') {
-      // Go back to project/tranche selection (unless both were preselected)
-      if (!preselectedProjectId && !preselectedTrancheId) {
-        setStep('select');
-        setSelectedEcheanceDate('');
-      }
+      // Always go back to select when on echeance step
+      setStep('select');
+      setSelectedEcheanceDate('');
     }
   };
 
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  // Fetch project name if preselected but name not provided
+  useEffect(() => {
+    if (preselectedProjectId && !showProjectName) {
+      const fetchProjectName = async () => {
+        const { data } = await supabase
+          .from('projets')
+          .select('projet')
+          .eq('id', preselectedProjectId)
+          .single();
+        if (data) {
+          setDisplayProjectName(data.projet);
+        }
+      };
+      fetchProjectName();
+    }
+  }, [preselectedProjectId, showProjectName]);
+
+  // Fetch tranche name if preselected but name not provided
+  useEffect(() => {
+    if (preselectedTrancheId && !showTrancheName) {
+      const fetchTrancheName = async () => {
+        const { data } = await supabase
+          .from('tranches')
+          .select('tranche_name')
+          .eq('id', preselectedTrancheId)
+          .single();
+        if (data) {
+          setDisplayTrancheName(data.tranche_name);
+        }
+      };
+      fetchTrancheName();
+    }
+  }, [preselectedTrancheId, showTrancheName]);
 
   // Pre-select values if provided
   useEffect(() => {
@@ -738,6 +777,10 @@ export function PaymentWizard({
     try {
       const validMatchesList = matches.filter(m => m.statut === 'correspondance' && m.matchedSubscription);
 
+      if (validMatchesList.length === 0) {
+        throw new Error('Aucune correspondance valide à valider');
+      }
+
       for (const match of validMatchesList) {
         const { data: paymentData, error: paymentError } = await supabase
           .from('paiements')
@@ -881,10 +924,10 @@ export function PaymentWizard({
           {/* STEP 1: SELECT PROJECT AND TRANCHE */}
           {step === 'select' && (
             <div className="space-y-4">
-              {preselectedProjectId && showProjectName && (
+              {preselectedProjectId && displayProjectName && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-900">
-                    <span className="font-semibold">Projet:</span> {showProjectName}
+                    <span className="font-semibold">Projet:</span> {displayProjectName}
                     <span className="ml-2 text-blue-600 text-xs">🔒 Présélectionné</span>
                   </p>
                 </div>
@@ -925,10 +968,10 @@ export function PaymentWizard({
                 </div>
               )}
 
-              {preselectedTrancheId && showTrancheName && (
+              {preselectedTrancheId && displayTrancheName && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-900">
-                    <span className="font-semibold">Tranche:</span> {showTrancheName}
+                    <span className="font-semibold">Tranche:</span> {displayTrancheName}
                     <span className="ml-2 text-blue-600 text-xs">🔒 Présélectionné</span>
                   </p>
                 </div>
@@ -949,18 +992,18 @@ export function PaymentWizard({
           {step === 'echeance' && (
             <div className="space-y-4">
               {/* Context card */}
-              {(showProjectName || showTrancheName) && (
+              {(displayProjectName || displayTrancheName) && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="space-y-1">
-                    {showProjectName && (
+                    {displayProjectName && (
                       <p className="text-sm text-blue-900">
-                        <span className="font-semibold">📁 Projet:</span> {showProjectName}
+                        <span className="font-semibold">📁 Projet:</span> {displayProjectName}
                         {preselectedProjectId && <span className="ml-2 text-blue-600 text-xs">🔒</span>}
                       </p>
                     )}
-                    {showTrancheName && (
+                    {displayTrancheName && (
                       <p className="text-sm text-blue-900">
-                        <span className="font-semibold">📊 Tranche:</span> {showTrancheName}
+                        <span className="font-semibold">📊 Tranche:</span> {displayTrancheName}
                         {preselectedTrancheId && <span className="ml-2 text-blue-600 text-xs">🔒</span>}
                       </p>
                     )}
@@ -1088,15 +1131,15 @@ export function PaymentWizard({
               {/* Context Header */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="space-y-2">
-                  {showProjectName && (
+                  {displayProjectName && (
                     <p className="text-sm text-blue-900">
-                      <span className="font-semibold">📁 Projet:</span> {showProjectName}
+                      <span className="font-semibold">📁 Projet:</span> {displayProjectName}
                       {preselectedProjectId && <span className="ml-2 text-blue-600 text-xs">🔒</span>}
                     </p>
                   )}
-                  {showTrancheName && (
+                  {displayTrancheName && (
                     <p className="text-sm text-blue-900">
-                      <span className="font-semibold">📊 Tranche:</span> {showTrancheName}
+                      <span className="font-semibold">📊 Tranche:</span> {displayTrancheName}
                       {preselectedTrancheId && <span className="ml-2 text-blue-600 text-xs">🔒</span>}
                     </p>
                   )}
