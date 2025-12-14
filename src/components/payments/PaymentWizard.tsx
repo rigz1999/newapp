@@ -7,6 +7,15 @@ import { logger } from '../../utils/logger';
 
 type PDFJSLib = any;
 
+// Helper function to parse French date format (DD-MM-YYYY)
+function parseFrenchDate(dateStr: string): Date | null {
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return null;
+  const [day, month, year] = parts.map(p => parseInt(p, 10));
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+  return new Date(year, month - 1, day);
+}
+
 interface Project {
   id: string;
   projet: string;
@@ -99,6 +108,7 @@ export function PaymentWizard({
   const [selectedMatches, setSelectedMatches] = useState<Set<number>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [suggestedEcheanceDate, setSuggestedEcheanceDate] = useState<string | null>(null);
 
   // Determine initial step based on preselected values
   const getInitialStep = (): 'select' | 'tranche' | 'echeance' | 'upload' | 'results' => {
@@ -561,6 +571,40 @@ export function PaymentWizard({
       if (!data) throw new Error('Aucune donnée reçue de la fonction d\'analyse');
       if (!data.succes) throw new Error(data.erreur || 'Erreur lors de l\'analyse des paiements');
       if (!data.correspondances) throw new Error('Données de correspondance manquantes');
+
+      // AI Auto-detection: If no échéance was selected, suggest one based on PDF date
+      if (!selectedEcheanceDate && data.donneesExtraites?.date_virement && echeanceGroups.length > 0) {
+        const extractedDate = data.donneesExtraites.date_virement;
+        logger.info('AI extracted transfer date', { date: extractedDate });
+
+        // Try to find exact match
+        let matchingEcheance = echeanceGroups.find(g => {
+          const groupDate = new Date(g.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).split('/').join('-');
+          return groupDate === extractedDate;
+        });
+
+        // If no exact match, find closest date
+        if (!matchingEcheance && echeanceGroups.length > 0) {
+          const extractedDateObj = parseFrenchDate(extractedDate);
+          if (extractedDateObj) {
+            let closestDiff = Infinity;
+            echeanceGroups.forEach(g => {
+              const groupDateObj = new Date(g.date);
+              const diff = Math.abs(groupDateObj.getTime() - extractedDateObj.getTime());
+              if (diff < closestDiff) {
+                closestDiff = diff;
+                matchingEcheance = g;
+              }
+            });
+          }
+        }
+
+        if (matchingEcheance) {
+          setSuggestedEcheanceDate(matchingEcheance.date);
+          setSelectedEcheanceDate(matchingEcheance.date);
+          logger.info('AI suggested échéance', { date: matchingEcheance.date, extracted: extractedDate });
+        }
+      }
 
       const enrichedMatches = data.correspondances.map((match: Omit<PaymentMatch, 'matchedSubscription'>) => {
         // Use the subscriptionId from backend's fuzzy matching result
@@ -1063,6 +1107,25 @@ export function PaymentWizard({
                     <p className="text-slate-500">Aucune échéance trouvée pour cette tranche</p>
                   </div>
                 )}
+
+                {/* AI Auto-detect option */}
+                {echeanceGroups.length > 0 && !preselectedEcheanceDate && (
+                  <div className="mt-6 pt-6 border-t border-slate-200">
+                    <button
+                      onClick={() => {
+                        setSelectedEcheanceDate('');
+                        setStep('upload');
+                      }}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-600 transition-all flex items-center justify-center gap-2"
+                    >
+                      <AlertCircle className="w-5 h-5" />
+                      Passer et laisser l'IA détecter l'échéance
+                    </button>
+                    <p className="text-xs text-slate-500 text-center mt-2">
+                      L'IA analysera la date du virement et suggérera l'échéance correspondante
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1199,111 +1262,207 @@ export function PaymentWizard({
           {/* STEP 3: RESULTS */}
           {step === 'results' && (
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-blue-700">
-                    <span className="font-semibold">{validMatches.length}/{matches.length}</span> correspondance{validMatches.length > 1 ? 's' : ''} valide{validMatches.length > 1 ? 's' : ''}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-blue-600">Total extrait</p>
-                  <p className="text-lg font-bold text-blue-900">
-                    {formatCurrency(matches.reduce((sum, m) => sum + m.paiement.montant, 0))}
-                  </p>
+              {/* Summary Header */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="text-xs text-blue-600">Correspondances</p>
+                      <p className="text-lg font-bold text-blue-900">
+                        {validMatches.length}/{matches.length}
+                      </p>
+                    </div>
+                    <div className="h-8 w-px bg-blue-300" />
+                    <div>
+                      <p className="text-xs text-blue-600">Total extrait</p>
+                      <p className="text-lg font-bold text-blue-900">
+                        {formatCurrency(matches.reduce((sum, m) => sum + m.paiement.montant, 0))}
+                      </p>
+                    </div>
+                    {selectedEcheanceDate && (
+                      <>
+                        <div className="h-8 w-px bg-blue-300" />
+                        <div>
+                          <p className="text-xs text-blue-600">Échéance</p>
+                          <p className="text-sm font-semibold text-blue-900">
+                            {new Date(selectedEcheanceDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                    {suggestedEcheanceDate && (
+                      <div className="ml-2 px-2 py-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs rounded-full">
+                        ✨ Détectée par IA
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={toggleSelectAll}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    {selectedMatches.size === matches.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                  </button>
                 </div>
               </div>
 
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-3 py-2 text-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedMatches.size > 0 && selectedMatches.size === matches.length}
-                          onChange={toggleSelectAll}
-                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-finixar-brand-blue"
-                        />
-                      </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Statut</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Bénéficiaire Détecté</th>
-                      <th className="px-3 py-2 text-right text-xs font-semibold text-slate-700">Montant</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-slate-700">Correspondance</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {matches.map((match, idx) => (
-                      <tr 
-                        key={idx} 
-                        className={`border-b border-slate-100 ${
-                          match.statut === 'correspondance' ? 'bg-green-50' :
-                          match.statut === 'partielle' ? 'bg-yellow-50' :
-                          'bg-red-50'
-                        }`}
-                      >
-                        <td className="px-3 py-3 text-center">
+              {/* Inline Diff Cards */}
+              <div className="space-y-3">
+                {matches.map((match, idx) => {
+                  const isSelected = selectedMatches.has(idx);
+                  const amountDiff = match.matchedSubscription
+                    ? match.paiement.montant - match.matchedSubscription.coupon_net
+                    : 0;
+                  const amountDiffPercent = match.details?.ecartMontantPourcent
+                    ? parseFloat(match.details.ecartMontantPourcent)
+                    : 0;
+
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => toggleSelectMatch(idx)}
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      } ${
+                        match.statut === 'correspondance' ? 'ring-2 ring-green-200' :
+                        match.statut === 'partielle' ? 'ring-2 ring-yellow-200' :
+                        'ring-2 ring-red-200'
+                      }`}
+                    >
+                      {/* Header: Checkbox + Status Badge */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
                           <input
                             type="checkbox"
-                            checked={selectedMatches.has(idx)}
+                            checked={isSelected}
                             onChange={() => toggleSelectMatch(idx)}
-                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-finixar-brand-blue"
+                            className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            onClick={(e) => e.stopPropagation()}
                           />
-                        </td>
-                        <td className="px-3 py-3">
-                          {match.statut === 'correspondance' ? (
-                            <div className="flex items-center gap-1">
-                              <CheckCircle className="w-4 h-4 text-finixar-green" />
-                              <span className="text-xs font-medium text-green-700">{match.confiance}%</span>
-                            </div>
-                          ) : match.statut === 'partielle' ? (
-                            <div className="flex items-center gap-1">
-                              <AlertTriangle className="w-4 h-4 text-finixar-amber" />
-                              <span className="text-xs font-medium text-yellow-700">{match.confiance}%</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1">
-                              <AlertCircle className="w-4 h-4 text-finixar-red" />
-                              <span className="text-xs font-medium text-red-700">{match.confiance}%</span>
-                            </div>
-                          )}
-                        </td>
-
-                        <td className="px-3 py-3">
-                          <div>
-                            <p className="text-sm font-medium text-slate-900">{match.paiement.beneficiaire}</p>
-                            {match.paiement.date && (
-                              <p className="text-xs text-slate-500">{match.paiement.date}</p>
+                          <div className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
+                            match.statut === 'correspondance'
+                              ? 'bg-green-100 text-green-800' :
+                            match.statut === 'partielle'
+                              ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {match.statut === 'correspondance' ? (
+                              <>
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                Correspondance {match.confiance}%
+                              </>
+                            ) : match.statut === 'partielle' ? (
+                              <>
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                Partielle {match.confiance}%
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                Pas de correspondance
+                              </>
                             )}
                           </div>
-                        </td>
+                        </div>
+                        {match.paiement.reference && (
+                          <span className="text-xs text-slate-500">Réf: {match.paiement.reference}</span>
+                        )}
+                      </div>
 
-                        <td className="px-3 py-3 text-right">
-                          <p className="text-sm font-bold text-slate-900">{formatCurrency(match.paiement.montant)}</p>
-                        </td>
+                      {/* Inline Diff: Side-by-side comparison */}
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Left: Extracted Payment */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 mb-2">
+                            <FileText className="w-4 h-4 text-blue-600" />
+                            <span className="text-xs font-semibold text-slate-700 uppercase">Détecté dans le PDF</span>
+                          </div>
 
-                        <td className="px-3 py-3">
-                          {match.matchedSubscription ? (
+                          <div className="bg-slate-50 rounded-lg p-3 space-y-2">
                             <div>
-                              <p className="text-sm font-medium text-slate-900">
-                                {match.matchedSubscription.investisseur.nom_raison_sociale}
-                              </p>
-                              <p className="text-xs text-slate-600">
-                                Attendu: {formatCurrency(match.matchedSubscription.coupon_net)}
-                                {match.details?.ecartMontantPourcent && parseFloat(match.details.ecartMontantPourcent) > 0 && (
-                                  <span className="text-orange-600 ml-1">
-                                    (±{match.details.ecartMontantPourcent}%)
-                                  </span>
+                              <p className="text-xs text-slate-600">Bénéficiaire</p>
+                              <p className="text-sm font-semibold text-slate-900">{match.paiement.beneficiaire}</p>
+                            </div>
+
+                            <div className="flex items-baseline gap-4">
+                              <div>
+                                <p className="text-xs text-slate-600">Montant</p>
+                                <p className="text-lg font-bold text-slate-900">{formatCurrency(match.paiement.montant)}</p>
+                              </div>
+                              {match.paiement.date && (
+                                <div>
+                                  <p className="text-xs text-slate-600">Date</p>
+                                  <p className="text-sm text-slate-700">{match.paiement.date}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right: Expected/Matched Subscription */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="w-4 h-4 text-purple-600" />
+                            <span className="text-xs font-semibold text-slate-700 uppercase">Attendu (Échéance)</span>
+                          </div>
+
+                          {match.matchedSubscription ? (
+                            <div className={`rounded-lg p-3 space-y-2 ${
+                              match.statut === 'correspondance' ? 'bg-green-50' :
+                              match.statut === 'partielle' ? 'bg-yellow-50' :
+                              'bg-red-50'
+                            }`}>
+                              <div>
+                                <p className="text-xs text-slate-600">Investisseur</p>
+                                <p className={`text-sm font-semibold ${
+                                  match.statut === 'correspondance' ? 'text-green-900' :
+                                  match.statut === 'partielle' ? 'text-yellow-900' :
+                                  'text-red-900'
+                                }`}>
+                                  {match.matchedSubscription.investisseur.nom_raison_sociale}
+                                </p>
+                                {match.details?.nameScore && (
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    Correspondance nom: {match.details.nameScore}%
+                                  </p>
                                 )}
-                              </p>
+                              </div>
+
+                              <div className="flex items-baseline gap-4">
+                                <div>
+                                  <p className="text-xs text-slate-600">Montant attendu</p>
+                                  <p className={`text-lg font-bold ${
+                                    Math.abs(amountDiff) < 0.01 ? 'text-green-700' :
+                                    amountDiffPercent < 5 ? 'text-yellow-700' :
+                                    'text-red-700'
+                                  }`}>
+                                    {formatCurrency(match.matchedSubscription.coupon_net)}
+                                  </p>
+                                  {Math.abs(amountDiff) > 0.01 && (
+                                    <p className={`text-xs mt-1 font-medium ${
+                                      amountDiffPercent < 5 ? 'text-yellow-700' : 'text-red-700'
+                                    }`}>
+                                      {amountDiff > 0 ? '+' : ''}{formatCurrency(amountDiff)} ({amountDiff > 0 ? '+' : ''}{amountDiffPercent.toFixed(1)}%)
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-400 italic">Aucune correspondance</span>
+                            <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 flex items-center justify-center h-full">
+                              <div className="text-center">
+                                <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+                                <p className="text-sm font-medium text-red-700">Aucune correspondance trouvée</p>
+                                <p className="text-xs text-red-600 mt-1">Vérifiez les données manuellement</p>
+                              </div>
+                            </div>
                           )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {error && (
