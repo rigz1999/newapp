@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload, Eye, FileText } from 'lucide-react';
+import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload, Eye, FileText, XCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ExcelJS from 'exceljs';
 import { PaymentWizard } from '../payments/PaymentWizard';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
+import { AlertModal } from '../common/Modals';
 
 interface EcheancierContentProps {
   projectId: string;
@@ -68,6 +69,13 @@ export function EcheancierContent({
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<any>(null);
   const [paymentProofs, setPaymentProofs] = useState<any[]>([]);
+  const [markingUnpaid, setMarkingUnpaid] = useState<string | null>(null);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertModalConfig, setAlertModalConfig] = useState<{
+    title: string;
+    message: string;
+    type?: 'success' | 'error' | 'warning' | 'info';
+  }>({ title: '', message: '', type: 'info' });
 
   useEffect(() => {
     fetchEcheances();
@@ -234,6 +242,43 @@ export function EcheancierContent({
 
     setSelectedPaymentForProof(paymentData);
     setPaymentProofs(proofsData || []);
+  };
+
+  const handleMarkAsUnpaid = async (echeance: Echeance) => {
+    if (markingUnpaid) return;
+
+    setMarkingUnpaid(echeance.id);
+    try {
+      // Update the echeance to remove payment link and status
+      const { error: echeanceError } = await supabase
+        .from('coupons_echeances')
+        .update({
+          statut: null,
+          paiement_id: null
+        } as never)
+        .eq('id', echeance.id);
+
+      if (echeanceError) throw echeanceError;
+
+      // Refresh the echeances list
+      await fetchEcheances();
+
+      setAlertModalConfig({
+        title: 'Succès',
+        message: 'L\'échéance a été marquée comme non payée.',
+        type: 'success'
+      });
+      setShowAlertModal(true);
+    } catch (err: any) {
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: 'Erreur lors de la mise à jour: ' + err.message,
+        type: 'error'
+      });
+      setShowAlertModal(true);
+    } finally {
+      setMarkingUnpaid(null);
+    }
   };
 
   const handleExportExcel = async () => {
@@ -692,14 +737,24 @@ export function EcheancierContent({
                                           </td>
                                           <td className="px-4 py-2 text-center">
                                             {getEcheanceStatus(echeance) === 'paye' ? (
-                                              <button
-                                                onClick={() => handleViewPaymentProof(echeance)}
-                                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
-                                                title="Voir le justificatif"
-                                              >
-                                                <FileText className="w-4 h-4" />
-                                                Voir
-                                              </button>
+                                              <div className="flex items-center justify-center gap-1">
+                                                <button
+                                                  onClick={() => handleViewPaymentProof(echeance)}
+                                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                                  title="Voir le justificatif"
+                                                >
+                                                  <FileText className="w-4 h-4" />
+                                                  Voir
+                                                </button>
+                                                <button
+                                                  onClick={() => handleMarkAsUnpaid(echeance)}
+                                                  disabled={markingUnpaid === echeance.id}
+                                                  className="p-1 text-finixar-red hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                  title="Marquer comme non payé"
+                                                >
+                                                  <XCircle className={`w-4 h-4 ${markingUnpaid === echeance.id ? 'animate-pulse' : ''}`} />
+                                                </button>
+                                              </div>
                                             ) : (
                                               <span className="text-xs text-slate-400">-</span>
                                             )}
@@ -770,6 +825,15 @@ export function EcheancierContent({
           }}
         />
       )}
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertModalConfig.title}
+        message={alertModalConfig.message}
+        type={alertModalConfig.type}
+      />
     </>
   );
 }
