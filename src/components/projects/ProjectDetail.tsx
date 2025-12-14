@@ -51,7 +51,8 @@ interface Project {
   created_at: string;
   taux_nominal: number | null;
   periodicite_coupons: string | null;
-  maturite_mois: number | null;
+  duree_mois: number | null;
+  date_emission: string | null;
   base_interet: number | null;
   type: string | null;
 }
@@ -328,7 +329,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     const hasFinancialChanges = 
       editedProject.periodicite_coupons !== undefined && editedProject.periodicite_coupons !== project.periodicite_coupons ||
       editedProject.taux_nominal !== undefined && editedProject.taux_nominal !== project.taux_nominal ||
-      editedProject.maturite_mois !== undefined && editedProject.maturite_mois !== project.maturite_mois;
+      editedProject.duree_mois !== undefined && editedProject.duree_mois !== project.duree_mois;
 
     if (hasFinancialChanges && subscriptions.length > 0) {
       const confirmMsg = `ATTENTION : Vous modifiez des paramètres financiers critiques.\n\n` +
@@ -741,7 +742,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             <div>
               <p className="text-sm text-slate-600">Maturité</p>
               <p className="text-base font-medium text-slate-900">
-                {project.maturite_mois ? `${project.maturite_mois} mois` : '-'}
+                {project.duree_mois ? `${project.duree_mois} mois` : '-'}
               </p>
             </div>
             <div>
@@ -1116,7 +1117,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 <div className="p-6">
                 {(editedProject.periodicite_coupons !== project.periodicite_coupons ||
                   editedProject.taux_nominal !== project.taux_nominal ||
-                  editedProject.maturite_mois !== project.maturite_mois) &&
+                  editedProject.duree_mois !== project.duree_mois) &&
                   subscriptions.length > 0 && (
                   <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3">
                     <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
@@ -1223,8 +1224,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           </label>
                           <input
                             type="number"
-                            value={editedProject.maturite_mois?.toString() || ''}
-                            onChange={(e) => setEditedProject({ ...editedProject, maturite_mois: parseInt(e.target.value) || null })}
+                            value={editedProject.duree_mois?.toString() || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, duree_mois: parseInt(e.target.value) || null })}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                             placeholder="Ex: 24"
                           />
