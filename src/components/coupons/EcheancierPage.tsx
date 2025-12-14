@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Coins, TrendingUp, ChevronDown, ChevronRight, User, Building2, Download, Upload, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, Coins, TrendingUp, ChevronDown, ChevronRight, User, Building2, Download, Upload, AlertCircle, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ExcelJS from 'exceljs';
 import { PaymentWizard } from '../payments/PaymentWizard';
+import { ViewProofsModal } from '../investors/ViewProofsModal';
 
 interface Echeance {
   id: string;
@@ -55,6 +56,8 @@ export function EcheancierPage() {
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
+  const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<Record<string, unknown> | null>(null);
+  const [paymentProofs, setPaymentProofs] = useState<Record<string, unknown>[]>([]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -175,6 +178,42 @@ export function EcheancierPage() {
       newExpanded.add(key);
     }
     setExpandedDates(newExpanded);
+  };
+
+  const handleViewPaymentProof = async (echeance: Echeance) => {
+    // First, we need to find the paiement_id from the echeance
+    const { data: echeanceData } = await supabase
+      .from('coupons_echeances')
+      .select('paiement_id')
+      .eq('id', echeance.id)
+      .single();
+
+    if (!echeanceData?.paiement_id) {
+      return;
+    }
+
+    // Fetch the payment with its related data
+    const { data: paymentData } = await supabase
+      .from('paiements')
+      .select(`
+        *,
+        tranche:tranches(tranche_name),
+        investisseur:investisseurs(nom_raison_sociale)
+      `)
+      .eq('id', echeanceData.paiement_id)
+      .single();
+
+    if (!paymentData) return;
+
+    // Fetch payment proofs
+    const { data: proofsData } = await supabase
+      .from('payment_proofs')
+      .select('*')
+      .eq('paiement_id', echeanceData.paiement_id)
+      .order('validated_at', { ascending: false });
+
+    setSelectedPaymentForProof(paymentData);
+    setPaymentProofs(proofsData || []);
   };
 
   const handleExportExcel = async () => {
@@ -557,6 +596,16 @@ export function EcheancierPage() {
                                               </span>
                                             )}
                                           </div>
+                                          {status === 'paye' && (
+                                            <button
+                                              onClick={() => handleViewPaymentProof(echeance)}
+                                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                                              title="Voir le justificatif"
+                                            >
+                                              <FileText className="w-4 h-4" />
+                                              Voir preuve
+                                            </button>
+                                          )}
                                         </div>
                                       </div>
                                     </div>
@@ -585,6 +634,23 @@ export function EcheancierPage() {
             fetchEcheances();
           }}
           preselectedProjectId={projectId}
+        />
+      )}
+
+      {/* View Payment Proof Modal */}
+      {selectedPaymentForProof && (
+        <ViewProofsModal
+          payment={selectedPaymentForProof}
+          proofs={paymentProofs}
+          onClose={() => {
+            setSelectedPaymentForProof(null);
+            setPaymentProofs([]);
+          }}
+          onProofDeleted={() => {
+            fetchEcheances();
+            setSelectedPaymentForProof(null);
+            setPaymentProofs([]);
+          }}
         />
       )}
     </div>
