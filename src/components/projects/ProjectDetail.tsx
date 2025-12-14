@@ -51,7 +51,8 @@ interface Project {
   created_at: string;
   taux_nominal: number | null;
   periodicite_coupons: string | null;
-  maturite_mois: number | null;
+  duree_mois: number | null;
+  date_emission: string | null;
   base_interet: number | null;
   type: string | null;
 }
@@ -328,7 +329,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     const hasFinancialChanges = 
       editedProject.periodicite_coupons !== undefined && editedProject.periodicite_coupons !== project.periodicite_coupons ||
       editedProject.taux_nominal !== undefined && editedProject.taux_nominal !== project.taux_nominal ||
-      editedProject.maturite_mois !== undefined && editedProject.maturite_mois !== project.maturite_mois;
+      editedProject.duree_mois !== undefined && editedProject.duree_mois !== project.duree_mois;
 
     if (hasFinancialChanges && subscriptions.length > 0) {
       const confirmMsg = `ATTENTION : Vous modifiez des paramètres financiers critiques.\n\n` +
@@ -357,9 +358,26 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     try {
       logger.info('Updating project', { hasFinancialChanges });
 
+      // Filter to only include editable fields (exclude id, created_at, etc.)
+      const updateData: any = {};
+      if (editedProject.projet !== undefined) updateData.projet = editedProject.projet;
+      if (editedProject.emetteur !== undefined) updateData.emetteur = editedProject.emetteur;
+      if (editedProject.siren_emetteur !== undefined) updateData.siren_emetteur = editedProject.siren_emetteur;
+      if (editedProject.nom_representant !== undefined) updateData.nom_representant = editedProject.nom_representant;
+      if (editedProject.prenom_representant !== undefined) updateData.prenom_representant = editedProject.prenom_representant;
+      if (editedProject.email_representant !== undefined) updateData.email_representant = editedProject.email_representant;
+      if (editedProject.representant_masse !== undefined) updateData.representant_masse = editedProject.representant_masse;
+      if (editedProject.email_rep_masse !== undefined) updateData.email_rep_masse = editedProject.email_rep_masse;
+      if (editedProject.taux_nominal !== undefined) updateData.taux_nominal = editedProject.taux_nominal;
+      if (editedProject.periodicite_coupons !== undefined) updateData.periodicite_coupons = editedProject.periodicite_coupons;
+      if (editedProject.duree_mois !== undefined) updateData.duree_mois = editedProject.duree_mois;
+      if (editedProject.date_emission !== undefined) updateData.date_emission = editedProject.date_emission;
+      if (editedProject.base_interet !== undefined) updateData.base_interet = editedProject.base_interet;
+      if (editedProject.type !== undefined) updateData.type = editedProject.type;
+
       const { error } = await supabase
         .from('projets')
-        .update(editedProject as never)
+        .update(updateData)
         .eq('id', project!.id);
 
       if (error) throw error;
@@ -741,7 +759,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             <div>
               <p className="text-sm text-slate-600">Maturité</p>
               <p className="text-base font-medium text-slate-900">
-                {project.maturite_mois ? `${project.maturite_mois} mois` : '-'}
+                {project.duree_mois ? `${project.duree_mois} mois` : '-'}
               </p>
             </div>
             <div>
@@ -1116,7 +1134,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 <div className="p-6">
                 {(editedProject.periodicite_coupons !== project.periodicite_coupons ||
                   editedProject.taux_nominal !== project.taux_nominal ||
-                  editedProject.maturite_mois !== project.maturite_mois) &&
+                  editedProject.duree_mois !== project.duree_mois) &&
                   subscriptions.length > 0 && (
                   <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3">
                     <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
@@ -1223,8 +1241,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           </label>
                           <input
                             type="number"
-                            value={editedProject.maturite_mois?.toString() || ''}
-                            onChange={(e) => setEditedProject({ ...editedProject, maturite_mois: parseInt(e.target.value) || null })}
+                            value={editedProject.duree_mois?.toString() || ''}
+                            onChange={(e) => setEditedProject({ ...editedProject, duree_mois: parseInt(e.target.value) || null })}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                             placeholder="Ex: 24"
                           />
