@@ -101,20 +101,17 @@ export function PaymentWizard({
   const [isDragging, setIsDragging] = useState(false);
 
   // Determine initial step based on preselected values
-  const getInitialStep = (): 'select' | 'tranche' | 'echeance' | 'upload' | 'results' => {
+  const getInitialStep = (): 'select' | 'echeance' | 'upload' | 'results' => {
     if (preselectedEcheanceDate && preselectedTrancheId && preselectedProjectId) {
       return 'upload';
     }
     if (preselectedTrancheId && preselectedProjectId) {
       return 'echeance';
     }
-    if (preselectedProjectId) {
-      return 'tranche';
-    }
     return 'select';
   };
 
-  const [step, setStep] = useState<'select' | 'tranche' | 'echeance' | 'upload' | 'results'>(getInitialStep());
+  const [step, setStep] = useState<'select' | 'echeance' | 'upload' | 'results'>(getInitialStep());
 
   // Close modal on ESC key
   useEffect(() => {
@@ -142,26 +139,18 @@ export function PaymentWizard({
       setSelectedMatches(new Set());
     } else if (step === 'upload') {
       // Go back to écheance selection (unless it was preselected)
-      if (preselectedEcheanceDate) {
-        setStep('tranche');
+      if (preselectedEcheanceDate && preselectedTrancheId && preselectedProjectId) {
+        // All preselected, go back to select
+        setStep('select');
       } else {
         setStep('echeance');
       }
       setFiles([]);
       setError('');
     } else if (step === 'echeance') {
-      // Go back to tranche selection (unless it was preselected)
-      if (preselectedTrancheId) {
+      // Go back to project/tranche selection (unless both were preselected)
+      if (!preselectedProjectId && !preselectedTrancheId) {
         setStep('select');
-      } else {
-        setStep('tranche');
-        setSelectedEcheanceDate('');
-      }
-    } else if (step === 'tranche') {
-      // Go back to project selection (unless it was preselected)
-      if (!preselectedProjectId) {
-        setStep('select');
-        setSelectedTrancheId('');
         setSelectedEcheanceDate('');
       }
     }
@@ -848,22 +837,6 @@ export function PaymentWizard({
   const noMatchList = selectedMatchesList.filter(m => m.statut === 'pas-de-correspondance');
 
   return (
-    <>
-    <style>{`
-      @keyframes fade-in {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .animate-fade-in {
-        animation: fade-in 0.3s ease-out;
-      }
-    `}</style>
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
@@ -886,14 +859,12 @@ export function PaymentWizard({
             <div>
               <h3 className="text-xl font-bold text-slate-900">
                 {step === 'select' && 'Enregistrer un paiement de tranche'}
-                {step === 'tranche' && (showProjectName || 'Sélection de la tranche')}
                 {step === 'echeance' && 'Sélection de l\'échéance'}
                 {step === 'upload' && 'Télécharger justificatif de paiement'}
                 {step === 'results' && 'Résultats de l\'analyse'}
               </h3>
               <p className="text-sm text-slate-600 mt-1">
                 {step === 'select' && 'Sélectionnez un projet et une tranche'}
-                {step === 'tranche' && (preselectedProjectId ? `Projet: ${showProjectName || 'Sélectionné'}` : 'Choisissez une tranche')}
                 {step === 'echeance' && 'Quelle échéance payez-vous?'}
                 {step === 'upload' && `${subscriptions.length} paiement${subscriptions.length > 1 ? 's' : ''} attendu${subscriptions.length > 1 ? 's' : ''}`}
                 {step === 'results' && `${selectedMatches.size} paiement${selectedMatches.size > 1 ? 's' : ''} sélectionné${selectedMatches.size > 1 ? 's' : ''}`}
@@ -906,59 +877,76 @@ export function PaymentWizard({
         </div>
 
         <div className="p-6">
-          {/* STEP 1: SELECT PROJECT */}
+          {/* STEP 1: SELECT PROJECT AND TRANCHE */}
           {step === 'select' && (
-            <div className="space-y-4 animate-fade-in">
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Projet</label>
-                <select
-                  value={selectedProjectId}
-                  onChange={(e) => {
-                    setSelectedProjectId(e.target.value);
-                    if (e.target.value) setStep('tranche');
-                  }}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white"
-                >
-                  <option value="">Sélectionnez un projet</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>{project.projet}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2: SELECT TRANCHE */}
-          {step === 'tranche' && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               {preselectedProjectId && showProjectName && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-900">
                     <span className="font-semibold">Projet:</span> {showProjectName}
-                    {preselectedProjectId && <span className="ml-2 text-blue-600 text-xs">🔒 Présélectionné</span>}
+                    <span className="ml-2 text-blue-600 text-xs">🔒 Présélectionné</span>
                   </p>
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Tranche</label>
-                <select
-                  value={selectedTrancheId}
-                  onChange={(e) => setSelectedTrancheId(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white"
+              {!preselectedProjectId && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Projet</label>
+                  <select
+                    value={selectedProjectId}
+                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white"
+                  >
+                    <option value="">Sélectionnez un projet</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>{project.projet}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {!preselectedTrancheId && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">Tranche</label>
+                  <select
+                    value={selectedTrancheId}
+                    onChange={(e) => setSelectedTrancheId(e.target.value)}
+                    disabled={!selectedProjectId}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {selectedProjectId ? 'Sélectionnez une tranche' : 'Sélectionnez d\'abord un projet'}
+                    </option>
+                    {tranches.map((tranche) => (
+                      <option key={tranche.id} value={tranche.id}>{tranche.tranche_name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {preselectedTrancheId && showTrancheName && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-900">
+                    <span className="font-semibold">Tranche:</span> {showTrancheName}
+                    <span className="ml-2 text-blue-600 text-xs">🔒 Présélectionné</span>
+                  </p>
+                </div>
+              )}
+
+              {selectedTrancheId && (
+                <button
+                  onClick={() => setStep('echeance')}
+                  className="w-full bg-finixar-brand-blue text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
-                  <option value="">Sélectionnez une tranche</option>
-                  {tranches.map((tranche) => (
-                    <option key={tranche.id} value={tranche.id}>{tranche.tranche_name}</option>
-                  ))}
-                </select>
-              </div>
+                  Continuer
+                </button>
+              )}
             </div>
           )}
 
-          {/* STEP 3: SELECT ÉCHÉANCE */}
+          {/* STEP 2: SELECT ÉCHÉANCE */}
           {step === 'echeance' && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               {/* Context card */}
               {(showProjectName || showTrancheName) && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -1093,9 +1081,9 @@ export function PaymentWizard({
             </div>
           )}
 
-          {/* STEP 4: UPLOAD */}
+          {/* STEP 3: UPLOAD */}
           {step === 'upload' && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-6">
               {/* Context Header */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="space-y-2">
@@ -1222,9 +1210,9 @@ export function PaymentWizard({
             </div>
           )}
 
-          {/* STEP 3: RESULTS */}
+          {/* STEP 4: RESULTS */}
           {step === 'results' && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               {/* Summary Header */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center justify-between">
@@ -1589,6 +1577,6 @@ export function PaymentWizard({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
