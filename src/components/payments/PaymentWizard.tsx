@@ -135,25 +135,36 @@ export function PaymentWizard({
   }, [onClose, showConfirmModal]);
 
   const handleBackToSelect = () => {
-    if (!preselectedProjectId) {
-      setStep('select');
-      setSelectedProjectId('');
-      setSelectedTrancheId('');
-      setSelectedEcheanceDate('');
-    } else if (!preselectedTrancheId) {
-      setStep('tranche');
-      setSelectedTrancheId('');
-      setSelectedEcheanceDate('');
-    } else if (!preselectedEcheanceDate) {
-      setStep('echeance');
-      setSelectedEcheanceDate('');
+    // Go back one step at a time
+    if (step === 'results') {
+      setStep('upload');
+      setMatches([]);
+      setSelectedMatches(new Set());
+    } else if (step === 'upload') {
+      // Go back to écheance selection (unless it was preselected)
+      if (preselectedEcheanceDate) {
+        setStep('tranche');
+      } else {
+        setStep('echeance');
+      }
+      setFiles([]);
+      setError('');
+    } else if (step === 'echeance') {
+      // Go back to tranche selection (unless it was preselected)
+      if (preselectedTrancheId) {
+        setStep('select');
+      } else {
+        setStep('tranche');
+        setSelectedEcheanceDate('');
+      }
+    } else if (step === 'tranche') {
+      // Go back to project selection (unless it was preselected)
+      if (!preselectedProjectId) {
+        setStep('select');
+        setSelectedTrancheId('');
+        setSelectedEcheanceDate('');
+      }
     }
-    setFiles([]);
-    setMatches([]);
-    setSelectedMatches(new Set());
-    setUploadedFileUrls([]);
-    setTempFileNames([]);
-    setError('');
   };
 
   useEffect(() => {
