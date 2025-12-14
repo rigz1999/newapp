@@ -16,27 +16,80 @@ function parseEuropeanDate(dateStr: string): Date {
   return new Date(dateStr);
 }
 
+function removeAccents(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function normalizeNameForMatching(str: string): string {
+  // Convert to lowercase and remove accents
+  let normalized = removeAccents(str.toLowerCase().trim());
+
+  // Remove common honorifics and titles (French)
+  const honorifics = /\b(mme|mlle|mlle\.|m\.|m|mr|mr\.|mrs|mrs\.|ms|ms\.|dr|dr\.|prof|prof\.)\b/gi;
+  normalized = normalized.replace(honorifics, '');
+
+  // Remove common business suffixes
+  const businessSuffixes = /\b(sarl|sas|sa|eurl|sci|sci\.|scop|gie|snc|sca|sem)\b/gi;
+  normalized = normalized.replace(businessSuffixes, '');
+
+  // Remove extra whitespace
+  normalized = normalized.replace(/\s+/g, ' ').trim();
+
+  return normalized;
+}
+
 function fuzzyMatch(str1: string, str2: string): number {
-  const s1 = str1.toLowerCase().trim();
-  const s2 = str2.toLowerCase().trim();
+  const s1 = normalizeNameForMatching(str1);
+  const s2 = normalizeNameForMatching(str2);
 
+  // Exact match after normalization
   if (s1 === s2) return 1.0;
-  if (s1.includes(s2) || s2.includes(s1)) return 0.9;
 
-  const words1 = s1.split(/\s+/);
-  const words2 = s2.split(/\s+/);
+  // One contains the other
+  if (s1.includes(s2) || s2.includes(s1)) return 0.95;
 
-  let matches = 0;
-  for (const w1 of words1) {
-    for (const w2 of words2) {
-      if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) {
-        matches++;
+  const words1 = s1.split(/\s+/).filter(w => w.length > 0);
+  const words2 = s2.split(/\s+/).filter(w => w.length > 0);
+
+  // If either has no words after normalization, return 0
+  if (words1.length === 0 || words2.length === 0) return 0;
+
+  // Count how many words from the shorter list are found in the longer list
+  const shorterWords = words1.length <= words2.length ? words1 : words2;
+  const longerWords = words1.length > words2.length ? words1 : words2;
+
+  let exactMatches = 0;
+  let partialMatches = 0;
+
+  for (const shortWord of shorterWords) {
+    let matched = false;
+    for (const longWord of longerWords) {
+      if (shortWord === longWord) {
+        exactMatches++;
+        matched = true;
         break;
+      } else if (shortWord.length >= 3 && longWord.length >= 3) {
+        // Check for partial matches (one contains the other)
+        if (shortWord.includes(longWord) || longWord.includes(shortWord)) {
+          partialMatches++;
+          matched = true;
+          break;
+        }
       }
     }
   }
 
-  return matches / Math.max(words1.length, words2.length);
+  // Calculate score based on matches
+  // Give more weight to exact matches
+  const totalMatches = exactMatches + (partialMatches * 0.8);
+  const score = totalMatches / shorterWords.length;
+
+  // Boost score if all significant words from shorter name are matched
+  if (exactMatches === shorterWords.length) {
+    return Math.min(1.0, score + 0.1);
+  }
+
+  return Math.min(1.0, score);
 }
 
 serve(async (req) => {

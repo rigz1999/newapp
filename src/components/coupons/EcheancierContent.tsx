@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload } from 'lucide-react';
+import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload, Eye, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ExcelJS from 'exceljs';
 import { PaymentWizard } from '../payments/PaymentWizard';
+import { ViewProofsModal } from '../investors/ViewProofsModal';
 
 interface EcheancierContentProps {
   projectId: string;
@@ -65,6 +66,8 @@ export function EcheancierContent({
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
+  const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<any>(null);
+  const [paymentProofs, setPaymentProofs] = useState<any[]>([]);
 
   useEffect(() => {
     fetchEcheances();
@@ -163,6 +166,43 @@ export function EcheancierContent({
       newExpanded.add(key);
     }
     setExpandedDates(newExpanded);
+  };
+
+  const handleViewPaymentProof = async (echeance: Echeance) => {
+    // First, we need to find the paiement_id from the echeance
+    // The echeance might have a paiement_id field if it's been paid
+    const { data: echeanceData } = await supabase
+      .from('coupons_echeances')
+      .select('paiement_id')
+      .eq('id', echeance.id)
+      .single();
+
+    if (!echeanceData?.paiement_id) {
+      return;
+    }
+
+    // Fetch the payment with its related data
+    const { data: paymentData } = await supabase
+      .from('paiements')
+      .select(`
+        *,
+        tranche:tranches(tranche_name),
+        investisseur:investisseurs(nom_raison_sociale)
+      `)
+      .eq('id', echeanceData.paiement_id)
+      .single();
+
+    if (!paymentData) return;
+
+    // Fetch payment proofs
+    const { data: proofsData } = await supabase
+      .from('payment_proofs')
+      .select('*')
+      .eq('paiement_id', echeanceData.paiement_id)
+      .order('validated_at', { ascending: false });
+
+    setSelectedPaymentForProof(paymentData);
+    setPaymentProofs(proofsData || []);
   };
 
   const handleExportExcel = async () => {
@@ -556,6 +596,9 @@ export function EcheancierContent({
                                         <th className="px-4 py-2 text-center text-xs font-semibold text-slate-600 uppercase">
                                           Statut
                                         </th>
+                                        <th className="px-4 py-2 text-center text-xs font-semibold text-slate-600 uppercase">
+                                          Preuve
+                                        </th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 bg-white">
@@ -616,6 +659,20 @@ export function EcheancierContent({
                                                 : 'À venir'}
                                             </span>
                                           </td>
+                                          <td className="px-4 py-2 text-center">
+                                            {getEcheanceStatus(echeance) === 'paye' ? (
+                                              <button
+                                                onClick={() => handleViewPaymentProof(echeance)}
+                                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                                title="Voir le justificatif"
+                                              >
+                                                <FileText className="w-4 h-4" />
+                                                Voir
+                                              </button>
+                                            ) : (
+                                              <span className="text-xs text-slate-400">-</span>
+                                            )}
+                                          </td>
                                         </tr>
                                       ))}
                                     </tbody>
@@ -663,6 +720,23 @@ export function EcheancierContent({
             fetchEcheances();
           }}
           preselectedProjectId={projectId}
+        />
+      )}
+
+      {/* View Payment Proof Modal */}
+      {selectedPaymentForProof && (
+        <ViewProofsModal
+          payment={selectedPaymentForProof}
+          proofs={paymentProofs}
+          onClose={() => {
+            setSelectedPaymentForProof(null);
+            setPaymentProofs([]);
+          }}
+          onProofDeleted={() => {
+            fetchEcheances();
+            setSelectedPaymentForProof(null);
+            setPaymentProofs([]);
+          }}
         />
       )}
     </>
