@@ -837,6 +837,7 @@ export function PaymentWizard({
   const noMatchList = selectedMatchesList.filter(m => m.statut === 'pas-de-correspondance');
 
   return (
+    <>
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
@@ -1577,6 +1578,6 @@ export function PaymentWizard({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
