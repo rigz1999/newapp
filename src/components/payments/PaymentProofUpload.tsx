@@ -367,6 +367,15 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           .getPublicUrl(permanentFileName);
 
         // Save proof to database
+        console.log('🔍 DEBUG - Inserting payment_proof with:', {
+          paiement_id: paymentData.id,
+          file_url: urlData.publicUrl,
+          file_name: files[0].name,
+          file_size: files[0].size,
+          extracted_data: match.paiement,
+          confidence: match.confiance
+        });
+
         const { error: dbError } = await supabase
           .from('payment_proofs')
           .insert({
@@ -378,6 +387,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
             confidence: match.confiance
           });
 
+        console.log('🔍 DEBUG - Payment_proof insert result:', { error: dbError });
         if (dbError) throw dbError;
 
       } else {
