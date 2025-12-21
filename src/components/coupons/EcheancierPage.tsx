@@ -1,6 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Coins, TrendingUp, ChevronDown, ChevronRight, User, Building2, Download, Upload, AlertCircle, FileText, XCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  Coins,
+  TrendingUp,
+  ChevronDown,
+  ChevronRight,
+  User,
+  Building2,
+  Download,
+  Upload,
+  AlertCircle,
+  FileText,
+  XCircle,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ExcelJS from 'exceljs';
 import { PaymentWizard } from '../payments/PaymentWizard';
@@ -22,6 +36,7 @@ interface Echeance {
       type: string;
     };
     tranche: {
+      id: string;
       tranche_name: string;
       date_echeance_finale: string;
     };
@@ -40,11 +55,37 @@ interface DateGroup {
 }
 
 interface TrancheGroup {
+  trancheId: string;
   trancheName: string;
   dateGroups: DateGroup[];
   totalBrut: number;
   totalNet: number;
   totalCount: number;
+}
+
+interface SubscriptionData {
+  id: string;
+  id_souscription: string;
+  coupon_brut: number;
+  coupon_net: number;
+  montant_investi: number;
+  investisseur: {
+    nom_raison_sociale: string;
+    type: string;
+  };
+  tranche: {
+    id: string;
+    tranche_name: string;
+    date_echeance_finale: string;
+  };
+}
+
+interface EcheanceData {
+  id: string;
+  souscription_id: string;
+  date_echeance: string;
+  montant_coupon: number;
+  statut: string;
 }
 
 export function EcheancierPage() {
@@ -57,7 +98,11 @@ export function EcheancierPage() {
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
-  const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<Record<string, unknown> | null>(null);
+  const [preselectedTrancheId, setPreselectedTrancheId] = useState<string | undefined>(undefined);
+  const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [paymentProofs, setPaymentProofs] = useState<Record<string, unknown>[]>([]);
   const [markingUnpaid, setMarkingUnpaid] = useState<string | null>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -67,17 +112,18 @@ export function EcheancierPage() {
     type?: 'success' | 'error' | 'warning' | 'info';
   }>({ title: '', message: '', type: 'info' });
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return '-';
+    if (!dateString) {
+      return '-';
+    }
     return new Date(dateString).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'short',
@@ -92,26 +138,33 @@ export function EcheancierPage() {
   }, [projectId]);
 
   const fetchEcheances = async () => {
-    if (!projectId) return;
+    if (!projectId) {
+      return;
+    }
 
     setLoading(true);
     try {
       const { data: subscriptionsData, error: subsError } = await supabase
         .from('souscriptions')
-        .select(`
+        .select(
+          `
           id,
           id_souscription,
           coupon_brut,
           coupon_net,
           montant_investi,
           investisseur:investisseurs(nom_raison_sociale, type),
-          tranche:tranches(tranche_name, date_echeance_finale)
-        `)
+          tranche:tranches(id, tranche_name, date_echeance_finale)
+        `
+        )
         .eq('projet_id', projectId);
 
-      if (subsError) throw subsError;
+      if (subsError) {
+        throw subsError;
+      }
 
-      const subscriptionIds = subscriptionsData?.map((s: any) => s.id) || [];
+      const subscriptions = (subscriptionsData || []) as SubscriptionData[];
+      const subscriptionIds = subscriptions.map(s => s.id);
 
       if (subscriptionIds.length === 0) {
         setEcheances([]);
@@ -125,10 +178,13 @@ export function EcheancierPage() {
         .in('souscription_id', subscriptionIds)
         .order('date_echeance', { ascending: true });
 
-      if (echError) throw echError;
+      if (echError) {
+        throw echError;
+      }
 
-      const enrichedEcheances = (echeancesData || []).map((ech: any) => {
-        const sub = subscriptionsData?.find((s: any) => s.id === ech.souscription_id);
+      const echeances = (echeancesData || []) as EcheanceData[];
+      const enrichedEcheances = echeances.map(ech => {
+        const sub = subscriptions.find(s => s.id === ech.souscription_id);
         const isLastEcheance = sub?.tranche?.date_echeance_finale === ech.date_echeance;
 
         return {
@@ -139,9 +195,9 @@ export function EcheancierPage() {
             coupon_net: sub?.coupon_net || 0,
             montant_investi: sub?.montant_investi || 0,
             investisseur: sub?.investisseur || { nom_raison_sociale: '', type: 'Physique' },
-            tranche: sub?.tranche || { tranche_name: '', date_echeance_finale: '' }
+            tranche: sub?.tranche || { id: '', tranche_name: '', date_echeance_finale: '' },
           },
-          isLastEcheance
+          isLastEcheance,
         };
       });
 
@@ -154,7 +210,9 @@ export function EcheancierPage() {
   };
 
   const isOverdue = (echeance: Echeance) => {
-    if (echeance.statut === 'paye') return false;
+    if (echeance.statut === 'paye') {
+      return false;
+    }
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const echeanceDate = new Date(echeance.date_echeance);
@@ -163,8 +221,12 @@ export function EcheancierPage() {
   };
 
   const getEcheanceStatus = (echeance: Echeance) => {
-    if (echeance.statut === 'paye') return 'paye';
-    if (isOverdue(echeance)) return 'en_retard';
+    if (echeance.statut === 'paye') {
+      return 'paye';
+    }
+    if (isOverdue(echeance)) {
+      return 'en_retard';
+    }
     return 'a_venir';
   };
 
@@ -203,11 +265,13 @@ export function EcheancierPage() {
       // Try to find payment by matching subscription and date
       const { data: paymentByMatch } = await supabase
         .from('paiements')
-        .select(`
+        .select(
+          `
           *,
           tranche:tranches(tranche_name),
           investisseur:investisseurs(nom_raison_sociale)
-        `)
+        `
+        )
         .eq('souscription_id', echeance.souscription_id)
         .eq('date_paiement', echeance.date_echeance)
         .order('created_at', { ascending: false })
@@ -231,17 +295,21 @@ export function EcheancierPage() {
     // Fetch the payment with its related data
     const { data: paymentData } = await supabase
       .from('paiements')
-      .select(`
+      .select(
+        `
         *,
         tranche:tranches(tranche_name),
         investisseur:investisseurs(nom_raison_sociale)
-      `)
+      `
+      )
       .eq('id', echeanceData.paiement_id)
       .single();
 
     console.log('Payment data:', paymentData);
 
-    if (!paymentData) return;
+    if (!paymentData) {
+      return;
+    }
 
     // Fetch payment proofs
     const { data: proofsData } = await supabase
@@ -257,7 +325,9 @@ export function EcheancierPage() {
   };
 
   const handleMarkAsUnpaid = async (echeance: Echeance) => {
-    if (markingUnpaid) return;
+    if (markingUnpaid) {
+      return;
+    }
 
     setMarkingUnpaid(echeance.id);
     try {
@@ -283,11 +353,13 @@ export function EcheancierPage() {
           statut: newStatus,
           paiement_id: null,
           date_paiement: null,
-          montant_paye: null
+          montant_paye: null,
         })
         .eq('id', echeance.id);
 
-      if (echeanceError) throw echeanceError;
+      if (echeanceError) {
+        throw echeanceError;
+      }
 
       // If there was a linked payment, delete it and its proofs
       if (paiementId) {
@@ -298,10 +370,7 @@ export function EcheancierPage() {
           .eq('paiement_id', paiementId);
 
         // Delete payment proofs from database
-        await supabase
-          .from('payment_proofs')
-          .delete()
-          .eq('paiement_id', paiementId);
+        await supabase.from('payment_proofs').delete().eq('paiement_id', paiementId);
 
         // Delete files from storage
         if (proofs && proofs.length > 0) {
@@ -311,19 +380,14 @@ export function EcheancierPage() {
               const urlParts = proof.file_url.split('/payment-proofs/');
               if (urlParts.length > 1) {
                 const filePath = urlParts[1].split('?')[0]; // Remove query params
-                await supabase.storage
-                  .from('payment-proofs')
-                  .remove([filePath]);
+                await supabase.storage.from('payment-proofs').remove([filePath]);
               }
             }
           }
         }
 
         // Delete the payment record
-        await supabase
-          .from('paiements')
-          .delete()
-          .eq('id', paiementId);
+        await supabase.from('paiements').delete().eq('id', paiementId);
       }
 
       // Refresh the echeances list
@@ -331,15 +395,15 @@ export function EcheancierPage() {
 
       setAlertModalConfig({
         title: 'Succès',
-        message: 'L\'échéance a été marquée comme non payée et le paiement a été supprimé.',
-        type: 'success'
+        message: "L'échéance a été marquée comme non payée et le paiement a été supprimé.",
+        type: 'success',
       });
       setShowAlertModal(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setAlertModalConfig({
         title: 'Erreur',
-        message: 'Erreur lors de la mise à jour: ' + err.message,
-        type: 'error'
+        message: `Erreur lors de la mise à jour: ${err instanceof Error ? err.message : 'Une erreur est survenue'}`,
+        type: 'error',
       });
       setShowAlertModal(true);
     } finally {
@@ -350,16 +414,16 @@ export function EcheancierPage() {
   const handleExportExcel = async () => {
     const exportData = filteredEcheances.map(e => ({
       'Date échéance': formatDate(e.date_echeance),
-      'Tranche': e.souscription.tranche.tranche_name,
-      'Investisseur': e.souscription.investisseur.nom_raison_sociale,
-      'Type': e.souscription.investisseur.type,
+      Tranche: e.souscription.tranche.tranche_name,
+      Investisseur: e.souscription.investisseur.nom_raison_sociale,
+      Type: e.souscription.investisseur.type,
       'Coupon brut': e.souscription.coupon_brut,
       'Coupon net': e.souscription.coupon_net,
       'Remboursement nominal': e.isLastEcheance ? e.souscription.montant_investi : 0,
       'Total à payer': e.isLastEcheance
         ? e.souscription.coupon_net + e.souscription.montant_investi
         : e.souscription.coupon_net,
-      'Statut': e.statut === 'paye' ? 'Payé' : (isOverdue(e) ? 'En retard' : 'À venir'),
+      Statut: e.statut === 'paye' ? 'Payé' : isOverdue(e) ? 'En retard' : 'À venir',
     }));
 
     const workbook = new ExcelJS.Workbook();
@@ -374,13 +438,15 @@ export function EcheancierPage() {
       { header: 'Coupon net', key: 'Coupon net', width: 12 },
       { header: 'Remboursement nominal', key: 'Remboursement nominal', width: 20 },
       { header: 'Total à payer', key: 'Total à payer', width: 15 },
-      { header: 'Statut', key: 'Statut', width: 10 }
+      { header: 'Statut', key: 'Statut', width: 10 },
     ];
 
     exportData.forEach(row => worksheet.addRow(row));
 
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -389,58 +455,71 @@ export function EcheancierPage() {
     window.URL.revokeObjectURL(url);
   };
 
-  const filteredEcheances = echeances.filter((e) => {
-    if (filter === 'all') return true;
-    if (filter === 'paye') return e.statut === 'paye';
-    if (filter === 'en_retard') return getEcheanceStatus(e) === 'en_retard';
-    if (filter === 'a_venir') return getEcheanceStatus(e) === 'a_venir';
+  const filteredEcheances = echeances.filter(e => {
+    if (filter === 'all') {
+      return true;
+    }
+    if (filter === 'paye') {
+      return e.statut === 'paye';
+    }
+    if (filter === 'en_retard') {
+      return getEcheanceStatus(e) === 'en_retard';
+    }
+    if (filter === 'a_venir') {
+      return getEcheanceStatus(e) === 'a_venir';
+    }
     return true;
   });
 
   const trancheGroups: TrancheGroup[] = Object.values(
-    filteredEcheances.reduce((acc, echeance) => {
-      const trancheName = echeance.souscription.tranche.tranche_name;
-      const date = echeance.date_echeance;
+    filteredEcheances.reduce(
+      (acc, echeance) => {
+        const trancheName = echeance.souscription.tranche.tranche_name;
+        const trancheId = echeance.souscription.tranche.id;
+        const date = echeance.date_echeance;
 
-      if (!acc[trancheName]) {
-        acc[trancheName] = {
-          trancheName,
-          dateGroups: [],
-          totalBrut: 0,
-          totalNet: 0,
-          totalCount: 0
-        };
-      }
+        if (!acc[trancheName]) {
+          acc[trancheName] = {
+            trancheId,
+            trancheName,
+            dateGroups: [],
+            totalBrut: 0,
+            totalNet: 0,
+            totalCount: 0,
+          };
+        }
 
-      let dateGroup = acc[trancheName].dateGroups.find(dg => dg.date === date);
-      if (!dateGroup) {
-        dateGroup = {
-          date,
-          echeances: [],
-          totalBrut: 0,
-          totalNet: 0,
-          totalNominal: 0,
-          count: 0,
-          isLastEcheance: false
-        };
-        acc[trancheName].dateGroups.push(dateGroup);
-      }
+        let dateGroup = acc[trancheName].dateGroups.find(dg => dg.date === date);
+        if (!dateGroup) {
+          dateGroup = {
+            date,
+            echeances: [],
+            totalBrut: 0,
+            totalNet: 0,
+            totalNominal: 0,
+            count: 0,
+            isLastEcheance: false,
+          };
+          acc[trancheName].dateGroups.push(dateGroup);
+        }
 
-      dateGroup.echeances.push(echeance);
-      dateGroup.totalBrut += echeance.souscription.coupon_brut;
-      dateGroup.totalNet += echeance.souscription.coupon_net;
-      if (echeance.isLastEcheance) {
-        dateGroup.totalNominal += echeance.souscription.montant_investi;
-        dateGroup.isLastEcheance = true;
-      }
-      dateGroup.count += 1;
+        dateGroup.echeances.push(echeance);
+        dateGroup.totalBrut += echeance.souscription.coupon_brut;
+        dateGroup.totalNet += echeance.souscription.coupon_net;
+        if (echeance.isLastEcheance) {
+          dateGroup.totalNominal += echeance.souscription.montant_investi;
+          dateGroup.isLastEcheance = true;
+        }
+        dateGroup.count += 1;
 
-      acc[trancheName].totalBrut += echeance.souscription.coupon_brut;
-      acc[trancheName].totalNet += echeance.souscription.coupon_net;
-      acc[trancheName].totalCount += 1;
+        acc[trancheName].totalBrut += echeance.souscription.coupon_brut;
+        acc[trancheName].totalNet += echeance.souscription.coupon_net;
+        acc[trancheName].totalCount += 1;
 
-      return acc;
-    }, {} as Record<string, TrancheGroup>)
+        return acc;
+      },
+      {} as Record<string, TrancheGroup>
+    )
   );
 
   trancheGroups.forEach(group => {
@@ -449,9 +528,9 @@ export function EcheancierPage() {
 
   const stats = {
     total: echeances.length,
-    paye: echeances.filter((e) => e.statut === 'paye').length,
-    enRetard: echeances.filter((e) => getEcheanceStatus(e) === 'en_retard').length,
-    aVenir: echeances.filter((e) => getEcheanceStatus(e) === 'a_venir').length,
+    paye: echeances.filter(e => e.statut === 'paye').length,
+    enRetard: echeances.filter(e => getEcheanceStatus(e) === 'en_retard').length,
+    aVenir: echeances.filter(e => getEcheanceStatus(e) === 'a_venir').length,
     montantTotal: echeances.reduce((sum, e) => sum + e.souscription.coupon_net, 0),
   };
 
@@ -482,7 +561,9 @@ export function EcheancierPage() {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">Échéancier complet</h1>
-                <p className="text-sm text-slate-600 mt-0.5">Vue détaillée des paiements de coupons</p>
+                <p className="text-sm text-slate-600 mt-0.5">
+                  Vue détaillée des paiements de coupons
+                </p>
               </div>
             </div>
 
@@ -495,7 +576,10 @@ export function EcheancierPage() {
                 Exporter Excel
               </button>
               <button
-                onClick={() => setShowPaymentWizard(true)}
+                onClick={() => {
+                  setPreselectedTrancheId(undefined);
+                  setShowPaymentWizard(true);
+                }}
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Upload className="w-4 h-4" />
@@ -547,7 +631,9 @@ export function EcheancierPage() {
               </div>
               <p className="text-sm font-medium text-slate-600">Montant total net</p>
             </div>
-            <p className="text-2xl font-bold text-purple-900">{formatCurrency(stats.montantTotal)}</p>
+            <p className="text-2xl font-bold text-purple-900">
+              {formatCurrency(stats.montantTotal)}
+            </p>
           </div>
         </div>
 
@@ -611,32 +697,43 @@ export function EcheancierPage() {
             <div className="flex flex-col items-center justify-center py-20">
               <Calendar className="w-16 h-16 text-slate-300 mb-4" />
               <p className="text-slate-600 text-lg">Aucune échéance trouvée</p>
-              <p className="text-slate-400 text-sm mt-2">Essayez de modifier les filtres ou ajoutez des souscriptions</p>
+              <p className="text-slate-400 text-sm mt-2">
+                Essayez de modifier les filtres ou ajoutez des souscriptions
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-slate-200">
-              {trancheGroups.map((trancheGroup) => (
+              {trancheGroups.map(trancheGroup => (
                 <div key={trancheGroup.trancheName}>
                   {/* Tranche Header */}
-                  <button
-                    onClick={() => toggleTranche(trancheGroup.trancheName)}
-                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      {expandedTranches.has(trancheGroup.trancheName) ? (
-                        <ChevronDown className="w-5 h-5 text-slate-400" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-slate-400" />
-                      )}
-                      <div className="text-left">
-                        <h3 className="text-lg font-semibold text-slate-900">{trancheGroup.trancheName}</h3>
-                        <p className="text-sm text-slate-500">{trancheGroup.totalCount} échéance{trancheGroup.totalCount > 1 ? 's' : ''}</p>
+                  <div className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                    <button
+                      onClick={() => toggleTranche(trancheGroup.trancheName)}
+                      className="flex items-center gap-3 flex-1"
+                    >
+                      <div className="flex items-center gap-3">
+                        {expandedTranches.has(trancheGroup.trancheName) ? (
+                          <ChevronDown className="w-5 h-5 text-slate-400" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-slate-400" />
+                        )}
+                        <div className="text-left">
+                          <h3 className="text-lg font-semibold text-slate-900">
+                            {trancheGroup.trancheName}
+                          </h3>
+                          <p className="text-sm text-slate-500">
+                            {trancheGroup.totalCount} échéance
+                            {trancheGroup.totalCount > 1 ? 's' : ''}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-6">
+                    </button>
+                    <div className="flex items-center gap-3">
                       <div className="text-right">
                         <p className="text-sm text-slate-500">Total net</p>
-                        <p className="text-lg font-semibold text-slate-900">{formatCurrency(trancheGroup.totalNet)}</p>
+                        <p className="text-lg font-semibold text-slate-900">
+                          {formatCurrency(trancheGroup.totalNet)}
+                        </p>
                       </div>
                       {(() => {
                         const allEcheances = trancheGroup.dateGroups.flatMap(dg => dg.echeances);
@@ -663,13 +760,25 @@ export function EcheancierPage() {
                           );
                         }
                       })()}
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          setPreselectedTrancheId(trancheGroup.trancheId);
+                          setShowPaymentWizard(true);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                        title="Importer paiement pour cette tranche"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Importer paiement
+                      </button>
                     </div>
-                  </button>
+                  </div>
 
                   {/* Date Groups */}
                   {expandedTranches.has(trancheGroup.trancheName) && (
                     <div className="bg-slate-50">
-                      {trancheGroup.dateGroups.map((dateGroup) => {
+                      {trancheGroup.dateGroups.map(dateGroup => {
                         const dateKey = `${trancheGroup.trancheName}-${dateGroup.date}`;
                         return (
                           <div key={dateKey} className="border-t border-slate-200">
@@ -686,8 +795,12 @@ export function EcheancierPage() {
                                 )}
                                 <Calendar className="w-4 h-4 text-blue-600" />
                                 <div className="text-left">
-                                  <p className="text-sm font-medium text-slate-900">{formatDate(dateGroup.date)}</p>
-                                  <p className="text-xs text-slate-500">{dateGroup.count} investisseur{dateGroup.count > 1 ? 's' : ''}</p>
+                                  <p className="text-sm font-medium text-slate-900">
+                                    {formatDate(dateGroup.date)}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    {dateGroup.count} investisseur{dateGroup.count > 1 ? 's' : ''}
+                                  </p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-4">
@@ -696,11 +809,17 @@ export function EcheancierPage() {
                                     + Nominal
                                   </span>
                                 )}
-                                <p className="text-sm font-semibold text-slate-900">{formatCurrency(dateGroup.totalNet + dateGroup.totalNominal)}</p>
+                                <p className="text-sm font-semibold text-slate-900">
+                                  {formatCurrency(dateGroup.totalNet + dateGroup.totalNominal)}
+                                </p>
                                 {(() => {
                                   const totalCount = dateGroup.echeances.length;
-                                  const paidCount = dateGroup.echeances.filter(e => e.statut === 'paye').length;
-                                  const overdueCount = dateGroup.echeances.filter(e => getEcheanceStatus(e) === 'en_retard').length;
+                                  const paidCount = dateGroup.echeances.filter(
+                                    e => e.statut === 'paye'
+                                  ).length;
+                                  const overdueCount = dateGroup.echeances.filter(
+                                    e => getEcheanceStatus(e) === 'en_retard'
+                                  ).length;
 
                                   if (paidCount === totalCount) {
                                     return (
@@ -734,7 +853,7 @@ export function EcheancierPage() {
                             {/* Echeance Details */}
                             {expandedDates.has(dateKey) && (
                               <div className="px-14 pb-4 space-y-2">
-                                {dateGroup.echeances.map((echeance) => {
+                                {dateGroup.echeances.map(echeance => {
                                   const status = getEcheanceStatus(echeance);
                                   return (
                                     <div
@@ -744,27 +863,43 @@ export function EcheancierPage() {
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4 flex-1">
                                           <div className="p-2 bg-slate-100 rounded-lg">
-                                            {echeance.souscription.investisseur.type === 'Physique' ? (
+                                            {echeance.souscription.investisseur.type ===
+                                            'Physique' ? (
                                               <User className="w-4 h-4 text-slate-600" />
                                             ) : (
                                               <Building2 className="w-4 h-4 text-slate-600" />
                                             )}
                                           </div>
                                           <div>
-                                            <p className="font-medium text-slate-900">{echeance.souscription.investisseur.nom_raison_sociale}</p>
-                                            <p className="text-xs text-slate-500">{echeance.souscription.id_souscription}</p>
+                                            <p className="font-medium text-slate-900">
+                                              {
+                                                echeance.souscription.investisseur
+                                                  .nom_raison_sociale
+                                              }
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                              {echeance.souscription.id_souscription}
+                                            </p>
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-6">
                                           {echeance.isLastEcheance && (
                                             <div className="text-right">
-                                              <p className="text-xs text-purple-600 font-medium">Remboursement</p>
-                                              <p className="text-sm font-semibold text-purple-900">{formatCurrency(echeance.souscription.montant_investi)}</p>
+                                              <p className="text-xs text-purple-600 font-medium">
+                                                Remboursement
+                                              </p>
+                                              <p className="text-sm font-semibold text-purple-900">
+                                                {formatCurrency(
+                                                  echeance.souscription.montant_investi
+                                                )}
+                                              </p>
                                             </div>
                                           )}
                                           <div className="text-right">
                                             <p className="text-xs text-slate-500">Coupon net</p>
-                                            <p className="text-sm font-semibold text-slate-900">{formatCurrency(echeance.souscription.coupon_net)}</p>
+                                            <p className="text-sm font-semibold text-slate-900">
+                                              {formatCurrency(echeance.souscription.coupon_net)}
+                                            </p>
                                           </div>
                                           <div className="min-w-[90px]">
                                             {status === 'paye' && (
@@ -799,7 +934,9 @@ export function EcheancierPage() {
                                                 className="p-1.5 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Marquer comme non payé"
                                               >
-                                                <XCircle className={`w-4 h-4 ${markingUnpaid === echeance.id ? 'animate-pulse' : ''}`} />
+                                                <XCircle
+                                                  className={`w-4 h-4 ${markingUnpaid === echeance.id ? 'animate-pulse' : ''}`}
+                                                />
                                               </button>
                                             </div>
                                           )}
@@ -825,12 +962,17 @@ export function EcheancierPage() {
       {/* Payment Wizard Modal */}
       {showPaymentWizard && (
         <PaymentWizard
-          onClose={() => setShowPaymentWizard(false)}
+          onClose={() => {
+            setShowPaymentWizard(false);
+            setPreselectedTrancheId(undefined);
+          }}
           onSuccess={() => {
             setShowPaymentWizard(false);
+            setPreselectedTrancheId(undefined);
             fetchEcheances();
           }}
           preselectedProjectId={projectId}
+          preselectedTrancheId={preselectedTrancheId}
         />
       )}
 
