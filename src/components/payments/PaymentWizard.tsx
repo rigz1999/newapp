@@ -415,7 +415,7 @@ export function PaymentWizard({
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       const validFiles: File[] = [];
@@ -429,13 +429,53 @@ export function PaymentWizard({
         validFiles.push(file);
       }
 
+      // Upload files to temp storage
+      const uploadedNames: string[] = [];
+      try {
+        for (const file of validFiles) {
+          const tempFileName = `${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('payment-proofs-temp')
+            .upload(tempFileName, file);
+
+          if (uploadError) {
+            console.error('Error uploading to temp storage:', uploadError);
+            setError(`Erreur lors du téléchargement: ${uploadError.message}`);
+            return;
+          }
+
+          uploadedNames.push(tempFileName);
+          console.log('🔍 DEBUG - Uploaded to temp storage:', tempFileName);
+        }
+
+        setTempFileNames(uploadedNames);
+        console.log('🔍 DEBUG - All files uploaded to temp storage:', uploadedNames);
+      } catch (err) {
+        console.error('Error in file upload:', err);
+        setError(`Erreur lors du téléchargement: ${err.message}`);
+        return;
+      }
+
       setFiles(validFiles);
       setError('');
     }
   };
 
-  const handleRemoveFile = (indexToRemove: number) => {
+  const handleRemoveFile = async (indexToRemove: number) => {
+    // Remove from temp storage if it exists
+    if (tempFileNames[indexToRemove]) {
+      try {
+        await supabase.storage
+          .from('payment-proofs-temp')
+          .remove([tempFileNames[indexToRemove]]);
+        console.log('🔍 DEBUG - Removed from temp storage:', tempFileNames[indexToRemove]);
+      } catch (err) {
+        console.error('Error removing from temp storage:', err);
+      }
+    }
+
     setFiles(files.filter((_, idx) => idx !== indexToRemove));
+    setTempFileNames(tempFileNames.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -450,7 +490,7 @@ export function PaymentWizard({
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
@@ -467,6 +507,33 @@ export function PaymentWizard({
         return;
       }
       validFiles.push(file);
+    }
+
+    // Upload files to temp storage
+    const uploadedNames: string[] = [];
+    try {
+      for (const file of validFiles) {
+        const tempFileName = `${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('payment-proofs-temp')
+          .upload(tempFileName, file);
+
+        if (uploadError) {
+          console.error('Error uploading to temp storage:', uploadError);
+          setError(`Erreur lors du téléchargement: ${uploadError.message}`);
+          return;
+        }
+
+        uploadedNames.push(tempFileName);
+        console.log('🔍 DEBUG - Uploaded to temp storage (drag&drop):', tempFileName);
+      }
+
+      setTempFileNames(uploadedNames);
+      console.log('🔍 DEBUG - All files uploaded to temp storage (drag&drop):', uploadedNames);
+    } catch (err) {
+      console.error('Error in file upload:', err);
+      setError(`Erreur lors du téléchargement: ${err.message}`);
+      return;
     }
 
     setFiles(validFiles);
