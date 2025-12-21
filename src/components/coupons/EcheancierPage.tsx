@@ -584,6 +584,31 @@ export function EcheancierPage() {
                         <p className="text-sm text-slate-500">Total net</p>
                         <p className="text-lg font-semibold text-slate-900">{formatCurrency(trancheGroup.totalNet)}</p>
                       </div>
+                      {(() => {
+                        const allEcheances = trancheGroup.dateGroups.flatMap(dg => dg.echeances);
+                        const totalCount = allEcheances.length;
+                        const paidCount = allEcheances.filter(e => e.statut === 'paye').length;
+
+                        if (paidCount === totalCount) {
+                          return (
+                            <span className="px-3 py-1.5 bg-green-100 text-green-700 text-sm font-medium rounded-full">
+                              {paidCount}/{totalCount} payés
+                            </span>
+                          );
+                        } else if (paidCount > 0) {
+                          return (
+                            <span className="px-3 py-1.5 bg-yellow-100 text-yellow-700 text-sm font-medium rounded-full">
+                              {paidCount}/{totalCount} payés
+                            </span>
+                          );
+                        } else {
+                          return (
+                            <span className="px-3 py-1.5 bg-slate-100 text-slate-700 text-sm font-medium rounded-full">
+                              {paidCount}/{totalCount} payés
+                            </span>
+                          );
+                        }
+                      })()}
                     </div>
                   </button>
 
@@ -618,6 +643,37 @@ export function EcheancierPage() {
                                   </span>
                                 )}
                                 <p className="text-sm font-semibold text-slate-900">{formatCurrency(dateGroup.totalNet + dateGroup.totalNominal)}</p>
+                                {(() => {
+                                  const totalCount = dateGroup.echeances.length;
+                                  const paidCount = dateGroup.echeances.filter(e => e.statut === 'paye').length;
+                                  const overdueCount = dateGroup.echeances.filter(e => getEcheanceStatus(e) === 'en_retard').length;
+
+                                  if (paidCount === totalCount) {
+                                    return (
+                                      <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                        Tous payés ({paidCount}/{totalCount})
+                                      </span>
+                                    );
+                                  } else if (paidCount > 0) {
+                                    return (
+                                      <span className="px-2.5 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                                        Partiel ({paidCount}/{totalCount})
+                                      </span>
+                                    );
+                                  } else if (overdueCount > 0) {
+                                    return (
+                                      <span className="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                                        En retard (0/{totalCount})
+                                      </span>
+                                    );
+                                  } else {
+                                    return (
+                                      <span className="px-2.5 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+                                        À venir (0/{totalCount})
+                                      </span>
+                                    );
+                                  }
+                                })()}
                               </div>
                             </button>
 
