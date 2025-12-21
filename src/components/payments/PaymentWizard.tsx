@@ -733,24 +733,43 @@ export function PaymentWizard({
           }
         }
 
+        console.log('🔍 DEBUG [ValidateSelected] - tempFileNames:', tempFileNames);
+        console.log('🔍 DEBUG [ValidateSelected] - files:', files);
+
         if (tempFileNames.length > 0) {
           const firstTempFile = tempFileNames[0];
+          console.log('🔍 DEBUG [ValidateSelected] - Downloading from temp storage:', firstTempFile);
+
           const { data: downloadData, error: downloadError } = await supabase.storage
             .from('payment-proofs-temp')
             .download(firstTempFile);
 
+          console.log('🔍 DEBUG [ValidateSelected] - Download result:', { hasData: !!downloadData, error: downloadError });
           if (downloadError) throw downloadError;
 
           const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
+          console.log('🔍 DEBUG [ValidateSelected] - Uploading to permanent storage:', permanentFileName);
+
           const { error: uploadError } = await supabase.storage
             .from('payment-proofs')
             .upload(permanentFileName, downloadData);
 
+          console.log('🔍 DEBUG [ValidateSelected] - Upload result:', { error: uploadError });
           if (uploadError) throw uploadError;
 
           const { data: urlData } = supabase.storage
             .from('payment-proofs')
             .getPublicUrl(permanentFileName);
+
+          console.log('🔍 DEBUG [ValidateSelected] - Public URL:', urlData.publicUrl);
+          console.log('🔍 DEBUG [ValidateSelected] - Inserting payment_proof:', {
+            paiement_id: paymentData.id,
+            file_url: urlData.publicUrl,
+            file_name: files[0].name,
+            file_size: files[0].size,
+            extracted_data: match.paiement,
+            confidence: match.confiance
+          });
 
           const { error: proofError } = await supabase
             .from('payment_proofs')
@@ -763,7 +782,10 @@ export function PaymentWizard({
               confidence: match.confiance
             });
 
+          console.log('🔍 DEBUG [ValidateSelected] - payment_proof insert result:', { error: proofError });
           if (proofError) throw proofError;
+        } else {
+          console.log('🔍 DEBUG [ValidateSelected] - NO TEMP FILES to process!');
         }
       }
 
@@ -839,24 +861,43 @@ export function PaymentWizard({
           }
         }
 
+        console.log('🔍 DEBUG [ValidateAll] - tempFileNames:', tempFileNames);
+        console.log('🔍 DEBUG [ValidateAll] - files:', files);
+
         if (tempFileNames.length > 0) {
           const firstTempFile = tempFileNames[0];
+          console.log('🔍 DEBUG [ValidateAll] - Downloading from temp storage:', firstTempFile);
+
           const { data: downloadData, error: downloadError } = await supabase.storage
             .from('payment-proofs-temp')
             .download(firstTempFile);
 
+          console.log('🔍 DEBUG [ValidateAll] - Download result:', { hasData: !!downloadData, error: downloadError });
           if (downloadError) throw downloadError;
 
           const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
+          console.log('🔍 DEBUG [ValidateAll] - Uploading to permanent storage:', permanentFileName);
+
           const { error: uploadError } = await supabase.storage
             .from('payment-proofs')
             .upload(permanentFileName, downloadData);
 
+          console.log('🔍 DEBUG [ValidateAll] - Upload result:', { error: uploadError });
           if (uploadError) throw uploadError;
 
           const { data: urlData } = supabase.storage
             .from('payment-proofs')
             .getPublicUrl(permanentFileName);
+
+          console.log('🔍 DEBUG [ValidateAll] - Public URL:', urlData.publicUrl);
+          console.log('🔍 DEBUG [ValidateAll] - Inserting payment_proof:', {
+            paiement_id: paymentData.id,
+            file_url: urlData.publicUrl,
+            file_name: files[0].name,
+            file_size: files[0].size,
+            extracted_data: match.paiement,
+            confidence: match.confiance
+          });
 
           const { error: proofError } = await supabase
             .from('payment_proofs')
@@ -869,7 +910,10 @@ export function PaymentWizard({
               confidence: match.confiance
             });
 
+          console.log('🔍 DEBUG [ValidateAll] - payment_proof insert result:', { error: proofError });
           if (proofError) throw proofError;
+        } else {
+          console.log('🔍 DEBUG [ValidateAll] - NO TEMP FILES to process!');
         }
       }
 
