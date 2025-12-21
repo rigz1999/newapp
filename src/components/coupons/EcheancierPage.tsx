@@ -923,43 +923,46 @@ export function EcheancierPage() {
                                               </span>
                                             )}
                                           </div>
-                                          {status === 'paye' ? (
-                                            <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-2">
+                                            {status === 'paye' ? (
+                                              <>
+                                                <button
+                                                  onClick={() => handleViewPaymentProof(echeance)}
+                                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                                                  title="Voir le justificatif"
+                                                >
+                                                  <FileText className="w-4 h-4" />
+                                                  Voir preuve
+                                                </button>
+                                                <button
+                                                  onClick={() => handleMarkAsUnpaid(echeance)}
+                                                  disabled={markingUnpaid === echeance.id}
+                                                  className="p-1.5 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                  title="Marquer comme non payé"
+                                                >
+                                                  <XCircle
+                                                    className={`w-4 h-4 ${markingUnpaid === echeance.id ? 'animate-pulse' : ''}`}
+                                                  />
+                                                </button>
+                                              </>
+                                            ) : (
                                               <button
-                                                onClick={() => handleViewPaymentProof(echeance)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                                                title="Voir le justificatif"
+                                                onClick={() => {
+                                                  setPreselectedTrancheId(
+                                                    echeance.souscription.tranche.id
+                                                  );
+                                                  setPreselectedEcheanceDate(
+                                                    echeance.date_echeance
+                                                  );
+                                                  setShowPaymentWizard(true);
+                                                }}
+                                                className="p-1.5 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                                                title="Enregistrer un paiement pour cette échéance"
                                               >
-                                                <FileText className="w-4 h-4" />
-                                                Voir preuve
+                                                <Upload className="w-4 h-4" />
                                               </button>
-                                              <button
-                                                onClick={() => handleMarkAsUnpaid(echeance)}
-                                                disabled={markingUnpaid === echeance.id}
-                                                className="p-1.5 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                title="Marquer comme non payé"
-                                              >
-                                                <XCircle
-                                                  className={`w-4 h-4 ${markingUnpaid === echeance.id ? 'animate-pulse' : ''}`}
-                                                />
-                                              </button>
-                                            </div>
-                                          ) : (
-                                            <button
-                                              onClick={() => {
-                                                setPreselectedTrancheId(
-                                                  echeance.souscription.tranche.id
-                                                );
-                                                setPreselectedEcheanceDate(echeance.date_echeance);
-                                                setShowPaymentWizard(true);
-                                              }}
-                                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                                              title="Enregistrer un paiement pour cette échéance"
-                                            >
-                                              <Upload className="w-4 h-4" />
-                                              Enregistrer un paiement
-                                            </button>
-                                          )}
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
