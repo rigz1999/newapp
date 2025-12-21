@@ -686,6 +686,16 @@ export function PaymentWizard({
         }
       }
 
+      // Get org_id from projet
+      const { data: projet, error: projetError } = await supabase
+        .from('projets')
+        .select('org_id')
+        .eq('id', selectedProjectId)
+        .single();
+
+      if (projetError) throw projetError;
+      if (!projet?.org_id) throw new Error('Impossible de récupérer l\'organisation du projet');
+
       for (const match of validMatches) {
         const { data: paymentData, error: paymentError} = await supabase
           .from('paiements')
@@ -696,6 +706,7 @@ export function PaymentWizard({
             tranche_id: selectedTrancheId,
             investisseur_id: match.matchedSubscription!.investisseur_id,
             souscription_id: match.matchedSubscription!.id,
+            org_id: projet.org_id,
             montant: match.paiement.montant,
             date_paiement: selectedEcheanceDate || new Date().toISOString().split('T')[0]
           })
@@ -781,6 +792,16 @@ export function PaymentWizard({
         throw new Error('Aucune correspondance valide à valider');
       }
 
+      // Get org_id from projet
+      const { data: projet, error: projetError } = await supabase
+        .from('projets')
+        .select('org_id')
+        .eq('id', selectedProjectId)
+        .single();
+
+      if (projetError) throw projetError;
+      if (!projet?.org_id) throw new Error('Impossible de récupérer l\'organisation du projet');
+
       for (const match of validMatchesList) {
         const { data: paymentData, error: paymentError } = await supabase
           .from('paiements')
@@ -791,6 +812,7 @@ export function PaymentWizard({
             tranche_id: selectedTrancheId,
             investisseur_id: match.matchedSubscription!.investisseur_id,
             souscription_id: match.matchedSubscription!.id,
+            org_id: projet.org_id,
             montant: match.paiement.montant,
             date_paiement: selectedEcheanceDate || new Date().toISOString().split('T')[0]
           })
