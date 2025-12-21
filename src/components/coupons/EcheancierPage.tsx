@@ -587,7 +587,7 @@ export function EcheancierPage() {
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Upload className="w-4 h-4" />
-                Importer virements
+                Enregistrer un paiement
               </button>
             </div>
           </div>
@@ -772,10 +772,10 @@ export function EcheancierPage() {
                           setShowPaymentWizard(true);
                         }}
                         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                        title="Importer paiement pour cette tranche"
+                        title="Enregistrer un paiement pour cette tranche"
                       >
                         <Upload className="w-4 h-4" />
-                        Importer paiement
+                        Enregistrer un paiement
                       </button>
                     </div>
                   </div>
@@ -954,10 +954,10 @@ export function EcheancierPage() {
                                                 setShowPaymentWizard(true);
                                               }}
                                               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                                              title="Importer paiement pour cette échéance"
+                                              title="Enregistrer un paiement pour cette échéance"
                                             >
                                               <Upload className="w-4 h-4" />
-                                              Importer
+                                              Enregistrer un paiement
                                             </button>
                                           )}
                                         </div>
