@@ -68,6 +68,9 @@ export function Payments({ organization }: PaymentsProps) {
   const [selectedPayments, setSelectedPayments] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Single payment deletion
+  const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
+
   // Get unique values for filters
   const uniqueProjects = Array.from(
     new Set(payments.map(p => p.tranche?.projet?.projet).filter(Boolean))
@@ -310,6 +313,66 @@ export function Payments({ organization }: PaymentsProps) {
     } catch (err) {
       console.error('Bulk delete failed:', err);
       setError('Échec de la suppression des paiements sélectionnés');
+    }
+  };
+
+  const handleDeleteSinglePayment = async () => {
+    if (!paymentToDelete) return;
+
+    try {
+      // Get payment proofs to delete storage files
+      const { data: proofs } = await supabase
+        .from('payment_proofs')
+        .select('file_url')
+        .eq('paiement_id', paymentToDelete.id);
+
+      // Delete payment proofs from database
+      await supabase
+        .from('payment_proofs')
+        .delete()
+        .eq('paiement_id', paymentToDelete.id);
+
+      // Delete files from storage
+      if (proofs && proofs.length > 0) {
+        for (const proof of proofs) {
+          if (proof.file_url) {
+            const urlParts = proof.file_url.split('/payment-proofs/');
+            if (urlParts.length > 1) {
+              const filePath = urlParts[1].split('?')[0];
+              await supabase.storage
+                .from('payment-proofs')
+                .remove([filePath]);
+            }
+          }
+        }
+      }
+
+      // Update any echeances that reference this payment
+      await supabase
+        .from('coupons_echeances')
+        .update({
+          paiement_id: null,
+          statut: 'en_attente',
+          date_paiement: null,
+          montant_paye: null
+        })
+        .eq('paiement_id', paymentToDelete.id);
+
+      // Delete the payment
+      const { error } = await supabase
+        .from('paiements')
+        .delete()
+        .eq('id', paymentToDelete.id);
+
+      if (error) throw error;
+
+      // Refresh data
+      await fetchPayments();
+      setPaymentToDelete(null);
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setError('Échec de la suppression du paiement');
+      setPaymentToDelete(null);
     }
   };
 
@@ -621,6 +684,13 @@ export function Payments({ organization }: PaymentsProps) {
                           <Eye className="w-3 h-3 md:w-4 md:h-4" />
                           <span className="hidden sm:inline">Voir</span>
                         </button>
+                        <button
+                          onClick={() => setPaymentToDelete(payment)}
+                          className="p-1.5 md:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Supprimer le paiement"
+                        >
+                          <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -662,6 +732,18 @@ export function Payments({ organization }: PaymentsProps) {
         message="Êtes-vous sûr de vouloir supprimer ces paiements ? Cette action est irréversible."
         variant="danger"
         impact={`Cette action supprimera ${selectedPayments.size} paiement${selectedPayments.size > 1 ? 's' : ''}.`}
+        confirmText="Supprimer"
+      />
+
+      {/* Single Payment Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!paymentToDelete}
+        onClose={() => setPaymentToDelete(null)}
+        onConfirm={handleDeleteSinglePayment}
+        title="Supprimer le paiement"
+        message={`Êtes-vous sûr de vouloir supprimer le paiement ${paymentToDelete?.id_paiement || ''} ?`}
+        variant="danger"
+        impact="Cette action supprimera le paiement, ses justificatifs et mettra à jour les échéances liées."
         confirmText="Supprimer"
       />
     </div>
