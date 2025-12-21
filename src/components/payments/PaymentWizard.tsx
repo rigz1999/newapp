@@ -98,6 +98,8 @@ export function PaymentWizard({
   const [tempFileNames, setTempFileNames] = useState<string[]>([]);
   const [selectedMatches, setSelectedMatches] = useState<Set<number>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [displayProjectName, setDisplayProjectName] = useState(showProjectName || '');
   const [displayTrancheName, setDisplayTrancheName] = useState(showTrancheName || '');
@@ -862,8 +864,8 @@ export function PaymentWizard({
       }
 
       setShowConfirmModal(false);
-      onSuccess();
-      onClose();
+      setSuccessMessage(`Paiement validé avec succès${tempFileNames.length > 0 ? ' avec justificatif' : ''} !`);
+      setShowSuccessModal(true);
     } catch (err) {
       setError(err.message || 'Erreur lors de la validation');
     } finally {
@@ -989,8 +991,8 @@ export function PaymentWizard({
         await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
       }
 
-      onSuccess();
-      onClose();
+      setSuccessMessage(`${validMatchesList.length} paiement${validMatchesList.length > 1 ? 's validés' : ' validé'} avec succès !`);
+      setShowSuccessModal(true);
     } catch (err) {
       setError(err.message || 'Erreur lors de la validation');
     } finally {
@@ -1752,6 +1754,29 @@ export function PaymentWizard({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[70]">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">Succès !</h3>
+            <p className="text-slate-600 mb-6">{successMessage}</p>
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                onSuccess();
+                onClose();
+              }}
+              className="w-full px-6 py-3 bg-finixar-green text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+            >
+              Fermer
+            </button>
           </div>
         </div>
       )}
