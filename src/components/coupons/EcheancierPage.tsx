@@ -261,16 +261,27 @@ export function EcheancierPage() {
 
     setMarkingUnpaid(echeance.id);
     try {
-      // Update the echeance to remove payment link and status
+      // Determine the new status based on the due date
+      const today = new Date();
+      const dueDate = new Date(echeance.date_echeance);
+      const isOverdue = today > dueDate;
+      const newStatus = isOverdue ? 'en_retard' : 'en_attente';
+
+      // Update the echeance to remove payment link and reset status
       const { error: echeanceError } = await supabase
         .from('coupons_echeances')
         .update({
-          statut: null,
-          paiement_id: null
-        } as never)
+          statut: newStatus,
+          paiement_id: null,
+          date_paiement: null,
+          montant_paye: null
+        })
         .eq('id', echeance.id);
 
       if (echeanceError) throw echeanceError;
+
+      // If there was a linked payment, optionally delete it or update its status
+      // For now, we just unlink it from the echeance
 
       // Refresh the echeances list
       await fetchEcheances();
