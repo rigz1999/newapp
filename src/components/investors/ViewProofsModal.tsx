@@ -1,4 +1,4 @@
-import { X, Download, Eye, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Download, Eye, Trash2, AlertTriangle, ZoomIn } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useState, useEffect } from 'react';
 import { AlertModal } from '../common/Modals';
@@ -13,6 +13,7 @@ interface ViewProofsModalProps {
 export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: ViewProofsModalProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ proofId: string; fileUrl: string; fileName: string } | null>(null);
+  const [selectedProofForPreview, setSelectedProofForPreview] = useState<any | null>(null);
 
   // Alert modal state
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -25,13 +26,17 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
   // Handle ESC key to close modal
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !confirmDelete) {
-        onClose();
+      if (e.key === 'Escape') {
+        if (selectedProofForPreview) {
+          setSelectedProofForPreview(null);
+        } else if (!confirmDelete) {
+          onClose();
+        }
       }
     };
     document.addEventListener('keydown', handleEsc, { capture: true });
     return () => document.removeEventListener('keydown', handleEsc, { capture: true });
-  }, [onClose, confirmDelete]);
+  }, [onClose, confirmDelete, selectedProofForPreview]);
 
   const downloadFile = (url: string, filename: string) => {
     const a = document.createElement('a');
@@ -58,6 +63,18 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
   const handleDeleteProof = async (proofId: string, fileUrl: string) => {
     setDeleting(proofId);
     try {
+      // Delete from database first
+      const { error: dbError } = await supabase
+        .from('payment_proofs')
+        .delete()
+        .eq('id', proofId);
+
+      if (dbError) {
+        console.error('Database deletion error:', dbError);
+        throw new Error(`Échec de la suppression du justificatif: ${dbError.message}. Vérifiez que vous avez les permissions nécessaires (rôle admin requis).`);
+      }
+
+      // Then try to delete from storage (but don't fail if storage deletion fails)
       const pathMatch = fileUrl.match(/payment-proofs\/(.+)$/);
       if (pathMatch) {
         const filePath = pathMatch[1];
@@ -67,17 +84,9 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
           .remove([filePath]);
 
         if (storageError) {
-          // Silently ignore storage errors
+          console.warn('Storage deletion warning:', storageError);
+          // Don't throw, just log - file might already be deleted or path might be wrong
         }
-      }
-
-      const { error: dbError } = await supabase
-        .from('payment_proofs')
-        .delete()
-        .eq('id', proofId);
-
-      if (dbError) {
-        throw dbError;
       }
 
       const remainingProofs = proofs.filter(p => p.id !== proofId);
@@ -93,14 +102,22 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
           .eq('id', payment.id);
       }
 
+      setAlertModalConfig({
+        title: 'Succès',
+        message: 'Le justificatif a été supprimé avec succès.',
+        type: 'success'
+      });
+      setShowAlertModal(true);
+
       onProofDeleted();
       if (remainingProofs.length === 0) {
-        onClose();
+        setTimeout(() => onClose(), 1000);
       }
     } catch (err: any) {
+      console.error('Delete proof error:', err);
       setAlertModalConfig({
-        title: 'Erreur',
-        message: 'Erreur lors de la suppression du justificatif: ' + err.message,
+        title: 'Erreur de suppression',
+        message: err.message || 'Erreur lors de la suppression du justificatif. Vérifiez que vous avez les permissions nécessaires.',
         type: 'error'
       });
       setShowAlertModal(true);
@@ -135,48 +152,74 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
               <>
                 <div className="space-y-4 mb-6">
                   {proofs.map((proof) => (
-                    <div key={proof.id} className="border border-slate-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-900">📄 {proof.file_name}</p>
-                          <p className="text-sm text-slate-500 mt-1">
-                            Téléchargé: {new Date(proof.validated_at).toLocaleDateString('fr-FR', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                          {proof.extracted_data && (
-                            <p className="text-xs text-slate-600 mt-1">
-                              Montant: {formatCurrency(proof.extracted_data.montant)} • Confiance: {proof.confidence}%
-                            </p>
-                          )}
+                    <div key={proof.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                      {/* Image Preview */}
+                      {proof.file_url && (
+                        <div className="relative bg-slate-50 flex items-center justify-center p-4">
+                          <img
+                            src={proof.file_url}
+                            alt={proof.file_name}
+                            className="max-h-48 w-auto rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setSelectedProofForPreview(proof)}
+                            onError={(e) => {
+                              // If image fails to load, hide it
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                          <button
+                            onClick={() => setSelectedProofForPreview(proof)}
+                            className="absolute top-2 right-2 p-2 bg-white bg-opacity-90 rounded-lg shadow-md hover:bg-opacity-100 transition-all"
+                            title="Agrandir"
+                          >
+                            <ZoomIn className="w-4 h-4 text-slate-700" />
+                          </button>
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => window.open(proof.file_url, '_blank')}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Voir"
-                          >
-                            <Eye className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => downloadFile(proof.file_url, proof.file_name)}
-                            className="p-2 text-finixar-green hover:bg-green-50 rounded-lg transition-colors"
-                            title="Télécharger"
-                          >
-                            <Download className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => setConfirmDelete({ proofId: proof.id, fileUrl: proof.file_url, fileName: proof.file_name })}
-                            disabled={deleting === proof.id}
-                            className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Supprimer"
-                          >
-                            <Trash2 className={`w-5 h-5 ${deleting === proof.id ? 'animate-pulse' : ''}`} />
-                          </button>
+                      )}
+
+                      {/* File Info */}
+                      <div className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-slate-900">📄 {proof.file_name}</p>
+                            <p className="text-sm text-slate-500 mt-1">
+                              Téléchargé: {new Date(proof.validated_at).toLocaleDateString('fr-FR', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                            {proof.extracted_data && (
+                              <p className="text-xs text-slate-600 mt-1">
+                                Montant: {formatCurrency(proof.extracted_data.montant)} • Confiance: {proof.confidence}%
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => window.open(proof.file_url, '_blank')}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Ouvrir dans un nouvel onglet"
+                            >
+                              <Eye className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => downloadFile(proof.file_url, proof.file_name)}
+                              className="p-2 text-finixar-green hover:bg-green-50 rounded-lg transition-colors"
+                              title="Télécharger"
+                            >
+                              <Download className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => setConfirmDelete({ proofId: proof.id, fileUrl: proof.file_url, fileName: proof.file_name })}
+                              disabled={deleting === proof.id}
+                              className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Supprimer"
+                            >
+                              <Trash2 className={`w-5 h-5 ${deleting === proof.id ? 'animate-pulse' : ''}`} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -253,6 +296,85 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
         message={alertModalConfig.message}
         type={alertModalConfig.type}
       />
+
+      {/* Full Screen Image Preview Modal */}
+      {selectedProofForPreview && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[70]"
+          onClick={() => setSelectedProofForPreview(null)}
+        >
+          <div className="relative max-w-7xl w-full h-full flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-white">
+                <h3 className="font-semibold text-lg">{selectedProofForPreview.file_name}</h3>
+                <p className="text-sm text-slate-300">
+                  Téléchargé: {new Date(selectedProofForPreview.validated_at).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    downloadFile(selectedProofForPreview.file_url, selectedProofForPreview.file_name);
+                  }}
+                  className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg transition-colors"
+                  title="Télécharger"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(selectedProofForPreview.file_url, '_blank');
+                  }}
+                  className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg transition-colors"
+                  title="Ouvrir dans un nouvel onglet"
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setSelectedProofForPreview(null)}
+                  className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg transition-colors"
+                  title="Fermer"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Image */}
+            <div
+              className="flex-1 flex items-center justify-center overflow-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={selectedProofForPreview.file_url}
+                alt={selectedProofForPreview.file_name}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              />
+            </div>
+
+            {/* Info Footer */}
+            {selectedProofForPreview.extracted_data && (
+              <div className="mt-4 bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-4 text-white">
+                <p className="text-sm">
+                  <span className="font-semibold">Données extraites:</span>{' '}
+                  Montant: {formatCurrency(selectedProofForPreview.extracted_data.montant)} •
+                  Date: {selectedProofForPreview.extracted_data.date} •
+                  Confiance: {selectedProofForPreview.confidence}%
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
