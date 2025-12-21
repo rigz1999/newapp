@@ -695,10 +695,11 @@ export function PaymentWizard({
         }
       });
       setSelectedMatches(autoSelected);
-      
+
       setUploadedFileUrls([]);
-      setTempFileNames([]);
-      
+      // Don't clear tempFileNames here - we need them for validation!
+      // They'll be cleared after successful payment creation
+
       setStep('results');
 
       const totalTime = Date.now() - startTime;
