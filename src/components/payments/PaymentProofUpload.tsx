@@ -315,12 +315,23 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
         if (subError) throw subError;
 
+        // Get tranche with projet to get org_id
+        const { data: tranche, error: trancheError } = await supabase
+          .from('tranches')
+          .select('*, projet:projets(org_id)')
+          .eq('id', trancheId)
+          .single();
+
+        if (trancheError) throw trancheError;
+        if (!tranche?.projet?.org_id) throw new Error('Impossible de récupérer l\'organisation de la tranche');
+
         // Create payment record
         const { data: paymentData, error: paymentError } = await supabase
           .from('paiements')
           .insert({
             tranche_id: trancheId,
             investisseur_id: subscription.investisseur_id,
+            org_id: tranche.projet.org_id,
             type: 'Coupon',
             montant: match.paiement.montant,
             date_paiement: match.paiement.date
