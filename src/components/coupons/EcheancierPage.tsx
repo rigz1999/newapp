@@ -99,6 +99,9 @@ export function EcheancierPage() {
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [preselectedTrancheId, setPreselectedTrancheId] = useState<string | undefined>(undefined);
+  const [preselectedEcheanceDate, setPreselectedEcheanceDate] = useState<string | undefined>(
+    undefined
+  );
   const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<Record<
     string,
     unknown
@@ -578,12 +581,13 @@ export function EcheancierPage() {
               <button
                 onClick={() => {
                   setPreselectedTrancheId(undefined);
+                  setPreselectedEcheanceDate(undefined);
                   setShowPaymentWizard(true);
                 }}
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Upload className="w-4 h-4" />
-                Importer virements
+                Enregistrer un paiement
               </button>
             </div>
           </div>
@@ -764,13 +768,14 @@ export function EcheancierPage() {
                         onClick={e => {
                           e.stopPropagation();
                           setPreselectedTrancheId(trancheGroup.trancheId);
+                          setPreselectedEcheanceDate(undefined);
                           setShowPaymentWizard(true);
                         }}
                         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                        title="Importer paiement pour cette tranche"
+                        title="Enregistrer un paiement pour cette tranche"
                       >
                         <Upload className="w-4 h-4" />
-                        Importer paiement
+                        Enregistrer un paiement
                       </button>
                     </div>
                   </div>
@@ -918,7 +923,7 @@ export function EcheancierPage() {
                                               </span>
                                             )}
                                           </div>
-                                          {status === 'paye' && (
+                                          {status === 'paye' ? (
                                             <div className="flex items-center gap-2">
                                               <button
                                                 onClick={() => handleViewPaymentProof(echeance)}
@@ -939,6 +944,21 @@ export function EcheancierPage() {
                                                 />
                                               </button>
                                             </div>
+                                          ) : (
+                                            <button
+                                              onClick={() => {
+                                                setPreselectedTrancheId(
+                                                  echeance.souscription.tranche.id
+                                                );
+                                                setPreselectedEcheanceDate(echeance.date_echeance);
+                                                setShowPaymentWizard(true);
+                                              }}
+                                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                                              title="Enregistrer un paiement pour cette échéance"
+                                            >
+                                              <Upload className="w-4 h-4" />
+                                              Enregistrer un paiement
+                                            </button>
                                           )}
                                         </div>
                                       </div>
@@ -965,14 +985,17 @@ export function EcheancierPage() {
           onClose={() => {
             setShowPaymentWizard(false);
             setPreselectedTrancheId(undefined);
+            setPreselectedEcheanceDate(undefined);
           }}
           onSuccess={() => {
             setShowPaymentWizard(false);
             setPreselectedTrancheId(undefined);
+            setPreselectedEcheanceDate(undefined);
             fetchEcheances();
           }}
           preselectedProjectId={projectId}
           preselectedTrancheId={preselectedTrancheId}
+          preselectedEcheanceDate={preselectedEcheanceDate}
         />
       )}
 
