@@ -788,27 +788,29 @@ export function EcheancierPage() {
                         return (
                           <div key={dateKey} className="border-t border-slate-200">
                             {/* Date Header */}
-                            <button
-                              onClick={() => toggleDate(dateKey)}
-                              className="w-full px-10 py-3 flex items-center justify-between hover:bg-slate-100 transition-colors"
-                            >
-                              <div className="flex items-center gap-3">
-                                {expandedDates.has(dateKey) ? (
-                                  <ChevronDown className="w-4 h-4 text-slate-400" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                                )}
-                                <Calendar className="w-4 h-4 text-blue-600" />
-                                <div className="text-left">
-                                  <p className="text-sm font-medium text-slate-900">
-                                    {formatDate(dateGroup.date)}
-                                  </p>
-                                  <p className="text-xs text-slate-500">
-                                    {dateGroup.count} investisseur{dateGroup.count > 1 ? 's' : ''}
-                                  </p>
+                            <div className="w-full px-10 py-3 flex items-center justify-between hover:bg-slate-100 transition-colors">
+                              <button
+                                onClick={() => toggleDate(dateKey)}
+                                className="flex items-center gap-3 flex-1"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {expandedDates.has(dateKey) ? (
+                                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                                  )}
+                                  <Calendar className="w-4 h-4 text-blue-600" />
+                                  <div className="text-left">
+                                    <p className="text-sm font-medium text-slate-900">
+                                      {formatDate(dateGroup.date)}
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                      {dateGroup.count} investisseur{dateGroup.count > 1 ? 's' : ''}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-4">
+                              </button>
+                              <div className="flex items-center gap-3">
                                 {dateGroup.isLastEcheance && (
                                   <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded">
                                     + Nominal
@@ -852,8 +854,21 @@ export function EcheancierPage() {
                                     );
                                   }
                                 })()}
+                                <button
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setPreselectedTrancheId(trancheGroup.trancheId);
+                                    setPreselectedEcheanceDate(dateGroup.date);
+                                    setShowPaymentWizard(true);
+                                  }}
+                                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                                  title="Enregistrer un paiement pour cette échéance"
+                                >
+                                  <Upload className="w-4 h-4" />
+                                  Enregistrer un paiement
+                                </button>
                               </div>
-                            </button>
+                            </div>
 
                             {/* Echeance Details */}
                             {expandedDates.has(dateKey) && (
@@ -923,46 +938,28 @@ export function EcheancierPage() {
                                               </span>
                                             )}
                                           </div>
-                                          <div className="flex items-center gap-2">
-                                            {status === 'paye' ? (
-                                              <>
-                                                <button
-                                                  onClick={() => handleViewPaymentProof(echeance)}
-                                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                                                  title="Voir le justificatif"
-                                                >
-                                                  <FileText className="w-4 h-4" />
-                                                  Voir preuve
-                                                </button>
-                                                <button
-                                                  onClick={() => handleMarkAsUnpaid(echeance)}
-                                                  disabled={markingUnpaid === echeance.id}
-                                                  className="p-1.5 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                  title="Marquer comme non payé"
-                                                >
-                                                  <XCircle
-                                                    className={`w-4 h-4 ${markingUnpaid === echeance.id ? 'animate-pulse' : ''}`}
-                                                  />
-                                                </button>
-                                              </>
-                                            ) : (
+                                          {status === 'paye' && (
+                                            <div className="flex items-center gap-2">
                                               <button
-                                                onClick={() => {
-                                                  setPreselectedTrancheId(
-                                                    echeance.souscription.tranche.id
-                                                  );
-                                                  setPreselectedEcheanceDate(
-                                                    echeance.date_echeance
-                                                  );
-                                                  setShowPaymentWizard(true);
-                                                }}
-                                                className="p-1.5 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-                                                title="Enregistrer un paiement pour cette échéance"
+                                                onClick={() => handleViewPaymentProof(echeance)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                                                title="Voir le justificatif"
                                               >
-                                                <Upload className="w-4 h-4" />
+                                                <FileText className="w-4 h-4" />
+                                                Voir preuve
                                               </button>
-                                            )}
-                                          </div>
+                                              <button
+                                                onClick={() => handleMarkAsUnpaid(echeance)}
+                                                disabled={markingUnpaid === echeance.id}
+                                                className="p-1.5 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                title="Marquer comme non payé"
+                                              >
+                                                <XCircle
+                                                  className={`w-4 h-4 ${markingUnpaid === echeance.id ? 'animate-pulse' : ''}`}
+                                                />
+                                              </button>
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
                                     </div>
