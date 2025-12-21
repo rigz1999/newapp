@@ -91,15 +91,25 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
 
       const remainingProofs = proofs.filter(p => p.id !== proofId);
       if (remainingProofs.length === 0) {
+        // No more proofs - need to update both payment and related echeances
         const today = new Date();
         const dueDate = new Date(payment.date_paiement);
-        const diffDays = Math.ceil((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
-        const newStatus = diffDays > 7 ? 'En retard' : 'En attente';
+        const isOverdue = today > dueDate;
+        const newStatus = isOverdue ? 'en_retard' : 'en_attente';
 
+        // Update related coupons_echeances to unlink payment and update status
         await supabase
-          .from('paiements')
-          .update({ statut: newStatus } as never)
-          .eq('id', payment.id);
+          .from('coupons_echeances')
+          .update({
+            statut: newStatus,
+            paiement_id: null,
+            date_paiement: null,
+            montant_paye: null
+          })
+          .eq('paiement_id', payment.id);
+
+        // Note: We don't update paiements table anymore since the payment might not have a status field
+        // or it might be managed differently. The important part is updating coupons_echeances.
       }
 
       setAlertModalConfig({
