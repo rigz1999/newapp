@@ -48,6 +48,20 @@ export function useOrganization(userId: string | undefined) {
       logger.log('useOrganization - Fetching memberships for userId:', userId);
 
       try {
+        // First check if user is superadmin via profile
+        const { data: isSuperAdmin } = await supabase.rpc('check_super_admin_status');
+
+        if (isSuperAdmin) {
+          logger.log('useOrganization - Super admin detected via profile');
+          setOrganization({
+            id: 'super_admin',
+            name: 'Super Admin',
+            role: 'super_admin'
+          });
+          setLoading(false);
+          return;
+        }
+
         // Fetch ALL memberships (not just one)
         const { data: memberships, error } = await supabase
           .from('memberships')
@@ -70,13 +84,13 @@ export function useOrganization(userId: string | undefined) {
           return;
         }
 
-        // Check if user is super admin (org_id = NULL)
+        // Check if user is super admin (org_id = NULL) via membership
         const superAdminMembership = memberships.find(
-          (m: MembershipData) => m.role === 'super_admin' && m.org_id === null
+          (m: MembershipData) => (m.role === 'super_admin' || m.role === 'superadmin') && m.org_id === null
         );
 
         if (superAdminMembership) {
-          logger.log('useOrganization - Super admin detected');
+          logger.log('useOrganization - Super admin detected via membership');
           // Super admin - return special org object
           setOrganization({
             id: 'super_admin',
