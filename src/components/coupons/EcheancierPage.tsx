@@ -261,6 +261,15 @@ export function EcheancierPage() {
 
     setMarkingUnpaid(echeance.id);
     try {
+      // Get the paiement_id before we unlink it
+      const { data: echeanceData } = await supabase
+        .from('coupons_echeances')
+        .select('paiement_id')
+        .eq('id', echeance.id)
+        .single();
+
+      const paiementId = echeanceData?.paiement_id;
+
       // Determine the new status based on the due date
       const today = new Date();
       const dueDate = new Date(echeance.date_echeance);
@@ -280,15 +289,49 @@ export function EcheancierPage() {
 
       if (echeanceError) throw echeanceError;
 
-      // If there was a linked payment, optionally delete it or update its status
-      // For now, we just unlink it from the echeance
+      // If there was a linked payment, delete it and its proofs
+      if (paiementId) {
+        // Get payment proofs to delete storage files
+        const { data: proofs } = await supabase
+          .from('payment_proofs')
+          .select('file_url')
+          .eq('paiement_id', paiementId);
+
+        // Delete payment proofs from database
+        await supabase
+          .from('payment_proofs')
+          .delete()
+          .eq('paiement_id', paiementId);
+
+        // Delete files from storage
+        if (proofs && proofs.length > 0) {
+          for (const proof of proofs) {
+            if (proof.file_url) {
+              // Extract file path from URL
+              const urlParts = proof.file_url.split('/payment-proofs/');
+              if (urlParts.length > 1) {
+                const filePath = urlParts[1].split('?')[0]; // Remove query params
+                await supabase.storage
+                  .from('payment-proofs')
+                  .remove([filePath]);
+              }
+            }
+          }
+        }
+
+        // Delete the payment record
+        await supabase
+          .from('paiements')
+          .delete()
+          .eq('id', paiementId);
+      }
 
       // Refresh the echeances list
       await fetchEcheances();
 
       setAlertModalConfig({
         title: 'Succès',
-        message: 'L\'échéance a été marquée comme non payée.',
+        message: 'L\'échéance a été marquée comme non payée et le paiement a été supprimé.',
         type: 'success'
       });
       setShowAlertModal(true);
