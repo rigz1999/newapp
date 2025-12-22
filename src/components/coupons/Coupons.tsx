@@ -110,6 +110,15 @@ export function Coupons() {
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [showRemindersModal, setShowRemindersModal] = useState(false);
 
+  // Payment wizard preselection
+  const [wizardPreselect, setWizardPreselect] = useState<{
+    projectId?: string;
+    trancheId?: string;
+    echeanceDate?: string;
+    projectName?: string;
+    trancheName?: string;
+  }>({});
+
   // Payment reminders state
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [remind7Days, setRemind7Days] = useState(false);
@@ -299,12 +308,24 @@ export function Coupons() {
     }
 
     // Date range filter for echéance
-    if (advancedFilters.filters.dateRange.startDate && advancedFilters.filters.dateRange.endDate) {
-      const startDate = new Date(advancedFilters.filters.dateRange.startDate);
-      const endDate = new Date(advancedFilters.filters.dateRange.endDate);
+    if (advancedFilters.filters.dateRange.startDate || advancedFilters.filters.dateRange.endDate) {
+      const startDate = advancedFilters.filters.dateRange.startDate
+        ? new Date(advancedFilters.filters.dateRange.startDate)
+        : null;
+      const endDate = advancedFilters.filters.dateRange.endDate
+        ? new Date(advancedFilters.filters.dateRange.endDate)
+        : null;
+
       filtered = filtered.filter(c => {
         const echeance = new Date(c.date_echeance);
-        return echeance >= startDate && echeance <= endDate;
+        if (startDate && endDate) {
+          return echeance >= startDate && echeance <= endDate;
+        } else if (startDate) {
+          return echeance >= startDate;
+        } else if (endDate) {
+          return echeance <= endDate;
+        }
+        return true;
       });
     }
 
@@ -346,7 +367,7 @@ export function Coupons() {
   ].reduce((a, b) => a + b, 0), [advancedFilters.filters]);
 
   // Stats calculated on ALL coupons (no filters applied)
-  const calculateStats = () => {
+  const stats = useMemo(() => {
     const now = new Date();
 
     const enAttente = coupons.filter(c => getCouponStatus(c, now) === 'en_attente');
@@ -367,7 +388,7 @@ export function Coupons() {
         total: enRetard.reduce((sum, c) => sum + c.montant_net, 0),
       },
     };
-  };
+  }, [coupons]);
 
   const getDaysUntil = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -448,7 +469,7 @@ export function Coupons() {
         'CGP': c.investisseur_cgp || '',
         'Montant Brut': c.montant_coupon,
         'Montant Net': c.montant_net,
-        'Statut': c.statut,
+        'Statut': getCouponStatus(c),
         'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
       }));
 
@@ -484,9 +505,9 @@ export function Coupons() {
     }
   };
 
-  const stats = calculateStats();
-  const groupedData = groupByDateAndTranche(filteredCoupons);
-  const totalAmount = filteredCoupons.reduce((sum, c) => sum + c.montant_net, 0);
+  // Memoized computed values
+  const groupedData = useMemo(() => groupByDateAndTranche(filteredCoupons), [filteredCoupons]);
+  const totalAmount = useMemo(() => filteredCoupons.reduce((sum, c) => sum + c.montant_net, 0), [filteredCoupons]);
 
   if (loading) {
     return (
@@ -518,7 +539,10 @@ export function Coupons() {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => setShowPaymentWizard(true)}
+            onClick={() => {
+              setWizardPreselect({});
+              setShowPaymentWizard(true);
+            }}
             className="flex items-center gap-2 px-5 py-2.5 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-all shadow-sm hover:shadow-md font-medium"
           >
             <Upload className="w-4 h-4" />
@@ -539,7 +563,13 @@ export function Coupons() {
 
       {/* Stats Cards - ✅ MODIFIÉ : Affiche TOUS les coupons */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <button
+          onClick={() => {
+            advancedFilters.clearAllFilters();
+            advancedFilters.addMultiSelectFilter('statut', 'en_attente');
+          }}
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-finixar-amber hover:shadow-md transition-all text-left"
+        >
           <div className="flex items-center justify-between mb-2">
             <Clock className="w-8 h-8 text-finixar-amber" />
             <span className="text-xs font-medium text-finixar-amber bg-yellow-100 px-2 py-1 rounded-full">
@@ -548,10 +578,20 @@ export function Coupons() {
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enAttente.total)}</h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enAttente.count} coupons</p>
-          <p className="text-xs text-slate-500 mt-2">Tous les coupons à venir</p>
-        </div>
+          {stats.enAttente.count > 0 && (
+            <p className="text-xs text-finixar-amber hover:text-amber-700 font-medium mt-2">
+              Voir les {stats.enAttente.count} coupon{stats.enAttente.count > 1 ? 's' : ''} →
+            </p>
+          )}
+        </button>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <button
+          onClick={() => {
+            advancedFilters.clearAllFilters();
+            advancedFilters.addMultiSelectFilter('statut', 'paye');
+          }}
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-finixar-green hover:shadow-md transition-all text-left"
+        >
           <div className="flex items-center justify-between mb-2">
             <CheckCircle className="w-8 h-8 text-finixar-green" />
             <span className="text-xs font-medium text-finixar-green bg-green-100 px-2 py-1 rounded-full">
@@ -560,10 +600,20 @@ export function Coupons() {
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.payes.total)}</h3>
           <p className="text-sm text-slate-600 mt-1">{stats.payes.count} coupons</p>
-          <p className="text-xs text-slate-500 mt-2">Total historique</p>
-        </div>
+          {stats.payes.count > 0 && (
+            <p className="text-xs text-finixar-green hover:text-green-700 font-medium mt-2">
+              Voir les {stats.payes.count} coupon{stats.payes.count > 1 ? 's' : ''} →
+            </p>
+          )}
+        </button>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <button
+          onClick={() => {
+            advancedFilters.clearAllFilters();
+            advancedFilters.addMultiSelectFilter('statut', 'en_retard');
+          }}
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-finixar-red hover:shadow-md transition-all text-left"
+        >
           <div className="flex items-center justify-between mb-2">
             <AlertTriangle className="w-8 h-8 text-finixar-red" />
             <span className="text-xs font-medium text-finixar-red bg-red-100 px-2 py-1 rounded-full">
@@ -572,20 +622,12 @@ export function Coupons() {
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enRetard.total)}</h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enRetard.count} coupons</p>
-
-          {/* ✅ AJOUT : Bouton pour afficher les retards */}
           {stats.enRetard.count > 0 && (
-            <button
-              onClick={() => {
-                advancedFilters.clearAllFilters();
-                advancedFilters.addMultiSelectFilter('statut', 'en_retard');
-              }}
-              className="mt-2 text-xs text-finixar-red hover:text-red-700 font-medium underline"
-            >
+            <p className="text-xs text-finixar-red hover:text-red-700 font-medium mt-2">
               Voir les {stats.enRetard.count} retard{stats.enRetard.count > 1 ? 's' : ''} →
-            </button>
+            </p>
           )}
-        </div>
+        </button>
 
         {/* Payment Reminders Card */}
         <PaymentRemindersCard
@@ -801,6 +843,13 @@ export function Coupons() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  setWizardPreselect({
+                                    projectId: tranche.projetId,
+                                    trancheId: tranche.trancheId,
+                                    echeanceDate: date,
+                                    projectName: tranche.projetName,
+                                    trancheName: tranche.trancheName,
+                                  });
                                   setShowPaymentWizard(true);
                                 }}
                                 className="px-3 py-1.5 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-all shadow-sm hover:shadow-md flex items-center gap-1.5 text-xs font-medium"
@@ -997,11 +1046,20 @@ export function Coupons() {
       {/* Payment Wizard */}
       {showPaymentWizard && (
         <PaymentWizard
-          onClose={() => setShowPaymentWizard(false)}
+          onClose={() => {
+            setShowPaymentWizard(false);
+            setWizardPreselect({});
+          }}
           onSuccess={() => {
             fetchCoupons();
             toast.success('Paiement enregistré avec succès');
+            setWizardPreselect({});
           }}
+          preselectedProjectId={wizardPreselect.projectId}
+          preselectedTrancheId={wizardPreselect.trancheId}
+          preselectedEcheanceDate={wizardPreselect.echeanceDate}
+          showProjectName={wizardPreselect.projectName}
+          showTrancheName={wizardPreselect.trancheName}
         />
       )}
 
