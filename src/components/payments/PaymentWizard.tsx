@@ -243,9 +243,12 @@ export function PaymentWizard({
       fetchTranches(selectedProjectId);
     } else {
       setTranches([]);
-      setSelectedTrancheId('');
+      // Don't clear selectedTrancheId if we have a preselected value
+      if (!preselectedTrancheId) {
+        setSelectedTrancheId('');
+      }
     }
-  }, [selectedProjectId]);
+  }, [selectedProjectId, preselectedTrancheId]);
 
   useEffect(() => {
     if (selectedTrancheId) {
