@@ -255,9 +255,12 @@ export function PaymentWizard({
       }
     } else {
       setEcheanceGroups([]);
-      setSelectedEcheanceDate('');
+      // Don't clear selectedEcheanceDate if we have a preselected value
+      if (!preselectedEcheanceDate) {
+        setSelectedEcheanceDate('');
+      }
     }
-  }, [selectedTrancheId]);
+  }, [selectedTrancheId, preselectedEcheanceDate]);
 
   useEffect(() => {
     if (selectedEcheanceDate && selectedTrancheId) {
