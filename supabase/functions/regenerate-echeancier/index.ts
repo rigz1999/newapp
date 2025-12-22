@@ -253,12 +253,12 @@ Deno.serve(async (req) => {
     const couponsToInsert: any[] = [];
 
     // Refetch souscriptions with updated coupon_net values
-    const { data: updatedSouscriptions } = await supabase
+    const { data: refetchedSouscriptions } = await supabase
       .from("souscriptions")
       .select("id, montant_investi, coupon_net")
       .in("id", souscriptions.map(s => s.id));
 
-    const souscriptionsMap = new Map(updatedSouscriptions?.map(s => [s.id, s]) || []);
+    const souscriptionsMap = new Map(refetchedSouscriptions?.map(s => [s.id, s]) || []);
 
     for (const sub of souscriptions) {
       const updatedSub = souscriptionsMap.get(sub.id);
