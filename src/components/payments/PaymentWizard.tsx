@@ -256,9 +256,12 @@ export function PaymentWizard({
 
   useEffect(() => {
     if (selectedEcheanceDate && selectedTrancheId) {
-      fetchSubscriptionsForEcheance(selectedTrancheId, selectedEcheanceDate);
-      // Always go to upload step after data is fetched
-      setStep('upload');
+      // Fetch subscriptions and then transition to upload step
+      const loadAndTransition = async () => {
+        await fetchSubscriptionsForEcheance(selectedTrancheId, selectedEcheanceDate);
+        setStep('upload');
+      };
+      loadAndTransition();
     } else {
       setSubscriptions([]);
     }
