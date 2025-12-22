@@ -130,6 +130,11 @@ export function PaymentWizard({
 
   const [step, setStep] = useState<'select' | 'echeance' | 'upload' | 'results'>(getInitialStep());
 
+  // Debug: Log step changes
+  useEffect(() => {
+    console.log('🔀 Step changed to:', step);
+  }, [step]);
+
   // Close modal on ESC key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -258,8 +263,15 @@ export function PaymentWizard({
     if (selectedEcheanceDate && selectedTrancheId) {
       // Fetch subscriptions and then transition to upload step
       const loadAndTransition = async () => {
+        console.log('🔄 Starting to fetch subscriptions...', {
+          trancheId: selectedTrancheId,
+          echeanceDate: selectedEcheanceDate,
+          isPreselected: !!preselectedEcheanceDate,
+        });
         await fetchSubscriptionsForEcheance(selectedTrancheId, selectedEcheanceDate);
+        console.log('✅ Subscriptions fetched, transitioning to upload step');
         setStep('upload');
+        console.log('✅ Step set to upload');
       };
       loadAndTransition();
     } else {
@@ -373,6 +385,7 @@ export function PaymentWizard({
   };
 
   const fetchSubscriptionsForEcheance = async (trancheId: string, echeanceDate: string) => {
+    console.log('📊 fetchSubscriptionsForEcheance called', { trancheId, echeanceDate });
     setLoading(true);
     try {
       // Get all subscriptions for this tranche
@@ -381,7 +394,10 @@ export function PaymentWizard({
         .select('id')
         .eq('tranche_id', trancheId);
 
+      console.log('📊 Subscriptions found:', subs?.length || 0);
+
       if (!subs || subs.length === 0) {
+        console.log('⚠️ No subscriptions found for tranche');
         setSubscriptions([]);
         setLoading(false);
         return;
@@ -403,7 +419,10 @@ export function PaymentWizard({
         .in('souscription_id', subscriptionIds)
         .eq('date_echeance', echeanceDate);
 
+      console.log('📊 Écheances found for date:', echeances?.length || 0);
+
       if (!echeances || echeances.length === 0) {
+        console.log('⚠️ No écheances found for this date');
         setSubscriptions([]);
         setLoading(false);
         return;
@@ -433,11 +452,13 @@ export function PaymentWizard({
           echeances.find(e => e.souscription_id === sub.id)?.montant_coupon || sub.coupon_net,
       })) as Subscription[];
 
+      console.log('✅ Setting subscriptions:', subsWithEcheanceAmounts.length);
       setSubscriptions(subsWithEcheanceAmounts);
     } catch (err) {
-      console.error('Error fetching subscriptions for échéance:', err);
+      console.error('❌ Error fetching subscriptions for échéance:', err);
       setSubscriptions([]);
     } finally {
+      console.log('🏁 Fetch complete, setLoading(false)');
       setLoading(false);
     }
   };
