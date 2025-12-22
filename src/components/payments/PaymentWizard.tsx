@@ -214,18 +214,18 @@ export function PaymentWizard({
     }
   }, [preselectedTrancheId, showTrancheName]);
 
-  // Pre-select values if provided
+  // Pre-select values if provided (set immediately, don't wait for arrays to load)
   useEffect(() => {
-    if (preselectedProjectId && projects.length > 0) {
+    if (preselectedProjectId) {
       setSelectedProjectId(preselectedProjectId);
     }
-  }, [preselectedProjectId, projects]);
+  }, [preselectedProjectId]);
 
   useEffect(() => {
-    if (preselectedTrancheId && tranches.length > 0) {
+    if (preselectedTrancheId) {
       setSelectedTrancheId(preselectedTrancheId);
     }
-  }, [preselectedTrancheId, tranches]);
+  }, [preselectedTrancheId]);
 
   useEffect(() => {
     if (preselectedEcheanceDate) {
