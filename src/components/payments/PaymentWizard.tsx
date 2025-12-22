@@ -118,6 +118,7 @@ export function PaymentWizard({
     // Never start at 'upload' even if all values are preselected
     // Let the useEffect transition to 'upload' after data is loaded
     if (preselectedTrancheId && preselectedProjectId) {
+      // Start at echeance step (will either show selection UI or loading state)
       return 'echeance';
     }
     return 'select';
@@ -1245,151 +1246,172 @@ export function PaymentWizard({
                     </div>
                   )}
 
-                  <div>
-                    <h4 className="text-lg font-semibold text-slate-900 mb-4">
-                      Quelle échéance payez-vous?
-                    </h4>
+                  {/* If écheance date is preselected, show loading state instead of selection UI */}
+                  {preselectedEcheanceDate ? (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <Loader className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+                      <p className="text-lg font-semibold text-slate-900 mb-2">
+                        Chargement des paiements...
+                      </p>
+                      <p className="text-sm text-slate-600">
+                        Échéance:{' '}
+                        {new Date(preselectedEcheanceDate).toLocaleDateString('fr-FR', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <h4 className="text-lg font-semibold text-slate-900 mb-4">
+                        Quelle échéance payez-vous?
+                      </h4>
 
-                    {/* Group by status */}
-                    {echeanceGroups.filter(g => g.statut === 'en_retard').length > 0 && (
-                      <div className="mb-6">
-                        <h5 className="text-sm font-semibold text-red-700 flex items-center gap-2 mb-3">
-                          <AlertCircle className="w-4 h-4" />
-                          En retard ({echeanceGroups.filter(g => g.statut === 'en_retard').length})
-                        </h5>
-                        <div className="space-y-2">
-                          {echeanceGroups
-                            .filter(g => g.statut === 'en_retard')
-                            .map(group => (
-                              <button
-                                key={group.date}
-                                onClick={() => setSelectedEcheanceDate(group.date)}
-                                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                                  selectedEcheanceDate === group.date
-                                    ? 'border-red-500 bg-red-50'
-                                    : 'border-red-200 bg-red-50 hover:border-red-300'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-semibold text-slate-900">
-                                      {new Date(group.date).toLocaleDateString('fr-FR', {
-                                        day: '2-digit',
-                                        month: 'long',
-                                        year: 'numeric',
-                                      })}
-                                    </p>
-                                    <p className="text-xs text-red-700 mt-1">
-                                      🔴 En retard - {group.daysOverdue} jour
-                                      {group.daysOverdue! > 1 ? 's' : ''}
-                                    </p>
+                      {/* Group by status */}
+                      {echeanceGroups.filter(g => g.statut === 'en_retard').length > 0 && (
+                        <div className="mb-6">
+                          <h5 className="text-sm font-semibold text-red-700 flex items-center gap-2 mb-3">
+                            <AlertCircle className="w-4 h-4" />
+                            En retard ({echeanceGroups.filter(g => g.statut === 'en_retard').length}
+                            )
+                          </h5>
+                          <div className="space-y-2">
+                            {echeanceGroups
+                              .filter(g => g.statut === 'en_retard')
+                              .map(group => (
+                                <button
+                                  key={group.date}
+                                  onClick={() => setSelectedEcheanceDate(group.date)}
+                                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                                    selectedEcheanceDate === group.date
+                                      ? 'border-red-500 bg-red-50'
+                                      : 'border-red-200 bg-red-50 hover:border-red-300'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-semibold text-slate-900">
+                                        {new Date(group.date).toLocaleDateString('fr-FR', {
+                                          day: '2-digit',
+                                          month: 'long',
+                                          year: 'numeric',
+                                        })}
+                                      </p>
+                                      <p className="text-xs text-red-700 mt-1">
+                                        🔴 En retard - {group.daysOverdue} jour
+                                        {group.daysOverdue! > 1 ? 's' : ''}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-sm text-slate-600">
+                                        {group.count} investisseur{group.count > 1 ? 's' : ''}
+                                      </p>
+                                      <p className="font-bold text-slate-900">
+                                        {formatCurrency(group.totalAmount)}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div className="text-right">
-                                    <p className="text-sm text-slate-600">
-                                      {group.count} investisseur{group.count > 1 ? 's' : ''}
-                                    </p>
-                                    <p className="font-bold text-slate-900">
-                                      {formatCurrency(group.totalAmount)}
-                                    </p>
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {echeanceGroups.filter(g => g.statut === 'a_venir').length > 0 && (
+                        <div className="mb-6">
+                          <h5 className="text-sm font-semibold text-slate-700 mb-3">
+                            À venir ({echeanceGroups.filter(g => g.statut === 'a_venir').length})
+                          </h5>
+                          <div className="space-y-2">
+                            {echeanceGroups
+                              .filter(g => g.statut === 'a_venir')
+                              .map(group => (
+                                <button
+                                  key={group.date}
+                                  onClick={() => setSelectedEcheanceDate(group.date)}
+                                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                                    selectedEcheanceDate === group.date
+                                      ? 'border-blue-500 bg-blue-50'
+                                      : 'border-slate-200 bg-white hover:border-slate-300'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-semibold text-slate-900">
+                                        {new Date(group.date).toLocaleDateString('fr-FR', {
+                                          day: '2-digit',
+                                          month: 'long',
+                                          year: 'numeric',
+                                        })}
+                                      </p>
+                                      <p className="text-xs text-slate-500 mt-1">À venir</p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-sm text-slate-600">
+                                        {group.count} investisseur{group.count > 1 ? 's' : ''}
+                                      </p>
+                                      <p className="font-bold text-slate-900">
+                                        {formatCurrency(group.totalAmount)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {echeanceGroups.filter(g => g.statut === 'paye').length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-semibold text-green-700 mb-3">
+                            Payées ({echeanceGroups.filter(g => g.statut === 'paye').length})
+                          </h5>
+                          <div className="space-y-2">
+                            {echeanceGroups
+                              .filter(g => g.statut === 'paye')
+                              .slice(0, 3)
+                              .map(group => (
+                                <div
+                                  key={group.date}
+                                  className="p-4 rounded-lg border border-green-200 bg-green-50 opacity-60"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-semibold text-slate-900">
+                                        {new Date(group.date).toLocaleDateString('fr-FR', {
+                                          day: '2-digit',
+                                          month: 'long',
+                                          year: 'numeric',
+                                        })}
+                                      </p>
+                                      <p className="text-xs text-green-700 mt-1">✅ Payée</p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-sm text-slate-600">
+                                        {group.count} investisseur{group.count > 1 ? 's' : ''}
+                                      </p>
+                                      <p className="font-bold text-slate-900">
+                                        {formatCurrency(group.totalAmount)}
+                                      </p>
+                                    </div>
                                   </div>
                                 </div>
-                              </button>
-                            ))}
+                              ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {echeanceGroups.filter(g => g.statut === 'a_venir').length > 0 && (
-                      <div className="mb-6">
-                        <h5 className="text-sm font-semibold text-slate-700 mb-3">
-                          À venir ({echeanceGroups.filter(g => g.statut === 'a_venir').length})
-                        </h5>
-                        <div className="space-y-2">
-                          {echeanceGroups
-                            .filter(g => g.statut === 'a_venir')
-                            .map(group => (
-                              <button
-                                key={group.date}
-                                onClick={() => setSelectedEcheanceDate(group.date)}
-                                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                                  selectedEcheanceDate === group.date
-                                    ? 'border-blue-500 bg-blue-50'
-                                    : 'border-slate-200 bg-white hover:border-slate-300'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-semibold text-slate-900">
-                                      {new Date(group.date).toLocaleDateString('fr-FR', {
-                                        day: '2-digit',
-                                        month: 'long',
-                                        year: 'numeric',
-                                      })}
-                                    </p>
-                                    <p className="text-xs text-slate-500 mt-1">À venir</p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-sm text-slate-600">
-                                      {group.count} investisseur{group.count > 1 ? 's' : ''}
-                                    </p>
-                                    <p className="font-bold text-slate-900">
-                                      {formatCurrency(group.totalAmount)}
-                                    </p>
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
+                      {echeanceGroups.length === 0 && (
+                        <div className="text-center py-8">
+                          <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+                          <p className="text-slate-500">
+                            Aucune échéance trouvée pour cette tranche
+                          </p>
                         </div>
-                      </div>
-                    )}
-
-                    {echeanceGroups.filter(g => g.statut === 'paye').length > 0 && (
-                      <div>
-                        <h5 className="text-sm font-semibold text-green-700 mb-3">
-                          Payées ({echeanceGroups.filter(g => g.statut === 'paye').length})
-                        </h5>
-                        <div className="space-y-2">
-                          {echeanceGroups
-                            .filter(g => g.statut === 'paye')
-                            .slice(0, 3)
-                            .map(group => (
-                              <div
-                                key={group.date}
-                                className="p-4 rounded-lg border border-green-200 bg-green-50 opacity-60"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-semibold text-slate-900">
-                                      {new Date(group.date).toLocaleDateString('fr-FR', {
-                                        day: '2-digit',
-                                        month: 'long',
-                                        year: 'numeric',
-                                      })}
-                                    </p>
-                                    <p className="text-xs text-green-700 mt-1">✅ Payée</p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-sm text-slate-600">
-                                      {group.count} investisseur{group.count > 1 ? 's' : ''}
-                                    </p>
-                                    <p className="font-bold text-slate-900">
-                                      {formatCurrency(group.totalAmount)}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {echeanceGroups.length === 0 && (
-                      <div className="text-center py-8">
-                        <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-                        <p className="text-slate-500">Aucune échéance trouvée pour cette tranche</p>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
