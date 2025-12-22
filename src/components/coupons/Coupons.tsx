@@ -31,6 +31,10 @@ import { DateRangePicker } from '../filters/DateRangePicker';
 import PaymentRemindersCard from './PaymentRemindersCard';
 import PaymentRemindersModal from './PaymentRemindersModal';
 import { useAuth } from '../../hooks/useAuth';
+import { toast } from '../../utils/toast';
+
+// Tax rate for physical investors (30% withholding tax)
+const TAX_RATE_PHYSICAL = 0.30;
 
 interface Coupon {
   id: string;
@@ -40,7 +44,7 @@ interface Coupon {
   statut: string;
   date_paiement: string | null;
   montant_paye: number | null;
-  
+
   investisseur_id: string;
   investisseur_nom: string;
   investisseur_id_display: string;
@@ -48,16 +52,12 @@ interface Coupon {
   investisseur_email: string;
   investisseur_cgp: string | null;
   has_rib: boolean;
-  
+
   projet_id: string;
   projet_nom: string;
   tranche_id: string;
   tranche_nom: string;
   montant_net: number;
-}
-
-interface CouponsProps {
-  organization: { id: string; name: string; role: string };
 }
 
 const formatCurrency = (amount: number) => {
@@ -77,11 +77,23 @@ const formatDate = (dateString: string) => {
   });
 };
 
-export function Coupons({ organization: _organization }: CouponsProps) {
+// Centralized status calculation
+const getCouponStatus = (coupon: Coupon, now: Date = new Date()) => {
+  if (coupon.statut === 'paye') {
+    return 'paye';
+  }
+  if (new Date(coupon.date_echeance) < now) {
+    return 'en_retard';
+  }
+  return 'en_attente';
+};
+
+export function Coupons() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Advanced filters
@@ -148,7 +160,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, []);
+  }, [showDetailsModal, showPaymentWizard]);
 
   const fetchCoupons = async () => {
     setLoading(true);
@@ -187,9 +199,9 @@ export function Coupons({ organization: _organization }: CouponsProps) {
         const investisseur = c.souscription.investisseur;
         const tranche = c.souscription.tranche;
         const projet = tranche.projet;
-        
-        const montant_net = investisseur.type.toLowerCase() === 'physique' 
-          ? c.montant_coupon * 0.70 
+
+        const montant_net = investisseur.type.toLowerCase() === 'physique'
+          ? c.montant_coupon * (1 - TAX_RATE_PHYSICAL)
           : c.montant_coupon;
 
         return {
@@ -200,7 +212,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
           statut: c.statut,
           date_paiement: c.date_paiement,
           montant_paye: c.montant_paye,
-          
+
           investisseur_id: investisseur.id,
           investisseur_nom: investisseur.nom_raison_sociale,
           investisseur_id_display: investisseur.id_investisseur,
@@ -208,7 +220,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
           investisseur_email: investisseur.email,
           investisseur_cgp: investisseur.cgp,
           has_rib: !!investisseur.rib_file_path,
-          
+
           projet_id: projet.id,
           projet_nom: projet.projet,
           tranche_id: tranche.id,
@@ -218,8 +230,9 @@ export function Coupons({ organization: _organization }: CouponsProps) {
       });
 
       setCoupons(processedCoupons);
-    } catch {
-      // Error is silently ignored
+    } catch (error) {
+      console.error('Error fetching coupons:', error);
+      toast.error('Erreur lors du chargement des coupons');
     } finally {
       setLoading(false);
     }
@@ -241,8 +254,9 @@ export function Coupons({ organization: _organization }: CouponsProps) {
         setRemind14Days(reminderSettings.remind_14_days);
         setRemind30Days(reminderSettings.remind_30_days);
       }
-    } catch {
-      // Error is silently ignored
+    } catch (error) {
+      console.error('Error fetching reminder settings:', error);
+      // Don't show toast for this - it's not critical
     }
   };
 
@@ -298,8 +312,7 @@ export function Coupons({ organization: _organization }: CouponsProps) {
     const statutFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'statut');
     if (statutFilter && statutFilter.values.length > 0) {
       filtered = filtered.filter(c => {
-        const isOverdue = new Date(c.date_echeance) < now && c.statut !== 'paye';
-        const actualStatut = isOverdue ? 'en_retard' : c.statut;
+        const actualStatut = getCouponStatus(c, now);
         return statutFilter.values.includes(actualStatut);
       });
     }
@@ -332,21 +345,13 @@ export function Coupons({ organization: _organization }: CouponsProps) {
     ...advancedFilters.filters.multiSelect.map(f => f.values.length > 0 ? 1 : 0)
   ].reduce((a, b) => a + b, 0), [advancedFilters.filters]);
 
-  // ✅ MODIFICATION : KPI sans filtre de période
+  // Stats calculated on ALL coupons (no filters applied)
   const calculateStats = () => {
     const now = new Date();
-    
-    // Calculer sur TOUS les coupons (pas de filtre période)
-    const enAttente = coupons.filter(c => {
-      const isOverdue = new Date(c.date_echeance) < now && c.statut !== 'paye';
-      return c.statut === 'en_attente' && !isOverdue;
-    });
-    
-    const payes = coupons.filter(c => c.statut === 'paye');
-    
-    const enRetard = coupons.filter(c => {
-      return new Date(c.date_echeance) < now && c.statut !== 'paye';
-    });
+
+    const enAttente = coupons.filter(c => getCouponStatus(c, now) === 'en_attente');
+    const payes = coupons.filter(c => getCouponStatus(c, now) === 'paye');
+    const enRetard = coupons.filter(c => getCouponStatus(c, now) === 'en_retard');
 
     return {
       enAttente: {
@@ -428,40 +433,55 @@ export function Coupons({ organization: _organization }: CouponsProps) {
   };
 
   const handleExportExcel = async () => {
-    const exportData = filteredCoupons.map(c => ({
-      'Date Échéance': formatDate(c.date_echeance),
-      'Projet': c.projet_nom,
-      'Tranche': c.tranche_nom,
-      'Investisseur': c.investisseur_nom,
-      'CGP': c.investisseur_cgp || '',
-      'Montant Brut': c.montant_coupon,
-      'Montant Net': c.montant_net,
-      'Statut': c.statut,
-      'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
-    }));
+    if (filteredCoupons.length === 0) {
+      toast.warning('Aucun coupon à exporter');
+      return;
+    }
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Coupons');
+    setExportingExcel(true);
+    try {
+      const exportData = filteredCoupons.map(c => ({
+        'Date Échéance': formatDate(c.date_echeance),
+        'Projet': c.projet_nom,
+        'Tranche': c.tranche_nom,
+        'Investisseur': c.investisseur_nom,
+        'CGP': c.investisseur_cgp || '',
+        'Montant Brut': c.montant_coupon,
+        'Montant Net': c.montant_net,
+        'Statut': c.statut,
+        'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
+      }));
 
-    // Add headers
-    worksheet.columns = Object.keys(exportData[0] || {}).map(key => ({
-      header: key,
-      key: key,
-      width: 20
-    }));
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Coupons');
 
-    // Add data rows
-    exportData.forEach(row => worksheet.addRow(row));
+      // Add headers
+      worksheet.columns = Object.keys(exportData[0] || {}).map(key => ({
+        header: key,
+        key: key,
+        width: 20
+      }));
 
-    // Generate file
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `coupons_${new Date().toISOString().split('T')[0]}.xlsx`;
-    link.click();
-    window.URL.revokeObjectURL(url);
+      // Add data rows
+      exportData.forEach(row => worksheet.addRow(row));
+
+      // Generate file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `coupons_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`${filteredCoupons.length} coupons exportés avec succès`);
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      toast.error('Erreur lors de l\'export Excel');
+    } finally {
+      setExportingExcel(false);
+    }
   };
 
   const stats = calculateStats();
@@ -506,10 +526,11 @@ export function Coupons({ organization: _organization }: CouponsProps) {
           </button>
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium"
+            disabled={exportingExcel}
+            className="flex items-center gap-2 px-5 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Download className="w-4 h-4" />
-            Exporter Excel
+            <Download className={`w-4 h-4 ${exportingExcel ? 'animate-bounce' : ''}`} />
+            {exportingExcel ? 'Export en cours...' : 'Exporter Excel'}
           </button>
         </div>
       </div>
@@ -956,6 +977,12 @@ export function Coupons({ organization: _organization }: CouponsProps) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {filteredCoupons.length > 0 && (
+        <div className="mt-6">
           <Pagination
             currentPage={currentPage}
             totalPages={Math.ceil(groupedData.length / itemsPerPage)}
@@ -972,7 +999,8 @@ export function Coupons({ organization: _organization }: CouponsProps) {
         <PaymentWizard
           onClose={() => setShowPaymentWizard(false)}
           onSuccess={() => {
-            fetchCoupons(); // Refresh coupons
+            fetchCoupons();
+            toast.success('Paiement enregistré avec succès');
           }}
         />
       )}
