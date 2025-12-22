@@ -11,6 +11,10 @@ import {
   ArrowLeft,
   Trash2,
   Calendar,
+  FolderOpen,
+  BarChart3,
+  Lock,
+  Coins,
 } from 'lucide-react';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { isValidAmount } from '../../utils/validators';
@@ -1147,9 +1151,11 @@ export function PaymentWizard({
                 <div className="space-y-4">
                   {preselectedProjectId && displayProjectName && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-900">
+                      <p className="text-sm text-blue-900 flex items-center gap-2">
                         <span className="font-semibold">Projet:</span> {displayProjectName}
-                        <span className="ml-2 text-blue-600 text-xs">🔒 Présélectionné</span>
+                        <span className="ml-2 text-blue-600 text-xs flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> Présélectionné
+                        </span>
                       </p>
                     </div>
                   )}
@@ -1201,9 +1207,11 @@ export function PaymentWizard({
 
                   {preselectedTrancheId && displayTrancheName && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-900">
+                      <p className="text-sm text-blue-900 flex items-center gap-2">
                         <span className="font-semibold">Tranche:</span> {displayTrancheName}
-                        <span className="ml-2 text-blue-600 text-xs">🔒 Présélectionné</span>
+                        <span className="ml-2 text-blue-600 text-xs flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> Présélectionné
+                        </span>
                       </p>
                     </div>
                   )}
@@ -1227,18 +1235,20 @@ export function PaymentWizard({
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <div className="space-y-1">
                         {displayProjectName && (
-                          <p className="text-sm text-blue-900">
-                            <span className="font-semibold">📁 Projet:</span> {displayProjectName}
+                          <p className="text-sm text-blue-900 flex items-center gap-1.5">
+                            <FolderOpen className="w-3.5 h-3.5" />
+                            <span className="font-semibold">Projet:</span> {displayProjectName}
                             {preselectedProjectId && (
-                              <span className="ml-2 text-blue-600 text-xs">🔒</span>
+                              <Lock className="w-3 h-3 ml-1 text-blue-600" />
                             )}
                           </p>
                         )}
                         {displayTrancheName && (
-                          <p className="text-sm text-blue-900">
-                            <span className="font-semibold">📊 Tranche:</span> {displayTrancheName}
+                          <p className="text-sm text-blue-900 flex items-center gap-1.5">
+                            <BarChart3 className="w-3.5 h-3.5" />
+                            <span className="font-semibold">Tranche:</span> {displayTrancheName}
                             {preselectedTrancheId && (
-                              <span className="ml-2 text-blue-600 text-xs">🔒</span>
+                              <Lock className="w-3 h-3 ml-1 text-blue-600" />
                             )}
                           </p>
                         )}
@@ -1422,37 +1432,37 @@ export function PaymentWizard({
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="space-y-2">
                       {displayProjectName && (
-                        <p className="text-sm text-blue-900">
-                          <span className="font-semibold">📁 Projet:</span> {displayProjectName}
-                          {preselectedProjectId && (
-                            <span className="ml-2 text-blue-600 text-xs">🔒</span>
-                          )}
+                        <p className="text-sm text-blue-900 flex items-center gap-1.5">
+                          <FolderOpen className="w-3.5 h-3.5" />
+                          <span className="font-semibold">Projet:</span> {displayProjectName}
+                          {preselectedProjectId && <Lock className="w-3 h-3 ml-1 text-blue-600" />}
                         </p>
                       )}
                       {displayTrancheName && (
-                        <p className="text-sm text-blue-900">
-                          <span className="font-semibold">📊 Tranche:</span> {displayTrancheName}
-                          {preselectedTrancheId && (
-                            <span className="ml-2 text-blue-600 text-xs">🔒</span>
-                          )}
+                        <p className="text-sm text-blue-900 flex items-center gap-1.5">
+                          <BarChart3 className="w-3.5 h-3.5" />
+                          <span className="font-semibold">Tranche:</span> {displayTrancheName}
+                          {preselectedTrancheId && <Lock className="w-3 h-3 ml-1 text-blue-600" />}
                         </p>
                       )}
                       {selectedEcheanceDate && (
-                        <p className="text-sm text-blue-900">
-                          <span className="font-semibold">📅 Échéance:</span>{' '}
+                        <p className="text-sm text-blue-900 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span className="font-semibold">Échéance:</span>{' '}
                           {new Date(selectedEcheanceDate).toLocaleDateString('fr-FR', {
                             day: '2-digit',
                             month: 'long',
                             year: 'numeric',
                           })}
                           {preselectedEcheanceDate && (
-                            <span className="ml-2 text-blue-600 text-xs">🔒</span>
+                            <Lock className="w-3 h-3 ml-1 text-blue-600" />
                           )}
                         </p>
                       )}
                       <div className="pt-2 border-t border-blue-200">
-                        <p className="text-sm text-blue-700">
-                          💰 <span className="font-semibold">Total attendu:</span>{' '}
+                        <p className="text-sm text-blue-700 flex items-center gap-1.5">
+                          <Coins className="w-3.5 h-3.5" />
+                          <span className="font-semibold">Total attendu:</span>{' '}
                           {formatCurrency(totalExpected)} pour {subscriptions.length} investisseur
                           {subscriptions.length > 1 ? 's' : ''}
                         </p>
