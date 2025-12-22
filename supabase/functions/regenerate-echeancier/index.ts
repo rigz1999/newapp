@@ -83,7 +83,8 @@ Deno.serve(async (req) => {
     // Inherit from project if tranche values are null
     const project = tranche.projets as any;
     const tauxNominal = tranche.taux_nominal ?? project?.taux_nominal;
-    const periodiciteCoupons = tranche.periodicite_coupons ?? project?.periodicite_coupons;
+    // IMPORTANT: periodicite ALWAYS comes from project, never from tranche
+    const periodiciteCoupons = project?.periodicite_coupons;
     const dateEmission = tranche.date_emission ?? project?.date_emission;
     const dureeMois = tranche.duree_mois ?? project?.duree_mois;
     const baseInteret = project?.base_interet ?? 360;
@@ -152,7 +153,8 @@ Deno.serve(async (req) => {
       const couponAnnuel = (montant * tauxNominal) / 100;
       const couponBrut = couponAnnuel * periodRatio;
       const investorType = (sub.investisseurs as any)?.type;
-      const couponNet = investorType === 'physique' ? couponBrut * 0.7 : couponBrut;
+      // Case-insensitive comparison to handle both 'physique' and 'Physique'
+      const couponNet = investorType?.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
 
       const { error: updateError } = await supabase
         .from("souscriptions")

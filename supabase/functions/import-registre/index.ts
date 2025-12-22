@@ -680,7 +680,8 @@ Deno.serve(async (req: Request) => {
         const couponBrut = couponAnnuel * periodRatio;
         // Physique: 30% flat tax -> net = brut * 0.7
         // Morale: no flat tax -> net = brut
-        const couponNet = investorType === 'physique' ? couponBrut * 0.7 : couponBrut;
+        // Case-insensitive comparison to handle both 'physique' and 'Physique'
+        const couponNet = investorType?.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
 
         console.log("Création souscription - Quantité:", quantite, "Montant:", montant);
         console.log("Calcul coupons:");

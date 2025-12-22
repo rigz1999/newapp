@@ -16,7 +16,6 @@ interface Tranche {
   id: string;
   tranche_name: string;
   taux_nominal: number | null;
-  periodicite_coupons: string | null;
   date_emission: string | null;
   date_echeance_finale: string | null;
   duree_mois: number | null;
@@ -53,7 +52,6 @@ export function TrancheWizard({
   const [successMessage, setSuccessMessage] = useState("");
 
   const [tauxNominal, setTauxNominal] = useState<string>("");
-  const [periodiciteCoupons, setPeriodiciteCoupons] = useState("");
   const [dateEmission, setDateEmission] = useState("");
   const [dateEcheanceFinale, setDateEcheanceFinale] = useState("");
   const [dureeMois, setDureeMois] = useState<string>("");
@@ -72,7 +70,6 @@ export function TrancheWizard({
       setSelectedProjectId(editingTranche.projet_id);
       setTrancheName(editingTranche.tranche_name);
       setTauxNominal(editingTranche.taux_nominal?.toString() || "");
-      setPeriodiciteCoupons(editingTranche.periodicite_coupons || "");
       setDateEmission(editingTranche.date_emission || "");
       setDateEcheanceFinale(editingTranche.date_echeance_finale || "");
       setDureeMois(editingTranche.duree_mois?.toString() || "");
@@ -128,15 +125,14 @@ export function TrancheWizard({
       // Fetch project financial data to auto-populate tranche fields
       const { data: project } = await supabase
         .from("projets")
-        .select("taux_interet, periodicite_coupons, maturite_mois")
+        .select("taux_nominal, duree_mois")
         .eq("id", projectId)
         .single();
 
       if (project) {
         logger.debug("Auto-populating from project:", project);
-        if (project.taux_interet) setTauxNominal(project.taux_interet.toString());
-        if (project.periodicite_coupons) setPeriodiciteCoupons(project.periodicite_coupons);
-        if (project.maturite_mois) setDureeMois(project.maturite_mois.toString());
+        if (project.taux_nominal) setTauxNominal(project.taux_nominal.toString());
+        if (project.duree_mois) setDureeMois(project.duree_mois.toString());
       }
     }
   };
@@ -185,7 +181,6 @@ export function TrancheWizard({
       logger.info("Mise à jour tranche", { trancheId: editingTranche.id, data: {
         tranche_name: trancheName,
         taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
-        periodicite_coupons: periodiciteCoupons || null,
         date_emission: dateEmission || null,
         date_echeance_finale: dateEcheanceFinale || null,
         duree_mois: dureeMois ? parseInt(dureeMois) : null,
@@ -196,7 +191,6 @@ export function TrancheWizard({
         .update({
           tranche_name: trancheName,
           taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
-          periodicite_coupons: periodiciteCoupons || null,
           date_emission: dateEmission || null,
           date_echeance_finale: dateEcheanceFinale || null,
           duree_mois: dureeMois ? parseInt(dureeMois) : null,
@@ -287,7 +281,6 @@ export function TrancheWizard({
 
       // Add tranche metadata
       if (tauxNominal) form.append("taux_nominal", tauxNominal);
-      if (periodiciteCoupons) form.append("periodicite_coupons", periodiciteCoupons);
       if (dateEmission) form.append("date_emission", dateEmission);
       if (dateEcheanceFinale) form.append("date_echeance_finale", dateEcheanceFinale);
       if (dureeMois) form.append("duree_mois", dureeMois);
@@ -457,24 +450,6 @@ export function TrancheWizard({
                       placeholder="Ex: 5.5"
                       className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">
-                      Périodicité des Coupons
-                    </label>
-                    <select
-                      value={periodiciteCoupons}
-                      onChange={(e) => setPeriodiciteCoupons(e.target.value)}
-                      disabled={processing}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white disabled:opacity-50"
-                    >
-                      <option value="">Sélectionner...</option>
-                      <option value="mensuelle">Mensuelle</option>
-                      <option value="trimestrielle">Trimestrielle</option>
-                      <option value="semestrielle">Semestrielle</option>
-                      <option value="annuelle">Annuelle</option>
-                    </select>
                   </div>
                 </div>
 
