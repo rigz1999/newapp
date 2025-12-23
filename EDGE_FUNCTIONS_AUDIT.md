@@ -57,7 +57,7 @@
   - `src/components/admin/Members.tsx:575`
 - **Purpose**: Send invitation emails via Resend
 - **Status**: ✅ ACTIVE
-- **⚠️ REQUIRES UPDATE**: Contains hardcoded URL that needs Paris project URL
+- **✅ USES ENV VARS**: Uses `SUPABASE_URL` from environment (no code changes needed)
 
 ---
 
@@ -81,23 +81,21 @@
 6. ✅ import-registre
 7. ✅ regenerate-echeancier
 8. ✅ send-coupon-reminders
-9. ✅ send-invitation (needs URL update first)
+9. ✅ send-invitation
 
 **Skip:**
 - ❌ create-admin (not used)
 
 ---
 
-## ⚠️ Important: Update send-invitation Before Deploying
+## ✅ Environment Variables
 
-The `send-invitation` function has a hardcoded URL that needs to be updated to Paris:
+All edge functions properly use environment variables from Supabase:
+- `SUPABASE_URL` - Automatically set by Supabase to Paris URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Service role key for database access
+- `RESEND_API_KEY` - For email sending (needs to be configured in Paris project)
 
-**File**: `supabase/functions/send-invitation/index.ts`
-
-Search for the hardcoded URL and replace with:
-```
-https://nyyneivgrwksesgsmpjm.supabase.co
-```
+**No code changes needed!** Just ensure secrets are configured in Paris.
 
 ---
 
