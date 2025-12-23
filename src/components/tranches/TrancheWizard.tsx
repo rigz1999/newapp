@@ -257,8 +257,17 @@ export function TrancheWizard({
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
       logger.debug("URL Edge Function:", url);
 
+      // Get the current session token for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("No active session. Please log in again.");
+      }
+
       const xhr = new XMLHttpRequest();
       xhr.open("POST", url, true);
+
+      // Add authorization header with the access token
+      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
