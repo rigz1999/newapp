@@ -68,7 +68,7 @@ export function Projects({ organization }: ProjectsProps) {
   const [creatingProject, setCreatingProject] = useState(false);
 
   // For superadmin: organization selection
-  const isSuperAdmin = organization.id === 'admin';
+  const isSuperAdmin = organization.id === 'super_admin';
   const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
 
