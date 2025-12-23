@@ -1,3 +1,8 @@
+
+-- ==========================================
+-- Migration: 20251109000002_fix_invitations_rls_recursion.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Invitations RLS Recursion Issue
 -- Created: 2025-11-09
@@ -91,6 +96,13 @@ COMMENT ON POLICY "Admins can create invitations" ON invitations IS
 
 COMMENT ON POLICY "Admins can delete invitations" ON invitations IS
   'Organization owners and admins can delete invitations using security definer function to prevent RLS recursion.';
+
+
+
+-- ==========================================
+-- Migration: 20251109000003_simplify_all_rls_policies.sql
+-- ==========================================
+
 -- ============================================
 -- Simplify All RLS Policies to Prevent Recursion
 -- Created: 2025-11-09
@@ -206,6 +218,13 @@ COMMENT ON POLICY "Allow all authenticated to view organizations" ON organizatio
 
 COMMENT ON POLICY "Allow all authenticated to view invitations" ON invitations IS
   'Simplified policy to prevent RLS recursion. App-level permissions handle authorization.';
+
+
+
+-- ==========================================
+-- Migration: 20251109000004_secure_rls_without_recursion.sql
+-- ==========================================
+
 -- ============================================
 -- Secure RLS Policies Without Recursion
 -- Created: 2025-11-09
@@ -476,6 +495,13 @@ COMMENT ON POLICY "Users view org invitations" ON invitations IS
 -- ============================================
 -- In the DO block above (STEP 7), replace 'YOUR_SUPER_ADMIN_EMAIL@example.com'
 -- with your actual super admin email address from your .env file (VITE_SUPER_ADMIN_EMAIL)
+
+
+
+-- ==========================================
+-- Migration: 20251110000001_allow_anonymous_invitation_lookup.sql
+-- ==========================================
+
 -- ============================================
 -- Allow Anonymous Users to View Invitations by Token
 -- Created: 2025-11-10
@@ -499,6 +525,13 @@ CREATE POLICY "Anonymous users can view invitation by token"
 -- Comments
 COMMENT ON POLICY "Anonymous users can view invitation by token" ON invitations IS
   'Allows unauthenticated users to view invitations using their unique token. Required for invitation acceptance flow to work.';
+
+
+
+-- ==========================================
+-- Migration: 20251110000001_fix_rls_complete_restart.sql
+-- ==========================================
+
 -- ============================================
 -- COMPLETE RLS FIX - Fresh Start
 -- Created: 2025-11-10
@@ -1070,6 +1103,13 @@ CREATE POLICY "delete_reminder_settings"
 --   ✓ Create/update/delete data in their organization
 --   ✗ Cannot invite users
 --   ✗ Cannot manage memberships
+
+
+
+-- ==========================================
+-- Migration: 20251110000002_fix_all_rls_performance_issues.sql
+-- ==========================================
+
 -- ============================================
 -- COMPREHENSIVE RLS PERFORMANCE FIX
 -- Created: 2025-11-10
@@ -1741,6 +1781,13 @@ COMMENT ON POLICY "Users view org projets" ON projets IS
 -- ✅ Only ONE policy per table/role/action combination
 -- ✅ Eliminates all auth_rls_initplan warnings
 -- ✅ Eliminates all multiple_permissive_policies warnings
+
+
+
+-- ==========================================
+-- Migration: 20251110000007_fix_membership_deletion_trigger.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Membership Deletion - Remove invited_by reference
 -- Created: 2025-11-10
@@ -1768,6 +1815,13 @@ $$;
 
 COMMENT ON FUNCTION public.delete_invitation_on_user_delete() IS
   'Trigger function for user deletion - fixed to not reference non-existent invited_by column';
+
+
+
+-- ==========================================
+-- Migration: 20251111000001_add_cgp_fields_to_investisseurs.sql
+-- ==========================================
+
 -- Add CGP (Conseiller en Gestion de Patrimoine) fields to investisseurs table
 -- CGP information should be stored with the investor, not the subscription
 
@@ -1780,6 +1834,13 @@ CREATE INDEX IF NOT EXISTS idx_investisseurs_email_cgp ON investisseurs(email_cg
 
 COMMENT ON COLUMN investisseurs.cgp IS 'Nom du Conseiller en Gestion de Patrimoine';
 COMMENT ON COLUMN investisseurs.email_cgp IS 'Email du Conseiller en Gestion de Patrimoine';
+
+
+
+-- ==========================================
+-- Migration: 20251111000002_fix_coupon_recalculation_rules.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Coupon Recalculation Rules
 -- Created: 2025-11-11
@@ -1894,6 +1955,13 @@ CREATE TRIGGER trigger_recalculate_on_project_update
 COMMENT ON FUNCTION recalculate_project_coupons IS 'Recalculates coupon_brut and coupon_net for all subscriptions in a project. Applies 30% flat tax ONLY for physical persons.';
 COMMENT ON FUNCTION recalculate_on_project_update IS 'Trigger function that recalculates coupons when project financial parameters change';
 COMMENT ON TRIGGER trigger_recalculate_on_project_update ON projets IS 'Recalculates coupons and deletes old payment schedules when project parameters change';
+
+
+
+-- ==========================================
+-- Migration: 20251111000003_fix_tranche_coupon_recalculation.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Tranche Coupon Recalculation Rules
 -- Created: 2025-11-11
@@ -2016,6 +2084,13 @@ CREATE TRIGGER trigger_recalculate_on_tranche_update
 COMMENT ON FUNCTION recalculate_tranche_coupons IS 'Recalculates coupon_brut and coupon_net for all subscriptions in a tranche. Applies 30% flat tax ONLY for physical persons.';
 COMMENT ON FUNCTION recalculate_on_tranche_update IS 'Trigger function that recalculates coupons when tranche financial parameters change';
 COMMENT ON TRIGGER trigger_recalculate_on_tranche_update ON tranches IS 'Recalculates coupons and deletes old payment schedules when tranche parameters change';
+
+
+
+-- ==========================================
+-- Migration: 20251114000001_add_project_to_tranche_inheritance.sql
+-- ==========================================
+
 -- ============================================
 -- Project to Tranche Inheritance
 -- Created: 2025-11-14
@@ -2117,6 +2192,13 @@ $$;
 -- Add comments
 COMMENT ON FUNCTION propagate_project_to_tranches IS 'Propagates project financial parameter changes to all tranches in the project';
 COMMENT ON TRIGGER trigger_propagate_project_to_tranches ON projets IS 'Updates all tranches when project financial parameters change';
+
+
+
+-- ==========================================
+-- Migration: 20251115000001_fix_project_propagation_date_emission.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Project to Tranche Inheritance
 -- Created: 2025-11-15
@@ -2157,6 +2239,13 @@ $$;
 
 -- Add comment
 COMMENT ON FUNCTION propagate_project_to_tranches IS 'Propagates project financial parameter changes (taux_nominal, periodicite_coupons, duree_mois) to all tranches. date_emission is NOT propagated as it is tranche-specific.';
+
+
+
+-- ==========================================
+-- Migration: 20251117000001_fix_coupon_calculation_with_periodicite.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Coupon Calculation with Periodicite
 -- Created: 2025-11-17
@@ -2362,6 +2451,13 @@ $$;
 COMMENT ON FUNCTION get_period_ratio IS 'Calculates the period ratio based on periodicite and base_interet for coupon calculations';
 COMMENT ON FUNCTION recalculate_project_coupons IS 'Recalculates coupon_brut and coupon_net for all subscriptions in a project with period adjustment. Applies 30% flat tax ONLY for physical persons.';
 COMMENT ON FUNCTION recalculate_tranche_coupons IS 'Recalculates coupon_brut and coupon_net for all subscriptions in a tranche with period adjustment. Applies 30% flat tax ONLY for physical persons.';
+
+
+
+-- ==========================================
+-- Migration: 20251211143034_fix_rls_circular_dependency.sql
+-- ==========================================
+
 /*
   # Fix RLS Circular Dependency
 
@@ -2391,6 +2487,13 @@ CREATE POLICY "Superadmin or own memberships"
   USING (
     is_super_admin() OR user_id = auth.uid()
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211143417_fix_user_org_ids_function_v2.sql
+-- ==========================================
+
 /*
   # Fix user_org_ids Function - Security Settings
 
@@ -2415,6 +2518,13 @@ AS $$
   FROM memberships m
   WHERE m.user_id = auth.uid();
 $$;
+
+
+
+-- ==========================================
+-- Migration: 20251211143458_fix_projets_rls_policies.sql
+-- ==========================================
+
 /*
   # Fix Projets RLS Policies - Remove Function Dependency
 
@@ -2490,6 +2600,13 @@ CREATE POLICY "Users can delete their org projets"
       WHERE m.user_id = auth.uid()
     )
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211143749_fix_projets_insert_policy_simplified.sql
+-- ==========================================
+
 /*
   # Simplify Projets INSERT Policy
 
@@ -2517,6 +2634,13 @@ CREATE POLICY "Users can insert their org projets"
         AND m.user_id = auth.uid()
     )
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211143803_fix_projets_insert_with_correct_syntax.sql
+-- ==========================================
+
 /*
   # Fix Projets INSERT Policy Syntax
 
@@ -2543,6 +2667,13 @@ CREATE POLICY "Users can insert their org projets"
         AND m.user_id = auth.uid()
     )
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211143816_create_user_has_org_access_function.sql
+-- ==========================================
+
 /*
   # Create Helper Function for Organization Access
 
@@ -2588,6 +2719,13 @@ CREATE POLICY "Users can insert their org projets"
   WITH CHECK (
     user_has_org_access(org_id)
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211143826_update_all_projets_policies_with_function.sql
+-- ==========================================
+
 /*
   # Update All Projets Policies to Use Helper Function
 
@@ -2628,6 +2766,13 @@ CREATE POLICY "Users can delete their org projets"
   USING (
     user_has_org_access(org_id)
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211144232_fix_user_has_org_access_bypass_rls.sql
+-- ==========================================
+
 /*
   # Fix user_has_org_access to properly bypass RLS
   
@@ -2660,3 +2805,4 @@ $$;
 
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION public.user_has_org_access(uuid) TO authenticated;
+
