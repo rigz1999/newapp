@@ -225,114 +225,111 @@ export function TrancheWizard({
   };
 
   const handleSubmit = async () => {
-    if (isEditMode && editingTranche) {
-      await handleUpdateTranche();
-      return;
+  if (isEditMode && editingTranche) {
+    await handleUpdateTranche();
+    return;
+  }
+
+  if (!selectedProjectId || !trancheName || !csvFile) {
+    setError("Veuillez remplir tous les champs requis");
+    return;
+  }
+
+  setProcessing(true);
+  setError("");
+  setSuccessMessage("");
+  setProgress(0);
+  setIsProcessingOnServer(false);
+
+  try {
+    logger.info("Début import", { projectId: selectedProjectId, trancheName, fileName: csvFile.name });
+
+    const form = new FormData();
+    form.append("projet_id", selectedProjectId);
+    form.append("tranche_name", trancheName);
+    form.append("file", csvFile, csvFile.name);
+
+    // Add tranche metadata
+    if (tauxNominal) form.append("taux_nominal", tauxNominal);
+    if (dateEmission) form.append("date_emission", dateEmission);
+    if (dureeMois) form.append("duree_mois", dureeMois);
+
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
+    logger.debug("URL Edge Function:", url);
+
+    // Get the current session token for authorization
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error("No active session. Please log in again.");
     }
 
-    if (!selectedProjectId || !trancheName || !csvFile) {
-      setError("Veuillez remplir tous les champs requis");
-      return;
-    }
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
 
-    setProcessing(true);
-    setError("");
-    setSuccessMessage("");
-    setProgress(0);
-    setIsProcessingOnServer(false);
-
-    try {
-      logger.info("Début import", { projectId: selectedProjectId, trancheName, fileName: csvFile.name });
-
-      const form = new FormData();
-      form.append("projet_id", selectedProjectId);
-      form.append("tranche_name", trancheName);
-      form.append("file", csvFile, csvFile.name);
-
-      // Add tranche metadata
-      if (tauxNominal) form.append("taux_nominal", tauxNominal);
-      if (dateEmission) form.append("date_emission", dateEmission);
-      if (dureeMois) form.append("duree_mois", dureeMois);
-
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
-      logger.debug("URL Edge Function:", url);
-
-      // Get the current session token for authorization
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("No active session. Please log in again.");
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const p = Math.round((event.loaded / event.total) * 100);
+        setProgress(p);
+        if (p === 100) {
+          setIsProcessingOnServer(true);
+        }
       }
+    };
 
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", url, true);
-
-      // Add authorization header with the access token
-      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const p = Math.round((event.loaded / event.total) * 100);
-          setProgress(p);
-          // When upload reaches 100%, show "processing on server" message
-          if (p === 100) {
-            setIsProcessingOnServer(true);
-          }
-        }
-      };
-
-      xhr.onload = () => {
-        setProcessing(false);
-        logger.debug("Réponse serveur", { status: xhr.status });
-
-        try {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const result = JSON.parse(xhr.responseText);
-            logger.info("Import terminé", { result });
-            
-            if (result.success && result.createdSouscriptions > 0) {
-              // Close modal and show success outside
-              const successMsg =
-                `Import terminé!\n` +
-                `${result.createdSouscriptions || 0} souscriptions créées\n` +
-                `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
-                `${result.updatedInvestisseurs || 0} investisseurs mis à jour`;
-
-              onClose();
-              onSuccess(successMsg);
-
-              if (result.errors && result.errors.length > 0) {
-                logger.warn("Erreurs d'import", { errors: result.errors });
-              }
-            } else if (result.success && result.createdSouscriptions === 0) {
-              setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
-              logger.error(new Error("Import terminé mais 0 souscriptions créées"), { result });
-            } else {
-              setError(result.error || "Erreur lors de l'import");
-            }
-          } else {
-            logger.error(new Error(`Erreur HTTP ${xhr.status}`), { response: xhr.responseText });
-            setError(`Erreur serveur (${xhr.status}): Voir la console pour plus de détails`);
-          }
-        } catch (parseErr) {
-          logger.error(new Error("Erreur de parsing de la réponse"), { error: parseErr });
-          setError("Réponse invalide du serveur");
-        }
-      };
-
-      xhr.onerror = () => {
-        setProcessing(false);
-        logger.error(new Error("Erreur réseau XHR"));
-        setError("Erreur réseau pendant l'upload");
-      };
-
-      xhr.send(form);
-
-    } catch (err: any) {
-      logger.error(err instanceof Error ? err : new Error(String(err)));
-      setError(err.message || "Erreur lors de l'import");
+    xhr.onload = () => {
       setProcessing(false);
-    }
-  };
+      logger.debug("Réponse serveur", { status: xhr.status });
+
+      try {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const result = JSON.parse(xhr.responseText);
+          logger.info("Import terminé", { result });
+          
+          if (result.success && result.createdSouscriptions > 0) {
+            const successMsg =
+              `Import terminé!\n` +
+              `${result.createdSouscriptions || 0} souscriptions créées\n` +
+              `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
+              `${result.updatedInvestisseurs || 0} investisseurs mis à jour`;
+
+            onClose();
+            onSuccess(successMsg);
+
+            if (result.errors && result.errors.length > 0) {
+              logger.warn("Erreurs d'import", { errors: result.errors });
+            }
+          } else if (result.success && result.createdSouscriptions === 0) {
+            setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
+            logger.error(new Error("Import terminé mais 0 souscriptions créées"), { result });
+          } else {
+            setError(result.error || "Erreur lors de l'import");
+          }
+        } else {
+          logger.error(new Error(`Erreur HTTP ${xhr.status}`), { response: xhr.responseText });
+          setError(`Erreur serveur (${xhr.status}): Voir la console pour plus de détails`);
+        }
+      } catch (parseErr) {
+        logger.error(new Error("Erreur de parsing de la réponse"), { error: parseErr });
+        setError("Réponse invalide du serveur");
+      }
+    };
+
+    xhr.onerror = () => {
+      setProcessing(false);
+      logger.error(new Error("Erreur réseau XHR"));
+      setError("Erreur réseau pendant l'upload");
+    };
+
+    xhr.send(form);
+
+  } catch (err: any) {
+    logger.error(err instanceof Error ? err : new Error(String(err)));
+    setError(err.message || "Erreur lors de l'import");
+    setProcessing(false);
+  }
+};
+
 
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto">
