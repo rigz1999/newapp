@@ -580,7 +580,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     setAlertState({
       isOpen: true,
       title: 'Confirmer la suppression',
-      message: `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur.nom_raison_sociale} ?`,
+      message: `Êtes-vous sûr de vouloir supprimer la souscription de ${sub.investisseur?.nom_raison_sociale || 'cet investisseur'} ?`,
       type: 'confirm',
       onConfirm: async () => {
         try {
@@ -889,10 +889,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                                   title="Cliquer pour modifier"
                                 >
                                   <span className="flex-1 text-sm font-medium text-slate-900">
-                                    {sub.investisseur.nom_raison_sociale}
+                                    {sub.investisseur?.nom_raison_sociale || 'N/A'}
                                   </span>
                                   <span className="w-32 text-center text-xs text-amber-700 font-medium">
-                                    {sub.cgp || sub.investisseur.cgp || '-'}
+                                    {sub.cgp || sub.investisseur?.cgp || '-'}
                                   </span>
                                   <span className="w-32 text-right text-sm font-semibold text-finixar-green">
                                     {formatCurrency(sub.montant_investi)}
@@ -982,10 +982,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                     {subscriptions.slice(0, SUBSCRIPTIONS_LIMIT).map((sub) => (
                     <tr key={sub.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 text-sm text-slate-900">
-                        {sub.investisseur.nom_raison_sociale}
+                        {sub.investisseur?.nom_raison_sociale || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
-                        {sub.cgp || sub.investisseur.cgp || '-'}
+                        {sub.cgp || sub.investisseur?.cgp || '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">{sub.tranche.tranche_name}</td>
                       <td className="px-4 py-3 text-sm text-slate-600">
@@ -1361,7 +1361,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">Modifier la Souscription</h3>
                     <p className="text-sm text-slate-600 mt-1">
-                      {editingSubscription.investisseur.nom_raison_sociale}
+                      {editingSubscription.investisseur?.nom_raison_sociale || 'N/A'}
                     </p>
                   </div>
                   <button
