@@ -433,10 +433,16 @@ Deno.serve(async (req: Request) => {
     // Update tranche with the earliest date_emission from CSV if found and not provided by form
     if (earliestDateTransfert && !dateEmissionForm) {
       console.log('Mise à jour date_emission de la tranche:', earliestDateTransfert);
-      await supabase
+      const { error: updateError } = await supabase
         .from('tranches')
         .update({ date_emission: earliestDateTransfert })
         .eq('id', trancheId);
+
+      if (updateError) {
+        console.error('❌ ERREUR mise à jour date_emission:', updateError);
+      } else {
+        console.log('✅ date_emission mise à jour avec succès');
+      }
     }
 
     const trancheEmissionDate = earliestDateTransfert || finalDateEmission || null;
