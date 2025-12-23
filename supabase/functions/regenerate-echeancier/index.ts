@@ -200,11 +200,15 @@ Deno.serve(async req => {
     // Step 3: Generate new payment schedule
     console.log('\n=== GENERATING NEW ECHEANCIER ===');
 
-    // Map frequency to months between payments
+    // Map frequency to months between payments (handle both masculine and feminine forms)
     const frequencyMap: Record<string, { months: number; paymentsPerYear: number }> = {
+      annuel: { months: 12, paymentsPerYear: 1 },
       annuelle: { months: 12, paymentsPerYear: 1 },
+      semestriel: { months: 6, paymentsPerYear: 2 },
       semestrielle: { months: 6, paymentsPerYear: 2 },
+      trimestriel: { months: 3, paymentsPerYear: 4 },
       trimestrielle: { months: 3, paymentsPerYear: 4 },
+      mensuel: { months: 1, paymentsPerYear: 12 },
       mensuelle: { months: 1, paymentsPerYear: 12 },
     };
 
