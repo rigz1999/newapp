@@ -248,10 +248,10 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
-    // Fetch project to get base_interet
+    // Fetch project to get all required parameters
     const { data: projectData, error: projectError } = await supabase
       .from('projets')
-      .select('base_interet')
+      .select('base_interet, taux_nominal, periodicite_coupons, duree_mois, date_emission')
       .eq('id', projetId)
       .single();
 
@@ -269,14 +269,24 @@ Deno.serve(async (req: Request) => {
     const baseInteret = projectData?.base_interet || 360;
     console.log("Base de calcul:", baseInteret);
 
+    // Use project values as fallback for tranche parameters
+    const finalTauxNominal = tauxNominal ?? projectData?.taux_nominal ?? null;
+    const finalPeriodiciteCoupons = periodiciteCoupons ?? projectData?.periodicite_coupons ?? null;
+    const finalDureeMois = dureeMois ?? projectData?.duree_mois ?? null;
+
+    console.log("📊 Paramètres finaux (form + projet):");
+    console.log("  - Taux nominal:", finalTauxNominal);
+    console.log("  - Périodicité:", finalPeriodiciteCoupons);
+    console.log("  - Durée (mois):", finalDureeMois);
+
     // 1) CREATE TRANCHE FIRST
     console.log("Création de la tranche...");
     console.log("Données tranche:", {
       projet_id: projetId,
       tranche_name: trancheName,
-      taux_nominal: tauxNominal,
-      periodicite_coupons: periodiciteCoupons,
-      duree_mois: dureeMois,
+      taux_nominal: finalTauxNominal,
+      periodicite_coupons: finalPeriodiciteCoupons,
+      duree_mois: finalDureeMois,
       date_emission: dateEmissionForm,
       date_echeance_finale: dateEcheanceFinale,
     });
@@ -285,9 +295,9 @@ Deno.serve(async (req: Request) => {
       .insert({
         projet_id: projetId,
         tranche_name: trancheName,
-        taux_nominal: tauxNominal,
-        periodicite_coupons: periodiciteCoupons,
-        duree_mois: dureeMois,
+        taux_nominal: finalTauxNominal,
+        periodicite_coupons: finalPeriodiciteCoupons,
+        duree_mois: finalDureeMois,
         date_emission: dateEmissionForm,
         date_echeance_finale: dateEcheanceFinale,
       })
@@ -673,9 +683,9 @@ Deno.serve(async (req: Request) => {
 
         console.log("📋 CGP Info:", { cgp, emailCgp, codeCgp, sirenCgp });
 
-        // Calculate coupon amounts with period adjustment
-        const couponAnnuel = tauxNominal ? (montant * tauxNominal) / 100 : 0;
-        const periodRatio = getPeriodRatio(periodiciteCoupons, baseInteret);
+        // Calculate coupon amounts with period adjustment (use final values from project)
+        const couponAnnuel = finalTauxNominal ? (montant * finalTauxNominal) / 100 : 0;
+        const periodRatio = getPeriodRatio(finalPeriodiciteCoupons, baseInteret);
         const couponBrut = couponAnnuel * periodRatio;
         // Physique: 30% flat tax -> net = brut * 0.7
         // Morale: no flat tax -> net = brut
@@ -685,7 +695,7 @@ Deno.serve(async (req: Request) => {
         console.log("Création souscription - Quantité:", quantite, "Montant:", montant);
         console.log("Calcul coupons:");
         console.log("  - Coupon annuel:", couponAnnuel);
-        console.log("  - Périodicité:", periodiciteCoupons, "Ratio:", periodRatio);
+        console.log("  - Périodicité:", finalPeriodiciteCoupons, "Ratio:", periodRatio);
         console.log("  - Base:", baseInteret);
         console.log("  - Coupon par période (brut):", couponBrut);
         console.log("  - Type investisseur:", investorType);
