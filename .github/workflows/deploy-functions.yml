@@ -22,16 +22,33 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy Edge Functions
+      - name: Deploy Edge Functions to Paris
         run: |
-          supabase functions deploy accept-invitation --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-          # Add more functions here as needed:
-          # supabase functions deploy send-invitation --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          echo "Deploying 9 edge functions to Paris project..."
+          supabase functions deploy accept-invitation --project-ref ${{ secrets.SUPABASE_PARIS_PROJECT_REF }}
+          supabase functions deploy analyze-payment --project-ref ${{ secrets.SUPABASE_PARIS_PROJECT_REF }}
+          supabase functions deploy analyze-payment-batch --project-ref ${{ secrets.SUPABASE_PARIS_PROJECT_REF }}
+          supabase functions deploy change-password --project-ref ${{ secrets.SUPABASE_PARIS_PROJECT_REF }}
+          supabase functions deploy delete-pending-user --project-ref ${{ secrets.SUPABASE_PARIS_PROJECT_REF }}
+          supabase functions deploy import-registre --project-ref ${{ secrets.SUPABASE_PARIS_PROJECT_REF }}
+          supabase functions deploy regenerate-echeancier --project-ref ${{ secrets.SUPABASE_PARIS_PROJECT_REF }}
+          supabase functions deploy send-coupon-reminders --project-ref ${{ secrets.SUPABASE_PARIS_PROJECT_REF }}
+          supabase functions deploy send-invitation --project-ref ${{ secrets.SUPABASE_PARIS_PROJECT_REF }}
+          echo "✅ All functions deployed!"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Deployment Summary
         run: |
-          echo "✅ Edge functions deployed successfully!"
-          echo "Project: ${{ secrets.SUPABASE_PROJECT_ID }}"
-          echo "Functions: accept-invitation"
+          echo "✅ Edge functions deployed successfully to Paris!"
+          echo "Project: ${{ secrets.SUPABASE_PARIS_PROJECT_REF }}"
+          echo "Functions deployed:"
+          echo "  1. accept-invitation"
+          echo "  2. analyze-payment"
+          echo "  3. analyze-payment-batch"
+          echo "  4. change-password"
+          echo "  5. delete-pending-user"
+          echo "  6. import-registre"
+          echo "  7. regenerate-echeancier"
+          echo "  8. send-coupon-reminders"
+          echo "  9. send-invitation"
