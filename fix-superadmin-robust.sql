@@ -30,9 +30,11 @@ END $$;
 -- STEP 2: ADD is_superadmin COLUMN IF MISSING
 -- ==============================================
 
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_superadmin BOOLEAN DEFAULT false;
-
-RAISE NOTICE 'Ensured is_superadmin column exists';
+DO $$
+BEGIN
+  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_superadmin BOOLEAN DEFAULT false;
+  RAISE NOTICE 'Ensured is_superadmin column exists';
+END $$;
 
 -- ==============================================
 -- STEP 3: SET SUPERADMIN FLAG
