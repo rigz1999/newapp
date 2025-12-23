@@ -1,3 +1,8 @@
+
+-- ==========================================
+-- Migration: 20250107_add_performance_indexes.sql
+-- ==========================================
+
 -- ============================================
 -- Performance Indexes Migration
 -- Created: 2025-01-07
@@ -121,6 +126,13 @@ COMMENT ON INDEX idx_memberships_org_user IS 'Composite index for organization m
 COMMENT ON INDEX idx_paiements_date IS 'Index for date-based payment queries and sorting';
 COMMENT ON INDEX idx_invitations_org_status IS 'Partial index for active invitations by organization';
 COMMENT ON INDEX idx_echeancier_tranche_date IS 'Partial index for upcoming payment schedules';
+
+
+
+-- ==========================================
+-- Migration: 20251012160046_add_owner_and_insert_policies.sql
+-- ==========================================
+
 /*
   # Add owner column and INSERT policies for signup
 
@@ -155,6 +167,13 @@ CREATE POLICY "Users can create their own membership"
   FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
+
+
+
+-- ==========================================
+-- Migration: 20251012170459_add_admin_role.sql
+-- ==========================================
+
 /*
   # Add admin role support
 
@@ -167,7 +186,14 @@ CREATE POLICY "Users can create their own membership"
     - Admin status is stored in user metadata for easy access
 */
 
--- No schema changes needed - we'll use auth metadata/*
+-- No schema changes needed - we'll use auth metadata
+
+
+-- ==========================================
+-- Migration: 20251012171549_add_payments_table.sql
+-- ==========================================
+
+/*
   # Add payments table for tracking coupon payments
 
   1. New Tables
@@ -265,7 +291,14 @@ CREATE POLICY "Organization members can delete payments"
       WHERE s.id = payments.subscription_id
       AND m.user_id = auth.uid()
     )
-  );/*
+  );
+
+
+-- ==========================================
+-- Migration: 20251012211006_create_organizations_and_memberships.sql
+-- ==========================================
+
+/*
   # Create organizations and memberships tables
 
   1. New Tables
@@ -372,7 +405,14 @@ CREATE POLICY "Organization owners can delete memberships"
     org_id IN (
       SELECT id FROM organizations WHERE owner_id = auth.uid()
     )
-  );/*
+  );
+
+
+-- ==========================================
+-- Migration: 20251012225719_add_payment_proof_fields.sql
+-- ==========================================
+
+/*
   # Add payment proof and matching fields
 
   1. Changes
@@ -416,6 +456,13 @@ BEGIN
     ALTER TABLE paiements ADD COLUMN souscription_id uuid REFERENCES souscriptions(id);
   END IF;
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251025154018_fix_payment_statuses_without_proofs.sql
+-- ==========================================
+
 /*
   # Fix Payment Statuses Without Proofs
 
@@ -440,6 +487,13 @@ WHERE (statut = 'Payé' OR statut = 'paid')
   AND id NOT IN (
     SELECT paiement_id FROM payment_proofs
   );
+
+
+
+-- ==========================================
+-- Migration: 20251025231009_enforce_payment_proof_requirement.sql
+-- ==========================================
+
 /*
   # Enforce Payment Proof Requirement
 
@@ -484,6 +538,13 @@ CREATE TRIGGER enforce_payment_proof
   BEFORE INSERT OR UPDATE ON paiements
   FOR EACH ROW
   EXECUTE FUNCTION validate_payment_proof();
+
+
+
+-- ==========================================
+-- Migration: 20251025231321_simplify_payment_model_proof_required.sql
+-- ==========================================
+
 /*
   # Simplify Payment Model - Proof Required
 
@@ -520,6 +581,13 @@ ALTER TABLE paiements DROP COLUMN IF EXISTS statut;
 -- Add comment explaining the model
 COMMENT ON TABLE paiements IS 'Payment records represent completed payments with proof. A record existing means payment has been made.';
 COMMENT ON TABLE payment_proofs IS 'Every payment MUST have at least one proof. Payment cannot exist without proof.';
+
+
+
+-- ==========================================
+-- Migration: 20251105000001_create_profiles_table.sql
+-- ==========================================
+
 -- Create profiles table to sync with auth.users
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -584,6 +652,13 @@ SELECT
   created_at
 FROM auth.users
 ON CONFLICT (id) DO NOTHING;
+
+
+
+-- ==========================================
+-- Migration: 20251106000001_create_user_reminder_settings.sql
+-- ==========================================
+
 -- Migration: Create user_reminder_settings table
 -- Created: 2025-11-06
 -- Purpose: Store user preferences for automatic email reminders about upcoming coupon payments
@@ -654,6 +729,13 @@ COMMENT ON COLUMN user_reminder_settings.enabled IS 'Master switch for all email
 COMMENT ON COLUMN user_reminder_settings.remind_7_days IS 'Send reminder 7 days before coupon due date';
 COMMENT ON COLUMN user_reminder_settings.remind_14_days IS 'Send reminder 14 days before coupon due date';
 COMMENT ON COLUMN user_reminder_settings.remind_30_days IS 'Send reminder 30 days before coupon due date';
+
+
+
+-- ==========================================
+-- Migration: 20251106000002_setup_reminder_cron.sql
+-- ==========================================
+
 -- ============================================
 -- Setup Cron Job for Coupon Reminders
 -- Path: supabase/migrations/20251106000002_setup_reminder_cron.sql
@@ -685,6 +767,13 @@ SELECT cron.schedule(
 
 -- To manually unschedule (if needed later):
 -- SELECT cron.unschedule('send-daily-coupon-reminders');
+
+
+
+-- ==========================================
+-- Migration: 20251107000001_fix_security_definer_views.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Security Definer Views
 -- Created: 2025-11-07
@@ -792,6 +881,13 @@ COMMENT ON VIEW v_coupons_stats IS 'Coupon statistics per subscription - uses SE
 COMMENT ON VIEW v_souscriptions_with_cgp IS 'Subscriptions with CGP information - uses SECURITY INVOKER to enforce RLS';
 COMMENT ON VIEW v_prochains_coupons IS 'Next upcoming coupon per subscription - uses SECURITY INVOKER to enforce RLS';
 COMMENT ON VIEW v_souscriptions_with_next IS 'Subscriptions with next coupon information - uses SECURITY INVOKER to enforce RLS';
+
+
+
+-- ==========================================
+-- Migration: 20251107000002_fix_function_search_path.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Function Search Path Security
 -- Created: 2025-11-07
@@ -822,6 +918,13 @@ COMMENT ON FUNCTION public.generate_souscription_id IS 'Generates subscription I
 COMMENT ON FUNCTION public.is_super_admin IS 'Checks super admin status - search_path fixed for security';
 COMMENT ON FUNCTION public.get_user_org_ids IS 'Gets user organization IDs - search_path fixed for security';
 COMMENT ON FUNCTION public.handle_new_user IS 'Handles new user creation - search_path fixed for security';
+
+
+
+-- ==========================================
+-- Migration: 20251108000001_fix_rls_performance_issues.sql
+-- ==========================================
+
 -- ============================================
 -- Fix RLS Performance Issues
 -- Created: 2025-11-08
@@ -1335,6 +1438,13 @@ COMMENT ON POLICY "Users can view organizations they are members of" ON organiza
 
 COMMENT ON POLICY "Users can view their memberships" ON memberships IS
   'Optimized: Uses (select auth.uid()) and consolidates membership viewing policies';
+
+
+
+-- ==========================================
+-- Migration: 20251108000002_create_invitations_table.sql
+-- ==========================================
+
 -- ============================================
 -- Create Invitations Table
 -- Created: 2025-11-08
@@ -1429,6 +1539,13 @@ COMMENT ON POLICY "Admins can create invitations" ON invitations IS
   'Organization owners and admins can create invitations';
 COMMENT ON POLICY "Admins can delete invitations" ON invitations IS
   'Organization owners and admins can delete invitations';
+
+
+
+-- ==========================================
+-- Migration: 20251108000003_fix_user_deletion_policies.sql
+-- ==========================================
+
 -- ============================================
 -- Complete RLS Setup for User Management
 -- Created: 2025-11-08
@@ -1499,6 +1616,13 @@ COMMENT ON POLICY "Admins can delete invitations" ON invitations IS
 
 COMMENT ON POLICY "Admins and owners can delete memberships" ON memberships IS
   'Organization owners and admins can remove members, but admins cannot remove the owner';
+
+
+
+-- ==========================================
+-- Migration: 20251108000004_simplify_super_admin_system.sql
+-- ==========================================
+
 -- ============================================
 -- Workflow Simplification: Single Super Admin System
 -- Created: 2025-11-08
@@ -1826,6 +1950,13 @@ JOIN organizations o ON o.id = m.org_id;
 
 -- Check for any remaining super_admin roles (should be empty)
 SELECT * FROM memberships WHERE role = 'super_admin';
+
+
+
+-- ==========================================
+-- Migration: 20251108000005_add_missing_rls_policies.sql
+-- ==========================================
+
 -- ============================================
 -- Add Missing RLS Policies for Data Tables
 -- Created: 2025-11-08
@@ -2241,6 +2372,13 @@ COMMENT ON POLICY "Users can view their org souscriptions" ON souscriptions IS
 
 COMMENT ON POLICY "Users can view their org paiements" ON paiements IS
   'Super admin can view all. Users can view paiements for their org.';
+
+
+
+-- ==========================================
+-- Migration: 20251108000006_fix_invitation_functions_search_path.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Invitation Functions Search Path
 -- Created: 2025-11-08
@@ -2296,6 +2434,13 @@ COMMENT ON FUNCTION public.mark_invitation_accepted(TEXT) IS
 
 COMMENT ON FUNCTION public.delete_invitation_on_user_delete() IS
   'Trigger function that deletes invitations when the user who sent them is deleted. Maintains referential integrity.';
+
+
+
+-- ==========================================
+-- Migration: 20251109000001_allow_public_invitation_access.sql
+-- ==========================================
+
 -- Allow anonymous users to read invitations using their token
 -- This is necessary for the invitation acceptance flow where users are not yet authenticated
 
@@ -2309,3 +2454,5 @@ CREATE POLICY "Anyone can view invitation with valid token"
 -- The security is handled by the token being a long, random UUID that is hard to guess
 -- The token is: crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '')
 -- Which gives approximately 2^256 possible values, making brute force attacks infeasible
+
+

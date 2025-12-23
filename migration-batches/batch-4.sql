@@ -1,3 +1,8 @@
+
+-- ==========================================
+-- Migration: 20251211184853_fix_memberships_recursion_final.sql
+-- ==========================================
+
 /*
   # Fix Memberships Recursion - Final
   
@@ -88,6 +93,13 @@ CREATE POLICY "Users view their orgs"
       WHERE user_id = auth.uid()
     )
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211185628_fix_all_rls_correct_final.sql
+-- ==========================================
+
 /*
   # Fix ALL RLS Policies - Correct Final Version
   
@@ -451,6 +463,13 @@ WITH CHECK (user_id = auth.uid());
 
 CREATE POLICY "delete_reminder_settings" ON user_reminder_settings FOR DELETE TO authenticated
 USING (user_id = auth.uid());
+
+
+
+-- ==========================================
+-- Migration: 20251211185705_clean_all_policies_and_recreate.sql
+-- ==========================================
+
 /*
   # Clean ALL policies and recreate from scratch
   
@@ -629,6 +648,13 @@ USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 CREATE POLICY "delete_reminder_settings" ON user_reminder_settings FOR DELETE TO authenticated
 USING (user_id = auth.uid());
+
+
+
+-- ==========================================
+-- Migration: 20251211200000_add_superadmin_bypass_to_rls.sql
+-- ==========================================
+
 /*
   # Add Superadmin Bypass to RLS Policies
 
@@ -1082,6 +1108,13 @@ ALTER TABLE invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
 ALTER TABLE memberships DISABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations DISABLE ROW LEVEL SECURITY;
+
+
+
+-- ==========================================
+-- Migration: 20251211201000_secure_identity_tables_properly.sql
+-- ==========================================
+
 /*
   # Properly Secure Identity Tables with RLS
 
@@ -1301,6 +1334,13 @@ BEGIN
 
   RAISE NOTICE 'RLS properly enabled on all identity tables';
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251212000000_fix_security_definer_search_path.sql
+-- ==========================================
+
 /*
   # Fix SECURITY DEFINER Functions - Add search_path Security
 
@@ -1462,6 +1502,13 @@ BEGIN
   RAISE NOTICE '✓ No RLS state changed';
   RAISE NOTICE '✓ Safe migration complete';
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251212000001_document_current_rls_state.sql
+-- ==========================================
+
 /*
   # Document Current RLS State and Known Issues
 
@@ -1571,6 +1618,13 @@ BEGIN
   RAISE NOTICE 'CURRENT STATE: STABLE AND SECURE';
   RAISE NOTICE '====================================================================';
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251212000100_nuclear_rls_rebuild.sql
+-- ==========================================
+
 /*
   # NUCLEAR OPTION: Complete RLS Rebuild
 
@@ -2076,6 +2130,13 @@ BEGIN
   RAISE NOTICE '';
   RAISE NOTICE '====================================================================';
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251212000200_fix_remaining_critical_issues.sql
+-- ==========================================
+
 /*
   # Fix Remaining Critical Security Issues
 
@@ -2390,6 +2451,13 @@ BEGIN
     RAISE WARNING 'Expected at least 3 policies per identity table';
   END IF;
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251212000300_fix_invitation_anon_access.sql
+-- ==========================================
+
 /*
   # Fix Invitation Anonymous Access
 
@@ -2553,6 +2621,13 @@ BEGIN
   RAISE NOTICE '';
   RAISE NOTICE '====================================================================';
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251214000001_fix_project_update_trigger.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Project Update Trigger
 -- Created: 2025-12-14
@@ -2602,6 +2677,13 @@ END;
 $$;
 
 COMMENT ON FUNCTION recalculate_on_project_update IS 'Trigger function that recalculates coupons when project financial parameters change (FIXED: uses duree_mois and joins through tranches)';
+
+
+
+-- ==========================================
+-- Migration: 20251220000000_fix_superadmin_rls_issue.sql
+-- ==========================================
+
 -- Fix superadmin RLS issue: Add missing is_superadmin column and recreate RPC function
 -- This migration fixes the critical issue where superadmin accounts can't see any data
 -- because the is_superadmin column doesn't exist on the profiles table
@@ -2638,6 +2720,13 @@ WHERE id IN (
 
 -- Add a comment documenting the column
 COMMENT ON COLUMN profiles.is_superadmin IS 'Indicates if user is a superadmin with full system access, bypassing all RLS policies';
+
+
+
+-- ==========================================
+-- Migration: 20251220000001_force_fix_superadmin.sql
+-- ==========================================
+
 -- FORCE FIX: Superadmin RLS Issue - Comprehensive Fix
 -- This migration ensures superadmin access works even with complex RLS setups
 
@@ -2719,6 +2808,13 @@ BEGIN
     RAISE WARNING 'NO SUPERADMIN USERS FOUND! You need to manually set is_superadmin = true for at least one user.';
   END IF;
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251220000002_fix_rls_blocking_superadmin.sql
+-- ==========================================
+
 -- FIX: RLS on profiles table is blocking is_superadmin() function
 -- The issue: profiles table has RLS enabled, which prevents SECURITY DEFINER functions
 -- from reading the is_superadmin column, causing the function to always return false
@@ -2887,6 +2983,13 @@ BEGIN
     RAISE WARNING 'NO SUPERADMIN USERS! Check that zrig.ayman@gmail.com exists in profiles table.';
   END IF;
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251220000003_actual_working_superadmin_fix.sql
+-- ==========================================
+
 -- ACTUAL WORKING FIX: Break the circular dependency in profiles RLS
 --
 -- THE PROBLEM:
@@ -3105,6 +3208,13 @@ BEGIN
 
   RAISE NOTICE '==========================================';
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251220100000_revert_to_nuclear_rebuild_state.sql
+-- ==========================================
+
 -- REVERT TO NUCLEAR REBUILD STATE (the one that actually worked)
 -- The nuclear rebuild had RLS DISABLED on identity tables - that was correct
 -- Migration 20251212000200 re-enabled it with circular dependencies - that broke everything
@@ -3238,6 +3348,13 @@ BEGIN
   RAISE NOTICE 'Superadmin: zrig.ayman@gmail.com';
   RAISE NOTICE '===========================================';
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251221000000_fix_all_rls_policies_for_superadmin.sql
+-- ==========================================
+
 -- Fix ALL business table RLS policies to properly check for superadmin access
 -- This ensures superadmins (with is_superadmin=true in profiles) can see ALL data
 
@@ -3310,6 +3427,13 @@ DROP POLICY IF EXISTS coupons_update ON coupons_echeances;
 CREATE POLICY coupons_update ON coupons_echeances FOR UPDATE USING (EXISTS (SELECT 1 FROM souscriptions s JOIN tranches t ON t.id = s.tranche_id JOIN projets p ON p.id = t.projet_id WHERE s.id = coupons_echeances.souscription_id AND user_is_admin_of_org(p.org_id)));
 DROP POLICY IF EXISTS coupons_delete ON coupons_echeances;
 CREATE POLICY coupons_delete ON coupons_echeances FOR DELETE USING (EXISTS (SELECT 1 FROM souscriptions s JOIN tranches t ON t.id = s.tranche_id JOIN projets p ON p.id = t.projet_id WHERE s.id = coupons_echeances.souscription_id AND user_is_admin_of_org(p.org_id)));
+
+
+
+-- ==========================================
+-- Migration: 20251221000001_add_org_id_to_paiements.sql
+-- ==========================================
+
 -- Add org_id column to paiements table and backfill data
 -- This fixes RLS policy violations when inserting payments
 
@@ -3465,6 +3589,13 @@ BEGIN
     RAISE EXCEPTION 'Migration failed: org_id column not found';
   END IF;
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251221000002_add_storage_rls_policies.sql
+-- ==========================================
+
 -- Create payment-proofs-temp bucket if it doesn't exist
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('payment-proofs-temp', 'payment-proofs-temp', false)
@@ -3528,6 +3659,13 @@ CREATE POLICY "Allow authenticated update to payment-proofs-temp"
 ON storage.objects FOR UPDATE
 TO authenticated
 USING (bucket_id = 'payment-proofs-temp');
+
+
+
+-- ==========================================
+-- Migration: 20251222000001_fix_interest_rate_coupon_calculations.sql
+-- ==========================================
+
 -- ============================================
 -- Fix Interest Rate and Coupon Calculations
 -- Created: 2025-12-22
@@ -3684,6 +3822,13 @@ BEGIN
   RAISE NOTICE '4. Cleared all tranche periodicite_coupons values';
   RAISE NOTICE '===========================================';
 END $$;
+
+
+
+-- ==========================================
+-- Migration: 20251223000000_backfill_investisseurs_org_id.sql
+-- ==========================================
+
 -- Backfill org_id for existing investisseurs records
 -- Get org_id from souscriptions -> tranches -> projets relationship
 
@@ -3715,3 +3860,5 @@ BEGIN
 
   RAISE NOTICE 'Backfilled org_id for investisseurs. Total with org_id: %', updated_count;
 END $$;
+
+

@@ -1,3 +1,8 @@
+
+-- ==========================================
+-- Migration: 20251211144535_fix_app_config_rls_policies.sql
+-- ==========================================
+
 /*
   # Fix app_config RLS policies
   
@@ -33,7 +38,14 @@ CREATE POLICY "Only super admins can delete app_config"
   ON app_config
   FOR DELETE
   TO authenticated
-  USING (is_super_admin());/*
+  USING (is_super_admin());
+
+
+-- ==========================================
+-- Migration: 20251211145404_fix_projets_rls_only.sql
+-- ==========================================
+
+/*
   # Fix Projets RLS Policies Only
   
   ## Problem
@@ -131,6 +143,13 @@ CREATE POLICY "Users can delete their org projets"
   FOR DELETE
   TO authenticated
   USING (user_has_org_access(org_id));
+
+
+
+-- ==========================================
+-- Migration: 20251211161343_fix_user_has_org_access_permissions.sql
+-- ==========================================
+
 /*
   # Fix user_has_org_access function permissions
   
@@ -144,6 +163,13 @@ CREATE POLICY "Users can delete their org projets"
 GRANT EXECUTE ON FUNCTION user_has_org_access(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION user_has_org_access(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION user_has_org_access(uuid) TO service_role;
+
+
+
+-- ==========================================
+-- Migration: 20251211161411_simplify_projets_rls_completely.sql
+-- ==========================================
+
 /*
   # Completely simplify projets RLS policies
   
@@ -214,6 +240,13 @@ CREATE POLICY "Users can delete their org projets"
     OR
     auth.email() = 'zrig.ayman@gmail.com'
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211161441_fix_is_super_admin_circular_dependency.sql
+-- ==========================================
+
 /*
   # Fix is_super_admin circular dependency
   
@@ -244,6 +277,13 @@ $$;
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION is_super_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION is_super_admin() TO anon;
+
+
+
+-- ==========================================
+-- Migration: 20251211161652_fix_memberships_rls_for_org_checks.sql
+-- ==========================================
+
 /*
   # Fix memberships RLS to allow org-level checks
   
@@ -280,6 +320,13 @@ CREATE POLICY "Users can view memberships in their orgs"
       )
     )
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211161706_fix_projets_rls_with_secure_function.sql
+-- ==========================================
+
 /*
   # Fix projets RLS using a secure membership check
   
@@ -363,6 +410,13 @@ CREATE POLICY "Users can delete their org projets"
   USING (
     user_in_org(org_id) OR auth.email() = 'zrig.ayman@gmail.com'
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211161936_grant_execute_permissions_rpc_functions.sql
+-- ==========================================
+
 /*
   # Grant execute permissions on RPC functions
   
@@ -377,6 +431,13 @@ CREATE POLICY "Users can delete their org projets"
 -- Grant execute on all relevant functions
 GRANT EXECUTE ON FUNCTION check_super_admin_status() TO authenticated;
 GRANT EXECUTE ON FUNCTION check_super_admin_status() TO anon;
+
+
+
+-- ==========================================
+-- Migration: 20251211162310_fix_memberships_policy_use_jwt_email.sql
+-- ==========================================
+
 /*
   # Fix memberships policy to use JWT email correctly
   
@@ -401,6 +462,13 @@ CREATE POLICY "Users can view own memberships"
     OR
     (user_id = auth.uid())
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211162321_fix_projets_policies_use_jwt_email.sql
+-- ==========================================
+
 /*
   # Fix projets policies to use JWT email correctly
   
@@ -453,6 +521,13 @@ CREATE POLICY "Users can delete their org projets"
   USING (
     user_in_org(org_id) OR ((auth.jwt()->>'email') = 'zrig.ayman@gmail.com')
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211162440_fix_rls_functions_bypass_completely.sql
+-- ==========================================
+
 /*
   # Fix RLS helper functions to bypass RLS completely
   
@@ -514,6 +589,13 @@ GRANT EXECUTE ON FUNCTION is_org_admin(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION is_org_admin(uuid) TO anon;
 GRANT EXECUTE ON FUNCTION user_in_org(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION user_in_org(uuid) TO anon;
+
+
+
+-- ==========================================
+-- Migration: 20251211162452_simplify_memberships_select_policy_completely.sql
+-- ==========================================
+
 /*
   # Simplify memberships SELECT policy to remove circular dependencies
   
@@ -544,6 +626,13 @@ CREATE POLICY "Users can view own memberships"
     -- Super admin can see all (direct JWT check, no function)
     ((auth.jwt()->>'email') = 'zrig.ayman@gmail.com')
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211162515_remove_all_function_calls_from_memberships_policies.sql
+-- ==========================================
+
 /*
   # Remove all function calls from memberships policies
   
@@ -601,6 +690,13 @@ CREATE POLICY "Super admin can delete memberships"
   USING (
     (auth.jwt()->>'email') = 'zrig.ayman@gmail.com'
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211162744_simplify_projets_policies_remove_function_calls.sql
+-- ==========================================
+
 /*
   # Simplify projets policies to remove function calls
   
@@ -691,6 +787,13 @@ CREATE POLICY "Users can delete their org projets"
       AND memberships.user_id = auth.uid()
     )
   );
+
+
+
+-- ==========================================
+-- Migration: 20251211163040_allow_authenticated_read_all_memberships.sql
+-- ==========================================
+
 /*
   # Allow authenticated users to read all memberships
   
@@ -717,6 +820,13 @@ CREATE POLICY "Authenticated users can view memberships"
   FOR SELECT
   TO authenticated
   USING (true);
+
+
+
+-- ==========================================
+-- Migration: 20251211183534_implement_three_role_system_clean.sql
+-- ==========================================
+
 /*
   # Implement Clean Three-Role Access Control System
   
@@ -1325,6 +1435,13 @@ GRANT EXECUTE ON FUNCTION user_is_admin_of_org(uuid) TO authenticated, anon;
 -- ============================================================================
 -- DONE!
 -- ============================================================================
+
+
+
+-- ==========================================
+-- Migration: 20251211183638_cleanup_duplicate_policies.sql
+-- ==========================================
+
 /*
   # Cleanup Duplicate RLS Policies
   
@@ -1469,6 +1586,13 @@ DROP POLICY IF EXISTS "Admins can manage their organization" ON organizations;
 DROP POLICY IF EXISTS "Users can update their organization" ON organizations;
 DROP POLICY IF EXISTS "Users can delete their organization" ON organizations;
 DROP POLICY IF EXISTS "Users can insert organizations" ON organizations;
+
+
+
+-- ==========================================
+-- Migration: 20251211183716_final_cleanup_all_duplicate_policies.sql
+-- ==========================================
+
 /*
   # Final Cleanup of All Duplicate RLS Policies
   
@@ -1574,6 +1698,13 @@ DROP POLICY IF EXISTS "Superadmins can update organizations" ON organizations;
 DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 DROP POLICY IF EXISTS "Anyone can view profiles" ON profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+
+
+
+-- ==========================================
+-- Migration: 20251211184351_enable_rls_on_identity_tables.sql
+-- ==========================================
+
 /*
   # Enable RLS on Identity Tables for Better Security
   
@@ -1749,6 +1880,13 @@ CREATE POLICY "Admins can delete memberships in their org"
 -- read profiles, memberships, and organizations even with RLS enabled.
 --
 -- This prevents circular dependencies while maintaining security.
+
+
+
+-- ==========================================
+-- Migration: 20251211184531_revert_identity_table_rls.sql
+-- ==========================================
+
 /*
   # Revert RLS on Identity Tables
   
@@ -1798,6 +1936,13 @@ DROP POLICY IF EXISTS "Admins can delete memberships in their org" ON membership
 ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
 ALTER TABLE memberships DISABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations DISABLE ROW LEVEL SECURITY;
+
+
+
+-- ==========================================
+-- Migration: 20251211184711_secure_identity_tables_no_recursion_fixed.sql
+-- ==========================================
+
 /*
   # Secure Identity Tables Without Recursion
   
@@ -1969,3 +2114,5 @@ CREATE POLICY "Superadmins can delete organizations"
       AND is_superadmin = true
     )
   );
+
+
