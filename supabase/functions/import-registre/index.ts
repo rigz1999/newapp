@@ -275,7 +275,7 @@ Deno.serve(async (req: Request) => {
     // Fetch project to get all required parameters
     const { data: projectData, error: projectError } = await supabase
       .from('projets')
-      .select('base_interet, taux_nominal, periodicite_coupons, duree_mois, date_emission')
+      .select('base_interet, taux_nominal, periodicite_coupons, duree_mois')
       .eq('id', projetId)
       .single();
 
@@ -293,69 +293,18 @@ Deno.serve(async (req: Request) => {
     const baseInteret = projectData?.base_interet || 360;
     console.log('Base de calcul:', baseInteret);
 
-    // Use project values as fallback for tranche parameters
+    // Use project values as fallback for tranche parameters (except date_emission)
     const finalTauxNominal = tauxNominal ?? projectData?.taux_nominal ?? null;
     const finalPeriodiciteCoupons = periodiciteCoupons ?? projectData?.periodicite_coupons ?? null;
     const finalDureeMois = dureeMois ?? projectData?.duree_mois ?? null;
-    const finalDateEmission = dateEmissionForm ?? projectData?.date_emission ?? null;
 
-    console.log('📊 Paramètres finaux (form + projet):');
+    console.log('📊 Paramètres du projet:');
     console.log('  - Taux nominal:', finalTauxNominal);
     console.log('  - Périodicité:', finalPeriodiciteCoupons);
     console.log('  - Durée (mois):', finalDureeMois);
-    console.log('  - Date émission:', finalDateEmission);
 
-    // 1) CREATE TRANCHE FIRST
-    console.log('Création de la tranche...');
-    console.log('Données tranche:', {
-      projet_id: projetId,
-      tranche_name: trancheName,
-      taux_nominal: finalTauxNominal,
-      periodicite_coupons: finalPeriodiciteCoupons,
-      duree_mois: finalDureeMois,
-      date_emission: finalDateEmission,
-      date_echeance_finale: dateEcheanceFinale,
-    });
-    const { data: trancheData, error: trancheError } = await supabase
-      .from('tranches')
-      .insert({
-        projet_id: projetId,
-        tranche_name: trancheName,
-        taux_nominal: finalTauxNominal,
-        periodicite_coupons: finalPeriodiciteCoupons,
-        duree_mois: finalDureeMois,
-        date_emission: finalDateEmission,
-        date_echeance_finale: dateEcheanceFinale,
-      })
-      .select()
-      .single();
-
-    if (trancheError) {
-      console.error('Erreur création tranche:', trancheError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Erreur création tranche: ${trancheError.message}`,
-        }),
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    if (!trancheData) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Tranche non créée (données manquantes)',
-        }),
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    const trancheId = trancheData.id;
-    console.log('Tranche créée avec succès, ID:', trancheId);
-
-    // Read file with proper encoding handling
-    console.log('=== ANALYSE DU FICHIER ===');
+    // 1) PARSE CSV FIRST to get date_emission
+    console.log('\n=== ANALYSE DU FICHIER ===');
     console.log('Nom:', file.name);
     console.log('Type:', file.type);
     console.log('Taille:', file.size, 'bytes');
@@ -405,8 +354,6 @@ Deno.serve(async (req: Request) => {
       );
     } else {
       console.error('❌ AUCUNE LIGNE DÉTECTÉE!');
-
-      await supabase.from('tranches').delete().eq('id', trancheId);
       return new Response(
         JSON.stringify({
           success: false,
@@ -419,28 +366,66 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Find earliest Date de Transfert from CSV to set as tranche date_emission
-    let earliestDateTransfert: string | null = null;
-    for (const r of rows) {
-      const dateTransfert = parseDate(r['Date de Transfert']);
-      if (dateTransfert) {
-        if (!earliestDateTransfert || dateTransfert < earliestDateTransfert) {
-          earliestDateTransfert = dateTransfert;
-        }
-      }
+    // Get Date de Transfert from first row (same for all rows in the file)
+    const dateTransfertCSV = rows.length > 0 ? parseDate(rows[0]['Date de Transfert']) : null;
+    console.log('Date de Transfert from CSV:', dateTransfertCSV);
+
+    // Calculate final date_emission: form takes precedence, then CSV, then null
+    const finalDateEmission = dateEmissionForm ?? dateTransfertCSV ?? null;
+    console.log("Date d'émission finale:", finalDateEmission);
+
+    // 2) NOW CREATE TRANCHE with all final parameters including date_emission from CSV
+    console.log('\n=== CRÉATION DE LA TRANCHE ===');
+    console.log('Données tranche:', {
+      projet_id: projetId,
+      tranche_name: trancheName,
+      taux_nominal: finalTauxNominal,
+      periodicite_coupons: finalPeriodiciteCoupons,
+      duree_mois: finalDureeMois,
+      date_emission: finalDateEmission,
+      date_echeance_finale: dateEcheanceFinale,
+    });
+
+    const { data: trancheData, error: trancheError } = await supabase
+      .from('tranches')
+      .insert({
+        projet_id: projetId,
+        tranche_name: trancheName,
+        taux_nominal: finalTauxNominal,
+        periodicite_coupons: finalPeriodiciteCoupons,
+        duree_mois: finalDureeMois,
+        date_emission: finalDateEmission,
+        date_echeance_finale: dateEcheanceFinale,
+      })
+      .select()
+      .single();
+
+    if (trancheError) {
+      console.error('Erreur création tranche:', trancheError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Erreur création tranche: ${trancheError.message}`,
+        }),
+        { status: 500, headers: corsHeaders }
+      );
     }
 
-    // Update tranche with the earliest date_emission from CSV if found and not provided by form
-    if (earliestDateTransfert && !dateEmissionForm) {
-      console.log('Mise à jour date_emission de la tranche:', earliestDateTransfert);
-      await supabase
-        .from('tranches')
-        .update({ date_emission: earliestDateTransfert })
-        .eq('id', trancheId);
+    if (!trancheData) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Tranche non créée (données manquantes)',
+        }),
+        { status: 500, headers: corsHeaders }
+      );
     }
 
-    const trancheEmissionDate = earliestDateTransfert || finalDateEmission || null;
-    console.log("Date d'émission finale de la tranche:", trancheEmissionDate);
+    const trancheId = trancheData.id;
+    console.log('✅ Tranche créée avec succès, ID:', trancheId);
+
+    const trancheEmissionDate = finalDateEmission;
+    console.log("Date d'émission de la tranche:", trancheEmissionDate);
 
     let total = 0;
     let createdInvestisseurs = 0;
