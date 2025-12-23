@@ -1,132 +1,116 @@
 
 -- ==========================================
--- Migration: 20250107_add_performance_indexes.sql
+-- Migration: 20251012000001_create_organizations_and_memberships.sql
 -- ==========================================
 
--- ============================================
--- Performance Indexes Migration
--- Created: 2025-01-07
--- Purpose: Add indexes to improve query performance on large datasets
--- ============================================
+/*
+  # Create organizations and memberships tables
 
--- Index on memberships.user_id for faster user lookup
-CREATE INDEX IF NOT EXISTS idx_memberships_user_id
-ON memberships(user_id);
+  1. New Tables
+    - `organizations`
+      - `id` (uuid, primary key)
+      - `name` (text, organization name)
+      - `owner_id` (uuid, references auth.users)
+      - `created_at` (timestamp)
+    
+    - `memberships`
+      - `id` (uuid, primary key)
+      - `user_id` (uuid, references auth.users)
+      - `org_id` (uuid, references organizations)
+      - `role` (text, user role in organization)
+      - `created_at` (timestamp)
 
--- Index on memberships.org_id for faster organization queries
-CREATE INDEX IF NOT EXISTS idx_memberships_org_id
-ON memberships(org_id);
+  2. Security
+    - Enable RLS on both tables
+    - Add policies for authenticated users to manage their organizations
+    - Add policies for organization members to read their memberships
+*/
 
--- Composite index for org membership queries (most common query pattern)
-CREATE INDEX IF NOT EXISTS idx_memberships_org_user
-ON memberships(org_id, user_id);
+-- Create organizations table
+CREATE TABLE IF NOT EXISTS organizations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  owner_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at timestamptz DEFAULT now()
+);
 
--- Index on paiements.date_paiement for date-based ordering and filtering
-CREATE INDEX IF NOT EXISTS idx_paiements_date
-ON paiements(date_paiement DESC);
+-- Create memberships table
+CREATE TABLE IF NOT EXISTS memberships (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  org_id uuid REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
+  role text NOT NULL DEFAULT 'member',
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(user_id, org_id)
+);
 
--- Index on paiements.tranche_id for joining with tranches
-CREATE INDEX IF NOT EXISTS idx_paiements_tranche_id
-ON paiements(tranche_id);
+-- Enable RLS
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE memberships ENABLE ROW LEVEL SECURITY;
 
--- Index on souscriptions.tranche_id for faster tranche queries
-CREATE INDEX IF NOT EXISTS idx_souscriptions_tranche_id
-ON souscriptions(tranche_id);
+-- Organizations policies
+CREATE POLICY "Users can view organizations they are members of"
+  ON organizations FOR SELECT
+  TO authenticated
+  USING (
+    id IN (
+      SELECT org_id FROM memberships WHERE user_id = auth.uid()
+    )
+  );
 
--- Index on souscriptions.investisseur_id for faster investor queries
-CREATE INDEX IF NOT EXISTS idx_souscriptions_investisseur_id
-ON souscriptions(investisseur_id);
+CREATE POLICY "Users can create organizations"
+  ON organizations FOR INSERT
+  TO authenticated
+  WITH CHECK (owner_id = auth.uid());
 
--- Index on tranches.projet_id for faster project queries
-CREATE INDEX IF NOT EXISTS idx_tranches_projet_id
-ON tranches(projet_id);
+CREATE POLICY "Organization owners can update their organizations"
+  ON organizations FOR UPDATE
+  TO authenticated
+  USING (owner_id = auth.uid())
+  WITH CHECK (owner_id = auth.uid());
 
--- Index on projets.org_id for faster organization queries
-CREATE INDEX IF NOT EXISTS idx_projets_org_id
-ON projets(org_id);
+CREATE POLICY "Organization owners can delete their organizations"
+  ON organizations FOR DELETE
+  TO authenticated
+  USING (owner_id = auth.uid());
 
--- Index on investisseurs.org_id for faster organization queries
-CREATE INDEX IF NOT EXISTS idx_investisseurs_org_id
-ON investisseurs(org_id);
+-- Memberships policies
+CREATE POLICY "Users can view their own memberships"
+  ON memberships FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid());
 
--- Index on invitations.org_id for faster organization queries
-CREATE INDEX IF NOT EXISTS idx_invitations_org_id
-ON invitations(org_id);
+CREATE POLICY "Organization owners can create memberships"
+  ON memberships FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    org_id IN (
+      SELECT id FROM organizations WHERE owner_id = auth.uid()
+    )
+  );
 
--- Index on invitations.email for faster email lookup
-CREATE INDEX IF NOT EXISTS idx_invitations_email
-ON invitations(email);
+CREATE POLICY "Organization owners can update memberships"
+  ON memberships FOR UPDATE
+  TO authenticated
+  USING (
+    org_id IN (
+      SELECT id FROM organizations WHERE owner_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    org_id IN (
+      SELECT id FROM organizations WHERE owner_id = auth.uid()
+    )
+  );
 
--- Index on invitations.status for filtering pending invitations
-CREATE INDEX IF NOT EXISTS idx_invitations_status
-ON invitations(status);
-
--- Composite index for active invitations by org (common query pattern)
-CREATE INDEX IF NOT EXISTS idx_invitations_org_status
-ON invitations(org_id, status)
-WHERE status = 'pending';
-
--- Index on payment_proofs.paiement_id for faster proof lookup
-CREATE INDEX IF NOT EXISTS idx_payment_proofs_paiement_id
-ON payment_proofs(paiement_id);
-
--- Index on echeancier.tranche_id for faster schedule queries
-CREATE INDEX IF NOT EXISTS idx_echeancier_tranche_id
-ON echeancier(tranche_id);
-
--- Index on echeancier.date_echeance for date-based queries
-CREATE INDEX IF NOT EXISTS idx_echeancier_date
-ON echeancier(date_echeance);
-
--- Composite index for upcoming payment schedules (common query)
-CREATE INDEX IF NOT EXISTS idx_echeancier_tranche_date
-ON echeancier(tranche_id, date_echeance)
-WHERE statut = 'à venir';
-
--- Index on profiles.id for faster profile lookups (if not already exists)
-CREATE INDEX IF NOT EXISTS idx_profiles_id
-ON profiles(id);
-
--- Add created_at indexes for tables with temporal ordering
-CREATE INDEX IF NOT EXISTS idx_memberships_created_at
-ON memberships(created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_paiements_created_at
-ON paiements(created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_souscriptions_created_at
-ON souscriptions(created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_tranches_created_at
-ON tranches(created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_projets_created_at
-ON projets(created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_investisseurs_created_at
-ON investisseurs(created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_invitations_created_at
-ON invitations(created_at DESC);
-
--- Analyze tables to update statistics for query planner
-ANALYZE memberships;
-ANALYZE paiements;
-ANALYZE souscriptions;
-ANALYZE tranches;
-ANALYZE projets;
-ANALYZE investisseurs;
-ANALYZE invitations;
-ANALYZE payment_proofs;
-ANALYZE echeancier;
-ANALYZE profiles;
-
--- Add comments for documentation
-COMMENT ON INDEX idx_memberships_org_user IS 'Composite index for organization membership lookups';
-COMMENT ON INDEX idx_paiements_date IS 'Index for date-based payment queries and sorting';
-COMMENT ON INDEX idx_invitations_org_status IS 'Partial index for active invitations by organization';
-COMMENT ON INDEX idx_echeancier_tranche_date IS 'Partial index for upcoming payment schedules';
-
+CREATE POLICY "Organization owners can delete memberships"
+  ON memberships FOR DELETE
+  TO authenticated
+  USING (
+    org_id IN (
+      SELECT id FROM organizations WHERE owner_id = auth.uid()
+    )
+  );
 
 
 -- ==========================================
@@ -290,120 +274,6 @@ CREATE POLICY "Organization members can delete payments"
       JOIN memberships m ON p.org_id = m.org_id
       WHERE s.id = payments.subscription_id
       AND m.user_id = auth.uid()
-    )
-  );
-
-
--- ==========================================
--- Migration: 20251012211006_create_organizations_and_memberships.sql
--- ==========================================
-
-/*
-  # Create organizations and memberships tables
-
-  1. New Tables
-    - `organizations`
-      - `id` (uuid, primary key)
-      - `name` (text, organization name)
-      - `owner_id` (uuid, references auth.users)
-      - `created_at` (timestamp)
-    
-    - `memberships`
-      - `id` (uuid, primary key)
-      - `user_id` (uuid, references auth.users)
-      - `org_id` (uuid, references organizations)
-      - `role` (text, user role in organization)
-      - `created_at` (timestamp)
-
-  2. Security
-    - Enable RLS on both tables
-    - Add policies for authenticated users to manage their organizations
-    - Add policies for organization members to read their memberships
-*/
-
--- Create organizations table
-CREATE TABLE IF NOT EXISTS organizations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  owner_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at timestamptz DEFAULT now()
-);
-
--- Create memberships table
-CREATE TABLE IF NOT EXISTS memberships (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  org_id uuid REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
-  role text NOT NULL DEFAULT 'member',
-  created_at timestamptz DEFAULT now(),
-  UNIQUE(user_id, org_id)
-);
-
--- Enable RLS
-ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE memberships ENABLE ROW LEVEL SECURITY;
-
--- Organizations policies
-CREATE POLICY "Users can view organizations they are members of"
-  ON organizations FOR SELECT
-  TO authenticated
-  USING (
-    id IN (
-      SELECT org_id FROM memberships WHERE user_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "Users can create organizations"
-  ON organizations FOR INSERT
-  TO authenticated
-  WITH CHECK (owner_id = auth.uid());
-
-CREATE POLICY "Organization owners can update their organizations"
-  ON organizations FOR UPDATE
-  TO authenticated
-  USING (owner_id = auth.uid())
-  WITH CHECK (owner_id = auth.uid());
-
-CREATE POLICY "Organization owners can delete their organizations"
-  ON organizations FOR DELETE
-  TO authenticated
-  USING (owner_id = auth.uid());
-
--- Memberships policies
-CREATE POLICY "Users can view their own memberships"
-  ON memberships FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid());
-
-CREATE POLICY "Organization owners can create memberships"
-  ON memberships FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    org_id IN (
-      SELECT id FROM organizations WHERE owner_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "Organization owners can update memberships"
-  ON memberships FOR UPDATE
-  TO authenticated
-  USING (
-    org_id IN (
-      SELECT id FROM organizations WHERE owner_id = auth.uid()
-    )
-  )
-  WITH CHECK (
-    org_id IN (
-      SELECT id FROM organizations WHERE owner_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "Organization owners can delete memberships"
-  ON memberships FOR DELETE
-  TO authenticated
-  USING (
-    org_id IN (
-      SELECT id FROM organizations WHERE owner_id = auth.uid()
     )
   );
 
@@ -2454,5 +2324,105 @@ CREATE POLICY "Anyone can view invitation with valid token"
 -- The security is handled by the token being a long, random UUID that is hard to guess
 -- The token is: crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '')
 -- Which gives approximately 2^256 possible values, making brute force attacks infeasible
+
+
+
+-- ==========================================
+-- Migration: 20251109000002_fix_invitations_rls_recursion.sql
+-- ==========================================
+
+-- ============================================
+-- Fix Invitations RLS Recursion Issue
+-- Created: 2025-11-09
+-- Purpose: Fix infinite recursion in invitations policy by using a security definer function
+-- ============================================
+
+-- Drop existing problematic policies
+DROP POLICY IF EXISTS "Users can view org invitations" ON invitations;
+DROP POLICY IF EXISTS "Admins can create invitations" ON invitations;
+DROP POLICY IF EXISTS "Admins can delete invitations" ON invitations;
+
+-- Create a security definer function to check if user can view invitations for an org
+-- This bypasses RLS and prevents recursion
+CREATE OR REPLACE FUNCTION can_view_org_invitations(org_uuid UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  -- Check if user has membership in this org (bypassing RLS with security definer)
+  SELECT EXISTS (
+    SELECT 1 FROM memberships
+    WHERE user_id = auth.uid()
+    AND org_id = org_uuid
+  );
+$$;
+
+-- Create a security definer function to check if user can manage invitations for an org
+-- This bypasses RLS and prevents recursion
+CREATE OR REPLACE FUNCTION can_manage_org_invitations(org_uuid UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  -- Check if user is admin/owner in this org (bypassing RLS with security definer)
+  SELECT EXISTS (
+    SELECT 1 FROM memberships
+    WHERE user_id = auth.uid()
+    AND org_id = org_uuid
+    AND role = 'admin'
+  ) OR EXISTS (
+    SELECT 1 FROM organizations
+    WHERE id = org_uuid
+    AND owner_id = auth.uid()
+  );
+$$;
+
+-- Simplified policy: Allow all authenticated users to view all pending invitations
+-- This is safe because invitations only contain email/name, no sensitive data
+-- And they're needed for the admin panel to function
+CREATE POLICY "Authenticated users can view invitations"
+  ON invitations FOR SELECT
+  TO authenticated
+  USING (status = 'pending');
+
+-- Policy for creating invitations using security definer function
+CREATE POLICY "Admins can create invitations"
+  ON invitations FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    can_manage_org_invitations(org_id)
+  );
+
+-- Policy for deleting invitations using security definer function
+CREATE POLICY "Admins can delete invitations"
+  ON invitations FOR DELETE
+  TO authenticated
+  USING (
+    can_manage_org_invitations(org_id)
+  );
+
+-- Grant execute permissions
+GRANT EXECUTE ON FUNCTION can_view_org_invitations(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION can_manage_org_invitations(UUID) TO authenticated;
+
+-- Comments
+COMMENT ON FUNCTION can_view_org_invitations(UUID) IS
+  'Security definer function to check if user can view invitations for an org. Bypasses RLS to prevent recursion.';
+
+COMMENT ON FUNCTION can_manage_org_invitations(UUID) IS
+  'Security definer function to check if user can manage (create/delete) invitations for an org. Bypasses RLS to prevent recursion.';
+
+COMMENT ON POLICY "Authenticated users can view invitations" ON invitations IS
+  'All authenticated users can view pending invitations. This is safe as invitations contain no sensitive data and are needed for admin panel.';
+
+COMMENT ON POLICY "Admins can create invitations" ON invitations IS
+  'Organization owners and admins can create invitations using security definer function to prevent RLS recursion.';
+
+COMMENT ON POLICY "Admins can delete invitations" ON invitations IS
+  'Organization owners and admins can delete invitations using security definer function to prevent RLS recursion.';
 
 

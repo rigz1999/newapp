@@ -1,105 +1,5 @@
 
 -- ==========================================
--- Migration: 20251109000002_fix_invitations_rls_recursion.sql
--- ==========================================
-
--- ============================================
--- Fix Invitations RLS Recursion Issue
--- Created: 2025-11-09
--- Purpose: Fix infinite recursion in invitations policy by using a security definer function
--- ============================================
-
--- Drop existing problematic policies
-DROP POLICY IF EXISTS "Users can view org invitations" ON invitations;
-DROP POLICY IF EXISTS "Admins can create invitations" ON invitations;
-DROP POLICY IF EXISTS "Admins can delete invitations" ON invitations;
-
--- Create a security definer function to check if user can view invitations for an org
--- This bypasses RLS and prevents recursion
-CREATE OR REPLACE FUNCTION can_view_org_invitations(org_uuid UUID)
-RETURNS BOOLEAN
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path = public
-STABLE
-AS $$
-  -- Check if user has membership in this org (bypassing RLS with security definer)
-  SELECT EXISTS (
-    SELECT 1 FROM memberships
-    WHERE user_id = auth.uid()
-    AND org_id = org_uuid
-  );
-$$;
-
--- Create a security definer function to check if user can manage invitations for an org
--- This bypasses RLS and prevents recursion
-CREATE OR REPLACE FUNCTION can_manage_org_invitations(org_uuid UUID)
-RETURNS BOOLEAN
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path = public
-STABLE
-AS $$
-  -- Check if user is admin/owner in this org (bypassing RLS with security definer)
-  SELECT EXISTS (
-    SELECT 1 FROM memberships
-    WHERE user_id = auth.uid()
-    AND org_id = org_uuid
-    AND role = 'admin'
-  ) OR EXISTS (
-    SELECT 1 FROM organizations
-    WHERE id = org_uuid
-    AND owner_id = auth.uid()
-  );
-$$;
-
--- Simplified policy: Allow all authenticated users to view all pending invitations
--- This is safe because invitations only contain email/name, no sensitive data
--- And they're needed for the admin panel to function
-CREATE POLICY "Authenticated users can view invitations"
-  ON invitations FOR SELECT
-  TO authenticated
-  USING (status = 'pending');
-
--- Policy for creating invitations using security definer function
-CREATE POLICY "Admins can create invitations"
-  ON invitations FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    can_manage_org_invitations(org_id)
-  );
-
--- Policy for deleting invitations using security definer function
-CREATE POLICY "Admins can delete invitations"
-  ON invitations FOR DELETE
-  TO authenticated
-  USING (
-    can_manage_org_invitations(org_id)
-  );
-
--- Grant execute permissions
-GRANT EXECUTE ON FUNCTION can_view_org_invitations(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION can_manage_org_invitations(UUID) TO authenticated;
-
--- Comments
-COMMENT ON FUNCTION can_view_org_invitations(UUID) IS
-  'Security definer function to check if user can view invitations for an org. Bypasses RLS to prevent recursion.';
-
-COMMENT ON FUNCTION can_manage_org_invitations(UUID) IS
-  'Security definer function to check if user can manage (create/delete) invitations for an org. Bypasses RLS to prevent recursion.';
-
-COMMENT ON POLICY "Authenticated users can view invitations" ON invitations IS
-  'All authenticated users can view pending invitations. This is safe as invitations contain no sensitive data and are needed for admin panel.';
-
-COMMENT ON POLICY "Admins can create invitations" ON invitations IS
-  'Organization owners and admins can create invitations using security definer function to prevent RLS recursion.';
-
-COMMENT ON POLICY "Admins can delete invitations" ON invitations IS
-  'Organization owners and admins can delete invitations using security definer function to prevent RLS recursion.';
-
-
-
--- ==========================================
 -- Migration: 20251109000003_simplify_all_rls_policies.sql
 -- ==========================================
 
@@ -2805,4 +2705,46 @@ $$;
 
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION public.user_has_org_access(uuid) TO authenticated;
+
+
+-- ==========================================
+-- Migration: 20251211144535_fix_app_config_rls_policies.sql
+-- ==========================================
+
+/*
+  # Fix app_config RLS policies
+  
+  The issue: app_config table has RLS enabled but no policies, blocking
+  all access including from SECURITY DEFINER functions.
+  
+  Solution: Add a policy to allow authenticated users to read app_config.
+  This is safe because app_config only contains non-sensitive configuration.
+*/
+
+-- Allow all authenticated users to read app_config
+CREATE POLICY "Allow authenticated users to read app_config"
+  ON app_config
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- Only super admins can modify app_config
+CREATE POLICY "Only super admins can insert app_config"
+  ON app_config
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (is_super_admin());
+
+CREATE POLICY "Only super admins can update app_config"
+  ON app_config
+  FOR UPDATE
+  TO authenticated
+  USING (is_super_admin())
+  WITH CHECK (is_super_admin());
+
+CREATE POLICY "Only super admins can delete app_config"
+  ON app_config
+  FOR DELETE
+  TO authenticated
+  USING (is_super_admin());
 
