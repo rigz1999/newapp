@@ -272,10 +272,10 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
-    // Fetch project to get all required parameters
+    // Fetch project to get all required parameters (including org_id for RLS)
     const { data: projectData, error: projectError } = await supabase
       .from('projets')
-      .select('base_interet, taux_nominal, periodicite_coupons, duree_mois')
+      .select('base_interet, taux_nominal, periodicite_coupons, duree_mois, org_id')
       .eq('id', projetId)
       .single();
 
@@ -291,7 +291,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const baseInteret = projectData?.base_interet || 360;
+    const orgId = projectData?.org_id;
     console.log('Base de calcul:', baseInteret);
+    console.log('Organization ID:', orgId);
 
     // Use project values as fallback for tranche parameters (except date_emission)
     const finalTauxNominal = tauxNominal ?? projectData?.taux_nominal ?? null;
@@ -525,6 +527,7 @@ Deno.serve(async (req: Request) => {
             categorie_mifid: cleanString(r['Catégorisation']),
             cgp: cgpNom,
             email_cgp: cgpEmail,
+            org_id: orgId,
           };
 
           console.log('Payload investisseur physique');
@@ -643,6 +646,7 @@ Deno.serve(async (req: Request) => {
             categorie_mifid: cleanString(r['Catégorisation']),
             cgp: cgpNomMorale,
             email_cgp: cgpEmailMorale,
+            org_id: orgId,
           };
 
           console.log('Payload société');
