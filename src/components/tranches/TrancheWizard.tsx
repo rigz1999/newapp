@@ -266,20 +266,7 @@ export function TrancheWizard({
       }
       const xhr = new XMLHttpRequest();
       xhr.open("POST", url, true);
-      // Add authorization header with the access token
-      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
-      
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const p = Math.round((event.loaded / event.total) * 100);
-          setProgress(p);
-          // When upload reaches 100%, show "processing on server" message
-          if (p === 100) {
-            setIsProcessingOnServer(true);
-          }
-        }
-      };
-
+    
       xhr.onload = () => {
         setProcessing(false);
         logger.debug("Réponse serveur", { status: xhr.status });
