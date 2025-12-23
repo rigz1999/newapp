@@ -366,19 +366,12 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Find earliest Date de Transfert from CSV to set as tranche date_emission
-    let earliestDateTransfert: string | null = null;
-    for (const r of rows) {
-      const dateTransfert = parseDate(r['Date de Transfert']);
-      if (dateTransfert) {
-        if (!earliestDateTransfert || dateTransfert < earliestDateTransfert) {
-          earliestDateTransfert = dateTransfert;
-        }
-      }
-    }
+    // Get Date de Transfert from first row (same for all rows in the file)
+    const dateTransfertCSV = rows.length > 0 ? parseDate(rows[0]['Date de Transfert']) : null;
+    console.log('Date de Transfert from CSV:', dateTransfertCSV);
 
     // Calculate final date_emission: form takes precedence, then CSV, then null
-    const finalDateEmission = dateEmissionForm ?? earliestDateTransfert ?? null;
+    const finalDateEmission = dateEmissionForm ?? dateTransfertCSV ?? null;
     console.log("Date d'émission finale:", finalDateEmission);
 
     // 2) NOW CREATE TRANCHE with all final parameters including date_emission from CSV
