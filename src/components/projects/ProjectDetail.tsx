@@ -982,10 +982,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                     {subscriptions.slice(0, SUBSCRIPTIONS_LIMIT).map((sub) => (
                     <tr key={sub.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 text-sm text-slate-900">
-                        {sub.investisseur.nom_raison_sociale}
+                        {sub.investisseur?.nom_raison_sociale || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">
-                        {sub.cgp || sub.investisseur.cgp || '-'}
+                        {sub.cgp || sub.investisseur?.cgp || '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-600">{sub.tranche.tranche_name}</td>
                       <td className="px-4 py-3 text-sm text-slate-600">
