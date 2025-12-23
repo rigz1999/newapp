@@ -658,10 +658,9 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        // Use Date de Transfert from CSV as subscription date
-        const dateSouscriptionCSV = parseDate(r["Date de souscription"]);
+        // Use only Date de Transfert for subscription date
         const dateTransfert = parseDate(r["Date de Transfert"]);
-        const dateSouscription = dateSouscriptionCSV || dateTransfert || trancheEmissionDate || null;
+        const dateSouscription = dateTransfert || trancheEmissionDate || null;
 
         console.log("Date souscription:", dateSouscription);
 
