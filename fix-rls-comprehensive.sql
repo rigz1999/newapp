@@ -76,6 +76,29 @@ ALTER TABLE invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_reminder_settings ENABLE ROW LEVEL SECURITY;
 
 -- ==============================================
+-- STEP 3.5: SETUP SUPERADMIN ACCOUNT
+-- ==============================================
+
+-- Add the is_superadmin column if missing
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_superadmin BOOLEAN DEFAULT false;
+
+-- Set your superadmin account
+UPDATE profiles SET is_superadmin = true WHERE email = 'zrig.ayman@gmail.com';
+
+-- Verify superadmin was set
+DO $$
+DECLARE
+  super_count integer;
+BEGIN
+  SELECT COUNT(*) INTO super_count FROM profiles WHERE is_superadmin = true;
+  IF super_count > 0 THEN
+    RAISE NOTICE 'Superadmin account configured: % superadmin(s) found', super_count;
+  ELSE
+    RAISE WARNING 'No superadmin account found! Check if zrig.ayman@gmail.com exists in profiles table';
+  END IF;
+END $$;
+
+-- ==============================================
 -- STEP 4: CREATE SECURE HELPER FUNCTIONS
 -- ==============================================
 
