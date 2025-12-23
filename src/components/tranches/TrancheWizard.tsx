@@ -17,7 +17,6 @@ interface Tranche {
   tranche_name: string;
   taux_nominal: number | null;
   date_emission: string | null;
-  date_echeance_finale: string | null;
   duree_mois: number | null;
   projet_id: string;
 }
@@ -53,7 +52,6 @@ export function TrancheWizard({
 
   const [tauxNominal, setTauxNominal] = useState<string>("");
   const [dateEmission, setDateEmission] = useState("");
-  const [dateEcheanceFinale, setDateEcheanceFinale] = useState("");
   const [dureeMois, setDureeMois] = useState<string>("");
 
   useEffect(() => {
@@ -71,7 +69,6 @@ export function TrancheWizard({
       setTrancheName(editingTranche.tranche_name);
       setTauxNominal(editingTranche.taux_nominal?.toString() || "");
       setDateEmission(editingTranche.date_emission || "");
-      setDateEcheanceFinale(editingTranche.date_echeance_finale || "");
       setDureeMois(editingTranche.duree_mois?.toString() || "");
     }
   }, [editingTranche, isEditMode]);
@@ -148,41 +145,15 @@ export function TrancheWizard({
       return;
     }
 
-    // Validate dates
-    if (dateEmission && dateEcheanceFinale) {
-      if (!isValidDateRange(dateEmission, dateEcheanceFinale)) {
-        setError("La date d'émission doit être antérieure à la date d'échéance finale");
-        return;
-      }
-    }
-
-    if (dateEcheanceFinale && new Date(dateEcheanceFinale) < new Date()) {
-      setError("La date d'échéance finale ne peut pas être dans le passé");
-      return;
-    }
-
     setProcessing(true);
     setError("");
     setSuccessMessage("");
 
     try {
-      // Validate dates
-      if (dateEmission && dateEcheanceFinale) {
-        const emissionDate = new Date(dateEmission);
-        const echeanceDate = new Date(dateEcheanceFinale);
-
-        if (emissionDate >= echeanceDate) {
-          setError("La date d'émission doit être antérieure à la date d'échéance finale");
-          setProcessing(false);
-          return;
-        }
-      }
-
       logger.info("Mise à jour tranche", { trancheId: editingTranche.id, data: {
         tranche_name: trancheName,
         taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
         date_emission: dateEmission || null,
-        date_echeance_finale: dateEcheanceFinale || null,
         duree_mois: dureeMois ? parseInt(dureeMois) : null,
       }});
 
@@ -192,7 +163,6 @@ export function TrancheWizard({
           tranche_name: trancheName,
           taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
           date_emission: dateEmission || null,
-          date_echeance_finale: dateEcheanceFinale || null,
           duree_mois: dureeMois ? parseInt(dureeMois) : null,
         } as never)
         .eq("id", editingTranche.id);
@@ -282,7 +252,6 @@ export function TrancheWizard({
       // Add tranche metadata
       if (tauxNominal) form.append("taux_nominal", tauxNominal);
       if (dateEmission) form.append("date_emission", dateEmission);
-      if (dateEcheanceFinale) form.append("date_echeance_finale", dateEcheanceFinale);
       if (dureeMois) form.append("duree_mois", dureeMois);
 
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
@@ -435,50 +404,33 @@ export function TrancheWizard({
 
             {/* Champs supplémentaires pour l'édition */}
             {isEditMode && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">
-                      Taux Nominal (%)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={tauxNominal}
-                      onChange={(e) => setTauxNominal(e.target.value)}
-                      disabled={processing}
-                      placeholder="Ex: 5.5"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
-                    />
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Taux Nominal (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={tauxNominal}
+                    onChange={(e) => setTauxNominal(e.target.value)}
+                    disabled={processing}
+                    placeholder="Ex: 5.5"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
+                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">
-                      Date d'émission
-                    </label>
-                    <input
-                      type="date"
-                      value={dateEmission}
-                      onChange={(e) => setDateEmission(e.target.value)}
-                      disabled={processing}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">
-                      Date d'échéance finale
-                    </label>
-                    <input
-                      type="date"
-                      value={dateEcheanceFinale}
-                      onChange={(e) => setDateEcheanceFinale(e.target.value)}
-                      disabled={processing}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Date d'émission
+                  </label>
+                  <input
+                    type="date"
+                    value={dateEmission}
+                    onChange={(e) => setDateEmission(e.target.value)}
+                    disabled={processing}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
+                  />
                 </div>
 
                 <div>
@@ -494,7 +446,7 @@ export function TrancheWizard({
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
                   />
                 </div>
-              </>
+              </div>
             )}
 
             {/* CSV/Excel upload */}
