@@ -275,7 +275,7 @@ Deno.serve(async (req: Request) => {
     // Fetch project to get all required parameters
     const { data: projectData, error: projectError } = await supabase
       .from('projets')
-      .select('base_interet, taux_nominal, periodicite_coupons, duree_mois, date_emission')
+      .select('base_interet, taux_nominal, periodicite_coupons, duree_mois')
       .eq('id', projetId)
       .single();
 
@@ -297,13 +297,14 @@ Deno.serve(async (req: Request) => {
     const finalTauxNominal = tauxNominal ?? projectData?.taux_nominal ?? null;
     const finalPeriodiciteCoupons = periodiciteCoupons ?? projectData?.periodicite_coupons ?? null;
     const finalDureeMois = dureeMois ?? projectData?.duree_mois ?? null;
-    const finalDateEmission = dateEmissionForm ?? projectData?.date_emission ?? null;
+    // Note: date_emission comes from form or CSV, NOT from project
+    const finalDateEmission = dateEmissionForm ?? null;
 
     console.log('📊 Paramètres finaux (form + projet):');
     console.log('  - Taux nominal:', finalTauxNominal);
     console.log('  - Périodicité:', finalPeriodiciteCoupons);
     console.log('  - Durée (mois):', finalDureeMois);
-    console.log('  - Date émission:', finalDateEmission);
+    console.log('  - Date émission (form):', finalDateEmission);
 
     // 1) CREATE TRANCHE FIRST
     console.log('Création de la tranche...');
