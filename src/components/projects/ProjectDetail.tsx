@@ -287,9 +287,26 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       'mensuelle': 'Mensuelle',
       'trimestrielle': 'Trimestrielle',
       'semestrielle': 'Semestrielle',
-      'annuelle': 'Annuelle'
+      'annuelle': 'Annuelle',
+      // Support old masculine forms for backward compatibility
+      'mensuel': 'Mensuelle',
+      'trimestriel': 'Trimestrielle',
+      'semestriel': 'Semestrielle',
+      'annuel': 'Annuelle'
     };
     return map[freq.toLowerCase()] || freq;
+  };
+
+  // Normalize periodicite to feminine form for form editing
+  const normalizePeriodicite = (freq: string | null) => {
+    if (!freq) return null;
+    const normalized: Record<string, string> = {
+      'mensuel': 'mensuelle',
+      'trimestriel': 'trimestrielle',
+      'semestriel': 'semestrielle',
+      'annuel': 'annuelle'
+    };
+    return normalized[freq.toLowerCase()] || freq;
   };
 
   const handleDeleteTranche = async (tranche: Tranche) => {
@@ -652,7 +669,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
           <button
             onClick={() => {
-              setEditedProject(project);
+              setEditedProject({
+                ...project,
+                periodicite_coupons: normalizePeriodicite(project.periodicite_coupons)
+              });
               setShowEditProject(true);
             }}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
