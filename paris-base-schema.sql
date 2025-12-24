@@ -252,7 +252,8 @@ CREATE TABLE public.coupons_echeances (
   updated_at timestamp with time zone DEFAULT now(),
   echeance_id uuid,
   CONSTRAINT coupons_echeances_pkey PRIMARY KEY (id),
-  CONSTRAINT coupons_echeances_souscription_id_fkey FOREIGN KEY (souscription_id) REFERENCES public.souscriptions(id) ON DELETE CASCADE
+  CONSTRAINT coupons_echeances_souscription_id_fkey FOREIGN KEY (souscription_id) REFERENCES public.souscriptions(id) ON DELETE CASCADE,
+  CONSTRAINT coupons_echeances_souscription_date_unique UNIQUE (souscription_id, date_echeance)
 );
 
 ALTER TABLE public.coupons_echeances ENABLE ROW LEVEL SECURITY;
