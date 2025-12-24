@@ -174,19 +174,18 @@ export function TrancheWizard({
       // Call regenerate-echeancier to update payment schedule
       logger.info("Appel de regenerate-echeancier");
       try {
-        const regenerateUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-echeancier`;
-        const { data: { session } } = await supabase.auth.getSession();
+        // Use supabase.functions.invoke() for proper authentication handling
+        const { data: regenerateResult, error: invokeError } = await supabase.functions.invoke(
+          'regenerate-echeancier',
+          {
+            body: { tranche_id: editingTranche.id },
+          }
+        );
 
-        const regenerateResponse = await fetch(regenerateUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({ tranche_id: editingTranche.id }),
-        });
-
-        const regenerateResult = await regenerateResponse.json();
+        if (invokeError) {
+          logger.error(new Error("Erreur lors de l'invocation de regenerate-echeancier"), { error: invokeError });
+          throw invokeError;
+        }
 
         if (regenerateResult.success) {
           logger.info("Écheancier régénéré avec succès");

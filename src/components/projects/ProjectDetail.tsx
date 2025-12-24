@@ -435,24 +435,23 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         logger.info(`Found ${projectTranches.length} tranches to regenerate`);
 
         // Regenerate echeancier for each tranche IN PARALLEL for better performance
-        const regenerateUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-echeancier`;
-        const { data: { session } } = await supabase.auth.getSession();
-
         // Process all tranches in parallel
         const regenerationPromises = projectTranches.map(async (tranche) => {
           logger.debug(`Regenerating tranche: ${tranche.tranche_name}`);
 
           try {
-            const regenerateResponse = await fetch(regenerateUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session?.access_token}`,
-              },
-              body: JSON.stringify({ tranche_id: tranche.id }),
-            });
+            // Use supabase.functions.invoke() for proper authentication handling
+            const { data: regenerateResult, error: invokeError } = await supabase.functions.invoke(
+              'regenerate-echeancier',
+              {
+                body: { tranche_id: tranche.id },
+              }
+            );
 
-            const regenerateResult = await regenerateResponse.json();
+            if (invokeError) {
+              logger.error(new Error(`Error invoking regenerate-echeancier for ${tranche.tranche_name}`), { error: invokeError });
+              throw invokeError;
+            }
 
             if (regenerateResult.success) {
               logger.info(`Tranche ${tranche.tranche_name} régénérée`);
