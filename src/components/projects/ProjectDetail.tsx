@@ -343,8 +343,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   const handleUpdateProject = async () => {
     if (!project) return;
 
-    const hasFinancialChanges = 
-      editedProject.periodicite_coupons !== undefined && editedProject.periodicite_coupons !== project.periodicite_coupons ||
+    const hasFinancialChanges =
+      editedProject.periodicite_coupons !== undefined && normalizePeriodicite(editedProject.periodicite_coupons) !== normalizePeriodicite(project.periodicite_coupons) ||
       editedProject.taux_nominal !== undefined && editedProject.taux_nominal !== project.taux_nominal ||
       editedProject.duree_mois !== undefined && editedProject.duree_mois !== project.duree_mois;
 
@@ -1151,7 +1151,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
               <div className="flex-1 overflow-y-auto bg-white">
                 <div className="p-6">
-                {(editedProject.periodicite_coupons !== project.periodicite_coupons ||
+                {(normalizePeriodicite(editedProject.periodicite_coupons) !== normalizePeriodicite(project.periodicite_coupons) ||
                   editedProject.taux_nominal !== project.taux_nominal ||
                   editedProject.duree_mois !== project.duree_mois) &&
                   subscriptions.length > 0 && (
