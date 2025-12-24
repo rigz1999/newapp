@@ -800,43 +800,198 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Generate payment schedule (écheancier) using the dedicated function
-    console.log('\n=== CALLING REGENERATE-ECHEANCIER ===');
+    // Generate payment schedule (écheancier) inline (avoids edge-to-edge auth issues)
+    console.log('\n=== GENERATING ÉCHEANCIER ===');
     try {
-      console.log('Calling regenerate-echeancier with tranche_id:', trancheId);
+      console.log('Generating écheancier for tranche_id:', trancheId);
 
-      // Call regenerate-echeancier with service role auth (edge-to-edge requires both headers)
-      const regenerateUrl = `${SUPABASE_URL}/functions/v1/regenerate-echeancier`;
-      const regenerateResponse = await fetch(regenerateUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        },
-        body: JSON.stringify({ tranche_id: trancheId }),
-      });
+      // Validate required parameters
+      if (finalTauxNominal === null || !finalPeriodiciteCoupons || !finalDateEmission || finalDureeMois === null) {
+        const missing = [];
+        if (finalTauxNominal === null) missing.push('taux_nominal');
+        if (!finalPeriodiciteCoupons) missing.push('periodicite_coupons');
+        if (!finalDateEmission) missing.push('date_emission');
+        if (finalDureeMois === null) missing.push('duree_mois');
 
-      if (!regenerateResponse.ok) {
-        const errorText = await regenerateResponse.text();
-        console.error(`❌ HTTP ${regenerateResponse.status}:`, errorText);
-        throw new Error(`HTTP ${regenerateResponse.status}: ${errorText}`);
-      }
-
-      const regenerateResult = await regenerateResponse.json();
-
-      if (regenerateResult.success) {
-        console.log('✅ Écheancier généré avec succès!');
-        console.log(`   Souscriptions mises à jour: ${regenerateResult.updated_souscriptions}`);
-        console.log(`   Coupons créés: ${regenerateResult.created_coupons}`);
-        console.log(`   Date d'échéance finale: ${regenerateResult.final_maturity_date}`);
+        console.warn('⚠️ Missing required parameters:', missing.join(', '));
+        console.warn('   💡 Vous pouvez modifier la tranche plus tard pour ajouter ces informations.');
       } else {
-        console.warn('⚠️ Écheancier non généré:', regenerateResult.error);
-        if (regenerateResult.missing_params) {
-          console.warn('   Paramètres manquants:', regenerateResult.missing_params.join(', '));
-          console.warn(
-            '   💡 Vous pouvez modifier la tranche plus tard pour ajouter ces informations.'
-          );
+        // Step 1: Get all souscriptions for this tranche
+        const { data: trancheSouscriptions, error: souscriptionsError } = await supabase
+          .from('souscriptions')
+          .select('id, investisseur_id, montant_investi, coupon_net, investisseurs(type)')
+          .eq('tranche_id', trancheId);
+
+        if (souscriptionsError) {
+          console.error('Error fetching souscriptions:', souscriptionsError);
+          throw souscriptionsError;
+        }
+
+        if (!trancheSouscriptions || trancheSouscriptions.length === 0) {
+          console.log('No souscriptions found for this tranche - skipping écheancier generation');
+        } else {
+          console.log(`Found ${trancheSouscriptions.length} souscriptions`);
+
+          // Step 2: Recalculate coupon_brut and coupon_net for each souscription
+          const periodRatio = getPeriodRatio(finalPeriodiciteCoupons, baseInteret);
+          console.log(`Period ratio: ${periodRatio} (${finalPeriodiciteCoupons}, base ${baseInteret})`);
+
+          let updatedSouscriptions = 0;
+          for (const sub of trancheSouscriptions) {
+            const montant = Number(sub.montant_investi);
+            const couponAnnuel = (montant * finalTauxNominal) / 100;
+            const couponBrut = couponAnnuel * periodRatio;
+            const investorType = (sub.investisseurs as any)?.type;
+            const couponNet = investorType?.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
+
+            const { error: updateError } = await supabase
+              .from('souscriptions')
+              .update({
+                coupon_brut: couponBrut,
+                coupon_net: couponNet,
+              })
+              .eq('id', sub.id);
+
+            if (updateError) {
+              console.error(`Error updating souscription ${sub.id}:`, updateError);
+            } else {
+              updatedSouscriptions++;
+            }
+          }
+
+          console.log(`Updated ${updatedSouscriptions} souscriptions`);
+
+          // Step 3: Delete pending coupons (keep paid ones)
+          const { data: deletedCoupons, error: deleteError } = await supabase
+            .from('coupons_echeances')
+            .delete()
+            .in(
+              'souscription_id',
+              trancheSouscriptions.map(s => s.id)
+            )
+            .neq('statut', 'payé')
+            .select('id');
+
+          if (deleteError) {
+            console.error('Error deleting pending coupons:', deleteError);
+            throw deleteError;
+          }
+
+          const deletedCount = deletedCoupons?.length || 0;
+          console.log(`Deleted ${deletedCount} pending coupons`);
+
+          // Step 4: Generate new payment schedule
+          const frequencyMap: Record<string, { months: number; paymentsPerYear: number }> = {
+            annuel: { months: 12, paymentsPerYear: 1 },
+            annuelle: { months: 12, paymentsPerYear: 1 },
+            semestriel: { months: 6, paymentsPerYear: 2 },
+            semestrielle: { months: 6, paymentsPerYear: 2 },
+            trimestriel: { months: 3, paymentsPerYear: 4 },
+            trimestrielle: { months: 3, paymentsPerYear: 4 },
+            mensuel: { months: 1, paymentsPerYear: 12 },
+            mensuelle: { months: 1, paymentsPerYear: 12 },
+          };
+
+          const freq = frequencyMap[finalPeriodiciteCoupons.toLowerCase()];
+
+          if (!freq) {
+            console.error('Unknown frequency:', finalPeriodiciteCoupons);
+            throw new Error(`Unknown frequency: ${finalPeriodiciteCoupons}`);
+          }
+
+          const numberOfPayments = Math.ceil(finalDureeMois / freq.months);
+          console.log(`Number of payments: ${numberOfPayments} (every ${freq.months} months)`);
+
+          // Calculate final maturity date
+          const finalMaturityDate = new Date(finalDateEmission);
+          finalMaturityDate.setMonth(finalMaturityDate.getMonth() + numberOfPayments * freq.months);
+          const dateEcheanceFinale = finalMaturityDate.toISOString().split('T')[0];
+          console.log('Final maturity date:', dateEcheanceFinale);
+
+          // Update tranche with calculated final maturity date
+          await supabase
+            .from('tranches')
+            .update({ date_echeance_finale: dateEcheanceFinale })
+            .eq('id', trancheId);
+
+          // Get existing paid coupons to avoid regenerating those dates
+          const { data: paidCoupons } = await supabase
+            .from('coupons_echeances')
+            .select('souscription_id, date_echeance')
+            .in(
+              'souscription_id',
+              trancheSouscriptions.map(s => s.id)
+            )
+            .eq('statut', 'payé');
+
+          const paidCouponDates = new Map<string, Set<string>>();
+          if (paidCoupons) {
+            for (const coupon of paidCoupons) {
+              if (!paidCouponDates.has(coupon.souscription_id)) {
+                paidCouponDates.set(coupon.souscription_id, new Set());
+              }
+              paidCouponDates.get(coupon.souscription_id)!.add(coupon.date_echeance);
+            }
+          }
+
+          // Generate coupons for all souscriptions
+          const couponsToInsert: any[] = [];
+
+          // Refetch souscriptions with updated coupon_net values
+          const { data: refetchedSouscriptions } = await supabase
+            .from('souscriptions')
+            .select('id, montant_investi, coupon_net')
+            .in(
+              'id',
+              trancheSouscriptions.map(s => s.id)
+            );
+
+          const souscriptionsMap = new Map(refetchedSouscriptions?.map(s => [s.id, s]) || []);
+
+          for (const sub of trancheSouscriptions) {
+            const updatedSub = souscriptionsMap.get(sub.id);
+            const montantCoupon = updatedSub?.coupon_net || 0;
+            const paidDates = paidCouponDates.get(sub.id);
+
+            // Generate payment dates
+            for (let i = 1; i <= numberOfPayments; i++) {
+              const paymentDate = new Date(finalDateEmission);
+              paymentDate.setMonth(paymentDate.getMonth() + i * freq.months);
+              const dateEcheance = paymentDate.toISOString().split('T')[0];
+
+              // Skip if this date already has a paid coupon
+              if (paidDates?.has(dateEcheance)) {
+                continue;
+              }
+
+              couponsToInsert.push({
+                souscription_id: sub.id,
+                date_echeance: dateEcheance,
+                montant_coupon: Math.round(montantCoupon * 100) / 100,
+                statut: 'en_attente',
+              });
+            }
+          }
+
+          // Bulk insert coupons
+          let createdCount = 0;
+          if (couponsToInsert.length > 0) {
+            const { error: couponsError } = await supabase
+              .from('coupons_echeances')
+              .insert(couponsToInsert);
+
+            if (couponsError) {
+              console.error('Error creating coupons:', couponsError);
+              throw couponsError;
+            }
+
+            createdCount = couponsToInsert.length;
+          }
+
+          console.log('✅ Écheancier généré avec succès!');
+          console.log(`   Souscriptions mises à jour: ${updatedSouscriptions}`);
+          console.log(`   Coupons créés: ${createdCount}`);
+          console.log(`   Date d'échéance finale: ${dateEcheanceFinale}`);
         }
       }
     } catch (echeancierError: any) {
