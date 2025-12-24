@@ -384,15 +384,15 @@ BEGIN
     PERFORM generate_coupon_schedule(
       s.id,
       NEW.date_emission,
-      NEW.date_fin,
-      NEW.periodicite,
+      NEW.date_echeance_finale,
+      NEW.periodicite_coupons,
       s.montant_coupon
     )
     FROM souscriptions s
     WHERE s.tranche_id = NEW.id
     AND NEW.date_emission IS NOT NULL
-    AND NEW.date_fin IS NOT NULL
-    AND NEW.periodicite IS NOT NULL;
+    AND NEW.date_echeance_finale IS NOT NULL
+    AND NEW.periodicite_coupons IS NOT NULL;
   END IF;
 
   RETURN NEW;
