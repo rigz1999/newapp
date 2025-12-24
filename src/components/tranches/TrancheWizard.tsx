@@ -18,6 +18,7 @@ interface Tranche {
   taux_nominal: number | null;
   date_emission: string | null;
   duree_mois: number | null;
+  periodicite_coupons: string | null;
   projet_id: string;
 }
 
@@ -53,6 +54,7 @@ export function TrancheWizard({
   const [tauxNominal, setTauxNominal] = useState<string>("");
   const [dateEmission, setDateEmission] = useState("");
   const [dureeMois, setDureeMois] = useState<string>("");
+  const [periodiciteCoupons, setPeriodiciteCoupons] = useState<string>("");
 
   useEffect(() => {
     fetchProjects();
@@ -70,6 +72,7 @@ export function TrancheWizard({
       setTauxNominal(editingTranche.taux_nominal?.toString() || "");
       setDateEmission(editingTranche.date_emission || "");
       setDureeMois(editingTranche.duree_mois?.toString() || "");
+      setPeriodiciteCoupons(editingTranche.periodicite_coupons || "");
     }
   }, [editingTranche, isEditMode]);
 
@@ -155,6 +158,7 @@ export function TrancheWizard({
         taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
         date_emission: dateEmission || null,
         duree_mois: dureeMois ? parseInt(dureeMois) : null,
+        periodicite_coupons: periodiciteCoupons || null,
       }});
 
       const { error: updateError } = await supabase
@@ -164,6 +168,7 @@ export function TrancheWizard({
           taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
           date_emission: dateEmission || null,
           duree_mois: dureeMois ? parseInt(dureeMois) : null,
+          periodicite_coupons: periodiciteCoupons || null,
         } as never)
         .eq("id", editingTranche.id);
 
@@ -450,6 +455,24 @@ export function TrancheWizard({
                     placeholder="Ex: 24"
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                    Périodicité des Coupons
+                  </label>
+                  <select
+                    value={periodiciteCoupons}
+                    onChange={(e) => setPeriodiciteCoupons(e.target.value)}
+                    disabled={processing}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
+                  >
+                    <option value="">Sélectionner...</option>
+                    <option value="mensuelle">Mensuelle</option>
+                    <option value="trimestrielle">Trimestrielle</option>
+                    <option value="semestrielle">Semestrielle</option>
+                    <option value="annuelle">Annuelle</option>
+                  </select>
                 </div>
               </div>
             )}
