@@ -803,20 +803,27 @@ Deno.serve(async (req: Request) => {
     // Generate payment schedule (écheancier) using the dedicated function
     console.log('\n=== CALLING REGENERATE-ECHEANCIER ===');
     try {
-      console.log('Invoking regenerate-echeancier function with tranche_id:', trancheId);
+      console.log('Calling regenerate-echeancier with tranche_id:', trancheId);
 
-      // Use supabase.functions.invoke() instead of raw fetch to avoid 401 errors
-      const { data: regenerateResult, error: invokeError } = await supabase.functions.invoke(
-        'regenerate-echeancier',
-        {
-          body: { tranche_id: trancheId },
-        }
-      );
+      // Call regenerate-echeancier with service role auth (edge-to-edge requires both headers)
+      const regenerateUrl = `${SUPABASE_URL}/functions/v1/regenerate-echeancier`;
+      const regenerateResponse = await fetch(regenerateUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        },
+        body: JSON.stringify({ tranche_id: trancheId }),
+      });
 
-      if (invokeError) {
-        console.error('❌ Error invoking regenerate-echeancier:', invokeError);
-        throw invokeError;
+      if (!regenerateResponse.ok) {
+        const errorText = await regenerateResponse.text();
+        console.error(`❌ HTTP ${regenerateResponse.status}:`, errorText);
+        throw new Error(`HTTP ${regenerateResponse.status}: ${errorText}`);
       }
+
+      const regenerateResult = await regenerateResponse.json();
 
       if (regenerateResult.success) {
         console.log('✅ Écheancier généré avec succès!');
