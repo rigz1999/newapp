@@ -5,6 +5,7 @@ import { useOrganization } from './hooks/useOrganization';
 import { Login } from './components/auth/Login';
 import { Layout } from './components/layouts/Layout';
 import { InvitationAccept } from './components/auth/InvitationAccept';
+import { EmailOAuthCallback } from './components/auth/EmailOAuthCallback';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
 import { ThemeProvider } from './context/ThemeContext';
@@ -54,6 +55,10 @@ function App() {
           />
           <Route path="/invitation/accept" element={<InvitationAccept />} />
           <Route path="/diagnostic" element={user ? <DiagnosticPage /> : <Navigate to="/login" replace />} />
+
+          {/* OAuth Callback Routes - Require authentication */}
+          <Route path="/auth/callback/microsoft" element={user ? <EmailOAuthCallback /> : <Navigate to="/login" replace />} />
+          <Route path="/auth/callback/google" element={user ? <EmailOAuthCallback /> : <Navigate to="/login" replace />} />
 
           {/* Protected Routes - Authentication required */}
           <Route
