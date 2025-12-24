@@ -1,5 +1,5 @@
 -- Fix the recalculate_coupons_on_date_emission_change function
--- This fixes the "record new has no field date_fin" error when updating tranches
+-- This fixes the "record new has no field date_fin" and "column s.montant_coupon does not exist" errors
 
 CREATE OR REPLACE FUNCTION public.recalculate_coupons_on_date_emission_change()
  RETURNS trigger
@@ -19,7 +19,7 @@ BEGIN
       NEW.date_emission,
       NEW.date_echeance_finale,
       NEW.periodicite_coupons,
-      s.montant_coupon
+      s.coupon_net
     )
     FROM souscriptions s
     WHERE s.tranche_id = NEW.id

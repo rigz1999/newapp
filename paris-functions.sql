@@ -386,7 +386,7 @@ BEGIN
       NEW.date_emission,
       NEW.date_echeance_finale,
       NEW.periodicite_coupons,
-      s.montant_coupon
+      s.coupon_net
     )
     FROM souscriptions s
     WHERE s.tranche_id = NEW.id
