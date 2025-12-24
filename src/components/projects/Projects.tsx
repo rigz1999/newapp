@@ -757,9 +757,9 @@ export function Projects({ organization }: ProjectsProps) {
                       >
                         <option value="" disabled>Choisir…</option>
                         <option value="mensuelle">Mensuelle</option>
-                        <option value="trimestriel">Trimestriel</option>
-                        <option value="semestriel">Semestriel</option>
-                        <option value="annuel">Annuel</option>
+                        <option value="trimestrielle">Trimestrielle</option>
+                        <option value="semestrielle">Semestrielle</option>
+                        <option value="annuelle">Annuelle</option>
                       </select>
                     </div>
                   </div>
