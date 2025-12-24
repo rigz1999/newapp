@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import {
-  User, Lock, Mail, Save, RefreshCw, CheckCircle, X, AlertCircle, Bell, Send, Check, Eye, EyeOff
+  User, Lock, Mail, Save, RefreshCw, CheckCircle, X, AlertCircle, Bell, Send, Check, Eye, EyeOff, ExternalLink
 } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { CardSkeleton } from '../common/Skeleton';
@@ -38,6 +38,11 @@ export default function Settings() {
   const [remind14Days, setRemind14Days] = useState(false);
   const [remind30Days, setRemind30Days] = useState(false);
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
+
+  // Email connection settings
+  const [emailConnection, setEmailConnection] = useState<any>(null);
+  const [emailProvider, setEmailProvider] = useState<'microsoft' | 'google'>('microsoft');
+  const [connectingEmail, setConnectingEmail] = useState(false);
 
   // Success/Error states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -107,6 +112,18 @@ export default function Settings() {
       setRemind7Days(reminderSettings.remind_7_days);
       setRemind14Days(reminderSettings.remind_14_days);
       setRemind30Days(reminderSettings.remind_30_days);
+    }
+
+    // Get email connection
+    const { data: emailConn, error: emailError } = await supabase
+      .from('user_email_connections')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!emailError && emailConn) {
+      setEmailConnection(emailConn);
+      setEmailProvider(emailConn.provider);
     }
 
     setLoading(false);
@@ -302,6 +319,84 @@ export default function Settings() {
       }
     } catch (err) {
       setSendingTestEmail(false);
+      setErrorMessage(formatErrorMessage(err));
+    }
+  };
+
+  const handleConnectEmail = async () => {
+    if (!user) return;
+
+    setConnectingEmail(true);
+    setErrorMessage('');
+
+    try {
+      // Build OAuth URL
+      const redirectUri = `${window.location.origin}/auth/callback/${emailProvider}`;
+      const state = encodeURIComponent(JSON.stringify({ provider: emailProvider }));
+
+      let authUrl = '';
+
+      if (emailProvider === 'microsoft') {
+        const tenantId = import.meta.env.VITE_MICROSOFT_TENANT_ID || 'common';
+        const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
+        const scope = encodeURIComponent('https://graph.microsoft.com/Mail.ReadWrite offline_access');
+
+        authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
+          `client_id=${clientId}` +
+          `&response_type=code` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&response_mode=query` +
+          `&scope=${scope}` +
+          `&state=${state}`;
+      } else {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/userinfo.email');
+
+        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${clientId}` +
+          `&response_type=code` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&scope=${scope}` +
+          `&state=${state}` +
+          `&access_type=offline` +
+          `&prompt=consent`;
+      }
+
+      // Redirect to OAuth provider
+      window.location.href = authUrl;
+    } catch (err) {
+      setConnectingEmail(false);
+      setErrorMessage(formatErrorMessage(err));
+    }
+  };
+
+  const handleDisconnectEmail = async () => {
+    if (!user) return;
+
+    if (!confirm('Êtes-vous sûr de vouloir déconnecter votre email ?')) {
+      return;
+    }
+
+    setSaving(true);
+    setErrorMessage('');
+
+    try {
+      const { error } = await supabase
+        .from('user_email_connections')
+        .delete()
+        .eq('user_id', user.id);
+
+      setSaving(false);
+
+      if (error) {
+        setErrorMessage(formatErrorMessage(error));
+      } else {
+        setEmailConnection(null);
+        setSuccessMessage('Email déconnecté avec succès');
+        setShowSuccessModal(true);
+      }
+    } catch (err) {
+      setSaving(false);
       setErrorMessage(formatErrorMessage(err));
     }
   };
@@ -740,6 +835,171 @@ export default function Settings() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Email Connection Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+          <div className="p-6 border-b border-slate-200">
+            <div className="flex items-center gap-2">
+              <Mail className="w-5 h-5 text-slate-700" />
+              <h2 className="text-xl font-bold text-slate-900">Connexion Email</h2>
+            </div>
+            <p className="text-sm text-slate-600 mt-2">
+              Connectez votre compte email pour envoyer des rappels de paiement directement depuis votre boîte de réception
+            </p>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {emailConnection ? (
+              /* Connected State */
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-green-900 mb-1">Email connecté</p>
+                      <div className="text-sm text-green-800 space-y-1">
+                        <p><strong>Provider:</strong> {emailConnection.provider === 'microsoft' ? 'Microsoft / Outlook' : 'Google / Gmail'}</p>
+                        <p><strong>Adresse:</strong> {emailConnection.email_address}</p>
+                        <p><strong>Connecté le:</strong> {new Date(emailConnection.connected_at).toLocaleDateString('fr-FR')}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex gap-3">
+                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-blue-900">
+                      <p className="font-medium mb-1">Comment utiliser ?</p>
+                      <p className="text-blue-800">
+                        Dans la page Échéancier, cliquez sur le bouton "Envoyer rappel" à côté d'un paiement impayé.
+                        Un brouillon d'email sera automatiquement créé dans votre {emailConnection.provider === 'microsoft' ? 'Outlook' : 'Gmail'}
+                        avec toutes les informations pré-remplies.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleDisconnectEmail}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium border border-red-200"
+                >
+                  {saving ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Déconnexion...
+                    </>
+                  ) : (
+                    <>
+                      <X className="w-4 h-4" />
+                      Déconnecter mon email
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              /* Not Connected State */
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-3">
+                    Fournisseur email
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => setEmailProvider('microsoft')}
+                      className={`p-4 border-2 rounded-lg transition-all ${
+                        emailProvider === 'microsoft'
+                          ? 'border-finixar-brand-blue bg-blue-50'
+                          : 'border-slate-300 hover:border-slate-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          emailProvider === 'microsoft'
+                            ? 'border-finixar-brand-blue bg-finixar-brand-blue'
+                            : 'border-slate-400'
+                        }`}>
+                          {emailProvider === 'microsoft' && (
+                            <div className="w-2.5 h-2.5 bg-white rounded-full" />
+                          )}
+                        </div>
+                        <div className="text-left flex-1">
+                          <p className="font-semibold text-slate-900">Outlook</p>
+                          <p className="text-xs text-slate-600">Microsoft 365</p>
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setEmailProvider('google')}
+                      className={`p-4 border-2 rounded-lg transition-all ${
+                        emailProvider === 'google'
+                          ? 'border-finixar-brand-blue bg-blue-50'
+                          : 'border-slate-300 hover:border-slate-400'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          emailProvider === 'google'
+                            ? 'border-finixar-brand-blue bg-finixar-brand-blue'
+                            : 'border-slate-400'
+                        }`}>
+                          {emailProvider === 'google' && (
+                            <div className="w-2.5 h-2.5 bg-white rounded-full" />
+                          )}
+                        </div>
+                        <div className="text-left flex-1">
+                          <p className="font-semibold text-slate-900">Gmail</p>
+                          <p className="text-xs text-slate-600">Google Workspace</p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                  <div className="space-y-3 text-sm text-slate-700">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <p>Connexion sécurisée via OAuth 2.0</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <p>Vos identifiants ne sont jamais stockés</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <p>Permission uniquement pour créer des brouillons</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <p>Révocable à tout moment</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleConnectEmail}
+                  disabled={connectingEmail}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {connectingEmail ? (
+                    <>
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      Connexion en cours...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="w-5 h-5" />
+                      Connecter mon {emailProvider === 'microsoft' ? 'Outlook' : 'Gmail'}
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
