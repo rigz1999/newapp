@@ -1301,17 +1301,20 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   <h5 className="font-semibold text-slate-900">Informations générales</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Nom / Raison sociale</label>
+                      <label htmlFor="edit-nom-raison-sociale" className="block text-sm font-medium text-slate-700 mb-2">Nom / Raison sociale</label>
                       <input
+                        id="edit-nom-raison-sociale"
                         type="text"
+                        minLength={2}
                         value={editFormData.nom_raison_sociale}
                         onChange={(e) => setEditFormData({ ...editFormData, nom_raison_sociale: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
+                      <label htmlFor="edit-type" className="block text-sm font-medium text-slate-700 mb-2">Type</label>
                       <select
+                        id="edit-type"
                         value={normalizeType(editFormData.type)}
                         onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value === 'morale' ? 'Morale' : 'Physique' })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -1321,8 +1324,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                      <label htmlFor="edit-email" className="block text-sm font-medium text-slate-700 mb-2">Email</label>
                       <input
+                        id="edit-email"
                         type="email"
                         value={editFormData.email || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
@@ -1330,18 +1334,24 @@ function Investors({ organization: _organization }: InvestorsProps) {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
+                      <label htmlFor="edit-telephone" className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
                       <input
+                        id="edit-telephone"
                         type="tel"
+                        pattern="[0-9]{10}"
+                        minLength={10}
+                        maxLength={10}
                         value={editFormData.telephone || ''}
-                        onChange={(e) => setEditFormData({ ...editFormData, telephone: e.target.value })}
+                        onChange={(e) => setEditFormData({ ...editFormData, telephone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Résidence fiscale</label>
+                      <label htmlFor="edit-residence-fiscale" className="block text-sm font-medium text-slate-700 mb-2">Résidence fiscale</label>
                       <input
+                        id="edit-residence-fiscale"
                         type="text"
+                        minLength={2}
                         value={editFormData.residence_fiscale || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, residence_fiscale: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -1358,12 +1368,15 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label htmlFor="edit-cgp-name" className="block text-sm font-medium text-slate-700 mb-2">
                         Nom du CGP *
                       </label>
                       <input
+                        id="edit-cgp-name"
                         type="text"
                         required
+                        minLength={2}
+                        aria-required="true"
                         value={editFormData.cgp || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, cgp: e.target.value })}
                         placeholder="Ex: Jean Dupont"
@@ -1372,12 +1385,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label htmlFor="edit-cgp-email" className="block text-sm font-medium text-slate-700 mb-2">
                         Email du CGP *
                       </label>
                       <input
+                        id="edit-cgp-email"
                         type="email"
                         required
+                        aria-required="true"
                         value={editFormData.email_cgp || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, email_cgp: e.target.value })}
                         placeholder="cgp@email.com"
@@ -1397,30 +1412,45 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     <h5 className="font-semibold text-slate-900">Personne Morale</h5>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">SIREN</label>
+                        <label htmlFor="edit-siren" className="block text-sm font-medium text-slate-700 mb-2">SIREN</label>
                         <input
-                          type="number"
-                          value={editFormData.siren || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, siren: Number(e.target.value) })}
+                          id="edit-siren"
+                          type="text"
+                          pattern="^\d{9}$"
+                          minLength={9}
+                          maxLength={9}
+                          inputMode="numeric"
+                          value={editFormData.siren?.toString() || ''}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
+                            setEditFormData({ ...editFormData, siren: digits ? Number(digits) : undefined });
+                          }}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                          placeholder="123456789"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Forme Juridique</label>
+                        <label htmlFor="edit-forme-juridique" className="block text-sm font-medium text-slate-700 mb-2">Forme Juridique</label>
                         <input
+                          id="edit-forme-juridique"
                           type="text"
+                          minLength={2}
                           value={editFormData.forme_juridique || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, forme_juridique: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                          placeholder="Ex: SAS, SARL, SA..."
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Représentant Légal</label>
+                        <label htmlFor="edit-representant-legal" className="block text-sm font-medium text-slate-700 mb-2">Représentant Légal</label>
                         <input
+                          id="edit-representant-legal"
                           type="text"
+                          minLength={2}
                           value={editFormData.representant_legal || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, representant_legal: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                          placeholder="Ex: Jean Dupont"
                         />
                       </div>
                     </div>
@@ -1430,27 +1460,33 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     <h5 className="font-semibold text-slate-900">Personne Physique</h5>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Nom</label>
+                        <label htmlFor="edit-nom" className="block text-sm font-medium text-slate-700 mb-2">Nom</label>
                         <input
+                          id="edit-nom"
                           type="text"
+                          minLength={2}
                           value={editFormData.nom || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, nom: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Prénom</label>
+                        <label htmlFor="edit-prenom" className="block text-sm font-medium text-slate-700 mb-2">Prénom</label>
                         <input
+                          id="edit-prenom"
                           type="text"
+                          minLength={2}
                           value={editFormData.prenom || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, prenom: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Nationalité</label>
+                        <label htmlFor="edit-nationalite" className="block text-sm font-medium text-slate-700 mb-2">Nationalité</label>
                         <input
+                          id="edit-nationalite"
                           type="text"
+                          minLength={2}
                           value={editFormData.nationalite || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, nationalite: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -1464,9 +1500,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   <h5 className="font-semibold text-slate-900">Adresse</h5>
                   <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Adresse</label>
+                      <label htmlFor="edit-adresse" className="block text-sm font-medium text-slate-700 mb-2">Adresse</label>
                       <input
+                        id="edit-adresse"
                         type="text"
+                        minLength={5}
                         value={editFormData.adresse || editFormData.siege_social || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, adresse: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -1474,27 +1512,37 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Code Postal</label>
+                        <label htmlFor="edit-code-postal" className="block text-sm font-medium text-slate-700 mb-2">Code Postal</label>
                         <input
+                          id="edit-code-postal"
                           type="text"
+                          pattern="[0-9]{5}"
+                          minLength={5}
+                          maxLength={5}
+                          inputMode="numeric"
                           value={editFormData.code_postal || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, code_postal: e.target.value })}
+                          onChange={(e) => setEditFormData({ ...editFormData, code_postal: e.target.value.replace(/\D/g, '').slice(0, 5) })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                          placeholder="75001"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Ville</label>
+                        <label htmlFor="edit-ville" className="block text-sm font-medium text-slate-700 mb-2">Ville</label>
                         <input
+                          id="edit-ville"
                           type="text"
+                          minLength={2}
                           value={editFormData.ville || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, ville: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Pays</label>
+                        <label htmlFor="edit-pays" className="block text-sm font-medium text-slate-700 mb-2">Pays</label>
                         <input
+                          id="edit-pays"
                           type="text"
+                          minLength={2}
                           value={editFormData.pays || ''}
                           onChange={(e) => setEditFormData({ ...editFormData, pays: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
