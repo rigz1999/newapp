@@ -12,7 +12,7 @@ SELECT
 -- Check if user has a profile
 SELECT
   'Profile exists: ' || CASE WHEN COUNT(*) > 0 THEN 'YES' ELSE 'NO' END as info,
-  'Is superadmin: ' || COALESCE(MAX(is_superadmin)::text, 'false') as superadmin_status
+  'Is superadmin: ' || COALESCE(bool_or(is_superadmin)::text, 'false') as superadmin_status
 FROM profiles
 WHERE id = auth.uid();
 
