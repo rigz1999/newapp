@@ -169,7 +169,6 @@ export function InvitationAccept() {
       });
 
       const data = await response.json();
-      console.log('Edge function response:', { status: response.status, data });
 
       if (!response.ok) {
         console.error('Error response:', data);

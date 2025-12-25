@@ -48,7 +48,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        console.log('ESC pressed in PaymentProofUpload');
         onClose();
       }
     };
@@ -325,16 +324,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
         if (trancheError) throw trancheError;
         if (!tranche?.projet?.org_id) throw new Error('Impossible de récupérer l\'organisation de la tranche');
 
-        console.log('🔍 DEBUG - Tranche org_id:', tranche.projet.org_id);
-        console.log('🔍 DEBUG - Creating payment with data:', {
-          tranche_id: trancheId,
-          investisseur_id: subscription.investisseur_id,
-          org_id: tranche.projet.org_id,
-          type: 'Coupon',
-          montant: match.paiement.montant,
-          date_paiement: match.paiement.date
-        });
-
         // Create payment record
         const { data: paymentData, error: paymentError } = await supabase
           .from('paiements')
@@ -349,7 +338,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           .select()
           .single();
 
-        console.log('🔍 DEBUG - Payment insert result:', { data: paymentData, error: paymentError });
         if (paymentError) throw paymentError;
 
         // Upload file to permanent storage
@@ -367,15 +355,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           .getPublicUrl(permanentFileName);
 
         // Save proof to database
-        console.log('🔍 DEBUG - Inserting payment_proof with:', {
-          paiement_id: paymentData.id,
-          file_url: urlData.publicUrl,
-          file_name: files[0].name,
-          file_size: files[0].size,
-          extracted_data: match.paiement,
-          confidence: match.confiance
-        });
-
         const { error: dbError } = await supabase
           .from('payment_proofs')
           .insert({
@@ -387,7 +366,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
             confidence: match.confiance
           });
 
-        console.log('🔍 DEBUG - Payment_proof insert result:', { error: dbError });
         if (dbError) throw dbError;
 
       } else {

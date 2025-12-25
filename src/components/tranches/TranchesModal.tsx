@@ -28,7 +28,6 @@ export function TranchesModal({
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        console.log('ESC pressed in TranchesModal');
         onClose();
       }
     };

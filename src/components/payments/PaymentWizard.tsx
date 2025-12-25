@@ -19,59 +19,19 @@ import {
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { isValidAmount } from '../../utils/validators';
 import { logger } from '../../utils/logger';
-
-interface Project {
-  id: string;
-  projet: string;
-}
-
-interface Tranche {
-  id: string;
-  tranche_name: string;
-}
-
-interface Subscription {
-  id: string;
-  investisseur_id: string;
-  montant_investi: number;
-  coupon_net: number;
-  investisseur: {
-    nom_raison_sociale: string;
-  };
-}
-
-interface Echeance {
-  id: string;
-  date_echeance: string;
-  montant_coupon: number;
-  statut: string;
-  souscription_id: string;
-}
-
-interface EcheanceGroup {
-  date: string;
-  totalAmount: number;
-  count: number;
-  statut: 'paye' | 'en_retard' | 'a_venir';
-  daysOverdue?: number;
-  echeances: Echeance[];
-}
-
-interface PaymentMatch {
-  paiement: {
-    beneficiaire: string;
-    montant: number;
-    date: string;
-    reference: string;
-  };
-  matchedSubscription?: Subscription;
-  statut: 'correspondance' | 'partielle' | 'pas-de-correspondance';
-  confiance: number;
-  details: {
-    ecartMontant: string;
-    ecartMontantPourcent: string;
-  };
-}
+import { PaymentWizardHeader } from './wizard/PaymentWizardHeader';
+import { PaymentProjectSelect } from './wizard/PaymentProjectSelect';
+import { PaymentFileUpload } from './wizard/PaymentFileUpload';
+import { PaymentMatchCard } from './wizard/PaymentMatchCard';
+import type {
+  Project,
+  Tranche,
+  Subscription,
+  Echeance,
+  EcheanceGroup,
+  PaymentMatch,
+  WizardStep
+} from './wizard/types';
 
 interface PaymentWizardProps {
   onClose: () => void;
@@ -118,7 +78,7 @@ export function PaymentWizard({
   const [displayTrancheName, setDisplayTrancheName] = useState(showTrancheName || '');
 
   // Determine initial step based on preselected values
-  const getInitialStep = (): 'select' | 'echeance' | 'upload' | 'results' => {
+  const getInitialStep = (): WizardStep => {
     // Never start at 'upload' even if all values are preselected
     // Let the useEffect transition to 'upload' after data is loaded
     if (preselectedTrancheId && preselectedProjectId) {
@@ -128,12 +88,8 @@ export function PaymentWizard({
     return 'select';
   };
 
-  const [step, setStep] = useState<'select' | 'echeance' | 'upload' | 'results'>(getInitialStep());
+  const [step, setStep] = useState<WizardStep>(getInitialStep());
 
-  // Debug: Log step changes
-  useEffect(() => {
-    console.log('🔀 Step changed to:', step);
-  }, [step]);
 
   // Close modal on ESC key
   useEffect(() => {
@@ -269,15 +225,8 @@ export function PaymentWizard({
     if (selectedEcheanceDate && selectedTrancheId) {
       // Fetch subscriptions and then transition to upload step
       const loadAndTransition = async () => {
-        console.log('🔄 Starting to fetch subscriptions...', {
-          trancheId: selectedTrancheId,
-          echeanceDate: selectedEcheanceDate,
-          isPreselected: !!preselectedEcheanceDate,
-        });
         await fetchSubscriptionsForEcheance(selectedTrancheId, selectedEcheanceDate);
-        console.log('✅ Subscriptions fetched, transitioning to upload step');
         setStep('upload');
-        console.log('✅ Step set to upload');
       };
       loadAndTransition();
     } else {
@@ -391,7 +340,6 @@ export function PaymentWizard({
   };
 
   const fetchSubscriptionsForEcheance = async (trancheId: string, echeanceDate: string) => {
-    console.log('📊 fetchSubscriptionsForEcheance called', { trancheId, echeanceDate });
     setLoading(true);
     try {
       // Get all subscriptions for this tranche
@@ -400,10 +348,7 @@ export function PaymentWizard({
         .select('id')
         .eq('tranche_id', trancheId);
 
-      console.log('📊 Subscriptions found:', subs?.length || 0);
-
       if (!subs || subs.length === 0) {
-        console.log('⚠️ No subscriptions found for tranche');
         setSubscriptions([]);
         setLoading(false);
         return;
@@ -425,10 +370,7 @@ export function PaymentWizard({
         .in('souscription_id', subscriptionIds)
         .eq('date_echeance', echeanceDate);
 
-      console.log('📊 Écheances found for date:', echeances?.length || 0);
-
       if (!echeances || echeances.length === 0) {
-        console.log('⚠️ No écheances found for this date');
         setSubscriptions([]);
         setLoading(false);
         return;
@@ -458,13 +400,11 @@ export function PaymentWizard({
           echeances.find(e => e.souscription_id === sub.id)?.montant_coupon || sub.coupon_net,
       })) as Subscription[];
 
-      console.log('✅ Setting subscriptions:', subsWithEcheanceAmounts.length);
       setSubscriptions(subsWithEcheanceAmounts);
     } catch (err) {
       console.error('❌ Error fetching subscriptions for échéance:', err);
       setSubscriptions([]);
     } finally {
-      console.log('🏁 Fetch complete, setLoading(false)');
       setLoading(false);
     }
   };
@@ -499,11 +439,9 @@ export function PaymentWizard({
           }
 
           uploadedNames.push(tempFileName);
-          console.log('🔍 DEBUG - Uploaded to temp storage:', tempFileName);
         }
 
         setTempFileNames(uploadedNames);
-        console.log('🔍 DEBUG - All files uploaded to temp storage:', uploadedNames);
       } catch (err) {
         console.error('Error in file upload:', err);
         setError(`Erreur lors du téléchargement: ${err.message}`);
@@ -520,7 +458,6 @@ export function PaymentWizard({
     if (tempFileNames[indexToRemove]) {
       try {
         await supabase.storage.from('payment-proofs-temp').remove([tempFileNames[indexToRemove]]);
-        console.log('🔍 DEBUG - Removed from temp storage:', tempFileNames[indexToRemove]);
       } catch (err) {
         console.error('Error removing from temp storage:', err);
       }
@@ -579,11 +516,9 @@ export function PaymentWizard({
         }
 
         uploadedNames.push(tempFileName);
-        console.log('🔍 DEBUG - Uploaded to temp storage (drag&drop):', tempFileName);
       }
 
       setTempFileNames(uploadedNames);
-      console.log('🔍 DEBUG - All files uploaded to temp storage (drag&drop):', uploadedNames);
     } catch (err) {
       console.error('Error in file upload:', err);
       setError(`Erreur lors du téléchargement: ${err.message}`);
@@ -876,39 +811,23 @@ export function PaymentWizard({
           }
         }
 
-        console.log('🔍 DEBUG [ValidateSelected] - tempFileNames:', tempFileNames);
-        console.log('🔍 DEBUG [ValidateSelected] - files:', files);
-
         if (tempFileNames.length > 0) {
           const firstTempFile = tempFileNames[0];
-          console.log(
-            '🔍 DEBUG [ValidateSelected] - Downloading from temp storage:',
-            firstTempFile
-          );
 
           const { data: downloadData, error: downloadError } = await supabase.storage
             .from('payment-proofs-temp')
             .download(firstTempFile);
 
-          console.log('🔍 DEBUG [ValidateSelected] - Download result:', {
-            hasData: !!downloadData,
-            error: downloadError,
-          });
           if (downloadError) {
             throw downloadError;
           }
 
           const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
-          console.log(
-            '🔍 DEBUG [ValidateSelected] - Uploading to permanent storage:',
-            permanentFileName
-          );
 
           const { error: uploadError } = await supabase.storage
             .from('payment-proofs')
             .upload(permanentFileName, downloadData);
 
-          console.log('🔍 DEBUG [ValidateSelected] - Upload result:', { error: uploadError });
           if (uploadError) {
             throw uploadError;
           }
@@ -916,16 +835,6 @@ export function PaymentWizard({
           const { data: urlData } = supabase.storage
             .from('payment-proofs')
             .getPublicUrl(permanentFileName);
-
-          console.log('🔍 DEBUG [ValidateSelected] - Public URL:', urlData.publicUrl);
-          console.log('🔍 DEBUG [ValidateSelected] - Inserting payment_proof:', {
-            paiement_id: paymentData.id,
-            file_url: urlData.publicUrl,
-            file_name: files[0].name,
-            file_size: files[0].size,
-            extracted_data: match.paiement,
-            confidence: match.confiance,
-          });
 
           const { error: proofError } = await supabase.from('payment_proofs').insert({
             paiement_id: paymentData.id,
@@ -936,14 +845,9 @@ export function PaymentWizard({
             confidence: match.confiance,
           });
 
-          console.log('🔍 DEBUG [ValidateSelected] - payment_proof insert result:', {
-            error: proofError,
-          });
           if (proofError) {
             throw proofError;
           }
-        } else {
-          console.log('🔍 DEBUG [ValidateSelected] - NO TEMP FILES to process!');
         }
       }
 
@@ -1029,36 +933,23 @@ export function PaymentWizard({
           }
         }
 
-        console.log('🔍 DEBUG [ValidateAll] - tempFileNames:', tempFileNames);
-        console.log('🔍 DEBUG [ValidateAll] - files:', files);
-
         if (tempFileNames.length > 0) {
           const firstTempFile = tempFileNames[0];
-          console.log('🔍 DEBUG [ValidateAll] - Downloading from temp storage:', firstTempFile);
 
           const { data: downloadData, error: downloadError } = await supabase.storage
             .from('payment-proofs-temp')
             .download(firstTempFile);
 
-          console.log('🔍 DEBUG [ValidateAll] - Download result:', {
-            hasData: !!downloadData,
-            error: downloadError,
-          });
           if (downloadError) {
             throw downloadError;
           }
 
           const permanentFileName = `${paymentData.id}/${Date.now()}_${files[0].name}`;
-          console.log(
-            '🔍 DEBUG [ValidateAll] - Uploading to permanent storage:',
-            permanentFileName
-          );
 
           const { error: uploadError } = await supabase.storage
             .from('payment-proofs')
             .upload(permanentFileName, downloadData);
 
-          console.log('🔍 DEBUG [ValidateAll] - Upload result:', { error: uploadError });
           if (uploadError) {
             throw uploadError;
           }
@@ -1066,16 +957,6 @@ export function PaymentWizard({
           const { data: urlData } = supabase.storage
             .from('payment-proofs')
             .getPublicUrl(permanentFileName);
-
-          console.log('🔍 DEBUG [ValidateAll] - Public URL:', urlData.publicUrl);
-          console.log('🔍 DEBUG [ValidateAll] - Inserting payment_proof:', {
-            paiement_id: paymentData.id,
-            file_url: urlData.publicUrl,
-            file_name: files[0].name,
-            file_size: files[0].size,
-            extracted_data: match.paiement,
-            confidence: match.confiance,
-          });
 
           const { error: proofError } = await supabase.from('payment_proofs').insert({
             paiement_id: paymentData.id,
@@ -1086,14 +967,9 @@ export function PaymentWizard({
             confidence: match.confiance,
           });
 
-          console.log('🔍 DEBUG [ValidateAll] - payment_proof insert result:', {
-            error: proofError,
-          });
           if (proofError) {
             throw proofError;
           }
-        } else {
-          console.log('🔍 DEBUG [ValidateAll] - NO TEMP FILES to process!');
         }
       }
 
@@ -1128,133 +1004,52 @@ export function PaymentWizard({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="payment-wizard-title">
         {/* Backdrop */}
-        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
 
         {/* Centered Container */}
         <div className="flex min-h-full items-center justify-center p-4">
           <div
             className="relative bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
+            role="document"
           >
-            <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl z-10">
-              <div className="flex items-center gap-3">
-                {(step === 'tranche' ||
-                  step === 'echeance' ||
-                  step === 'upload' ||
-                  step === 'results') && (
-                  <button
-                    onClick={handleBackToSelect}
-                    className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                    title="Retour"
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                    <span className="text-sm font-medium">Retour</span>
-                  </button>
-                )}
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">
-                    {step === 'select' && 'Enregistrer un paiement de tranche'}
-                    {step === 'echeance' && "Sélection de l'échéance"}
-                    {step === 'upload' && 'Télécharger justificatif de paiement'}
-                    {step === 'results' && "Résultats de l'analyse"}
-                  </h3>
-                  <p className="text-sm text-slate-600 mt-1">
-                    {step === 'select' && 'Sélectionnez un projet et une tranche'}
-                    {step === 'echeance' && 'Quelle échéance payez-vous?'}
-                    {step === 'upload' &&
-                      `${subscriptions.length} paiement${subscriptions.length > 1 ? 's' : ''} attendu${subscriptions.length > 1 ? 's' : ''}`}
-                    {step === 'results' &&
-                      `${selectedMatches.size} paiement${selectedMatches.size > 1 ? 's' : ''} sélectionné${selectedMatches.size > 1 ? 's' : ''}`}
-                  </p>
-                </div>
-              </div>
-              <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+            <PaymentWizardHeader
+              step={step}
+              subscriptionCount={subscriptions.length}
+              selectedMatchCount={selectedMatches.size}
+              onBack={handleBackToSelect}
+              onClose={onClose}
+              showBackButton={step !== 'select'}
+            />
 
             <div className="p-6">
               {/* STEP 1: SELECT PROJECT AND TRANCHE */}
               {step === 'select' && (
-                <div className="space-y-4">
-                  {preselectedProjectId && displayProjectName && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-900 flex items-center gap-2">
-                        <span className="font-semibold">Projet:</span> {displayProjectName}
-                        <span className="ml-2 text-blue-600 text-xs flex items-center gap-1">
-                          <Lock className="w-3 h-3" /> Présélectionné
-                        </span>
-                      </p>
-                    </div>
-                  )}
-
-                  {!preselectedProjectId && (
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">
-                        Projet
-                      </label>
-                      <select
-                        value={selectedProjectId}
-                        onChange={e => setSelectedProjectId(e.target.value)}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white"
-                      >
-                        <option value="">Sélectionnez un projet</option>
-                        {projects.map(project => (
-                          <option key={project.id} value={project.id}>
-                            {project.projet}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {!preselectedTrancheId && (
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">
-                        Tranche
-                      </label>
-                      <select
-                        value={selectedTrancheId}
-                        onChange={e => setSelectedTrancheId(e.target.value)}
-                        disabled={!selectedProjectId}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white disabled:bg-slate-100 disabled:cursor-not-allowed"
-                      >
-                        <option value="">
-                          {selectedProjectId
-                            ? 'Sélectionnez une tranche'
-                            : "Sélectionnez d'abord un projet"}
-                        </option>
-                        {tranches.map(tranche => (
-                          <option key={tranche.id} value={tranche.id}>
-                            {tranche.tranche_name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {preselectedTrancheId && displayTrancheName && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-900 flex items-center gap-2">
-                        <span className="font-semibold">Tranche:</span> {displayTrancheName}
-                        <span className="ml-2 text-blue-600 text-xs flex items-center gap-1">
-                          <Lock className="w-3 h-3" /> Présélectionné
-                        </span>
-                      </p>
-                    </div>
-                  )}
+                <>
+                  <PaymentProjectSelect
+                    projects={projects}
+                    tranches={tranches}
+                    selectedProjectId={selectedProjectId}
+                    selectedTrancheId={selectedTrancheId}
+                    preselectedProjectId={preselectedProjectId}
+                    preselectedTrancheId={preselectedTrancheId}
+                    displayProjectName={displayProjectName}
+                    displayTrancheName={displayTrancheName}
+                    onProjectChange={setSelectedProjectId}
+                    onTrancheChange={setSelectedTrancheId}
+                  />
 
                   {selectedTrancheId && (
                     <button
                       onClick={() => setStep('echeance')}
-                      className="w-full bg-finixar-brand-blue text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      className="w-full bg-finixar-brand-blue text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium mt-4"
                     >
                       Continuer
                     </button>
                   )}
-                </div>
+                </>
               )}
 
               {/* STEP 2: SELECT ÉCHÉANCE */}
@@ -1536,9 +1331,12 @@ export function PaymentWizard({
                         ? 'border-blue-500 bg-blue-50 scale-105'
                         : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50'
                     }`}
+                    role="button"
+                    aria-label="Zone de téléchargement de fichiers"
                   >
                     <Upload
                       className={`w-12 h-12 mx-auto mb-4 transition-colors ${isDragging ? 'text-blue-500' : 'text-slate-400'}`}
+                      aria-hidden="true"
                     />
                     <input
                       type="file"
@@ -1547,6 +1345,8 @@ export function PaymentWizard({
                       className="hidden"
                       id="file-upload"
                       disabled={analyzing}
+                      accept=".pdf,.png,.jpg,.jpeg,.webp"
+                      aria-label="Sélectionner des fichiers de justificatif"
                     />
                     <label
                       htmlFor="file-upload"
@@ -1586,6 +1386,7 @@ export function PaymentWizard({
                                 disabled={analyzing}
                                 className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Supprimer ce fichier"
+                                aria-label={`Supprimer le fichier ${file.name}`}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -1597,8 +1398,8 @@ export function PaymentWizard({
                   )}
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2">
-                      <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2" role="alert" aria-live="assertive">
+                      <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
                       <p className="text-sm text-red-700">{error}</p>
                     </div>
                   )}
@@ -1607,10 +1408,12 @@ export function PaymentWizard({
                     onClick={handleAnalyze}
                     disabled={files.length === 0 || analyzing}
                     className="w-full bg-finixar-teal text-white py-3 rounded-lg font-medium hover:bg-finixar-teal-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                    aria-busy={analyzing}
+                    aria-label={analyzing ? "Analyse du justificatif en cours" : "Analyser le justificatif de paiement"}
                   >
                     {analyzing ? (
                       <>
-                        <Loader className="w-5 h-5 animate-spin" />
+                        <Loader className="w-5 h-5 animate-spin" aria-hidden="true" />
                         Analyse en cours...
                       </>
                     ) : (
@@ -1701,10 +1504,12 @@ export function PaymentWizard({
                             <div className="flex items-center gap-3">
                               <input
                                 type="checkbox"
+                                id={`payment-match-${idx}`}
                                 checked={isSelected}
                                 onChange={() => toggleSelectMatch(idx)}
                                 className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                                 onClick={e => e.stopPropagation()}
+                                aria-label={`Sélectionner le paiement de ${match.matchedSubscription?.investisseur?.nom_raison_sociale || 'cet investisseur'}`}
                               />
                               <div
                                 className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
@@ -1868,8 +1673,8 @@ export function PaymentWizard({
                   </div>
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2" role="alert" aria-live="assertive">
+                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
                       <p className="text-sm text-red-700">{error}</p>
                     </div>
                   )}

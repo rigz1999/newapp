@@ -22,7 +22,6 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        console.log('ESC pressed in PaymentsModal');
         onClose();
       }
     };

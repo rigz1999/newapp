@@ -796,13 +796,18 @@ function Investors({ organization: _organization }: InvestorsProps) {
         {/* Basic Search */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <label htmlFor="investor-search" className="sr-only">
+              Rechercher des investisseurs
+            </label>
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" aria-hidden="true" />
             <input
-              type="text"
+              id="investor-search"
+              type="search"
               placeholder="Rechercher par nom, ID, CGP, email..."
               value={advancedFilters.filters.search}
               onChange={(e) => advancedFilters.setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              aria-label="Rechercher des investisseurs par nom, ID, CGP ou email"
             />
           </div>
 
@@ -813,15 +818,17 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 ? 'bg-blue-50 border-blue-300 text-blue-700'
                 : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
             }`}
+            aria-expanded={showAdvancedFilters}
+            aria-label={`Filtres avancés${activeFiltersCount > 0 ? ` (${activeFiltersCount} actif${activeFiltersCount > 1 ? 's' : ''})` : ''}`}
           >
-            <Filter className="w-5 h-5" />
+            <Filter className="w-5 h-5" aria-hidden="true" />
             <span className="font-medium">Filtres avancés</span>
             {activeFiltersCount > 0 && (
-              <span className="bg-finixar-brand-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-finixar-brand-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center" aria-hidden="true">
                 {activeFiltersCount}
               </span>
             )}
-            {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showAdvancedFilters ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
           </button>
         </div>
 
@@ -916,48 +923,73 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full" aria-label="Table des investisseurs">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-3 text-center">
+                <th scope="col" className="px-4 py-3 text-center">
                   <input
                     type="checkbox"
                     checked={selectedInvestorIds.size === filteredInvestors.length && filteredInvestors.length > 0}
                     onChange={handleSelectAll}
                     className="w-4 h-4 text-finixar-teal border-slate-300 rounded focus:ring-finixar-teal cursor-pointer"
+                    aria-label="Sélectionner tous les investisseurs"
                   />
                 </th>
-                <th className="px-6 py-3 text-left">
-                  <button onClick={() => handleSort('nom_raison_sociale')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
-                    Nom / Raison Sociale <ArrowUpDown className="w-4 h-4" />
+                <th scope="col" className="px-6 py-3 text-left">
+                  <button
+                    onClick={() => handleSort('nom_raison_sociale')}
+                    className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    aria-label="Trier par nom ou raison sociale"
+                  >
+                    Nom / Raison Sociale <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th className="px-6 py-3 text-left">
-                  <button onClick={() => handleSort('type')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
-                    Type <ArrowUpDown className="w-4 h-4" />
+                <th scope="col" className="px-6 py-3 text-left">
+                  <button
+                    onClick={() => handleSort('type')}
+                    className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    aria-label="Trier par type d'investisseur"
+                  >
+                    Type <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th className="px-6 py-3 text-left">
-                  <button onClick={() => handleSort('cgp')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
-                    CGP <ArrowUpDown className="w-4 h-4" />
+                <th scope="col" className="px-6 py-3 text-left">
+                  <button
+                    onClick={() => handleSort('cgp')}
+                    className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    aria-label="Trier par CGP"
+                  >
+                    CGP <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th className="px-6 py-3 text-left">
-                  <button onClick={() => handleSort('total_investi')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
-                    Total Investi <ArrowUpDown className="w-4 h-4" />
+                <th scope="col" className="px-6 py-3 text-left">
+                  <button
+                    onClick={() => handleSort('total_investi')}
+                    className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    aria-label="Trier par total investi"
+                  >
+                    Total Investi <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th className="px-6 py-3 text-left">
-                  <button onClick={() => handleSort('nb_souscriptions')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
-                    Souscriptions <ArrowUpDown className="w-4 h-4" />
+                <th scope="col" className="px-6 py-3 text-left">
+                  <button
+                    onClick={() => handleSort('nb_souscriptions')}
+                    className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    aria-label="Trier par nombre de souscriptions"
+                  >
+                    Souscriptions <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th className="px-6 py-3 text-center">
-                  <button onClick={handleSortRib} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900 mx-auto">
-                    RIB <ArrowUpDown className="w-4 h-4" />
+                <th scope="col" className="px-6 py-3 text-center">
+                  <button
+                    onClick={handleSortRib}
+                    className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900 mx-auto"
+                    aria-label="Trier par statut RIB"
+                  >
+                    RIB <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th className="px-6 py-3 text-center">
+                <th scope="col" className="px-6 py-3 text-center">
                   <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Actions
                   </span>
@@ -978,11 +1010,12 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         onChange={() => handleSelectInvestor(investor.id)}
                         className="w-4 h-4 text-finixar-teal border-slate-300 rounded focus:ring-finixar-teal cursor-pointer"
                         onClick={(e) => e.stopPropagation()}
+                        aria-label={`Sélectionner ${investor.nom_raison_sociale}`}
                       />
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${isInvestorMorale ? 'bg-purple-100' : 'bg-blue-100'}`}>
+                        <div className={`p-2 rounded-lg ${isInvestorMorale ? 'bg-purple-100' : 'bg-blue-100'}`} aria-hidden="true">
                           {isInvestorMorale ? (
                             <Building2 className="w-5 h-5 text-purple-600" />
                           ) : (
@@ -1020,16 +1053,18 @@ function Investors({ organization: _organization }: InvestorsProps) {
                               onClick={() => handleViewRib(investor)}
                               className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
                               title="Voir le RIB"
+                              aria-label={`Voir le RIB de ${investor.nom_raison_sociale}`}
                             >
-                              <Eye className="w-3.5 h-3.5" />
+                              <Eye className="w-3.5 h-3.5" aria-hidden="true" />
                               Voir
                             </button>
                             <button
                               onClick={() => handleDeleteRib(investor)}
                               className="p-1.5 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
                               title="Supprimer le RIB"
+                              aria-label={`Supprimer le RIB de ${investor.nom_raison_sociale}`}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                             </button>
                           </>
                         ) : (
@@ -1037,8 +1072,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
                             onClick={() => handleRibUpload(investor)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors text-xs font-medium"
                             title="Mettre en ligne un RIB"
+                            aria-label={`Télécharger un RIB pour ${investor.nom_raison_sociale}`}
                           >
-                            <Upload className="w-3.5 h-3.5" />
+                            <Upload className="w-3.5 h-3.5" aria-hidden="true" />
                             Mettre en ligne
                           </button>
                         )}
@@ -1050,15 +1086,17 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           onClick={() => handleViewDetails(investor)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Voir détails"
+                          aria-label={`Voir les détails de ${investor.nom_raison_sociale}`}
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
                           onClick={() => handleDeleteClick(investor)}
                           className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
                           title="Supprimer"
+                          aria-label={`Supprimer ${investor.nom_raison_sociale}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </button>
                       </div>
                     </td>

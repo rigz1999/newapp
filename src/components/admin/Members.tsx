@@ -150,8 +150,6 @@ export default function Members() {
   const handleRemoveMember = async () => {
     if (!selectedMember) return;
 
-    console.log('Attempting to remove member:', selectedMember);
-
     // Check if user is deleting themselves
     const isDeletingSelf = selectedMember.user_id === user?.id;
 
@@ -172,13 +170,11 @@ export default function Members() {
         throw new Error(data.error || 'Failed to delete user');
       }
 
-      console.log('Member and user account deleted successfully');
       setShowRemoveModal(false);
       setSelectedMember(null);
 
       // If user deleted themselves, sign out and redirect to login
       if (isDeletingSelf) {
-        console.log('User deleted themselves, logging out...');
         await supabase.auth.signOut();
         window.location.href = '/login';
         return;

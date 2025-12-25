@@ -191,15 +191,11 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       const [projectsRes, investorsRes, tranchesRes, subscriptionsRes, paymentsRes, couponsRes] = await Promise.all([
         // Search Projects - fetch all and filter client-side to avoid 400 errors
         (async () => {
-          console.log('🔍 Searching projects with:', { searchQuery, searchTerm, orgId });
-
           const { data, error } = await supabase
             .from('projets')
             .select('id, projet, emetteur')
             .eq('org_id', orgId)
             .limit(100);
-
-          console.log('📁 All projects:', { data, error });
 
           if (!data) {
             return { data: [], error };
@@ -212,8 +208,6 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             const emetteur = (p.emetteur || '').toLowerCase();
             return projet.includes(search) || emetteur.includes(search);
           }).slice(0, 10);
-
-          console.log('✅ Filtered projects:', filtered);
 
           return { data: filtered, error };
         })(),
