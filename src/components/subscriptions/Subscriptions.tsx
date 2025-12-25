@@ -719,29 +719,38 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                    <label htmlFor="edit-nombre-obligations" className="block text-sm font-medium text-slate-900 mb-2">
                       Nombre d'obligations
                     </label>
                     <input
+                      id="edit-nombre-obligations"
                       type="number"
+                      min="1"
+                      step="1"
                       value={editFormData.nombre_obligations}
                       onChange={(e) => setEditFormData({ ...editFormData, nombre_obligations: parseInt(e.target.value) || 0 })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                      required
+                      aria-required="true"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                    <label htmlFor="edit-montant-investi" className="block text-sm font-medium text-slate-900 mb-2">
                       Montant investi (€)
                     </label>
                     <input
+                      id="edit-montant-investi"
                       type="number"
+                      min="0.01"
                       step="0.01"
                       value={editFormData.montant_investi}
                       onChange={(e) => setEditFormData({ ...editFormData, montant_investi: parseFloat(e.target.value) || 0 })}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                      required
+                      aria-required="true"
                     />
                   </div>
 
