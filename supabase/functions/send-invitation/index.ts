@@ -35,15 +35,34 @@ serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    // Create Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    // Create Supabase client with service role for admin operations
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
 
-    // Verify the user is authenticated
+    // Create Supabase client with user's token for authentication
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+
+    // Verify the user is authenticated using their token
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
 
     if (authError || !user) {
-      throw new Error('Unauthorized')
+      console.error('Auth error:', authError)
+      throw new Error('Unauthorized: ' + (authError?.message || 'No user found'))
     }
 
     // Parse request body
@@ -55,7 +74,7 @@ serve(async (req) => {
 
     if (!isSuperAdmin) {
       // Verify user is admin of the organization
-      const { data: membership } = await supabase
+      const { data: membership } = await supabaseAdmin
         .from('memberships')
         .select('role')
         .eq('user_id', user.id)
@@ -75,7 +94,7 @@ serve(async (req) => {
     expiresAt.setDate(expiresAt.getDate() + 7)
 
     // Create invitation in database
-    const { data: invitation, error: invitationError } = await supabase
+    const { data: invitation, error: invitationError } = await supabaseAdmin
       .from('invitations')
       .insert({
         email,
