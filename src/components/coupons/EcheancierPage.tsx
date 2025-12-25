@@ -14,6 +14,8 @@ import {
   AlertCircle,
   FileText,
   XCircle,
+  Mail,
+  Loader2,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ExcelJS from 'exceljs';
@@ -108,6 +110,7 @@ export function EcheancierPage() {
   > | null>(null);
   const [paymentProofs, setPaymentProofs] = useState<Record<string, unknown>[]>([]);
   const [markingUnpaid, setMarkingUnpaid] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertModalConfig, setAlertModalConfig] = useState<{
     title: string;
@@ -411,6 +414,80 @@ export function EcheancierPage() {
       setShowAlertModal(true);
     } finally {
       setMarkingUnpaid(null);
+    }
+  };
+
+  const handleSendReminder = async (echeance: Echeance) => {
+    setSendingEmail(echeance.id);
+
+    try {
+      // First check if user has email connected
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data: connection, error: connError } = await supabase
+        .from('user_email_connections')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (connError || !connection) {
+        setAlertModalConfig({
+          title: 'Email non connecté',
+          message: 'Veuillez d\'abord connecter votre email dans les paramètres pour envoyer des rappels.',
+          type: 'warning',
+        });
+        setShowAlertModal(true);
+        setSendingEmail(null);
+
+        // Redirect to settings after 2 seconds
+        setTimeout(() => {
+          navigate('/parametres');
+        }, 2000);
+        return;
+      }
+
+      // Call edge function to create draft
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No session found');
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-invoice-email-draft`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ echeanceId: echeance.id }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create email draft');
+      }
+
+      setAlertModalConfig({
+        title: 'Brouillon créé !',
+        message: `Un brouillon d'email a été créé dans votre ${connection.provider === 'microsoft' ? 'Outlook' : 'Gmail'}. Ouvrez votre boîte email pour le consulter et l'envoyer.`,
+        type: 'success',
+      });
+      setShowAlertModal(true);
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: error instanceof Error ? error.message : 'Une erreur est survenue lors de la création du brouillon',
+        type: 'error',
+      });
+      setShowAlertModal(true);
+    } finally {
+      setSendingEmail(null);
     }
   };
 
@@ -959,6 +1036,26 @@ export function EcheancierPage() {
                                                 />
                                               </button>
                                             </div>
+                                          )}
+                                          {(status === 'en_retard' || status === 'a_venir') && (
+                                            <button
+                                              onClick={() => handleSendReminder(echeance)}
+                                              disabled={sendingEmail === echeance.id}
+                                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-finixar-brand-blue hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                              title="Envoyer un rappel de paiement"
+                                            >
+                                              {sendingEmail === echeance.id ? (
+                                                <>
+                                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                  Envoi...
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Mail className="w-3.5 h-3.5" />
+                                                  Rappel
+                                                </>
+                                              )}
+                                            </button>
                                           )}
                                         </div>
                                       </div>
