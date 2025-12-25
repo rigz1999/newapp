@@ -877,8 +877,7 @@ export default function Settings() {
                       <p className="font-medium mb-1">Comment utiliser ?</p>
                       <p className="text-blue-800">
                         Dans la page Échéancier, cliquez sur le bouton "Envoyer rappel" à côté d'un paiement impayé.
-                        Un brouillon d'email sera automatiquement créé dans votre {emailConnection.provider === 'microsoft' ? 'Outlook' : 'Gmail'}
-                        avec toutes les informations pré-remplies.
+                        Un brouillon d'e-mail sera automatiquement créé dans votre {emailConnection.provider === 'microsoft' ? 'Outlook' : 'Gmail'} avec toutes les informations pré-remplies.
                       </p>
                     </div>
                   </div>
