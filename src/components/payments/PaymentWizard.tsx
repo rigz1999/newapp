@@ -19,59 +19,19 @@ import {
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { isValidAmount } from '../../utils/validators';
 import { logger } from '../../utils/logger';
-
-interface Project {
-  id: string;
-  projet: string;
-}
-
-interface Tranche {
-  id: string;
-  tranche_name: string;
-}
-
-interface Subscription {
-  id: string;
-  investisseur_id: string;
-  montant_investi: number;
-  coupon_net: number;
-  investisseur: {
-    nom_raison_sociale: string;
-  };
-}
-
-interface Echeance {
-  id: string;
-  date_echeance: string;
-  montant_coupon: number;
-  statut: string;
-  souscription_id: string;
-}
-
-interface EcheanceGroup {
-  date: string;
-  totalAmount: number;
-  count: number;
-  statut: 'paye' | 'en_retard' | 'a_venir';
-  daysOverdue?: number;
-  echeances: Echeance[];
-}
-
-interface PaymentMatch {
-  paiement: {
-    beneficiaire: string;
-    montant: number;
-    date: string;
-    reference: string;
-  };
-  matchedSubscription?: Subscription;
-  statut: 'correspondance' | 'partielle' | 'pas-de-correspondance';
-  confiance: number;
-  details: {
-    ecartMontant: string;
-    ecartMontantPourcent: string;
-  };
-}
+import { PaymentWizardHeader } from './wizard/PaymentWizardHeader';
+import { PaymentProjectSelect } from './wizard/PaymentProjectSelect';
+import { PaymentFileUpload } from './wizard/PaymentFileUpload';
+import { PaymentMatchCard } from './wizard/PaymentMatchCard';
+import type {
+  Project,
+  Tranche,
+  Subscription,
+  Echeance,
+  EcheanceGroup,
+  PaymentMatch,
+  WizardStep
+} from './wizard/types';
 
 interface PaymentWizardProps {
   onClose: () => void;
@@ -118,7 +78,7 @@ export function PaymentWizard({
   const [displayTrancheName, setDisplayTrancheName] = useState(showTrancheName || '');
 
   // Determine initial step based on preselected values
-  const getInitialStep = (): 'select' | 'echeance' | 'upload' | 'results' => {
+  const getInitialStep = (): WizardStep => {
     // Never start at 'upload' even if all values are preselected
     // Let the useEffect transition to 'upload' after data is loaded
     if (preselectedTrancheId && preselectedProjectId) {
@@ -128,7 +88,7 @@ export function PaymentWizard({
     return 'select';
   };
 
-  const [step, setStep] = useState<'select' | 'echeance' | 'upload' | 'results'>(getInitialStep());
+  const [step, setStep] = useState<WizardStep>(getInitialStep());
 
 
   // Close modal on ESC key
@@ -1055,129 +1015,41 @@ export function PaymentWizard({
             onClick={e => e.stopPropagation()}
             role="document"
           >
-            <div className="sticky top-0 bg-white p-6 border-b border-slate-200 flex justify-between items-center rounded-t-2xl z-10">
-              <div className="flex items-center gap-3">
-                {(step === 'tranche' ||
-                  step === 'echeance' ||
-                  step === 'upload' ||
-                  step === 'results') && (
-                  <button
-                    onClick={handleBackToSelect}
-                    className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                    title="Retour"
-                    aria-label="Retour à la sélection"
-                  >
-                    <ArrowLeft className="w-5 h-5" aria-hidden="true" />
-                    <span className="text-sm font-medium">Retour</span>
-                  </button>
-                )}
-                <div>
-                  <h3 id="payment-wizard-title" className="text-xl font-bold text-slate-900">
-                    {step === 'select' && 'Enregistrer un paiement de tranche'}
-                    {step === 'echeance' && "Sélection de l'échéance"}
-                    {step === 'upload' && 'Télécharger justificatif de paiement'}
-                    {step === 'results' && "Résultats de l'analyse"}
-                  </h3>
-                  <p className="text-sm text-slate-600 mt-1">
-                    {step === 'select' && 'Sélectionnez un projet et une tranche'}
-                    {step === 'echeance' && 'Quelle échéance payez-vous?'}
-                    {step === 'upload' &&
-                      `${subscriptions.length} paiement${subscriptions.length > 1 ? 's' : ''} attendu${subscriptions.length > 1 ? 's' : ''}`}
-                    {step === 'results' &&
-                      `${selectedMatches.size} paiement${selectedMatches.size > 1 ? 's' : ''} sélectionné${selectedMatches.size > 1 ? 's' : ''}`}
-                  </p>
-                </div>
-              </div>
-              <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Fermer la fenêtre">
-                <X className="w-6 h-6" aria-hidden="true" />
-              </button>
-            </div>
+            <PaymentWizardHeader
+              step={step}
+              subscriptionCount={subscriptions.length}
+              selectedMatchCount={selectedMatches.size}
+              onBack={handleBackToSelect}
+              onClose={onClose}
+              showBackButton={step !== 'select'}
+            />
 
             <div className="p-6">
               {/* STEP 1: SELECT PROJECT AND TRANCHE */}
               {step === 'select' && (
-                <div className="space-y-4">
-                  {preselectedProjectId && displayProjectName && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-900 flex items-center gap-2">
-                        <span className="font-semibold">Projet:</span> {displayProjectName}
-                        <span className="ml-2 text-blue-600 text-xs flex items-center gap-1">
-                          <Lock className="w-3 h-3" /> Présélectionné
-                        </span>
-                      </p>
-                    </div>
-                  )}
-
-                  {!preselectedProjectId && (
-                    <div>
-                      <label htmlFor="payment-project-select" className="block text-sm font-semibold text-slate-900 mb-2">
-                        Projet
-                      </label>
-                      <select
-                        id="payment-project-select"
-                        value={selectedProjectId}
-                        onChange={e => setSelectedProjectId(e.target.value)}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white"
-                        aria-required="true"
-                      >
-                        <option value="">Sélectionnez un projet</option>
-                        {projects.map(project => (
-                          <option key={project.id} value={project.id}>
-                            {project.projet}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {!preselectedTrancheId && (
-                    <div>
-                      <label htmlFor="payment-tranche-select" className="block text-sm font-semibold text-slate-900 mb-2">
-                        Tranche
-                      </label>
-                      <select
-                        id="payment-tranche-select"
-                        value={selectedTrancheId}
-                        onChange={e => setSelectedTrancheId(e.target.value)}
-                        disabled={!selectedProjectId}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white disabled:bg-slate-100 disabled:cursor-not-allowed"
-                        aria-required="true"
-                        aria-disabled={!selectedProjectId}
-                      >
-                        <option value="">
-                          {selectedProjectId
-                            ? 'Sélectionnez une tranche'
-                            : "Sélectionnez d'abord un projet"}
-                        </option>
-                        {tranches.map(tranche => (
-                          <option key={tranche.id} value={tranche.id}>
-                            {tranche.tranche_name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {preselectedTrancheId && displayTrancheName && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-900 flex items-center gap-2">
-                        <span className="font-semibold">Tranche:</span> {displayTrancheName}
-                        <span className="ml-2 text-blue-600 text-xs flex items-center gap-1">
-                          <Lock className="w-3 h-3" /> Présélectionné
-                        </span>
-                      </p>
-                    </div>
-                  )}
+                <>
+                  <PaymentProjectSelect
+                    projects={projects}
+                    tranches={tranches}
+                    selectedProjectId={selectedProjectId}
+                    selectedTrancheId={selectedTrancheId}
+                    preselectedProjectId={preselectedProjectId}
+                    preselectedTrancheId={preselectedTrancheId}
+                    displayProjectName={displayProjectName}
+                    displayTrancheName={displayTrancheName}
+                    onProjectChange={setSelectedProjectId}
+                    onTrancheChange={setSelectedTrancheId}
+                  />
 
                   {selectedTrancheId && (
                     <button
                       onClick={() => setStep('echeance')}
-                      className="w-full bg-finixar-brand-blue text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      className="w-full bg-finixar-brand-blue text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium mt-4"
                     >
                       Continuer
                     </button>
                   )}
-                </div>
+                </>
               )}
 
               {/* STEP 2: SELECT ÉCHÉANCE */}
