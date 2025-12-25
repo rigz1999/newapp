@@ -442,7 +442,7 @@ export default function AdminPanel() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-100 rounded-xl">
+            <div className="p-3 bg-blue-100 rounded-xl" aria-hidden="true">
               <Shield className="w-8 h-8 text-blue-600" />
             </div>
             <div>
@@ -454,15 +454,17 @@ export default function AdminPanel() {
             <button
               onClick={() => setShowInviteModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors"
+              aria-label="Inviter un nouveau membre"
             >
-              <UserPlus className="w-4 h-4" />
+              <UserPlus className="w-4 h-4" aria-hidden="true" />
               Inviter un membre
             </button>
             <button
               onClick={() => setShowNewOrgModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+              aria-label="Créer une nouvelle organisation"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" aria-hidden="true" />
               Nouvelle organisation
             </button>
           </div>
@@ -492,13 +494,16 @@ export default function AdminPanel() {
       {/* Search */}
       <div className="mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" aria-hidden="true" />
+          <label htmlFor="org-search" className="sr-only">Rechercher une organisation</label>
           <input
+            id="org-search"
             type="text"
             placeholder="Rechercher une organisation..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+            aria-label="Rechercher une organisation"
           />
         </div>
       </div>
@@ -509,13 +514,15 @@ export default function AdminPanel() {
           <button
             onClick={() => toggleSection('invitations')}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            aria-expanded={expandedSections.has('invitations')}
+            aria-label={`${expandedSections.has('invitations') ? 'Réduire' : 'Développer'} la section des invitations en attente`}
           >
             {expandedSections.has('invitations') ? (
-              <ChevronUp className="w-5 h-5 text-slate-600" />
+              <ChevronUp className="w-5 h-5 text-slate-600" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-slate-600" />
+              <ChevronDown className="w-5 h-5 text-slate-600" aria-hidden="true" />
             )}
-            <Send className="w-6 h-6 text-blue-600" />
+            <Send className="w-6 h-6 text-blue-600" aria-hidden="true" />
             <h2 className="text-xl font-bold text-slate-900">
               Invitations en attente ({invitations.length})
             </h2>
@@ -527,9 +534,10 @@ export default function AdminPanel() {
             }}
             className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Rafraîchir"
+            aria-label="Rafraîchir les invitations"
             disabled={loadingInvitations}
           >
-            <RefreshCw className={`w-4 h-4 ${loadingInvitations ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loadingInvitations ? 'animate-spin' : ''}`} aria-hidden="true" />
           </button>
         </div>
 
@@ -537,11 +545,12 @@ export default function AdminPanel() {
           <div className="divide-y divide-slate-200">
             {invitations.length === 0 ? (
               <div className="p-12 text-center">
-                <Send className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <Send className="w-12 h-12 text-slate-300 mx-auto mb-4" aria-hidden="true" />
                 <p className="text-slate-600 mb-2">Aucune invitation en attente</p>
                 <button
                   onClick={() => setShowInviteModal(true)}
                   className="text-blue-900 hover:underline text-sm"
+                  aria-label="Inviter un nouveau membre"
                 >
                   Inviter un membre
                 </button>
@@ -575,8 +584,9 @@ export default function AdminPanel() {
                         onClick={() => handleCancelInvitation(invitation.id)}
                         className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
                         title="Annuler l'invitation"
+                        aria-label={`Annuler l'invitation de ${invitation.first_name} ${invitation.last_name}`}
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -592,14 +602,16 @@ export default function AdminPanel() {
         <button
           onClick={() => toggleSection('super-admins')}
           className="w-full p-6 bg-purple-50 flex items-center justify-between hover:bg-purple-100 transition-colors"
+          aria-expanded={expandedSections.has('super-admins')}
+          aria-label={`${expandedSections.has('super-admins') ? 'Réduire' : 'Développer'} la section du super administrateur`}
         >
           <div className="flex items-center gap-2">
             {expandedSections.has('super-admins') ? (
-              <ChevronUp className="w-5 h-5 text-slate-600" />
+              <ChevronUp className="w-5 h-5 text-slate-600" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-slate-600" />
+              <ChevronDown className="w-5 h-5 text-slate-600" aria-hidden="true" />
             )}
-            <Shield className="w-6 h-6 text-purple-600" />
+            <Shield className="w-6 h-6 text-purple-600" aria-hidden="true" />
             <h2 className="text-xl font-bold text-slate-900">
               Super Administrateur ({superAdminCount})
             </h2>
@@ -611,7 +623,7 @@ export default function AdminPanel() {
             <div className="p-6 bg-purple-50/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center" aria-hidden="true">
                     <Shield className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
@@ -635,14 +647,16 @@ export default function AdminPanel() {
         <button
           onClick={() => toggleSection('organizations')}
           className="w-full p-6 border-b border-slate-200 flex items-center justify-between hover:bg-slate-50 transition-colors"
+          aria-expanded={expandedSections.has('organizations')}
+          aria-label={`${expandedSections.has('organizations') ? 'Réduire' : 'Développer'} la section des organisations`}
         >
           <div className="flex items-center gap-2">
             {expandedSections.has('organizations') ? (
-              <ChevronUp className="w-5 h-5 text-slate-600" />
+              <ChevronUp className="w-5 h-5 text-slate-600" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-slate-600" />
+              <ChevronDown className="w-5 h-5 text-slate-600" aria-hidden="true" />
             )}
-            <Building2 className="w-6 h-6 text-slate-900" />
+            <Building2 className="w-6 h-6 text-slate-900" aria-hidden="true" />
             <h2 className="text-xl font-bold text-slate-900">
               Organisations ({filteredOrganizations.length})
             </h2>
@@ -653,11 +667,12 @@ export default function AdminPanel() {
           <div className="divide-y divide-slate-200">
             {filteredOrganizations.length === 0 ? (
               <div className="p-12 text-center">
-                <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" aria-hidden="true" />
                 <p className="text-slate-600 mb-2">Aucune organisation trouvée</p>
                 <button
                   onClick={() => setShowNewOrgModal(true)}
                   className="text-slate-900 hover:underline text-sm"
+                  aria-label="Créer une nouvelle organisation"
                 >
                   Créer une organisation
                 </button>
@@ -806,14 +821,16 @@ function OrganizationRow({
             <button
               onClick={onToggle}
               className="p-1 hover:bg-slate-200 rounded transition-colors"
+              aria-expanded={isExpanded}
+              aria-label={`${isExpanded ? 'Réduire' : 'Développer'} les détails de l'organisation ${organization.name}`}
             >
               {isExpanded ? (
-                <ChevronUp className="w-5 h-5 text-slate-600" />
+                <ChevronUp className="w-5 h-5 text-slate-600" aria-hidden="true" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-slate-600" />
+                <ChevronDown className="w-5 h-5 text-slate-600" aria-hidden="true" />
               )}
             </button>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center" aria-hidden="true">
               <Building2 className="w-6 h-6 text-blue-600" />
             </div>
             <div className="flex-1">
@@ -832,16 +849,18 @@ function OrganizationRow({
               onClick={onEdit}
               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               title="Modifier l'organisation"
+              aria-label={`Modifier l'organisation ${organization.name}`}
             >
-              <Edit2 className="w-4 h-4" />
+              <Edit2 className="w-4 h-4" aria-hidden="true" />
             </button>
             {memberCount === 0 && (
               <button
                 onClick={() => onDelete(organization.id, organization.name)}
                 className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
                 title="Supprimer l'organisation"
+                aria-label={`Supprimer l'organisation ${organization.name}`}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -852,7 +871,7 @@ function OrganizationRow({
         <div className="bg-slate-50 border-t border-slate-200">
           {memberCount === 0 ? (
             <div className="p-8 text-center">
-              <Users className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+              <Users className="w-10 h-10 text-slate-300 mx-auto mb-3" aria-hidden="true" />
               <p className="text-slate-600 text-sm">Aucun utilisateur dans cette organisation</p>
             </div>
           ) : (
@@ -860,7 +879,7 @@ function OrganizationRow({
               {memberships.map(membership => (
                 <div key={membership.id} className="p-4 pl-20 flex items-center justify-between hover:bg-slate-100 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center" aria-hidden="true">
                       <Users className="w-4 h-4 text-finixar-green" />
                     </div>
                     <div>
@@ -881,15 +900,17 @@ function OrganizationRow({
                       onClick={() => onViewUser(membership.user_id)}
                       className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                       title="Voir détails"
+                      aria-label={`Voir les détails de ${membership.profiles?.full_name || 'cet utilisateur'}`}
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-4 h-4" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => onRemoveMember(membership.id, membership.user_id)}
                       className="p-1.5 text-finixar-red hover:bg-red-50 rounded transition-colors"
                       title="Retirer cet utilisateur"
+                      aria-label={`Retirer ${membership.profiles?.full_name || 'cet utilisateur'} de l'organisation`}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -907,19 +928,20 @@ function NewOrgModal({ isOpen, onClose, orgName, setOrgName, onCreate, creating 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="new-org-modal-title">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-slate-900">Nouvelle organisation</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
-            <X className="w-5 h-5 text-slate-600" />
+          <h3 id="new-org-modal-title" className="text-xl font-bold text-slate-900">Nouvelle organisation</h3>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors" aria-label="Fermer la fenêtre">
+            <X className="w-5 h-5 text-slate-600" aria-hidden="true" />
           </button>
         </div>
         <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label htmlFor="new-org-name" className="block text-sm font-medium text-slate-700 mb-2">
             Nom de l'organisation
           </label>
           <input
+            id="new-org-name"
             type="text"
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
@@ -952,19 +974,20 @@ function EditOrgModal({ isOpen, onClose, orgName, setOrgName, onEdit, creating }
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="edit-org-modal-title">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-slate-900">Modifier l'Organisation</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
-            <X className="w-5 h-5 text-slate-600" />
+          <h3 id="edit-org-modal-title" className="text-xl font-bold text-slate-900">Modifier l'Organisation</h3>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors" aria-label="Fermer la fenêtre">
+            <X className="w-5 h-5 text-slate-600" aria-hidden="true" />
           </button>
         </div>
         <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label htmlFor="edit-org-name" className="block text-sm font-medium text-slate-700 mb-2">
             Nom de l'organisation
           </label>
           <input
+            id="edit-org-name"
             type="text"
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
@@ -997,14 +1020,14 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, title, message }: any)
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="delete-confirm-modal-title">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0" aria-hidden="true">
             <AlertCircle className="w-6 h-6 text-finixar-red" />
           </div>
           <div className="flex-1">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
+            <h3 id="delete-confirm-modal-title" className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
             <p className="text-slate-600">{message}</p>
           </div>
         </div>
@@ -1036,12 +1059,12 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
   const isPending = !hasOrganization && !isSuperAdmin;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="user-detail-modal-title">
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-slate-900">Détails de l'utilisateur</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
-            <X className="w-5 h-5 text-slate-600" />
+          <h3 id="user-detail-modal-title" className="text-xl font-bold text-slate-900">Détails de l'utilisateur</h3>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors" aria-label="Fermer la fenêtre">
+            <X className="w-5 h-5 text-slate-600" aria-hidden="true" />
           </button>
         </div>
 
@@ -1068,7 +1091,7 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
           {/* Details */}
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <Mail className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+              <Mail className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 mb-1">Email</p>
                 <p className="text-sm font-medium text-slate-900 break-words">{user.email}</p>
@@ -1076,14 +1099,14 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
             </div>
 
             <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+              <Calendar className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 mb-1">Date d'inscription</p>
                 <p className="text-sm font-medium text-slate-900">
-                  {new Date(user.created_at).toLocaleDateString('fr-FR', { 
-                    day: 'numeric', 
-                    month: 'long', 
-                    year: 'numeric' 
+                  {new Date(user.created_at).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
                   })}
                 </p>
               </div>
@@ -1091,7 +1114,7 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
 
             {hasOrganization && (
               <div className="flex items-start gap-3">
-                <Building2 className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+                <Building2 className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-slate-500 mb-1">Organisation</p>
                   <p className="text-sm font-medium text-slate-900 truncate">{user.org_name}</p>
@@ -1100,7 +1123,7 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
             )}
 
             <div className="flex items-start gap-3">
-              <Shield className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+              <Shield className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 mb-1">User ID</p>
                 <p className="text-xs font-mono text-slate-700 break-all">{user.user_id}</p>
@@ -1110,17 +1133,17 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
 
           {/* Status Badge */}
           {isPending && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
-              <Clock className="w-5 h-5 text-finixar-amber flex-shrink-0 mt-0.5" />
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2" role="status">
+              <Clock className="w-5 h-5 text-finixar-amber flex-shrink-0 mt-0.5" aria-hidden="true" />
               <p className="text-sm text-yellow-800">
                 <strong>En attente :</strong> Cet utilisateur n'a pas encore été assigné à une organisation.
               </p>
             </div>
           )}
-          
+
           {isSuperAdmin && (
-            <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-start gap-2">
-              <Shield className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+            <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-start gap-2" role="status">
+              <Shield className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
               <p className="text-sm text-purple-800">
                 <strong>Super Admin :</strong> Accès complet à toutes les organisations et fonctionnalités.
               </p>
@@ -1251,21 +1274,22 @@ function InviteMemberModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="invite-member-modal-title">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-slate-900">Inviter un membre</h3>
-            <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors">
-              <X className="w-5 h-5 text-slate-600" />
+            <h3 id="invite-member-modal-title" className="text-xl font-bold text-slate-900">Inviter un membre</h3>
+            <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors" aria-label="Fermer la fenêtre">
+              <X className="w-5 h-5 text-slate-600" aria-hidden="true" />
             </button>
           </div>
 
           <div className="space-y-4 mb-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="invite-org-select" className="block text-sm font-medium text-slate-700 mb-2">
                 Organisation *
               </label>
               <select
+                id="invite-org-select"
                 value={selectedOrgId}
                 onChange={(e) => setSelectedOrgId(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -1278,10 +1302,11 @@ function InviteMemberModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="invite-email" className="block text-sm font-medium text-slate-700 mb-2">
                 Email *
               </label>
               <input
+                id="invite-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -1291,10 +1316,11 @@ function InviteMemberModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="invite-first-name" className="block text-sm font-medium text-slate-700 mb-2">
                 Prénom *
               </label>
               <input
+                id="invite-first-name"
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
@@ -1304,10 +1330,11 @@ function InviteMemberModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="invite-last-name" className="block text-sm font-medium text-slate-700 mb-2">
                 Nom *
               </label>
               <input
+                id="invite-last-name"
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
@@ -1317,10 +1344,11 @@ function InviteMemberModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="invite-role" className="block text-sm font-medium text-slate-700 mb-2">
                 Rôle *
               </label>
               <select
+                id="invite-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value as 'member' | 'admin')}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -1351,12 +1379,12 @@ function InviteMemberModal({
             >
               {sending ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <RefreshCw className="w-4 h-4 animate-spin" aria-hidden="true" />
                   Envoi...
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
+                  <Send className="w-4 h-4" aria-hidden="true" />
                   Envoyer
                 </>
               )}
@@ -1389,18 +1417,18 @@ function SuccessModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="success-modal-title">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8" onClick={(e) => e.stopPropagation()}>
         <div className="text-center">
           {/* Success Icon */}
-          <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30">
+          <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30" aria-hidden="true">
             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           </div>
 
           {/* Title */}
-          <h3 className="text-2xl font-bold text-slate-900 mb-3">
+          <h3 id="success-modal-title" className="text-2xl font-bold text-slate-900 mb-3">
             Invitation envoyée !
           </h3>
 
