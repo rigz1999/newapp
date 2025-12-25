@@ -56,10 +56,14 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { echeanceId } = await req.json();
+    const { echeanceIds, projectId } = await req.json();
 
-    if (!echeanceId) {
-      throw new Error('Missing echeanceId');
+    if (!echeanceIds || !Array.isArray(echeanceIds) || echeanceIds.length === 0) {
+      throw new Error('Missing or invalid echeanceIds');
+    }
+
+    if (!projectId) {
+      throw new Error('Missing projectId');
     }
 
     // Fetch user's email connection
@@ -89,8 +93,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch écheance data with all relations
-    const { data: echeanceData, error: echeanceError } = await supabaseClient
+    // Fetch all écheances data with all relations
+    const { data: echeancesData, error: echeanceError } = await supabaseClient
       .from('coupons_echeances')
       .select(`
         id,
@@ -101,6 +105,7 @@ Deno.serve(async (req) => {
           id_souscription,
           coupon_brut,
           coupon_net,
+          montant_investi,
           investisseur:investisseurs (
             nom_raison_sociale,
             id_investisseur
@@ -114,22 +119,28 @@ Deno.serve(async (req) => {
           )
         )
       `)
-      .eq('id', echeanceId)
-      .single();
+      .in('id', echeanceIds);
 
-    if (echeanceError || !echeanceData) {
-      throw new Error('Écheance not found');
+    if (echeanceError || !echeancesData || echeancesData.length === 0) {
+      throw new Error('Écheances not found');
     }
 
-    const echeance = echeanceData as unknown as Echeance;
+    const echeances = echeancesData as unknown as Echeance[];
+
+    // Get project info from first echeance
+    const firstEcheance = echeances[0];
+    const emailRepresentant = firstEcheance.souscription?.tranche?.projet?.email_representant;
+    const projectName = firstEcheance.souscription?.tranche?.projet?.projet;
+    const trancheName = firstEcheance.souscription?.tranche?.tranche_name;
+    const dateEcheance = firstEcheance.date_echeance;
 
     // Validate email recipient
-    if (!echeance.souscription?.tranche?.projet?.email_representant) {
+    if (!emailRepresentant) {
       throw new Error('No email address found for project representative');
     }
 
-    // Generate email content
-    const emailContent = generateEmailContent(echeance);
+    // Generate grouped email content
+    const emailContent = generateGroupedEmailContent(echeances, projectName, trancheName, dateEcheance);
 
     // Create draft via appropriate API
     if (connection.provider === 'microsoft') {
@@ -253,11 +264,7 @@ async function refreshAccessToken(
   }
 }
 
-function generateEmailContent(echeance: Echeance) {
-  const projet = echeance.souscription.tranche.projet;
-  const tranche = echeance.souscription.tranche;
-  const investisseur = echeance.souscription.investisseur;
-
+function generateGroupedEmailContent(echeances: Echeance[], projectName: string, trancheName: string, dateEcheance: string) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -270,7 +277,13 @@ function generateEmailContent(echeance: Echeance) {
     }).format(amount);
   };
 
-  const subject = `Rappel: Paiement de coupon à échoir le ${formatDate(echeance.date_echeance)} - ${projet.projet}`;
+  // Calculate total amount
+  const totalAmount = echeances.reduce((sum, e) => sum + e.montant_coupon, 0);
+
+  // Get email recipient (same for all echeances in a project)
+  const emailTo = echeances[0].souscription.tranche.projet.email_representant;
+
+  const subject = `Rappel: Paiements de coupons à échoir le ${formatDate(dateEcheance)} - ${projectName}`;
 
   const html = `
 <!DOCTYPE html>
@@ -360,33 +373,38 @@ function generateEmailContent(echeance: Echeance) {
     <div class="content">
       <p>Bonjour,</p>
 
-      <p>Nous vous rappelons qu'un paiement de coupon est à échoir prochainement :</p>
+      <p>Nous vous rappelons que les paiements de coupons suivants sont à échoir :</p>
 
       <div class="info-box">
-        <p style="margin: 0 0 8px 0;"><strong>Projet :</strong> ${projet.projet}</p>
-        <p style="margin: 0;"><strong>Tranche :</strong> ${tranche.tranche_name}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Projet :</strong> ${projectName}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Tranche :</strong> ${trancheName}</p>
+        <p style="margin: 0;"><strong>Date d'échéance :</strong> ${formatDate(dateEcheance)}</p>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Date d'échéance</th>
             <th>Investisseur</th>
             <th>ID Investisseur</th>
-            <th>Montant</th>
+            <th style="text-align: right;">Montant</th>
           </tr>
         </thead>
         <tbody>
+          ${echeances.map(echeance => `
           <tr>
-            <td>${formatDate(echeance.date_echeance)}</td>
-            <td>${investisseur.nom_raison_sociale}</td>
-            <td>${investisseur.id_investisseur}</td>
-            <td class="amount">${formatCurrency(echeance.montant_coupon)}</td>
+            <td>${echeance.souscription.investisseur.nom_raison_sociale}</td>
+            <td>${echeance.souscription.investisseur.id_investisseur}</td>
+            <td style="text-align: right;" class="amount">${formatCurrency(echeance.montant_coupon)}</td>
+          </tr>
+          `).join('')}
+          <tr style="background-color: #f8f9fa; font-weight: 600;">
+            <td colspan="2" style="text-align: right; padding-top: 15px;">TOTAL À PAYER :</td>
+            <td style="text-align: right; padding-top: 15px;" class="amount">${formatCurrency(totalAmount)}</td>
           </tr>
         </tbody>
       </table>
 
-      <p>Merci de procéder au paiement avant la date d'échéance.</p>
+      <p>Merci de procéder aux paiements avant la date d'échéance.</p>
 
       <p>Cordialement,</p>
     </div>
@@ -400,7 +418,7 @@ function generateEmailContent(echeance: Echeance) {
   `.trim();
 
   return {
-    to: projet.email_representant,
+    to: emailTo,
     subject,
     html,
   };
