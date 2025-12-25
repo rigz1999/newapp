@@ -16,6 +16,7 @@ import {
   XCircle,
   Mail,
   Loader2,
+  MoreVertical,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ExcelJS from 'exceljs';
@@ -111,6 +112,7 @@ export function EcheancierPage() {
   const [paymentProofs, setPaymentProofs] = useState<Record<string, unknown>[]>([]);
   const [markingUnpaid, setMarkingUnpaid] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertModalConfig, setAlertModalConfig] = useState<{
     title: string;
@@ -142,6 +144,15 @@ export function EcheancierPage() {
       fetchEcheances();
     }
   }, [projectId]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenDropdown(null);
+    if (openDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openDropdown]);
 
   const fetchEcheances = async () => {
     if (!projectId) {
@@ -436,8 +447,8 @@ export function EcheancierPage() {
 
       if (connError || !connection) {
         setAlertModalConfig({
-          title: 'Email non connecté',
-          message: 'Veuillez d\'abord connecter votre email dans les paramètres pour envoyer des rappels.',
+          title: 'E-mail non connecté',
+          message: 'Veuillez d\'abord connecter votre e-mail dans les paramètres pour envoyer des rappels.',
           type: 'warning',
         });
         setShowAlertModal(true);
@@ -481,7 +492,7 @@ export function EcheancierPage() {
 
       setAlertModalConfig({
         title: 'Brouillon créé !',
-        message: `Un brouillon d'email a été créé dans votre ${connection.provider === 'microsoft' ? 'Outlook' : 'Gmail'} avec les ${dateGroup.count} paiement(s) à effectuer. Ouvrez votre boîte email pour le consulter et l'envoyer.`,
+        message: `Un brouillon d'e-mail a été créé dans votre ${connection.provider === 'microsoft' ? 'Outlook' : 'Gmail'} avec les ${dateGroup.count} paiement(s) à effectuer. Ouvrez votre boîte e-mail pour le consulter et l'envoyer.`,
         type: 'success',
       });
       setShowAlertModal(true);
@@ -938,53 +949,72 @@ export function EcheancierPage() {
                                     );
                                   }
                                 })()}
-                                {/* Rappel button - only show if there are unpaid echeances */}
+                                {/* Actions dropdown menu */}
                                 {(() => {
+                                  const dateKey = `${trancheGroup.trancheId}-${dateGroup.date}`;
+                                  const isDropdownOpen = openDropdown === dateKey;
+                                  const isSending = sendingEmail === dateKey;
                                   const hasUnpaid = dateGroup.echeances.some(
                                     e => getEcheanceStatus(e) !== 'paye'
                                   );
-                                  if (!hasUnpaid) return null;
-
-                                  const dateKey = `${trancheGroup.trancheId}-${dateGroup.date}`;
-                                  const isSending = sendingEmail === dateKey;
 
                                   return (
-                                    <button
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        handleSendReminderForDate(dateGroup, trancheGroup.trancheId);
-                                      }}
-                                      disabled={isSending}
-                                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                      title="Envoyer un rappel à l'émetteur"
-                                    >
-                                      {isSending ? (
-                                        <>
-                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                          Envoi...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Mail className="w-3.5 h-3.5" />
-                                          Rappel émetteur
-                                        </>
+                                    <div className="relative">
+                                      <button
+                                        onClick={e => {
+                                          e.stopPropagation();
+                                          setOpenDropdown(isDropdownOpen ? null : dateKey);
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                                        title="Actions"
+                                      >
+                                        <MoreVertical className="w-4 h-4" />
+                                        Actions
+                                      </button>
+
+                                      {isDropdownOpen && (
+                                        <div
+                                          className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+                                          onClick={e => e.stopPropagation()}
+                                        >
+                                          {hasUnpaid && (
+                                            <button
+                                              onClick={e => {
+                                                e.stopPropagation();
+                                                setOpenDropdown(null);
+                                                handleSendReminderForDate(dateGroup, trancheGroup.trancheId);
+                                              }}
+                                              disabled={isSending}
+                                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                              {isSending ? (
+                                                <Loader2 className="w-4 h-4 text-finixar-brand-blue animate-spin" />
+                                              ) : (
+                                                <Mail className="w-4 h-4 text-finixar-brand-blue" />
+                                              )}
+                                              <span>
+                                                {isSending ? 'Envoi en cours...' : 'Envoyer un rappel à l\'émetteur'}
+                                              </span>
+                                            </button>
+                                          )}
+                                          <button
+                                            onClick={e => {
+                                              e.stopPropagation();
+                                              setOpenDropdown(null);
+                                              setPreselectedTrancheId(trancheGroup.trancheId);
+                                              setPreselectedEcheanceDate(dateGroup.date);
+                                              setShowPaymentWizard(true);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                          >
+                                            <Upload className="w-4 h-4 text-green-600" />
+                                            <span>Enregistrer un paiement</span>
+                                          </button>
+                                        </div>
                                       )}
-                                    </button>
+                                    </div>
                                   );
                                 })()}
-                                <button
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    setPreselectedTrancheId(trancheGroup.trancheId);
-                                    setPreselectedEcheanceDate(dateGroup.date);
-                                    setShowPaymentWizard(true);
-                                  }}
-                                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                                  title="Enregistrer un paiement pour cette échéance"
-                                >
-                                  <Upload className="w-4 h-4" />
-                                  Enregistrer un paiement
-                                </button>
                               </div>
                             </div>
 
