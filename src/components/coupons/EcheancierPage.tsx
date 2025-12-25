@@ -974,7 +974,7 @@ export function EcheancierPage() {
 
                                       {isDropdownOpen && (
                                         <div
-                                          className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+                                          className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
                                           onClick={e => e.stopPropagation()}
                                         >
                                           {hasUnpaid && (
@@ -993,7 +993,7 @@ export function EcheancierPage() {
                                                 <Mail className="w-4 h-4 text-finixar-brand-blue" />
                                               )}
                                               <span>
-                                                {isSending ? 'Envoi en cours...' : 'Envoyer un rappel à l\'émetteur'}
+                                                {isSending ? 'Envoi en cours...' : 'Rappeler l\'émetteur'}
                                               </span>
                                             </button>
                                           )}
@@ -1008,7 +1008,7 @@ export function EcheancierPage() {
                                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                           >
                                             <Upload className="w-4 h-4 text-green-600" />
-                                            <span>Enregistrer un paiement</span>
+                                            <span>Enregistrer paiement</span>
                                           </button>
                                         </div>
                                       )}
