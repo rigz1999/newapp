@@ -417,8 +417,9 @@ export function EcheancierPage() {
     }
   };
 
-  const handleSendReminder = async (echeance: Echeance) => {
-    setSendingEmail(echeance.id);
+  const handleSendReminderForDate = async (dateGroup: DateGroup, trancheId: string) => {
+    const dateKey = `${trancheId}-${dateGroup.date}`;
+    setSendingEmail(dateKey);
 
     try {
       // First check if user has email connected
@@ -455,6 +456,9 @@ export function EcheancierPage() {
         throw new Error('No session found');
       }
 
+      // Get the project ID from the first echeance
+      const echeanceIds = dateGroup.echeances.map(e => e.id);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-invoice-email-draft`,
         {
@@ -463,7 +467,10 @@ export function EcheancierPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ echeanceId: echeance.id }),
+          body: JSON.stringify({
+            echeanceIds,
+            projectId
+          }),
         }
       );
 
@@ -474,7 +481,7 @@ export function EcheancierPage() {
 
       setAlertModalConfig({
         title: 'Brouillon créé !',
-        message: `Un brouillon d'email a été créé dans votre ${connection.provider === 'microsoft' ? 'Outlook' : 'Gmail'}. Ouvrez votre boîte email pour le consulter et l'envoyer.`,
+        message: `Un brouillon d'email a été créé dans votre ${connection.provider === 'microsoft' ? 'Outlook' : 'Gmail'} avec les ${dateGroup.count} paiement(s) à effectuer. Ouvrez votre boîte email pour le consulter et l'envoyer.`,
         type: 'success',
       });
       setShowAlertModal(true);
@@ -931,6 +938,40 @@ export function EcheancierPage() {
                                     );
                                   }
                                 })()}
+                                {/* Rappel button - only show if there are unpaid echeances */}
+                                {(() => {
+                                  const hasUnpaid = dateGroup.echeances.some(
+                                    e => getEcheanceStatus(e) !== 'paye'
+                                  );
+                                  if (!hasUnpaid) return null;
+
+                                  const dateKey = `${trancheGroup.trancheId}-${dateGroup.date}`;
+                                  const isSending = sendingEmail === dateKey;
+
+                                  return (
+                                    <button
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        handleSendReminderForDate(dateGroup, trancheGroup.trancheId);
+                                      }}
+                                      disabled={isSending}
+                                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title="Envoyer un rappel à l'émetteur"
+                                    >
+                                      {isSending ? (
+                                        <>
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          Envoi...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Mail className="w-3.5 h-3.5" />
+                                          Rappel émetteur
+                                        </>
+                                      )}
+                                    </button>
+                                  );
+                                })()}
                                 <button
                                   onClick={e => {
                                     e.stopPropagation();
@@ -1036,26 +1077,6 @@ export function EcheancierPage() {
                                                 />
                                               </button>
                                             </div>
-                                          )}
-                                          {(status === 'en_retard' || status === 'a_venir') && (
-                                            <button
-                                              onClick={() => handleSendReminder(echeance)}
-                                              disabled={sendingEmail === echeance.id}
-                                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-finixar-brand-blue hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                              title="Envoyer un rappel de paiement"
-                                            >
-                                              {sendingEmail === echeance.id ? (
-                                                <>
-                                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                  Envoi...
-                                                </>
-                                              ) : (
-                                                <>
-                                                  <Mail className="w-3.5 h-3.5" />
-                                                  Rappel
-                                                </>
-                                              )}
-                                            </button>
                                           )}
                                         </div>
                                       </div>
