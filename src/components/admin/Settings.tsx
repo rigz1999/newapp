@@ -123,7 +123,6 @@ export default function Settings() {
 
     if (!emailError && emailConn) {
       setEmailConnection(emailConn);
-      setEmailProvider(emailConn.provider);
     }
 
     setLoading(false);
