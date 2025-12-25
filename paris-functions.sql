@@ -348,20 +348,24 @@ CREATE OR REPLACE FUNCTION public.propagate_project_to_tranches()
  SET search_path TO 'public'
 AS $function$
 BEGIN
+  -- Only propagate if financial parameters changed
+  -- NOTE: date_emission is NOT included because it's tranche-specific, not a project field
   IF (NEW.taux_nominal IS DISTINCT FROM OLD.taux_nominal) OR
      (NEW.periodicite_coupons IS DISTINCT FROM OLD.periodicite_coupons) OR
-     (NEW.duree_mois IS DISTINCT FROM OLD.duree_mois) OR
-     (NEW.date_emission IS DISTINCT FROM OLD.date_emission) THEN
+     (NEW.duree_mois IS DISTINCT FROM OLD.duree_mois) THEN
 
     RAISE NOTICE 'Project % financial parameters changed - updating tranches', NEW.id;
 
+    -- Update tranches with project parameters
+    -- IMPORTANT: date_emission is NOT copied because it's tranche-specific
     UPDATE tranches
     SET
       taux_nominal = NEW.taux_nominal,
       periodicite_coupons = NEW.periodicite_coupons,
-      duree_mois = NEW.duree_mois,
-      date_emission = NEW.date_emission
+      duree_mois = NEW.duree_mois
     WHERE projet_id = NEW.id;
+
+    RAISE NOTICE 'Updated all tranches for project %', NEW.id;
   END IF;
 
   RETURN NEW;
