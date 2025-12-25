@@ -35,24 +35,36 @@ serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    // Extract the JWT token
-    const token = authHeader.replace('Bearer ', '')
+    // Create Supabase client with user's JWT for authentication
+    const supabase = createClient(
+      SUPABASE_URL,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      {
+        global: {
+          headers: { Authorization: authHeader }
+        },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
 
-    // Create Supabase admin client for database operations
+    // Verify the user's JWT token
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      console.error('Auth error:', authError)
+      throw new Error('Unauthorized: ' + (authError?.message || 'Invalid token'))
+    }
+
+    // Create admin client for privileged database operations
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     })
-
-    // Verify the user's JWT token
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-
-    if (authError || !user) {
-      console.error('Auth error:', authError)
-      throw new Error('Unauthorized: ' + (authError?.message || 'Auth session missing'))
-    }
 
     // Parse request body
     const { email, firstName, lastName, role, orgId, orgName }: InvitationRequest = await req.json()
