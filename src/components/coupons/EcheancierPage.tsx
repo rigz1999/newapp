@@ -275,10 +275,7 @@ export function EcheancierPage() {
       .eq('id', echeance.id)
       .single();
 
-    console.log('Écheance data:', echeanceData, 'Error:', echeanceError);
-
     if (!echeanceData?.paiement_id) {
-      console.warn('No paiement_id found for écheance:', echeance.id);
       // Try to find payment by matching subscription and date
       const { data: paymentByMatch } = await supabase
         .from('paiements')
@@ -296,7 +293,6 @@ export function EcheancierPage() {
         .maybeSingle();
 
       if (paymentByMatch) {
-        console.log('Found payment by matching:', paymentByMatch);
         const { data: proofsData } = await supabase
           .from('payment_proofs')
           .select('*')
@@ -322,8 +318,6 @@ export function EcheancierPage() {
       .eq('id', echeanceData.paiement_id)
       .single();
 
-    console.log('Payment data:', paymentData);
-
     if (!paymentData) {
       return;
     }
@@ -334,8 +328,6 @@ export function EcheancierPage() {
       .select('*')
       .eq('paiement_id', echeanceData.paiement_id)
       .order('validated_at', { ascending: false });
-
-    console.log('Proofs data:', proofsData);
 
     setSelectedPaymentForProof(paymentData);
     setPaymentProofs(proofsData || []);
