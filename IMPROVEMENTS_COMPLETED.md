@@ -74,6 +74,15 @@
 
 **Commit:** `feat: Add pagination limits to prevent loading excessive data`
 
+### 6. Fixed Settings Page Crash After OAuth
+**File:** `src/components/admin/Settings.tsx`
+- **Issue:** Settings page showed blank screen after successful Outlook OAuth linking
+- **Error:** `ReferenceError: setEmailProvider is not defined`
+- **Root Cause:** Line 126 called `setEmailProvider()` but this state setter was never declared
+- **Fix:** Removed the unnecessary call to `setEmailProvider()` since `emailConnection` state already contains provider information
+- **Impact:** Settings page now loads correctly after OAuth callback
+- **Commit:** `fix: Remove undefined setEmailProvider causing Settings page crash`
+
 ---
 
 ## 📊 METRICS IMPROVEMENT
