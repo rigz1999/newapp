@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 // Force finixar.com domain for invitation links
 const APP_URL = 'https://finixar.com'
@@ -38,7 +39,7 @@ serve(async (req) => {
     // Create Supabase client with user's JWT for authentication
     const supabase = createClient(
       SUPABASE_URL,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
+      SUPABASE_ANON_KEY,
       {
         global: {
           headers: { Authorization: authHeader }
@@ -54,9 +55,15 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      console.error('Auth error:', authError)
+      console.error('Auth error details:', {
+        error: authError,
+        hasAuthHeader: !!authHeader,
+        authHeaderPreview: authHeader?.substring(0, 20) + '...'
+      })
       throw new Error('Unauthorized: ' + (authError?.message || 'Invalid token'))
     }
+
+    console.log('User authenticated successfully:', user.email)
 
     // Create admin client for privileged database operations
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
