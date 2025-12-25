@@ -410,10 +410,16 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in send-invitation:', error)
+    console.error('Error stack:', error.stack)
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+    })
     return new Response(
       JSON.stringify({
-        error: error.message,
+        error: error.message || 'Unknown error',
+        details: error.toString(),
       }),
       {
         status: 400,
