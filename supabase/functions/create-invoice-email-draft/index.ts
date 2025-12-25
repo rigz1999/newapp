@@ -293,14 +293,14 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
 
   // Different subject and header based on status
   const subject = isOverdue
-    ? `⚠️ URGENT - Paiements en retard depuis le ${formatDate(dateEcheance)} - ${projectName}`
+    ? `URGENT - Paiements en retard depuis le ${formatDate(dateEcheance)} - ${projectName}`
     : `Rappel: Paiements de coupons à échoir le ${formatDate(dateEcheance)} - ${projectName}`;
 
-  const headerColor = isOverdue ? '#dc2626' : '#667eea'; // Red for overdue, purple for upcoming
-  const headerGradient = isOverdue
-    ? 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)'
-    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-  const headerText = isOverdue ? '⚠️ Paiements en retard' : 'Rappel de paiement de coupons';
+  const statusBadgeColor = isOverdue ? '#dc2626' : '#2563eb';
+  const statusBadgeBg = isOverdue ? '#fee2e2' : '#dbeafe';
+  const statusText = isOverdue ? 'PAIEMENTS EN RETARD' : 'RAPPEL DE PAIEMENT';
+  const borderColor = isOverdue ? '#dc2626' : '#2563eb';
+
   const introText = isOverdue
     ? `Nous constatons que les paiements de coupons suivants n'ont pas été effectués à la date prévue du ${formatDate(dateEcheance)}. Nous vous remercions de procéder au règlement dans les plus brefs délais :`
     : `Nous vous rappelons que les paiements de coupons suivants sont à échoir le ${formatDate(dateEcheance)} :`;
@@ -314,80 +314,141 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      color: #333;
+      color: #1f2937;
       line-height: 1.6;
       margin: 0;
       padding: 0;
-      background-color: #f5f5f5;
+      background-color: #f9fafb;
     }
     .container {
-      max-width: 600px;
-      margin: 20px auto;
+      max-width: 650px;
+      margin: 30px auto;
       background-color: #ffffff;
-      border-radius: 8px;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+      border: 1px solid #e5e7eb;
     }
     .header {
-      background: ${headerGradient};
-      color: white;
-      padding: 30px 20px;
-      text-align: center;
+      background-color: #ffffff;
+      padding: 32px 32px 24px 32px;
+      border-bottom: 3px solid ${borderColor};
+    }
+    .status-badge {
+      display: inline-block;
+      background-color: ${statusBadgeBg};
+      color: ${statusBadgeColor};
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
     }
     .header h1 {
       margin: 0;
-      font-size: 24px;
-      font-weight: 600;
+      font-size: 22px;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.3;
     }
     .content {
-      padding: 30px 20px;
+      padding: 32px;
+    }
+    .content p {
+      margin: 0 0 16px 0;
+      color: #374151;
     }
     .info-box {
-      background-color: #f8f9fa;
-      border-left: 4px solid ${headerColor};
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 4px;
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-left: 4px solid ${borderColor};
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 6px;
+    }
+    .info-box p {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #4b5563;
+    }
+    .info-box p:last-child {
+      margin-bottom: 0;
     }
     .info-box strong {
-      color: ${headerColor};
+      color: #111827;
+      font-weight: 600;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 20px 0;
+      margin: 24px 0;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
     }
     th {
-      background-color: #f8f9fa;
-      padding: 12px;
+      background-color: #f9fafb;
+      padding: 14px 16px;
       text-align: left;
       font-weight: 600;
-      border-bottom: 2px solid #dee2e6;
-      font-size: 14px;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 13px;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     td {
-      padding: 12px;
-      border-bottom: 1px solid #dee2e6;
+      padding: 14px 16px;
+      border-bottom: 1px solid #f3f4f6;
       font-size: 14px;
+      color: #1f2937;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tr:hover {
+      background-color: #f9fafb;
     }
     .amount {
-      font-size: 16px;
       font-weight: 600;
-      color: ${headerColor};
+      color: ${statusBadgeColor};
+      font-size: 15px;
+    }
+    .total-row {
+      background-color: #f9fafb;
+      font-weight: 700;
+    }
+    .total-row td {
+      padding-top: 16px;
+      padding-bottom: 16px;
+      border-top: 2px solid ${borderColor};
+      font-size: 15px;
     }
     .footer {
-      padding: 20px;
-      background-color: #f8f9fa;
+      padding: 24px 32px;
+      background-color: #f9fafb;
+      border-top: 1px solid #e5e7eb;
       text-align: center;
+    }
+    .footer p {
+      margin: 0;
       font-size: 12px;
-      color: #6c757d;
+      color: #6b7280;
+    }
+    .signature {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+      color: #374151;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>${headerText}</h1>
+      <div class="status-badge">${statusText}</div>
+      <h1>Paiement de coupons - ${projectName}</h1>
     </div>
 
     <div class="content">
@@ -396,9 +457,9 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
       <p>${introText}</p>
 
       <div class="info-box">
-        <p style="margin: 0 0 8px 0;"><strong>Projet :</strong> ${projectName}</p>
-        <p style="margin: 0 0 8px 0;"><strong>Tranche :</strong> ${trancheName}</p>
-        <p style="margin: 0;"><strong>Date d'échéance :</strong> ${formatDate(dateEcheance)}</p>
+        <p><strong>Projet :</strong> ${projectName}</p>
+        <p><strong>Tranche :</strong> ${trancheName}</p>
+        <p><strong>Date d'échéance :</strong> ${formatDate(dateEcheance)}</p>
       </div>
 
       <table>
@@ -417,17 +478,19 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
             <td style="text-align: right;" class="amount">${formatCurrency(echeance.souscription.coupon_net)}</td>
           </tr>
           `).join('')}
-          <tr style="background-color: #f8f9fa; font-weight: 600;">
-            <td style="text-align: right; padding-top: 15px;">TOTAL :</td>
-            <td style="text-align: right; padding-top: 15px;" class="amount">${formatCurrency(totalBrut)}</td>
-            <td style="text-align: right; padding-top: 15px;" class="amount">${formatCurrency(totalNet)}</td>
+          <tr class="total-row">
+            <td style="text-align: right;">TOTAL</td>
+            <td style="text-align: right;" class="amount">${formatCurrency(totalBrut)}</td>
+            <td style="text-align: right;" class="amount">${formatCurrency(totalNet)}</td>
           </tr>
         </tbody>
       </table>
 
       <p>${isOverdue ? 'Nous vous remercions de procéder aux paiements dans les meilleurs délais.' : 'Merci de procéder aux paiements avant la date d\'échéance.'}</p>
 
-      <p>Cordialement,</p>
+      <div class="signature">
+        <p>Cordialement,</p>
+      </div>
     </div>
 
     <div class="footer">
