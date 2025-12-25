@@ -648,8 +648,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               onClick={() => navigate('/projets')}
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
               title="Retour aux projets"
+              aria-label="Retour à la liste des projets"
             >
-              <ArrowLeft className="w-5 h-5 text-slate-600" />
+              <ArrowLeft className="w-5 h-5 text-slate-600" aria-hidden="true" />
             </button>
             <div>
               <div className="flex items-center gap-3">
@@ -658,8 +659,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                   <button
                     onClick={() => copyToClipboard(project.id, 'ID du projet copié!')}
                     className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                    aria-label="Copier l'ID du projet"
                   >
-                    <Copy className="w-4 h-4 text-slate-400" />
+                    <Copy className="w-4 h-4 text-slate-400" aria-hidden="true" />
                   </button>
                 </Tooltip>
               </div>
@@ -676,8 +678,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               setShowEditProject(true);
             }}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            aria-label="Modifier le projet"
           >
-            <Edit className="w-4 h-4" />
+            <Edit className="w-4 h-4" aria-hidden="true" />
             Modifier
           </button>
         </div>
@@ -689,7 +692,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 <p className="text-slate-600 text-sm">Montant total levé</p>
                 <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(stats.totalLeve)}</p>
               </div>
-              <div className="p-2 bg-green-50 rounded-lg">
+              <div className="p-2 bg-green-50 rounded-lg" aria-hidden="true">
                 <TrendingUp className="w-5 h-5 text-finixar-green" />
               </div>
             </div>
@@ -701,7 +704,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 <p className="text-slate-600 text-sm">Investisseurs</p>
                 <p className="text-2xl font-bold text-slate-900 mt-1">{stats.investisseursCount}</p>
               </div>
-              <div className="p-2 bg-blue-50 rounded-lg">
+              <div className="p-2 bg-blue-50 rounded-lg" aria-hidden="true">
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
             </div>
@@ -713,7 +716,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 <p className="text-slate-600 text-sm">Tranches</p>
                 <p className="text-2xl font-bold text-slate-900 mt-1">{stats.tranchesCount}</p>
               </div>
-              <div className="p-2 bg-purple-50 rounded-lg">
+              <div className="p-2 bg-purple-50 rounded-lg" aria-hidden="true">
                 <Layers className="w-5 h-5 text-purple-600" />
               </div>
             </div>
@@ -798,6 +801,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               <button
                 onClick={() => setShowTranchesModal(true)}
                 className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                aria-label={`Voir toutes les tranches (${tranches.length})`}
               >
                 Voir tout ({tranches.length})
               </button>
@@ -808,8 +812,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 setShowTrancheWizard(true);
               }}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              aria-label="Créer une nouvelle tranche"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" aria-hidden="true" />
               Nouvelle tranche
             </button>
           </div>
@@ -833,24 +838,26 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                       <button
                         onClick={() => toggleTrancheExpand(tranche.id)}
                         className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+                        aria-expanded={isExpanded}
+                        aria-label={`${isExpanded ? 'Réduire' : 'Développer'} les détails de la tranche ${tranche.tranche_name}`}
                       >
                         <div className="flex items-center gap-4 flex-1">
                           {isExpanded ? (
-                            <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                            <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" aria-hidden="true" />
                           ) : (
-                            <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                            <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" aria-hidden="true" />
                           )}
                           <span className="text-sm font-semibold text-slate-900 min-w-[160px]">{tranche.tranche_name}</span>
                           <span className="flex items-center gap-1 text-xs text-slate-600">
-                            <CalendarDays className="w-3.5 h-3.5" />
+                            <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
                             {formatDate(tranche.date_emission)}
                           </span>
                           <span className="flex items-center gap-1 text-xs text-slate-600">
-                            <Coins className="w-3.5 h-3.5" />
+                            <Coins className="w-3.5 h-3.5" aria-hidden="true" />
                             {formatCurrency(totalInvested)}
                           </span>
                           <span className="flex items-center gap-1 text-xs text-slate-600">
-                            <UserCircle className="w-3.5 h-3.5" />
+                            <UserCircle className="w-3.5 h-3.5" aria-hidden="true" />
                             {trancheSubscriptions.length} souscription{trancheSubscriptions.length > 1 ? 's' : ''}
                           </span>
                         </div>
@@ -863,8 +870,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             }}
                             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                             title="Modifier"
+                            aria-label={`Modifier la tranche ${tranche.tranche_name}`}
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-4 h-4" aria-hidden="true" />
                           </button>
                           <button
                             onClick={(e) => {
@@ -873,8 +881,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             }}
                             className="p-1.5 text-finixar-red hover:bg-red-50 rounded"
                             title="Supprimer"
+                            aria-label={`Supprimer la tranche ${tranche.tranche_name}`}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       </button>
@@ -887,13 +896,13 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                               Aucune souscription pour cette tranche
                             </p>
                           ) : (
-                            <div className="space-y-2">
+                            <div className="space-y-2" role="table" aria-label="Souscriptions de la tranche">
                               {/* Header du tableau */}
-                              <div className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase tracking-wider pb-2 px-3">
-                                <span className="flex-1">Investisseur</span>
-                                <span className="w-32 text-center">CGP</span>
-                                <span className="w-32 text-right">Montant investi</span>
-                                <span className="w-32 text-right">Coupon net</span>
+                              <div className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase tracking-wider pb-2 px-3" role="row">
+                                <span className="flex-1" role="columnheader">Investisseur</span>
+                                <span className="w-32 text-center" role="columnheader">CGP</span>
+                                <span className="w-32 text-right" role="columnheader">Montant investi</span>
+                                <span className="w-32 text-right" role="columnheader">Coupon net</span>
                               </div>
 
                               {/* Lignes de souscriptions */}
@@ -906,17 +915,26 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                                     setShowEditSubscription(true);
                                   }}
                                   title="Cliquer pour modifier"
+                                  role="row"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      setEditingSubscription(sub);
+                                      setShowEditSubscription(true);
+                                    }
+                                  }}
                                 >
-                                  <span className="flex-1 text-sm font-medium text-slate-900">
+                                  <span className="flex-1 text-sm font-medium text-slate-900" role="cell">
                                     {sub.investisseur?.nom_raison_sociale || 'N/A'}
                                   </span>
-                                  <span className="w-32 text-center text-xs text-amber-700 font-medium">
+                                  <span className="w-32 text-center text-xs text-amber-700 font-medium" role="cell">
                                     {sub.cgp || sub.investisseur?.cgp || '-'}
                                   </span>
-                                  <span className="w-32 text-right text-sm font-semibold text-finixar-green">
+                                  <span className="w-32 text-right text-sm font-semibold text-finixar-green" role="cell">
                                     {formatCurrency(sub.montant_investi)}
                                   </span>
-                                  <span className="w-32 text-right text-sm font-medium text-slate-700">
+                                  <span className="w-32 text-right text-sm font-medium text-slate-700" role="cell">
                                     {formatCurrency(sub.coupon_net)}
                                   </span>
                                 </div>
@@ -964,6 +982,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             <button
               onClick={() => setShowSubscriptionsModal(true)}
               className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+              aria-label={`Voir toutes les souscriptions (${subscriptions.length})`}
             >
               Voir tout ({subscriptions.length})
             </button>
@@ -974,25 +993,25 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full" aria-label="Tableau des souscriptions">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         Investisseur
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         CGP
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         Tranche
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         Date
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         Montant
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      <th scope="col" className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -1022,15 +1041,17 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             }}
                             className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                             title="Modifier la souscription"
+                            aria-label={`Modifier la souscription de ${sub.investisseur?.nom_raison_sociale || 'cet investisseur'}`}
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-4 h-4" aria-hidden="true" />
                           </button>
                           <button
                             onClick={() => handleDeleteSubscription(sub)}
                             className="p-1 text-finixar-red hover:bg-red-50 rounded transition-colors"
                             title="Supprimer la souscription"
+                            aria-label={`Supprimer la souscription de ${sub.investisseur?.nom_raison_sociale || 'cet investisseur'}`}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       </td>
@@ -1061,6 +1082,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             <button
               onClick={() => setShowPaymentsModal(true)}
               className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+              aria-label={`Voir tous les paiements (${payments.length})`}
             >
               Voir tout ({payments.length})
             </button>
@@ -1069,16 +1091,17 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           {payments.length === 0 ? (
             <p className="text-center text-slate-400 py-8">Aucun paiement enregistré</p>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4" role="list" aria-label="Liste des paiements récents">
               {payments.slice(0, PAYMENTS_LIMIT).map((payment) => (
                 <div
                   key={payment.id}
                   className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50"
+                  role="listitem"
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-2 h-2 rounded-full ${
                       payment.statut === 'Payé' || payment.statut === 'payé' ? 'bg-green-500' : 'bg-orange-500'
-                    }`} />
+                    }`} aria-hidden="true" />
                     <div>
                       <p className="text-sm font-medium text-slate-900">
                         {payment.type || 'Paiement'} - {payment.id_paiement}
@@ -1130,9 +1153,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         )}
 
         {showEditProject && project && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="edit-project-title">
             {/* Backdrop */}
-            <div className="fixed inset-0 bg-black/50" onClick={() => setShowEditProject(false)} />
+            <div className="fixed inset-0 bg-black/50" onClick={() => setShowEditProject(false)} aria-hidden="true" />
 
             {/* Centered Container */}
             <div className="flex min-h-full items-center justify-center p-4">
@@ -1140,11 +1163,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">Modifier le Projet</h3>
+                    <h3 id="edit-project-title" className="text-xl font-bold text-slate-900">Modifier le Projet</h3>
                     <p className="text-sm text-slate-600 mt-1">Mettre à jour les informations du projet</p>
                   </div>
-                  <button onClick={() => setShowEditProject(false)} className="text-slate-400 hover:text-slate-600">
-                    <X className="w-6 h-6" />
+                  <button onClick={() => setShowEditProject(false)} className="text-slate-400 hover:text-slate-600" aria-label="Fermer la fenêtre de modification">
+                    <X className="w-6 h-6" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -1155,8 +1178,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                   editedProject.taux_nominal !== project.taux_nominal ||
                   editedProject.duree_mois !== project.duree_mois) &&
                   subscriptions.length > 0 && (
-                  <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3">
-                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                  <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3" role="alert">
+                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
                     <div className="text-sm text-orange-800">
                       <p className="font-semibold mb-1">Modification de paramètres financiers détectée</p>
                       <p>Les coupons et échéances de toutes les souscriptions seront automatiquement recalculés.</p>
@@ -1171,8 +1194,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                     </h4>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-900 mb-2">Nom du projet</label>
+                        <label htmlFor="edit-projet-name" className="block text-sm font-medium text-slate-900 mb-2">Nom du projet</label>
                         <input
+                          id="edit-projet-name"
                           type="text"
                           value={editedProject.projet || ''}
                           onChange={(e) => setEditedProject({ ...editedProject, projet: e.target.value })}
@@ -1182,8 +1206,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-slate-900 mb-2">Émetteur</label>
+                          <label htmlFor="edit-emetteur" className="block text-sm font-medium text-slate-900 mb-2">Émetteur</label>
                           <input
+                            id="edit-emetteur"
                             type="text"
                             value={editedProject.emetteur || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, emetteur: e.target.value })}
@@ -1192,8 +1217,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-slate-900 mb-2">SIREN</label>
+                          <label htmlFor="edit-siren" className="block text-sm font-medium text-slate-900 mb-2">SIREN</label>
                           <input
+                            id="edit-siren"
                             type="text"
                             value={editedProject.siren_emetteur?.toString() || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, siren_emetteur: parseInt(e.target.value) || null })}
@@ -1203,8 +1229,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-900 mb-2">Type d'obligation</label>
+                        <label htmlFor="edit-type" className="block text-sm font-medium text-slate-900 mb-2">Type d'obligation</label>
                         <select
+                          id="edit-type"
                           value={editedProject.type || ''}
                           onChange={(e) => setEditedProject({ ...editedProject, type: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -1223,10 +1250,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                          <label htmlFor="edit-taux-nominal" className="block text-sm font-medium text-slate-900 mb-2">
                             Taux Nominal (%)
                           </label>
                           <input
+                            id="edit-taux-nominal"
                             type="number"
                             step="0.01"
                             value={editedProject.taux_nominal?.toString() || ''}
@@ -1236,10 +1264,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                          <label htmlFor="edit-periodicite" className="block text-sm font-medium text-slate-900 mb-2">
                             Périodicité des Coupons
                           </label>
                           <select
+                            id="edit-periodicite"
                             value={editedProject.periodicite_coupons || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, periodicite_coupons: e.target.value })}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -1255,10 +1284,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                          <label htmlFor="edit-duree-mois" className="block text-sm font-medium text-slate-900 mb-2">
                             Maturité (mois)
                           </label>
                           <input
+                            id="edit-duree-mois"
                             type="number"
                             value={editedProject.duree_mois?.toString() || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, duree_mois: parseInt(e.target.value) || null })}
@@ -1268,10 +1298,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                          <label htmlFor="edit-base-interet" className="block text-sm font-medium text-slate-900 mb-2">
                             Base de calcul
                           </label>
                           <select
+                            id="edit-base-interet"
                             value={editedProject.base_interet?.toString() || '360'}
                             onChange={(e) => setEditedProject({ ...editedProject, base_interet: parseInt(e.target.value) })}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -1291,8 +1322,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-slate-900 mb-2">Prénom représentant</label>
+                          <label htmlFor="edit-prenom-rep" className="block text-sm font-medium text-slate-900 mb-2">Prénom représentant</label>
                           <input
+                            id="edit-prenom-rep"
                             type="text"
                             value={editedProject.prenom_representant || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, prenom_representant: e.target.value })}
@@ -1300,8 +1332,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-slate-900 mb-2">Nom représentant</label>
+                          <label htmlFor="edit-nom-rep" className="block text-sm font-medium text-slate-900 mb-2">Nom représentant</label>
                           <input
+                            id="edit-nom-rep"
                             type="text"
                             value={editedProject.nom_representant || ''}
                             onChange={(e) => setEditedProject({ ...editedProject, nom_representant: e.target.value })}
@@ -1311,8 +1344,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-900 mb-2">Email représentant</label>
+                        <label htmlFor="edit-email-rep" className="block text-sm font-medium text-slate-900 mb-2">Email représentant</label>
                         <input
+                          id="edit-email-rep"
                           type="email"
                           value={editedProject.email_representant || ''}
                           onChange={(e) => setEditedProject({ ...editedProject, email_representant: e.target.value })}
@@ -1321,8 +1355,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-900 mb-2">Représentant de la masse</label>
+                        <label htmlFor="edit-rep-masse" className="block text-sm font-medium text-slate-900 mb-2">Représentant de la masse</label>
                         <input
+                          id="edit-rep-masse"
                           type="text"
                           value={editedProject.representant_masse || ''}
                           onChange={(e) => setEditedProject({ ...editedProject, representant_masse: e.target.value })}
@@ -1331,8 +1366,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-900 mb-2">Email représentant de la masse</label>
+                        <label htmlFor="edit-email-rep-masse" className="block text-sm font-medium text-slate-900 mb-2">Email représentant de la masse</label>
                         <input
+                          id="edit-email-rep-masse"
                           type="email"
                           value={editedProject.email_rep_masse || ''}
                           onChange={(e) => setEditedProject({ ...editedProject, email_rep_masse: e.target.value })}
@@ -1365,12 +1401,12 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         )}
 
         {showEditSubscription && editingSubscription && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="edit-subscription-title">
             {/* Backdrop */}
             <div className="fixed inset-0 bg-black/50" onClick={() => {
               setShowEditSubscription(false);
               setEditingSubscription(null);
-            }} />
+            }} aria-hidden="true" />
 
             {/* Centered Container */}
             <div className="flex min-h-full items-center justify-center p-4">
@@ -1378,7 +1414,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">Modifier la Souscription</h3>
+                    <h3 id="edit-subscription-title" className="text-xl font-bold text-slate-900">Modifier la Souscription</h3>
                     <p className="text-sm text-slate-600 mt-1">
                       {editingSubscription.investisseur?.nom_raison_sociale || 'N/A'}
                     </p>
@@ -1389,8 +1425,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                       setEditingSubscription(null);
                     }}
                     className="text-slate-400 hover:text-slate-600"
+                    aria-label="Fermer la fenêtre de modification"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-6 h-6" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -1399,10 +1436,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 <div className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                    <label htmlFor="edit-date-souscription" className="block text-sm font-medium text-slate-900 mb-2">
                       Date de souscription
                     </label>
                     <input
+                      id="edit-date-souscription"
                       type="date"
                       value={editingSubscription.date_souscription || ''}
                       onChange={(e) =>
@@ -1416,10 +1454,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                    <label htmlFor="edit-montant-investi" className="block text-sm font-medium text-slate-900 mb-2">
                       Montant investi (€)
                     </label>
                     <input
+                      id="edit-montant-investi"
                       type="number"
                       step="0.01"
                       value={editingSubscription.montant_investi || ''}
@@ -1434,10 +1473,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                    <label htmlFor="edit-nombre-obligations" className="block text-sm font-medium text-slate-900 mb-2">
                       Nombre d'obligations
                     </label>
                     <input
+                      id="edit-nombre-obligations"
                       type="number"
                       value={editingSubscription.nombre_obligations || ''}
                       onChange={(e) =>
