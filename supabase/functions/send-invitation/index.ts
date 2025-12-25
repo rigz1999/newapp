@@ -35,7 +35,10 @@ serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    // Create Supabase client with service role for admin operations
+    // Extract the JWT token
+    const token = authHeader.replace('Bearer ', '')
+
+    // Create Supabase admin client for database operations
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
@@ -43,26 +46,12 @@ serve(async (req) => {
       }
     })
 
-    // Create Supabase client with user's token for authentication
-    const token = authHeader.replace('Bearer ', '')
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      global: {
-        headers: {
-          Authorization: authHeader
-        }
-      },
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-
-    // Verify the user is authenticated using their token
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    // Verify the user's JWT token
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
 
     if (authError || !user) {
       console.error('Auth error:', authError)
-      throw new Error('Unauthorized: ' + (authError?.message || 'No user found'))
+      throw new Error('Unauthorized: ' + (authError?.message || 'Auth session missing'))
     }
 
     // Parse request body
