@@ -154,10 +154,14 @@ SELECT
   'After Fix - Projets Visible: ' || COUNT(*)::text as info
 FROM projets;
 
-RAISE NOTICE '';
-RAISE NOTICE '====================================================================';
-RAISE NOTICE 'If you still cannot see anything, please share:';
-RAISE NOTICE '1. Your user ID from the first query';
-RAISE NOTICE '2. The membership table results';
-RAISE NOTICE '3. The helper function test results';
-RAISE NOTICE '====================================================================';
+-- Final summary
+DO $$
+BEGIN
+  RAISE NOTICE '';
+  RAISE NOTICE '====================================================================';
+  RAISE NOTICE 'If you still cannot see anything, please share:';
+  RAISE NOTICE '1. Your user ID from the first query';
+  RAISE NOTICE '2. The membership table results';
+  RAISE NOTICE '3. The helper function test results';
+  RAISE NOTICE '====================================================================';
+END $$;
