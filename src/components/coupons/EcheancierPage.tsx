@@ -963,16 +963,28 @@ export function EcheancierPage() {
                                       <button
                                         onClick={e => {
                                           e.stopPropagation();
-                                          setOpenDropdown(isDropdownOpen ? null : dateKey);
+                                          if (!isSending) {
+                                            setOpenDropdown(isDropdownOpen ? null : dateKey);
+                                          }
                                         }}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
-                                        title="Actions"
+                                        disabled={isSending}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                        title={isSending ? 'Envoi en cours...' : 'Actions'}
                                       >
-                                        <MoreVertical className="w-4 h-4" />
-                                        Actions
+                                        {isSending ? (
+                                          <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Envoi...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <MoreVertical className="w-4 h-4" />
+                                            Actions
+                                          </>
+                                        )}
                                       </button>
 
-                                      {isDropdownOpen && (
+                                      {isDropdownOpen && !isSending && (
                                         <div
                                           className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
                                           onClick={e => e.stopPropagation()}
@@ -984,17 +996,10 @@ export function EcheancierPage() {
                                                 setOpenDropdown(null);
                                                 handleSendReminderForDate(dateGroup, trancheGroup.trancheId);
                                               }}
-                                              disabled={isSending}
-                                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                             >
-                                              {isSending ? (
-                                                <Loader2 className="w-4 h-4 text-finixar-brand-blue animate-spin" />
-                                              ) : (
-                                                <Mail className="w-4 h-4 text-finixar-brand-blue" />
-                                              )}
-                                              <span>
-                                                {isSending ? 'Envoi en cours...' : 'Rappeler l\'émetteur'}
-                                              </span>
+                                              <Mail className="w-4 h-4 text-finixar-brand-blue" />
+                                              <span>Rappeler l'émetteur</span>
                                             </button>
                                           )}
                                           <button
