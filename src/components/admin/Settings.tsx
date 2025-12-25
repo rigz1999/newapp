@@ -48,6 +48,7 @@ export default function Settings() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [showConfirmDisconnect, setShowConfirmDisconnect] = useState(false);
 
   // Password strength checker
   const checkPasswordRequirements = (password: string) => {
@@ -370,13 +371,14 @@ export default function Settings() {
     }
   };
 
+  const confirmDisconnectEmail = () => {
+    setShowConfirmDisconnect(true);
+  };
+
   const handleDisconnectEmail = async () => {
     if (!user) return;
 
-    if (!confirm('Êtes-vous sûr de vouloir déconnecter votre email ?')) {
-      return;
-    }
-
+    setShowConfirmDisconnect(false);
     setSaving(true);
     setErrorMessage('');
 
@@ -392,7 +394,7 @@ export default function Settings() {
         setErrorMessage(formatErrorMessage(error));
       } else {
         setEmailConnection(null);
-        setSuccessMessage('Email déconnecté avec succès');
+        setSuccessMessage('E-mail déconnecté avec succès');
         setShowSuccessModal(true);
       }
     } catch (err) {
@@ -883,7 +885,7 @@ export default function Settings() {
                 </div>
 
                 <button
-                  onClick={handleDisconnectEmail}
+                  onClick={confirmDisconnectEmail}
                   disabled={saving}
                   className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium border border-red-200"
                 >
@@ -895,7 +897,7 @@ export default function Settings() {
                   ) : (
                     <>
                       <X className="w-4 h-4" />
-                      Déconnecter mon email
+                      Déconnecter mon e-mail
                     </>
                   )}
                 </button>
@@ -1004,6 +1006,15 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showConfirmDisconnect}
+        onClose={() => setShowConfirmDisconnect(false)}
+        onConfirm={handleDisconnectEmail}
+        title="Déconnecter l'e-mail"
+        message="Êtes-vous sûr de vouloir déconnecter votre e-mail ? Vous ne pourrez plus envoyer de rappels automatiques."
+      />
+
       {/* Success Modal */}
       <SuccessModal
         isOpen={showSuccessModal}
@@ -1095,6 +1106,75 @@ function SuccessModal({
           <p className="text-slate-600">
             {message}
           </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Confirm Modal Component
+function ConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+}) {
+  // Handle ESC key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8" onClick={(e) => e.stopPropagation()}>
+        <div className="text-center">
+          {/* Warning Icon */}
+          <div className="w-20 h-20 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-500/30">
+            <AlertCircle className="w-10 h-10 text-white" />
+          </div>
+
+          {/* Title */}
+          <h3 className="text-2xl font-bold text-slate-900 mb-3">
+            {title}
+          </h3>
+
+          {/* Message */}
+          <p className="text-slate-600 mb-8">
+            {message}
+          </p>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={onClose}
+              className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+            >
+              Déconnecter
+            </button>
+          </div>
         </div>
       </div>
     </div>
