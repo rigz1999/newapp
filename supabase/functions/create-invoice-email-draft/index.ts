@@ -277,13 +277,33 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
     }).format(amount);
   };
 
-  // Calculate total amount
-  const totalAmount = echeances.reduce((sum, e) => sum + e.montant_coupon, 0);
+  // Calculate total amounts
+  const totalBrut = echeances.reduce((sum, e) => sum + e.souscription.coupon_brut, 0);
+  const totalNet = echeances.reduce((sum, e) => sum + e.souscription.coupon_net, 0);
 
   // Get email recipient (same for all echeances in a project)
   const emailTo = echeances[0].souscription.tranche.projet.email_representant;
 
-  const subject = `Rappel: Paiements de coupons à échoir le ${formatDate(dateEcheance)} - ${projectName}`;
+  // Check if payments are overdue
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const echeanceDate = new Date(dateEcheance);
+  echeanceDate.setHours(0, 0, 0, 0);
+  const isOverdue = echeanceDate < now;
+
+  // Different subject and header based on status
+  const subject = isOverdue
+    ? `⚠️ URGENT - Paiements en retard depuis le ${formatDate(dateEcheance)} - ${projectName}`
+    : `Rappel: Paiements de coupons à échoir le ${formatDate(dateEcheance)} - ${projectName}`;
+
+  const headerColor = isOverdue ? '#dc2626' : '#667eea'; // Red for overdue, purple for upcoming
+  const headerGradient = isOverdue
+    ? 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)'
+    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  const headerText = isOverdue ? '⚠️ Paiements en retard' : 'Rappel de paiement de coupons';
+  const introText = isOverdue
+    ? `Nous constatons que les paiements de coupons suivants n'ont pas été effectués à la date prévue du ${formatDate(dateEcheance)}. Nous vous remercions de procéder au règlement dans les plus brefs délais :`
+    : `Nous vous rappelons que les paiements de coupons suivants sont à échoir le ${formatDate(dateEcheance)} :`;
 
   const html = `
 <!DOCTYPE html>
@@ -309,7 +329,7 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: ${headerGradient};
       color: white;
       padding: 30px 20px;
       text-align: center;
@@ -324,13 +344,13 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
     }
     .info-box {
       background-color: #f8f9fa;
-      border-left: 4px solid #667eea;
+      border-left: 4px solid ${headerColor};
       padding: 15px;
       margin: 20px 0;
       border-radius: 4px;
     }
     .info-box strong {
-      color: #667eea;
+      color: ${headerColor};
     }
     table {
       width: 100%;
@@ -351,9 +371,9 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
       font-size: 14px;
     }
     .amount {
-      font-size: 18px;
-      font-weight: 700;
-      color: #667eea;
+      font-size: 16px;
+      font-weight: 600;
+      color: ${headerColor};
     }
     .footer {
       padding: 20px;
@@ -367,13 +387,13 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
 <body>
   <div class="container">
     <div class="header">
-      <h1>Rappel de paiement de coupon</h1>
+      <h1>${headerText}</h1>
     </div>
 
     <div class="content">
       <p>Bonjour,</p>
 
-      <p>Nous vous rappelons que les paiements de coupons suivants sont à échoir :</p>
+      <p>${introText}</p>
 
       <div class="info-box">
         <p style="margin: 0 0 8px 0;"><strong>Projet :</strong> ${projectName}</p>
@@ -385,26 +405,27 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
         <thead>
           <tr>
             <th>Investisseur</th>
-            <th>ID Investisseur</th>
-            <th style="text-align: right;">Montant</th>
+            <th style="text-align: right;">Coupon brut</th>
+            <th style="text-align: right;">Coupon net</th>
           </tr>
         </thead>
         <tbody>
           ${echeances.map(echeance => `
           <tr>
             <td>${echeance.souscription.investisseur.nom_raison_sociale}</td>
-            <td>${echeance.souscription.investisseur.id_investisseur}</td>
-            <td style="text-align: right;" class="amount">${formatCurrency(echeance.montant_coupon)}</td>
+            <td style="text-align: right;" class="amount">${formatCurrency(echeance.souscription.coupon_brut)}</td>
+            <td style="text-align: right;" class="amount">${formatCurrency(echeance.souscription.coupon_net)}</td>
           </tr>
           `).join('')}
           <tr style="background-color: #f8f9fa; font-weight: 600;">
-            <td colspan="2" style="text-align: right; padding-top: 15px;">TOTAL À PAYER :</td>
-            <td style="text-align: right; padding-top: 15px;" class="amount">${formatCurrency(totalAmount)}</td>
+            <td style="text-align: right; padding-top: 15px;">TOTAL :</td>
+            <td style="text-align: right; padding-top: 15px;" class="amount">${formatCurrency(totalBrut)}</td>
+            <td style="text-align: right; padding-top: 15px;" class="amount">${formatCurrency(totalNet)}</td>
           </tr>
         </tbody>
       </table>
 
-      <p>Merci de procéder aux paiements avant la date d'échéance.</p>
+      <p>${isOverdue ? 'Nous vous remercions de procéder aux paiements dans les meilleurs délais.' : 'Merci de procéder aux paiements avant la date d\'échéance.'}</p>
 
       <p>Cordialement,</p>
     </div>
