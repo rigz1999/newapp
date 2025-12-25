@@ -36,42 +36,26 @@ serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    // Create Supabase client with user's JWT for authentication
-    const supabase = createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY,
-      {
-        global: {
-          headers: { Authorization: authHeader }
-        },
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
+    // Extract JWT token
+    const token = authHeader.replace('Bearer ', '')
 
-    // Verify the user's JWT token
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      console.error('Auth error details:', {
-        error: authError,
-        hasAuthHeader: !!authHeader,
-        authHeaderPreview: authHeader?.substring(0, 20) + '...'
-      })
-      throw new Error('Unauthorized: ' + (authError?.message || 'Invalid token'))
-    }
-
-    console.log('User authenticated successfully:', user.email)
-
-    // Create admin client for privileged database operations
+    // Create admin client for all operations
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     })
+
+    // Verify the JWT token using admin client
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+
+    if (authError || !user) {
+      console.error('Auth error:', authError?.message)
+      throw new Error('Unauthorized: ' + (authError?.message || 'Invalid token'))
+    }
+
+    console.log('User authenticated:', user.email)
 
     // Parse request body
     const { email, firstName, lastName, role, orgId, orgName }: InvitationRequest = await req.json()
