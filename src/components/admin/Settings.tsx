@@ -41,7 +41,6 @@ export default function Settings() {
 
   // Email connection settings
   const [emailConnection, setEmailConnection] = useState<any>(null);
-  const [emailProvider, setEmailProvider] = useState<'microsoft' | 'google'>('microsoft');
   const [connectingEmail, setConnectingEmail] = useState(false);
 
   // Success/Error states
@@ -331,39 +330,24 @@ export default function Settings() {
     setErrorMessage('');
 
     try {
-      // Build OAuth URL
-      const redirectUri = `${window.location.origin}/auth/callback/${emailProvider}`;
-      const state = encodeURIComponent(JSON.stringify({ provider: emailProvider }));
+      // Build Microsoft OAuth URL (only provider supported)
+      const provider = 'microsoft';
+      const redirectUri = `${window.location.origin}/auth/callback/${provider}`;
+      const state = encodeURIComponent(JSON.stringify({ provider }));
 
-      let authUrl = '';
+      const tenantId = import.meta.env.VITE_MICROSOFT_TENANT_ID || 'common';
+      const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
+      const scope = encodeURIComponent('https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/User.Read offline_access');
 
-      if (emailProvider === 'microsoft') {
-        const tenantId = import.meta.env.VITE_MICROSOFT_TENANT_ID || 'common';
-        const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
-        const scope = encodeURIComponent('https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/User.Read offline_access');
+      const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
+        `client_id=${clientId}` +
+        `&response_type=code` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&response_mode=query` +
+        `&scope=${scope}` +
+        `&state=${state}`;
 
-        authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
-          `client_id=${clientId}` +
-          `&response_type=code` +
-          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-          `&response_mode=query` +
-          `&scope=${scope}` +
-          `&state=${state}`;
-      } else {
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-        const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/userinfo.email');
-
-        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-          `client_id=${clientId}` +
-          `&response_type=code` +
-          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-          `&scope=${scope}` +
-          `&state=${state}` +
-          `&access_type=offline` +
-          `&prompt=consent`;
-      }
-
-      // Redirect to OAuth provider
+      // Redirect to Microsoft OAuth
       window.location.href = authUrl;
     } catch (err) {
       setConnectingEmail(false);
@@ -860,9 +844,9 @@ export default function Settings() {
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="font-semibold text-green-900 mb-1">Email connecté</p>
+                      <p className="font-semibold text-green-900 mb-1">Outlook connecté</p>
                       <div className="text-sm text-green-800 space-y-1">
-                        <p><strong>Provider:</strong> {emailConnection.provider === 'microsoft' ? 'Microsoft / Outlook' : 'Google / Gmail'}</p>
+                        <p><strong>Provider:</strong> Microsoft Outlook</p>
                         <p><strong>Adresse:</strong> {emailConnection.email_address}</p>
                         <p><strong>Connecté le:</strong> {new Date(emailConnection.connected_at).toLocaleDateString('fr-FR')}</p>
                       </div>
@@ -877,7 +861,7 @@ export default function Settings() {
                       <p className="font-medium mb-1">Comment utiliser ?</p>
                       <p className="text-blue-800">
                         Dans la page Échéancier, cliquez sur le bouton "Envoyer rappel" à côté d'un paiement impayé.
-                        Un brouillon d'e-mail sera automatiquement créé dans votre {emailConnection.provider === 'microsoft' ? 'Outlook' : 'Gmail'} avec toutes les informations pré-remplies.
+                        Un brouillon d'e-mail sera automatiquement créé dans votre Outlook avec toutes les informations pré-remplies.
                       </p>
                     </div>
                   </div>
@@ -904,60 +888,15 @@ export default function Settings() {
             ) : (
               /* Not Connected State */
               <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-3">
-                    Fournisseur email
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => setEmailProvider('microsoft')}
-                      className={`p-4 border-2 rounded-lg transition-all ${
-                        emailProvider === 'microsoft'
-                          ? 'border-finixar-brand-blue bg-blue-50'
-                          : 'border-slate-300 hover:border-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          emailProvider === 'microsoft'
-                            ? 'border-finixar-brand-blue bg-finixar-brand-blue'
-                            : 'border-slate-400'
-                        }`}>
-                          {emailProvider === 'microsoft' && (
-                            <div className="w-2.5 h-2.5 bg-white rounded-full" />
-                          )}
-                        </div>
-                        <div className="text-left flex-1">
-                          <p className="font-semibold text-slate-900">Outlook</p>
-                          <p className="text-xs text-slate-600">Microsoft 365</p>
-                        </div>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => setEmailProvider('google')}
-                      className={`p-4 border-2 rounded-lg transition-all ${
-                        emailProvider === 'google'
-                          ? 'border-finixar-brand-blue bg-blue-50'
-                          : 'border-slate-300 hover:border-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          emailProvider === 'google'
-                            ? 'border-finixar-brand-blue bg-finixar-brand-blue'
-                            : 'border-slate-400'
-                        }`}>
-                          {emailProvider === 'google' && (
-                            <div className="w-2.5 h-2.5 bg-white rounded-full" />
-                          )}
-                        </div>
-                        <div className="text-left flex-1">
-                          <p className="font-semibold text-slate-900">Gmail</p>
-                          <p className="text-xs text-slate-600">Google Workspace</p>
-                        </div>
-                      </div>
-                    </button>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Mail className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-blue-900 mb-1">Connectez votre compte Microsoft Outlook</p>
+                      <p className="text-sm text-blue-800">
+                        Utilisez votre compte Outlook/Microsoft 365 pour envoyer automatiquement des rappels de paiement
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -995,7 +934,7 @@ export default function Settings() {
                   ) : (
                     <>
                       <ExternalLink className="w-5 h-5" />
-                      Connecter mon {emailProvider === 'microsoft' ? 'Outlook' : 'Gmail'}
+                      Connecter mon Outlook
                     </>
                   )}
                 </button>
