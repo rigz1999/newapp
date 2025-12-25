@@ -431,7 +431,7 @@ function generateGroupedEmailContent(echeances: Echeance[], projectName: string,
     </div>
 
     <div class="footer">
-      <p>Cet email a été généré automatiquement via Finixar</p>
+      <p>Cet e-mail a été généré automatiquement via Finixar</p>
     </div>
   </div>
 </body>
