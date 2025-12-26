@@ -225,7 +225,6 @@ export function TimelineView({
                               );
                             }
                           })()}
-                        </div>
                           {tranche.hasUnpaid && (
                             <button
                               onClick={(e) => {
