@@ -784,7 +784,7 @@ export function PaymentWizard({
             souscription_id: match.matchedSubscription!.id,
             org_id: projet.org_id,
             montant: match.paiement.montant,
-            date_paiement: selectedEcheanceDate || new Date().toISOString().split('T')[0],
+            date_paiement: new Date().toISOString().split('T')[0],
           })
           .select()
           .single();
@@ -906,7 +906,7 @@ export function PaymentWizard({
             souscription_id: match.matchedSubscription!.id,
             org_id: projet.org_id,
             montant: match.paiement.montant,
-            date_paiement: selectedEcheanceDate || new Date().toISOString().split('T')[0],
+            date_paiement: new Date().toISOString().split('T')[0],
           })
           .select()
           .single();

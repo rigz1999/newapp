@@ -20,11 +20,14 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <span className="text-slate-600 text-sm font-medium block mb-2">
-              Montant total investi
+              Montant total collecté
             </span>
             <p className="text-3xl font-bold text-slate-900 mb-1">
               {formatCurrency(stats.totalInvested)}
             </p>
+            <span className="text-xs text-slate-500">
+              Ce mois-ci
+            </span>
           </div>
           <div className="bg-blue-100 p-3 rounded-xl">
             <TrendingUp className="w-6 h-6 text-finixar-brand-blue" />
@@ -36,11 +39,14 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <span className="text-slate-600 text-sm font-medium block mb-2">
-              Coupons versés ce mois
+              Coupons versés
             </span>
             <p className="text-3xl font-bold text-slate-900 mb-1">
               {formatCurrency(stats.couponsPaidThisMonth)}
             </p>
+            <span className="text-xs text-slate-500">
+              Ce mois-ci
+            </span>
           </div>
           <div className="bg-emerald-100 p-3 rounded-xl">
             <CheckCircle2 className="w-6 h-6 text-finixar-action-create" />
@@ -71,11 +77,9 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
             <p className="text-3xl font-bold text-slate-900 mb-1">
               {stats.upcomingCoupons}
             </p>
-            {stats.nextCouponDays < 90 && (
-              <span className="text-xs text-slate-500">
-                Prochain dans {stats.nextCouponDays} jours
-              </span>
-            )}
+            <span className="text-xs text-slate-500">
+              Dans les 90 prochains jours
+            </span>
           </div>
           <div className="bg-amber-100 p-3 rounded-xl">
             <Clock className="w-6 h-6 text-amber-600" />

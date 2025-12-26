@@ -191,12 +191,16 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       const in90Days = new Date();
       in90Days.setDate(today.getDate() + 90);
 
-      const [projectsRes, tranchesRes, subscriptionsRes, monthPaymentsRes] = await Promise.all([
+      const [projectsRes, tranchesRes, subscriptionsRes, monthSubscriptionsRes, monthPaymentsRes] = await Promise.all([
         supabase.from('projets').select('id'),
         supabase.from('tranches').select('id, projet_id'),
         supabase
           .from('souscriptions')
           .select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
+        supabase
+          .from('souscriptions')
+          .select('montant_investi')
+          .gte('date_souscription', firstOfMonth.toISOString().split('T')[0]),
         supabase
           .from('paiements')
           .select('montant, statut')
@@ -209,6 +213,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         projectsRes.error && 'Erreur lors du chargement des projets',
         tranchesRes.error && 'Erreur lors du chargement des tranches',
         subscriptionsRes.error && 'Erreur lors du chargement des souscriptions',
+        monthSubscriptionsRes.error && 'Erreur lors du chargement des souscriptions du mois',
         monthPaymentsRes.error && 'Erreur lors du chargement des paiements',
       ].filter(Boolean);
 
@@ -217,6 +222,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           projects: projectsRes.error,
           tranches: tranchesRes.error,
           subscriptions: subscriptionsRes.error,
+          monthSubscriptions: monthSubscriptionsRes.error,
           payments: monthPaymentsRes.error,
         });
         setError(errors.join(', '));
@@ -227,12 +233,13 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       const projects = projectsRes.data || [];
       const tranches = tranchesRes.data || [];
       const subscriptions = subscriptionsRes.data || [];
+      const monthSubscriptions = monthSubscriptionsRes.data || [];
       const monthPayments = monthPaymentsRes.data || [];
       const chartSubscriptions = subscriptions;
 
       const trancheIds = tranches.map((t: { id: string }) => t.id);
 
-      const totalInvested = subscriptions.reduce(
+      const totalInvested = monthSubscriptions.reduce(
         (sum: number, s: { montant_investi?: number | string }) =>
           sum + parseFloat(s.montant_investi?.toString() || '0'),
         0
@@ -266,12 +273,11 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             .from('paiements')
             .select(
               `
-              id, id_paiement, montant, date_paiement, statut,
+              id, id_paiement, montant, date_paiement, statut, type, tranche_id,
               tranche:tranches(tranche_name, projet_id)
             `
             )
             .in('tranche_id', trancheIds)
-            .eq('statut', 'payé')
             .order('date_paiement', { ascending: false })
             .limit(5),
           supabase
