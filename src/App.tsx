@@ -16,7 +16,7 @@ const Projects = lazy(() => import('./components/projects/Projects'));
 const ProjectDetail = lazy(() => import('./components/projects/ProjectDetail'));
 const ProjectCommentsPage = lazy(() => import('./components/projects/ProjectCommentsPage').then(m => ({ default: m.ProjectCommentsPage })));
 const EcheancierPage = lazy(() => import('./components/coupons/EcheancierPage').then(m => ({ default: m.EcheancierPage })));
-const Coupons = lazy(() => import('./components/coupons/Coupons'));
+const Coupons = lazy(() => import('./components/coupons/CouponsPageNew'));
 const Investors = lazy(() => import('./components/investors/Investors'));
 const Subscriptions = lazy(() => import('./components/subscriptions/Subscriptions'));
 const Payments = lazy(() => import('./components/payments/Payments'));
