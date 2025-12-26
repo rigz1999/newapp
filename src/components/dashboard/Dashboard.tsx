@@ -266,7 +266,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             .from('paiements')
             .select(
               `
-              id, id_paiement, montant, date_paiement, statut,
+              id, id_paiement, montant, date_paiement, statut, type, tranche_id,
               tranche:tranches(tranche_name, projet_id)
             `
             )
