@@ -13,7 +13,6 @@ export interface Coupon {
 
   investisseur_id: string;
   investisseur_nom: string;
-  investisseur_id_display: string;
   investisseur_type: string;
   investisseur_email: string;
   investisseur_cgp: string | null;
@@ -23,10 +22,11 @@ export interface Coupon {
   projet_nom: string;
   tranche_id: string;
   tranche_nom: string;
+
+  montant_brut: number;
   montant_net: number;
   statut_calculated: string;
   jours_restants: number;
-  org_id: string;
 }
 
 export interface CouponsFilters {

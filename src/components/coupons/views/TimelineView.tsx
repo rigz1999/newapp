@@ -279,7 +279,7 @@ export function TimelineView({
                                         {formatCurrency(coupon.montant_net)}
                                       </p>
                                       <p className="text-xs text-slate-500">
-                                        Brut: {formatCurrency(coupon.montant_coupon)}
+                                        Brut: {formatCurrency(coupon.montant_brut)}
                                       </p>
                                     </div>
                                     <span
