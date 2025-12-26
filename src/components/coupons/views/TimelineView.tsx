@@ -201,6 +201,31 @@ export function TimelineView({
                               {tranche.coupons.length} investisseur{tranche.coupons.length > 1 ? 's' : ''}
                             </p>
                           </div>
+                          {(() => {
+                            const totalCount = tranche.coupons.length;
+                            const paidCount = tranche.coupons.filter(c => c.statut_calculated === 'paye').length;
+
+                            if (paidCount === totalCount) {
+                              return (
+                                <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-md border border-green-200">
+                                  {paidCount}/{totalCount} payés
+                                </span>
+                              );
+                            } else if (paidCount > 0) {
+                              return (
+                                <span className="px-2.5 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-md border border-orange-200">
+                                  {paidCount}/{totalCount} payés
+                                </span>
+                              );
+                            } else {
+                              return (
+                                <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-md border border-blue-200">
+                                  0/{totalCount} payés
+                                </span>
+                              );
+                            }
+                          })()}
+                        </div>
                           {tranche.hasUnpaid && (
                             <button
                               onClick={(e) => {

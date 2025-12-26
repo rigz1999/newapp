@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload, Eye, FileText, XCircle, Mail, Loader2 } from 'lucide-react';
+import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload, Eye, FileText, XCircle, Mail, Loader2, CreditCard } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import ExcelJS from 'exceljs';
 import { PaymentWizard } from '../payments/PaymentWizard';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { AlertModal } from '../common/Modals';
+import { QuickPaymentModal } from './QuickPaymentModal';
 
 interface EcheancierContentProps {
   projectId: string;
@@ -73,6 +74,8 @@ export function EcheancierContent({
   const [paymentProofs, setPaymentProofs] = useState<any[]>([]);
   const [markingUnpaid, setMarkingUnpaid] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+  const [showQuickPayment, setShowQuickPayment] = useState(false);
+  const [selectedEcheanceForQuickPay, setSelectedEcheanceForQuickPay] = useState<Echeance | null>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertModalConfig, setAlertModalConfig] = useState<{
     title: string;
@@ -889,24 +892,37 @@ export function EcheancierContent({
                                           </td>
                                           <td className="px-4 py-2 text-center">
                                             {getEcheanceStatus(echeance) !== 'paye' ? (
-                                              <button
-                                                onClick={() => handleSendReminder(echeance)}
-                                                disabled={sendingEmail === echeance.id}
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-finixar-brand-blue hover:bg-blue-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                title="Envoyer un rappel de paiement"
-                                              >
-                                                {sendingEmail === echeance.id ? (
-                                                  <>
-                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                    Envoi...
-                                                  </>
-                                                ) : (
-                                                  <>
-                                                    <Mail className="w-3.5 h-3.5" />
-                                                    Rappel
-                                                  </>
-                                                )}
-                                              </button>
+                                              <div className="flex items-center justify-center gap-2">
+                                                <button
+                                                  onClick={() => {
+                                                    setSelectedEcheanceForQuickPay(echeance);
+                                                    setShowQuickPayment(true);
+                                                  }}
+                                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-finixar-teal hover:bg-finixar-teal-hover rounded-lg transition-colors"
+                                                  title="Enregistrer un paiement"
+                                                >
+                                                  <CreditCard className="w-3.5 h-3.5" />
+                                                  Payer
+                                                </button>
+                                                <button
+                                                  onClick={() => handleSendReminder(echeance)}
+                                                  disabled={sendingEmail === echeance.id}
+                                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-finixar-brand-blue hover:bg-blue-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                  title="Envoyer un rappel de paiement"
+                                                >
+                                                  {sendingEmail === echeance.id ? (
+                                                    <>
+                                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                      Envoi...
+                                                    </>
+                                                  ) : (
+                                                    <>
+                                                      <Mail className="w-3.5 h-3.5" />
+                                                      Rappel
+                                                    </>
+                                                  )}
+                                                </button>
+                                              </div>
                                             ) : (
                                               <span className="text-xs text-slate-400">-</span>
                                             )}
@@ -958,6 +974,20 @@ export function EcheancierContent({
             fetchEcheances();
           }}
           preselectedProjectId={projectId}
+        />
+      )}
+
+      {/* Quick Payment Modal */}
+      {showQuickPayment && selectedEcheanceForQuickPay && (
+        <QuickPaymentModal
+          echeance={selectedEcheanceForQuickPay}
+          onClose={() => {
+            setShowQuickPayment(false);
+            setSelectedEcheanceForQuickPay(null);
+          }}
+          onSuccess={() => {
+            fetchEcheances();
+          }}
         />
       )}
 
