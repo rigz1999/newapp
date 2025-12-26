@@ -3,32 +3,29 @@ import { useCoupons, Coupon } from '../../hooks/coupons/useCoupons';
 import { useCouponFilters } from '../../hooks/coupons/useCouponFilters';
 import { TimelineView } from './views/TimelineView';
 import { TableView } from './views/TableView';
-import { CalendarView } from './views/CalendarView';
-import { QuickPayDrawer } from './components/QuickPayDrawer';
-import { BulkPaymentModal } from './components/BulkPaymentModal';
+import { PaymentWizard } from '../payments/PaymentWizard';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination } from '../common/Pagination';
+import { MultiSelectFilter } from '../filters/MultiSelectFilter';
+import { DateRangePicker } from '../filters/DateRangePicker';
 import {
   Receipt,
   Search,
   Download,
   Grid3x3,
   List,
-  Calendar as CalendarIcon,
   Filter,
   ChevronDown,
   ChevronUp,
   Clock,
   CheckCircle,
   AlertTriangle,
-  Upload,
-  CheckSquare,
   X,
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { toast } from '../../utils/toast';
 
-type ViewMode = 'timeline' | 'table' | 'calendar';
+type ViewMode = 'timeline' | 'table';
 
 interface CouponsPageNewProps {
   organization?: { id: string; name: string; role: string };
@@ -52,10 +49,18 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   const [selectedCoupons, setSelectedCoupons] = useState<Set<string>>(new Set());
 
   // Modal state
-  const [showQuickPay, setShowQuickPay] = useState(false);
-  const [showBulkPay, setShowBulkPay] = useState(false);
+  const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // Payment wizard preselection
+  const [wizardPreselect, setWizardPreselect] = useState<{
+    projectId?: string;
+    trancheId?: string;
+    echeanceDate?: string;
+    projectName?: string;
+    trancheName?: string;
+  }>({});
 
   // Excel export state
   const [exportingExcel, setExportingExcel] = useState(false);
@@ -77,9 +82,21 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
     });
   };
 
-  const handleQuickPay = (coupon: Coupon) => {
-    setSelectedCoupon(coupon);
-    setShowQuickPay(true);
+  const handlePayTranche = (
+    projectId: string,
+    trancheId: string,
+    echeanceDate: string,
+    projectName: string,
+    trancheName: string
+  ) => {
+    setWizardPreselect({
+      projectId,
+      trancheId,
+      echeanceDate,
+      projectName,
+      trancheName,
+    });
+    setShowPaymentWizard(true);
   };
 
   const handleViewDetails = (coupon: Coupon) => {
@@ -103,15 +120,6 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
     } else {
       setSelectedCoupons(new Set(coupons.map(c => c.id)));
     }
-  };
-
-  const handleBulkPay = () => {
-    const selected = coupons.filter(c => selectedCoupons.has(c.id) && c.statut_calculated !== 'paye');
-    if (selected.length === 0) {
-      toast.warning('Veuillez sélectionner au moins un coupon non payé');
-      return;
-    }
-    setShowBulkPay(true);
   };
 
   const handleExportExcel = async () => {
@@ -165,9 +173,32 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
     }
   };
 
-  const selectedCouponsList = useMemo(
-    () => coupons.filter(c => selectedCoupons.has(c.id)),
-    [coupons, selectedCoupons]
+  // Extract unique values for filters
+  const uniqueProjets = useMemo(
+    () => Array.from(new Set(coupons.map(c => c.projet_nom))).sort().map(p => ({ value: p, label: p })),
+    [coupons]
+  );
+
+  const uniqueTranches = useMemo(
+    () => Array.from(new Set(coupons.map(c => c.tranche_nom))).sort().map(t => ({ value: t, label: t })),
+    [coupons]
+  );
+
+  const uniqueStatuts = useMemo(
+    () => [
+      { value: 'en_attente', label: 'En attente' },
+      { value: 'paye', label: 'Payé' },
+      { value: 'en_retard', label: 'En retard' },
+    ],
+    []
+  );
+
+  const uniqueCGPs = useMemo(
+    () =>
+      Array.from(new Set(coupons.map(c => c.investisseur_cgp).filter(Boolean)))
+        .sort()
+        .map(cgp => ({ value: cgp!, label: cgp! })),
+    [coupons]
   );
 
   if (loading) {
@@ -199,15 +230,6 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           </div>
         </div>
         <div className="flex gap-3">
-          {selectedCoupons.size > 0 && (
-            <button
-              onClick={handleBulkPay}
-              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md font-medium"
-            >
-              <CheckSquare className="w-4 h-4" />
-              Payer {selectedCoupons.size} sélectionné{selectedCoupons.size > 1 ? 's' : ''}
-            </button>
-          )}
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel}
@@ -281,7 +303,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Rechercher..."
+              placeholder="Rechercher par investisseur, projet, tranche..."
               value={filterState.filters.search || ''}
               onChange={e => filterState.setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -299,7 +321,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               }`}
             >
               <Grid3x3 className="w-5 h-5" />
-              Timeline
+              Par date
             </button>
             <button
               onClick={() => setViewMode('table')}
@@ -311,17 +333,6 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
             >
               <List className="w-5 h-5" />
               Tableau
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
-                viewMode === 'calendar'
-                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                  : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
-              }`}
-            >
-              <CalendarIcon className="w-5 h-5" />
-              Calendrier
             </button>
           </div>
 
@@ -348,47 +359,86 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         {/* Advanced Filters */}
         {showFilters && (
           <div className="border-t border-slate-200 mt-4 pt-4">
-            <div className="text-sm text-slate-600 mb-2">
-              Filtres disponibles - Utilisez la recherche ci-dessus pour filtrer par projet, tranche, investisseur, etc.
+            {/* Date Range Filter */}
+            <DateRangePicker
+              label="Période d'échéance"
+              startDate={filterState.filters.dateStart}
+              endDate={filterState.filters.dateEnd}
+              onStartDateChange={date => filterState.setDateRange(date, filterState.filters.dateEnd)}
+              onEndDateChange={date => filterState.setDateRange(filterState.filters.dateStart, date)}
+            />
+
+            {/* Multi-select Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+              <MultiSelectFilter
+                label="Statut"
+                options={uniqueStatuts}
+                selectedValues={filterState.filters.statut || []}
+                onAdd={value => filterState.setStatut([...(filterState.filters.statut || []), value])}
+                onRemove={value =>
+                  filterState.setStatut((filterState.filters.statut || []).filter(v => v !== value))
+                }
+                onClear={() => filterState.setStatut([])}
+                placeholder="Sélectionner des statuts..."
+              />
+
+              <MultiSelectFilter
+                label="Projets"
+                options={uniqueProjets}
+                selectedValues={filterState.filters.projets || []}
+                onAdd={value => filterState.setProjets([...(filterState.filters.projets || []), value])}
+                onRemove={value =>
+                  filterState.setProjets((filterState.filters.projets || []).filter(v => v !== value))
+                }
+                onClear={() => filterState.setProjets([])}
+                placeholder="Sélectionner des projets..."
+              />
+
+              <MultiSelectFilter
+                label="Tranches"
+                options={uniqueTranches}
+                selectedValues={filterState.filters.tranches || []}
+                onAdd={value => filterState.setTranches([...(filterState.filters.tranches || []), value])}
+                onRemove={value =>
+                  filterState.setTranches((filterState.filters.tranches || []).filter(v => v !== value))
+                }
+                onClear={() => filterState.setTranches([])}
+                placeholder="Sélectionner des tranches..."
+              />
+
+              <MultiSelectFilter
+                label="CGP"
+                options={uniqueCGPs}
+                selectedValues={filterState.filters.cgps || []}
+                onAdd={value => filterState.setCGPs([...(filterState.filters.cgps || []), value])}
+                onRemove={value =>
+                  filterState.setCGPs((filterState.filters.cgps || []).filter(v => v !== value))
+                }
+                onClear={() => filterState.setCGPs([])}
+                placeholder="Sélectionner des CGP..."
+              />
             </div>
+
+            {/* Clear All Filters */}
             {filterState.activeFilterCount > 0 && (
-              <button
-                onClick={filterState.clearFilters}
-                className="text-sm text-blue-600 hover:text-blue-700 underline"
-              >
-                Effacer tous les filtres
-              </button>
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={filterState.clearFilters}
+                  className="text-sm text-blue-600 hover:text-blue-700 underline"
+                >
+                  Effacer tous les filtres
+                </button>
+              </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Selection Bar */}
-      {selectedCoupons.size > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CheckSquare className="w-5 h-5 text-blue-700" />
-            <span className="font-medium text-blue-900">
-              {selectedCoupons.size} coupon{selectedCoupons.size > 1 ? 's' : ''} sélectionné{selectedCoupons.size > 1 ? 's' : ''}
-            </span>
-            <span className="text-blue-700">
-              • Total: {formatCurrency(selectedCouponsList.reduce((sum, c) => sum + c.montant_net, 0))}
-            </span>
-          </div>
-          <button
-            onClick={() => setSelectedCoupons(new Set())}
-            className="text-blue-700 hover:text-blue-900 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-
       {/* View Content */}
       {viewMode === 'timeline' && (
         <TimelineView
           coupons={coupons}
-          onQuickPay={handleQuickPay}
+          onPayTranche={handlePayTranche}
           onViewDetails={handleViewDetails}
           selectedCoupons={selectedCoupons}
           onToggleSelect={handleToggleSelect}
@@ -398,7 +448,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       {viewMode === 'table' && (
         <TableView
           coupons={coupons}
-          onQuickPay={handleQuickPay}
+          onQuickPay={(coupon) => handlePayTranche(coupon.projet_id, coupon.tranche_id, coupon.date_echeance, coupon.projet_nom, coupon.tranche_nom)}
           onViewDetails={handleViewDetails}
           selectedCoupons={selectedCoupons}
           onToggleSelect={handleToggleSelect}
@@ -406,18 +456,8 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         />
       )}
 
-      {viewMode === 'calendar' && (
-        <CalendarView
-          coupons={coupons}
-          onQuickPay={handleQuickPay}
-          onViewDetails={handleViewDetails}
-          selectedCoupons={selectedCoupons}
-          onToggleSelect={handleToggleSelect}
-        />
-      )}
-
       {/* Pagination */}
-      {viewMode !== 'calendar' && totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="mt-6">
           <Pagination
             currentPage={page}
@@ -430,29 +470,26 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         </div>
       )}
 
-      {/* Modals */}
-      <QuickPayDrawer
-        isOpen={showQuickPay}
-        onClose={() => {
-          setShowQuickPay(false);
-          setSelectedCoupon(null);
-        }}
-        coupon={selectedCoupon}
-        onSuccess={() => {
-          refresh();
-          setSelectedCoupons(new Set());
-        }}
-      />
-
-      <BulkPaymentModal
-        isOpen={showBulkPay}
-        onClose={() => setShowBulkPay(false)}
-        coupons={selectedCouponsList}
-        onSuccess={() => {
-          refresh();
-          setSelectedCoupons(new Set());
-        }}
-      />
+      {/* Payment Wizard */}
+      {showPaymentWizard && (
+        <PaymentWizard
+          onClose={() => {
+            setShowPaymentWizard(false);
+            setWizardPreselect({});
+          }}
+          onSuccess={() => {
+            refresh();
+            toast.success('Paiement enregistré avec succès');
+            setWizardPreselect({});
+            setSelectedCoupons(new Set());
+          }}
+          preselectedProjectId={wizardPreselect.projectId}
+          preselectedTrancheId={wizardPreselect.trancheId}
+          preselectedEcheanceDate={wizardPreselect.echeanceDate}
+          showProjectName={wizardPreselect.projectName}
+          showTrancheName={wizardPreselect.trancheName}
+        />
+      )}
 
       {/* Details Modal */}
       {showDetailsModal && selectedCoupon && (
@@ -466,10 +503,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           >
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-xl font-bold text-slate-900">Détail du Coupon</h3>
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
+              <button onClick={() => setShowDetailsModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -493,11 +527,15 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                 </div>
                 <div>
                   <p className="text-xs text-slate-600">Montant Brut</p>
-                  <p className="text-sm font-medium text-slate-900">{formatCurrency(selectedCoupon.montant_coupon)}</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {formatCurrency(selectedCoupon.montant_coupon)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600">Montant Net</p>
-                  <p className="text-sm font-medium text-finixar-green">{formatCurrency(selectedCoupon.montant_net)}</p>
+                  <p className="text-sm font-medium text-finixar-green">
+                    {formatCurrency(selectedCoupon.montant_net)}
+                  </p>
                 </div>
               </div>
               {selectedCoupon.statut_calculated === 'paye' && selectedCoupon.date_paiement && (
@@ -509,18 +547,6 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                     Montant: {formatCurrency(selectedCoupon.montant_paye || selectedCoupon.montant_net)}
                   </p>
                 </div>
-              )}
-              {selectedCoupon.statut_calculated !== 'paye' && (
-                <button
-                  onClick={() => {
-                    setShowDetailsModal(false);
-                    handleQuickPay(selectedCoupon);
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors font-medium"
-                >
-                  <Upload className="w-5 h-5" />
-                  Enregistrer paiement
-                </button>
               )}
             </div>
           </div>
