@@ -136,7 +136,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         'Tranche': c.tranche_nom,
         'Investisseur': c.investisseur_nom,
         'CGP': c.investisseur_cgp || '',
-        'Montant Brut': c.montant_coupon,
+        'Montant Brut': c.montant_brut,
         'Montant Net': c.montant_net,
         'Statut': c.statut_calculated,
         'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
@@ -528,7 +528,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                 <div>
                   <p className="text-xs text-slate-600">Montant Brut</p>
                   <p className="text-sm font-medium text-slate-900">
-                    {formatCurrency(selectedCoupon.montant_coupon)}
+                    {formatCurrency(selectedCoupon.montant_brut)}
                   </p>
                 </div>
                 <div>
