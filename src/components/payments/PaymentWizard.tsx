@@ -1309,7 +1309,6 @@ export function PaymentWizard({
                             <p className="font-medium text-slate-900">
                               {sub.investisseur.nom_raison_sociale}
                             </p>
-                            <p className="text-xs text-slate-500">{sub.id}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-slate-900">
