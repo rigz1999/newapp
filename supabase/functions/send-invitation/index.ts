@@ -36,36 +36,24 @@ serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    // Create Supabase client with user's JWT for authentication
-    const supabase = createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY,
-      {
-        global: {
-          headers: { Authorization: authHeader }
-        },
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
+    // Verify JWT by calling Supabase auth API directly
+    const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        'Authorization': authHeader,
+        'apikey': SUPABASE_ANON_KEY,
+      },
+    })
 
-    // Verify the user's JWT token
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      console.error('Auth error details:', {
-        error: authError,
-        hasAuthHeader: !!authHeader,
-        authHeaderPreview: authHeader?.substring(0, 20) + '...'
-      })
-      throw new Error('Unauthorized: ' + (authError?.message || 'Invalid token'))
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text()
+      console.error('User verification failed:', errorText)
+      throw new Error('Unauthorized: Invalid or expired token')
     }
 
-    console.log('User authenticated successfully:', user.email)
+    const user = await userResponse.json()
+    console.log('User authenticated:', user.email)
 
-    // Create admin client for privileged database operations
+    // Create admin client for database operations
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
@@ -426,10 +414,16 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in send-invitation:', error)
+    console.error('Error stack:', error.stack)
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+    })
     return new Response(
       JSON.stringify({
-        error: error.message,
+        error: error.message || 'Unknown error',
+        details: error.toString(),
       }),
       {
         status: 400,
