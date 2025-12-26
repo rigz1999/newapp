@@ -192,7 +192,6 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
           montant: montant,
           date_paiement: datePaiement,
           note: note || null,
-          manual_entry: true, // Flag to indicate this was manually entered
         })
         .select()
         .single();
@@ -301,44 +300,61 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
                 </select>
               </div>
 
-              {/* Tranche Selection */}
-              {selectedProjectId && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Tranche
-                  </label>
-                  <select
-                    value={selectedTrancheId}
-                    onChange={(e) => setSelectedTrancheId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={loading}
-                  >
-                    <option value="">Sélectionnez une tranche</option>
-                    {tranches.map(t => (
-                      <option key={t.id} value={t.id}>{t.tranche_name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* Tranche Selection - Always visible but disabled until project selected */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tranche
+                </label>
+                <select
+                  value={selectedTrancheId}
+                  onChange={(e) => setSelectedTrancheId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  disabled={!selectedProjectId || loading}
+                >
+                  <option value="">Sélectionnez une tranche</option>
+                  {tranches.map(t => (
+                    <option key={t.id} value={t.id}>{t.tranche_name}</option>
+                  ))}
+                </select>
+              </div>
 
-              {/* Echeance Selection */}
+              {/* Echeance Selection - Show list view similar to old wizard */}
               {selectedTrancheId && echeances.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Échéance
+                    Sélectionnez une échéance
                   </label>
-                  <select
-                    onChange={(e) => handleEcheanceSelect(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={loading}
-                  >
-                    <option value="">Sélectionnez une échéance</option>
-                    {echeances.map(e => (
-                      <option key={e.id} value={e.id}>
-                        {e.souscription?.investisseur?.nom_raison_sociale} - {new Date(e.date_echeance).toLocaleDateString('fr-FR')} - {formatCurrency(e.souscription?.coupon_net || 0)}
-                      </option>
+                  <div className="border border-slate-300 rounded-lg max-h-96 overflow-y-auto">
+                    {echeances.map((e, index) => (
+                      <button
+                        key={e.id}
+                        type="button"
+                        onClick={() => handleEcheanceSelect(e.id)}
+                        className={`w-full p-4 text-left hover:bg-blue-50 transition-colors ${
+                          index !== echeances.length - 1 ? 'border-b border-slate-200' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-slate-900">
+                              {e.souscription?.investisseur?.nom_raison_sociale}
+                            </p>
+                            <p className="text-xs text-slate-600 mt-1">
+                              Échéance: {new Date(e.date_echeance).toLocaleDateString('fr-FR')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-finixar-green">
+                              {formatCurrency(e.souscription?.coupon_net || 0)}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              Brut: {formatCurrency(e.souscription?.coupon_brut || 0)}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
               )}
 
@@ -400,7 +416,7 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
                 step="0.01"
                 value={montantPaye}
                 onChange={(e) => setMontantPaye(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
                 EUR
