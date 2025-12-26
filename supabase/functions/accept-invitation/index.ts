@@ -160,7 +160,28 @@ serve(async (req) => {
       );
     }
 
-    // 4. Create membership in organization
+    // 4. Create profile entry (required before creating membership due to foreign key constraint)
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        id: authData.user.id,
+        email: invitation.email,
+        full_name: `${invitation.first_name} ${invitation.last_name}`,
+        is_superadmin: false,
+      });
+
+    if (profileError) {
+      console.error('Error creating profile:', profileError);
+      // Rollback: delete the created user
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+
+      return new Response(
+        JSON.stringify({ error: 'Erreur lors de la création du profil' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 5. Create membership in organization
     const { error: membershipError } = await supabaseAdmin
       .from('memberships')
       .insert({
@@ -171,7 +192,8 @@ serve(async (req) => {
 
     if (membershipError) {
       console.error('Error creating membership:', membershipError);
-      // Rollback: delete the created user
+      // Rollback: delete profile and user
+      await supabaseAdmin.from('profiles').delete().eq('id', authData.user.id);
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
 
       return new Response(
@@ -180,7 +202,7 @@ serve(async (req) => {
       );
     }
 
-    // 5. Mark invitation as accepted
+    // 6. Mark invitation as accepted
     await supabaseAdmin
       .from('invitations')
       .update({
@@ -189,7 +211,7 @@ serve(async (req) => {
       })
       .eq('id', invitation.id);
 
-    // 6. Create a session for the user
+    // 7. Create a session for the user
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
     const { data: sessionData, error: sessionError } = await supabaseClient.auth.signInWithPassword({
       email: invitation.email,
@@ -210,7 +232,7 @@ serve(async (req) => {
       );
     }
 
-    // 7. Return success with session
+    // 8. Return success with session
     return new Response(
       JSON.stringify({
         success: true,
