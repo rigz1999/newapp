@@ -21,7 +21,7 @@ import {
   Receipt
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
-import { PaymentWizard } from '../payments/PaymentWizard';
+import { QuickPaymentModal } from './QuickPaymentModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
@@ -1043,23 +1043,17 @@ export function Coupons() {
         </div>
       )}
 
-      {/* Payment Wizard */}
+      {/* Quick Payment Modal */}
       {showPaymentWizard && (
-        <PaymentWizard
+        <QuickPaymentModal
           onClose={() => {
             setShowPaymentWizard(false);
             setWizardPreselect({});
           }}
           onSuccess={() => {
             fetchCoupons();
-            toast.success('Paiement enregistré avec succès');
             setWizardPreselect({});
           }}
-          preselectedProjectId={wizardPreselect.projectId}
-          preselectedTrancheId={wizardPreselect.trancheId}
-          preselectedEcheanceDate={wizardPreselect.echeanceDate}
-          showProjectName={wizardPreselect.projectName}
-          showTrancheName={wizardPreselect.trancheName}
         />
       )}
 

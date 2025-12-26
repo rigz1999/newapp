@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Upload, Calendar, DollarSign, FileText, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
 
 interface QuickPaymentModalProps {
-  echeance: {
+  echeance?: {
     id: string;
     date_echeance: string;
     souscription: {
@@ -20,8 +20,17 @@ interface QuickPaymentModalProps {
 }
 
 export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPaymentModalProps) {
+  // Selection state (when echeance not provided)
+  const [projects, setProjects] = useState<any[]>([]);
+  const [tranches, setTranches] = useState<any[]>([]);
+  const [echeances, setEcheances] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedTrancheId, setSelectedTrancheId] = useState('');
+  const [selectedEcheance, setSelectedEcheance] = useState<any>(echeance || null);
+  const [loading, setLoading] = useState(false);
+
   const [datePaiement, setDatePaiement] = useState(new Date().toISOString().split('T')[0]);
-  const [montantPaye, setMontantPaye] = useState(echeance.souscription.coupon_net.toString());
+  const [montantPaye, setMontantPaye] = useState(echeance?.souscription.coupon_net.toString() || '');
   const [note, setNote] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -34,6 +43,116 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
+  };
+
+  // Load projects when modal opens (if no echeance provided)
+  useEffect(() => {
+    if (!echeance) {
+      loadProjects();
+    }
+  }, [echeance]);
+
+  // Load tranches when project selected
+  useEffect(() => {
+    if (selectedProjectId) {
+      loadTranches(selectedProjectId);
+    } else {
+      setTranches([]);
+      setSelectedTrancheId('');
+    }
+  }, [selectedProjectId]);
+
+  // Load echeances when tranche selected
+  useEffect(() => {
+    if (selectedTrancheId) {
+      loadEcheances(selectedTrancheId);
+    } else {
+      setEcheances([]);
+    }
+  }, [selectedTrancheId]);
+
+  const loadProjects = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('projets')
+      .select('id, projet')
+      .order('projet');
+
+    if (!error && data) {
+      setProjects(data);
+    }
+    setLoading(false);
+  };
+
+  const loadTranches = async (projectId: string) => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('tranches')
+      .select('id, tranche_name')
+      .eq('projet_id', projectId)
+      .order('tranche_name');
+
+    if (!error && data) {
+      setTranches(data);
+    }
+    setLoading(false);
+  };
+
+  const loadEcheances = async (trancheId: string) => {
+    setLoading(true);
+
+    // First get souscriptions for this tranche
+    const { data: souscriptions } = await supabase
+      .from('souscriptions')
+      .select('id')
+      .eq('tranche_id', trancheId);
+
+    if (souscriptions && souscriptions.length > 0) {
+      const souscriptionIds = souscriptions.map(s => s.id);
+
+      const { data, error } = await supabase
+        .from('coupons_echeances')
+        .select(`
+          id,
+          date_echeance,
+          montant_coupon,
+          statut,
+          souscription_id,
+          souscriptions!inner(
+            coupon_net,
+            coupon_brut,
+            investisseurs!inner(nom_raison_sociale)
+          )
+        `)
+        .in('souscription_id', souscriptionIds)
+        .neq('statut', 'paye')
+        .order('date_echeance');
+
+      if (!error && data) {
+        // Transform the data to match our interface
+        const transformedData = data.map(e => ({
+          ...e,
+          souscription: {
+            coupon_net: e.souscriptions.coupon_net,
+            coupon_brut: e.souscriptions.coupon_brut,
+            investisseur: {
+              nom_raison_sociale: e.souscriptions.investisseurs.nom_raison_sociale
+            }
+          }
+        }));
+        setEcheances(transformedData);
+      }
+    }
+
+    setLoading(false);
+  };
+
+  const handleEcheanceSelect = (echeanceId: string) => {
+    const found = echeances.find(e => e.id === echeanceId);
+    if (found) {
+      setSelectedEcheance(found);
+      setMontantPaye(found.souscription.coupon_net.toString());
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,18 +227,20 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
         }
       }
 
-      // Update echeance with payment
-      const { error: echeanceError } = await supabase
-        .from('coupons_echeances')
-        .update({
-          paiement_id: paiement.id,
-          statut: 'paye',
-          date_paiement: datePaiement,
-          montant_paye: montant,
-        } as never)
-        .eq('id', echeance.id);
+      // Update echeance with payment (if echeance selected)
+      if (selectedEcheance) {
+        const { error: echeanceError } = await supabase
+          .from('coupons_echeances')
+          .update({
+            paiement_id: paiement.id,
+            statut: 'paye',
+            date_paiement: datePaiement,
+            montant_paye: montant,
+          } as never)
+          .eq('id', selectedEcheance.id);
 
-      if (echeanceError) throw echeanceError;
+        if (echeanceError) throw echeanceError;
+      }
 
       toast.success(
         proofFile
@@ -143,9 +264,11 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
         <div className="p-6 border-b border-slate-200 flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold text-slate-900">Enregistrer un paiement</h3>
-            <p className="text-sm text-slate-600 mt-1">
-              {echeance.souscription.investisseur.nom_raison_sociale}
-            </p>
+            {selectedEcheance && (
+              <p className="text-sm text-slate-600 mt-1">
+                {selectedEcheance.souscription?.investisseur?.nom_raison_sociale}
+              </p>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -157,20 +280,93 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
 
         {/* Body */}
         <div className="p-6 space-y-6">
-          {/* Amount Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
+          {/* Selection UI (when no echeance selected) */}
+          {!selectedEcheance && (
+            <>
+              {/* Project Selection */}
               <div>
-                <p className="text-sm text-blue-900 font-medium">Montant attendu</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(echeance.souscription.coupon_net)}
-                </p>
-                <p className="text-xs text-blue-700 mt-1">
-                  Brut: {formatCurrency(echeance.souscription.coupon_brut)}
-                </p>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Projet
+                </label>
+                <select
+                  value={selectedProjectId}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={loading}
+                >
+                  <option value="">Sélectionnez un projet</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.projet}</option>
+                  ))}
+                </select>
               </div>
-            </div>
-          </div>
+
+              {/* Tranche Selection */}
+              {selectedProjectId && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Tranche
+                  </label>
+                  <select
+                    value={selectedTrancheId}
+                    onChange={(e) => setSelectedTrancheId(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={loading}
+                  >
+                    <option value="">Sélectionnez une tranche</option>
+                    {tranches.map(t => (
+                      <option key={t.id} value={t.id}>{t.tranche_name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Echeance Selection */}
+              {selectedTrancheId && echeances.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Échéance
+                  </label>
+                  <select
+                    onChange={(e) => handleEcheanceSelect(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={loading}
+                  >
+                    <option value="">Sélectionnez une échéance</option>
+                    {echeances.map(e => (
+                      <option key={e.id} value={e.id}>
+                        {e.souscription?.investisseur?.nom_raison_sociale} - {new Date(e.date_echeance).toLocaleDateString('fr-FR')} - {formatCurrency(e.souscription?.coupon_net || 0)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {selectedTrancheId && echeances.length === 0 && !loading && (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg text-center">
+                  <p className="text-sm text-slate-600">Aucune échéance impayée trouvée pour cette tranche</p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Payment Form (when echeance selected) */}
+          {selectedEcheance && (
+            <>
+              {/* Amount Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-900 font-medium">Montant attendu</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {formatCurrency(selectedEcheance.souscription?.coupon_net || 0)}
+                    </p>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Brut: {formatCurrency(selectedEcheance.souscription?.coupon_brut || 0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
           {/* Date Paiement */}
           <div>
@@ -291,11 +487,13 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
             )}
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -310,7 +508,7 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
           </button>
           <button
             onClick={handleSubmit}
-            disabled={processing}
+            disabled={processing || !selectedEcheance}
             className="px-4 py-2 text-sm font-medium text-white bg-finixar-teal hover:bg-finixar-teal-hover rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {processing ? (
