@@ -226,12 +226,23 @@ export function TableView({
                     <td className="px-4 py-4">
                       <div className="flex flex-col gap-1">
                         <div className="font-bold text-lg text-slate-900">{formatDate(group.date)}</div>
-                        <div className="text-xs text-slate-600 font-medium">
-                          {daysUntil < 0
-                            ? `⚠️ En retard de ${Math.abs(daysUntil)} jour${Math.abs(daysUntil) > 1 ? 's' : ''}`
-                            : daysUntil === 0
-                            ? "📅 Aujourd'hui"
-                            : `⏰ Dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''}`}
+                        <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+                          {daysUntil < 0 ? (
+                            <>
+                              <AlertCircle className="w-3.5 h-3.5 text-red-600" />
+                              <span>En retard de {Math.abs(daysUntil)} jour{Math.abs(daysUntil) > 1 ? 's' : ''}</span>
+                            </>
+                          ) : daysUntil === 0 ? (
+                            <>
+                              <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                              <span>Aujourd'hui</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Dans {daysUntil} jour{daysUntil > 1 ? 's' : ''}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </td>
