@@ -52,7 +52,23 @@ export function generateAlerts(
   const alerts: Alert[] = [];
   const now = new Date();
 
-  // 1. PAIEMENTS EN RETARD
+  // 1. ÉCHEANCES EN RETARD (Overdue coupons)
+  const overdueCoupons = upcomingCoupons.filter(c => {
+    const couponDate = new Date(c.prochaine_date_coupon);
+    return couponDate < now;
+  });
+
+  if (overdueCoupons.length > 0) {
+    const totalOverdue = overdueCoupons.reduce((sum, c) => sum + c.coupon_brut, 0);
+    alerts.push({
+      id: 'overdue-coupons',
+      type: 'late_payment',
+      message: `${overdueCoupons.length} échéance${overdueCoupons.length > 1 ? 's' : ''} en retard (${formatCurrency(totalOverdue)})`,
+      count: overdueCoupons.length,
+    });
+  }
+
+  // 2. PAIEMENTS EN RETARD
   const latePayments = recentPayments.filter(p => {
     if (p.statut === 'payé') return false;
     const paymentDate = new Date(p.date_paiement);
@@ -69,7 +85,7 @@ export function generateAlerts(
     });
   }
 
-  // 2. COUPONS À PAYER CETTE SEMAINE
+  // 3. COUPONS À PAYER CETTE SEMAINE
   const weekThreshold = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const upcomingThisWeek = upcomingCoupons.filter(c => {
     const couponDate = new Date(c.prochaine_date_coupon);
@@ -86,7 +102,7 @@ export function generateAlerts(
     });
   }
 
-  // 3. ÉCHÉANCES URGENTES (dans les 3 jours)
+  // 4. ÉCHÉANCES URGENTES (dans les 3 jours)
   const urgentThreshold = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
   const urgentCoupons = upcomingCoupons.filter(c => {
     const couponDate = new Date(c.prochaine_date_coupon);
@@ -117,7 +133,7 @@ export function generateAlerts(
     });
   }
 
-  // 4. RIB MANQUANTS
+  // 5. RIB MANQUANTS
   if (ribManquantsCount > 0) {
     alerts.push({
       id: 'missing-ribs',
