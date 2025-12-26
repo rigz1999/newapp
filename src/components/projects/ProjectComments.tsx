@@ -32,6 +32,8 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
   const [editText, setEditText] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchComments();
@@ -130,16 +132,18 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
     }
   };
 
-  const handleDelete = async (commentId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) return;
+  const handleDelete = async () => {
+    if (!commentToDelete) return;
 
     try {
       const { error } = await supabase
         .from('project_comments')
         .delete()
-        .eq('id', commentId);
+        .eq('id', commentToDelete);
 
       if (error) throw error;
+      setDeleteConfirmOpen(false);
+      setCommentToDelete(null);
       await fetchComments();
     } catch (error) {
       console.error('Error deleting comment:', error);
@@ -370,7 +374,10 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(comment.id)}
+                          onClick={() => {
+                            setCommentToDelete(comment.id);
+                            setDeleteConfirmOpen(true);
+                          }}
                           className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-slate-100 rounded"
                           title="Supprimer"
                         >
@@ -386,6 +393,33 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Supprimer le commentaire</h3>
+            <p className="text-slate-600 mb-6">Êtes-vous sûr de vouloir supprimer ce commentaire ? Cette action est irréversible.</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  setCommentToDelete(null);
+                }}
+                className="px-4 py-2 text-slate-700 bg-slate-200 rounded-lg hover:bg-slate-300 font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 font-medium"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
