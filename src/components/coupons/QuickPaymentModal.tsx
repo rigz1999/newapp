@@ -278,12 +278,18 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
             console.error('Error uploading proof:', uploadError);
             toast.warning('Paiement enregistré mais la preuve n\'a pas pu être téléchargée');
           } else {
+            // Get the public URL
+            const { data: urlData } = supabase.storage
+              .from('payment-proofs')
+              .getPublicUrl(fileName);
+
             const { error: proofError } = await supabase
               .from('payment_proofs')
               .insert({
                 paiement_id: paiement.id,
-                file_path: fileName,
+                file_url: urlData.publicUrl,
                 file_name: proofFile.name,
+                file_size: proofFile.size,
                 validated_at: new Date().toISOString(),
               });
 
@@ -351,13 +357,19 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
             console.error('Error uploading proof:', uploadError);
             toast.warning('Paiement enregistré mais la preuve n\'a pas pu être téléchargée');
           } else {
+            // Get the public URL
+            const { data: urlData } = supabase.storage
+              .from('payment-proofs')
+              .getPublicUrl(fileName);
+
             // Link proof to payment
             const { error: proofError } = await supabase
               .from('payment_proofs')
               .insert({
                 paiement_id: paiement.id,
-                file_path: fileName,
+                file_url: urlData.publicUrl,
                 file_name: proofFile.name,
+                file_size: proofFile.size,
                 validated_at: new Date().toISOString(),
               });
 
