@@ -33,7 +33,7 @@ interface CouponsPageNewProps {
 
 export function CouponsPageNew(_props: CouponsPageNewProps) {
   // View state
-  const [viewMode, setViewMode] = useState<ViewMode>('timeline');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showFilters, setShowFilters] = useState(false);
 
   // Filter state
