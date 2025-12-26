@@ -19,6 +19,16 @@ interface QuickPaymentModalProps {
   onSuccess: () => void;
 }
 
+interface SingleEcheanceData {
+  id: string;
+  souscription_id: string;
+  investisseur_id: string;
+  tranche_id: string;
+  projet_id: string;
+  org_id: string;
+  coupon_net: number;
+}
+
 export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPaymentModalProps) {
   // Selection state (when echeance not provided)
   const [projects, setProjects] = useState<any[]>([]);
@@ -26,7 +36,8 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
   const [echeances, setEcheances] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedTrancheId, setSelectedTrancheId] = useState('');
-  const [selectedEcheance, setSelectedEcheance] = useState<any>(echeance || null);
+  const [selectedEcheance, setSelectedEcheance] = useState<any>(null);
+  const [singleEcheanceData, setSingleEcheanceData] = useState<SingleEcheanceData | null>(null);
   const [loading, setLoading] = useState(false);
 
   const [datePaiement, setDatePaiement] = useState(new Date().toISOString().split('T')[0]);
@@ -45,12 +56,48 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
     }).format(amount);
   };
 
-  // Load projects when modal opens (if no echeance provided)
+  // Load single echeance data when provided
   useEffect(() => {
-    if (!echeance) {
+    if (echeance) {
+      loadSingleEcheanceData();
+    } else {
       loadProjects();
     }
   }, [echeance]);
+
+  const loadSingleEcheanceData = async () => {
+    if (!echeance) return;
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('coupons_echeances')
+      .select(`
+        id,
+        souscription_id,
+        souscriptions!inner(
+          id,
+          investisseur_id,
+          tranche_id,
+          coupon_net,
+          tranches!inner(projet_id, projets!inner(org_id))
+        )
+      `)
+      .eq('id', echeance.id)
+      .single();
+
+    if (!error && data) {
+      setSingleEcheanceData({
+        id: data.id,
+        souscription_id: data.souscription_id,
+        investisseur_id: data.souscriptions.investisseur_id,
+        tranche_id: data.souscriptions.tranche_id,
+        projet_id: data.souscriptions.tranches.projet_id,
+        org_id: data.souscriptions.tranches.projets.org_id,
+        coupon_net: data.souscriptions.coupon_net,
+      });
+    }
+    setLoading(false);
+  };
 
   // Load tranches when project selected
   useEffect(() => {
@@ -119,9 +166,13 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
           statut,
           souscription_id,
           souscriptions!inner(
+            id,
             coupon_net,
             coupon_brut,
-            investisseurs!inner(nom_raison_sociale)
+            investisseur_id,
+            tranche_id,
+            investisseurs!inner(nom_raison_sociale),
+            tranches!inner(projet_id, projets!inner(org_id))
           )
         `)
         .in('souscription_id', souscriptionIds)
@@ -129,29 +180,40 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
         .order('date_echeance');
 
       if (!error && data) {
-        // Transform the data to match our interface
-        const transformedData = data.map(e => ({
-          ...e,
-          souscription: {
-            coupon_net: e.souscriptions.coupon_net,
-            coupon_brut: e.souscriptions.coupon_brut,
-            investisseur: {
-              nom_raison_sociale: e.souscriptions.investisseurs.nom_raison_sociale
-            }
+        // Group by date
+        const grouped = data.reduce((acc: any, e: any) => {
+          const date = e.date_echeance;
+          if (!acc[date]) {
+            acc[date] = {
+              date: date,
+              echeances: [],
+              totalNet: 0,
+              totalBrut: 0,
+              investorCount: 0,
+              org_id: e.souscriptions.tranches.projets.org_id,
+              tranche_id: e.souscriptions.tranche_id,
+              projet_id: e.souscriptions.tranches.projet_id,
+            };
           }
-        }));
-        setEcheances(transformedData);
+          acc[date].echeances.push(e);
+          acc[date].totalNet += e.souscriptions.coupon_net;
+          acc[date].totalBrut += e.souscriptions.coupon_brut;
+          acc[date].investorCount++;
+          return acc;
+        }, {});
+
+        setEcheances(Object.values(grouped));
       }
     }
 
     setLoading(false);
   };
 
-  const handleEcheanceSelect = (echeanceId: string) => {
-    const found = echeances.find(e => e.id === echeanceId);
+  const handleEcheanceSelect = (date: string) => {
+    const found = echeances.find((e: any) => e.date === date);
     if (found) {
       setSelectedEcheance(found);
-      setMontantPaye(found.souscription.coupon_net.toString());
+      setMontantPaye(found.totalNet.toString());
     }
   };
 
@@ -184,50 +246,54 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
     setError('');
 
     try {
-      // Create payment record
-      const { data: paiement, error: paiementError } = await supabase
-        .from('paiements')
-        .insert({
-          type: 'Coupon',
-          montant: montant,
-          date_paiement: datePaiement,
-          note: note || null,
-        })
-        .select()
-        .single();
+      // Handle single echeance (opened directly from coupons list)
+      if (singleEcheanceData) {
+        const { data: paiement, error: paiementError } = await supabase
+          .from('paiements')
+          .insert({
+            id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'Coupon',
+            projet_id: singleEcheanceData.projet_id,
+            tranche_id: singleEcheanceData.tranche_id,
+            investisseur_id: singleEcheanceData.investisseur_id,
+            souscription_id: singleEcheanceData.souscription_id,
+            org_id: singleEcheanceData.org_id,
+            montant: montant,
+            date_paiement: datePaiement,
+            note: note || null,
+          })
+          .select()
+          .single();
 
-      if (paiementError) throw paiementError;
+        if (paiementError) throw paiementError;
 
-      // Upload proof if provided
-      if (proofFile && paiement) {
-        const fileName = `${Date.now()}_${proofFile.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('payment-proofs')
-          .upload(fileName, proofFile);
+        // Upload proof if provided
+        if (proofFile && paiement) {
+          const fileName = `${Date.now()}_${proofFile.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('payment-proofs')
+            .upload(fileName, proofFile);
 
-        if (uploadError) {
-          console.error('Error uploading proof:', uploadError);
-          // Don't fail the payment if proof upload fails
-          toast.warning('Paiement enregistré mais la preuve n\'a pas pu être téléchargée');
-        } else {
-          // Link proof to payment
-          const { error: proofError } = await supabase
-            .from('payment_proofs')
-            .insert({
-              paiement_id: paiement.id,
-              file_path: fileName,
-              file_name: proofFile.name,
-              validated_at: new Date().toISOString(),
-            });
+          if (uploadError) {
+            console.error('Error uploading proof:', uploadError);
+            toast.warning('Paiement enregistré mais la preuve n\'a pas pu être téléchargée');
+          } else {
+            const { error: proofError } = await supabase
+              .from('payment_proofs')
+              .insert({
+                paiement_id: paiement.id,
+                file_path: fileName,
+                file_name: proofFile.name,
+                validated_at: new Date().toISOString(),
+              });
 
-          if (proofError) {
-            console.error('Error linking proof:', proofError);
+            if (proofError) {
+              console.error('Error linking proof:', proofError);
+            }
           }
         }
-      }
 
-      // Update echeance with payment (if echeance selected)
-      if (selectedEcheance) {
+        // Update echeance with payment
         const { error: echeanceError } = await supabase
           .from('coupons_echeances')
           .update({
@@ -236,15 +302,87 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
             date_paiement: datePaiement,
             montant_paye: montant,
           } as never)
-          .eq('id', selectedEcheance.id);
+          .eq('id', singleEcheanceData.id);
+
+        if (echeanceError) throw echeanceError;
+
+        toast.success('Paiement enregistré avec succès');
+        onSuccess();
+        onClose();
+        return;
+      }
+
+      // Handle date group (selected from dropdowns)
+      if (!selectedEcheance || !selectedEcheance.echeances) {
+        throw new Error('Aucune échéance sélectionnée');
+      }
+
+      // Create payment record for each investor in the selected date group
+      for (const echeance of selectedEcheance.echeances) {
+        const investorAmount = echeance.souscriptions.coupon_net;
+
+        const { data: paiement, error: paiementError } = await supabase
+          .from('paiements')
+          .insert({
+            id_paiement: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: 'Coupon',
+            projet_id: selectedEcheance.projet_id,
+            tranche_id: selectedEcheance.tranche_id,
+            investisseur_id: echeance.souscriptions.investisseur_id,
+            souscription_id: echeance.souscription_id,
+            org_id: selectedEcheance.org_id,
+            montant: investorAmount,
+            date_paiement: datePaiement,
+            note: note || null,
+          })
+          .select()
+          .single();
+
+        if (paiementError) throw paiementError;
+
+        // Upload proof if provided (only once for the first payment)
+        if (proofFile && paiement && selectedEcheance.echeances[0] === echeance) {
+          const fileName = `${Date.now()}_${proofFile.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('payment-proofs')
+            .upload(fileName, proofFile);
+
+          if (uploadError) {
+            console.error('Error uploading proof:', uploadError);
+            toast.warning('Paiement enregistré mais la preuve n\'a pas pu être téléchargée');
+          } else {
+            // Link proof to payment
+            const { error: proofError } = await supabase
+              .from('payment_proofs')
+              .insert({
+                paiement_id: paiement.id,
+                file_path: fileName,
+                file_name: proofFile.name,
+                validated_at: new Date().toISOString(),
+              });
+
+            if (proofError) {
+              console.error('Error linking proof:', proofError);
+            }
+          }
+        }
+
+        // Update echeance with payment
+        const { error: echeanceError } = await supabase
+          .from('coupons_echeances')
+          .update({
+            paiement_id: paiement.id,
+            statut: 'paye',
+            date_paiement: datePaiement,
+            montant_paye: investorAmount,
+          } as never)
+          .eq('id', echeance.id);
 
         if (echeanceError) throw echeanceError;
       }
 
       toast.success(
-        proofFile
-          ? 'Paiement enregistré avec preuve'
-          : 'Paiement enregistré (preuve manquante)'
+        `${selectedEcheance.investorCount} paiement${selectedEcheance.investorCount > 1 ? 's' : ''} enregistré${selectedEcheance.investorCount > 1 ? 's' : ''}`
       );
       onSuccess();
       onClose();
@@ -263,9 +401,12 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
         <div className="p-6 border-b border-slate-200 flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold text-slate-900">Enregistrer un paiement</h3>
-            {selectedEcheance && (
+            {(selectedEcheance || (echeance && singleEcheanceData)) && (
               <p className="text-sm text-slate-600 mt-1">
-                {selectedEcheance.souscription?.investisseur?.nom_raison_sociale}
+                {selectedEcheance
+                  ? `${new Date(selectedEcheance.date).toLocaleDateString('fr-FR')} - ${selectedEcheance.investorCount} investisseur${selectedEcheance.investorCount > 1 ? 's' : ''}`
+                  : echeance?.souscription.investisseur.nom_raison_sociale
+                }
               </p>
             )}
           </div>
@@ -318,18 +459,18 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
                 </select>
               </div>
 
-              {/* Echeance Selection - Show list view similar to old wizard */}
+              {/* Echeance Selection - Show list view grouped by date */}
               {selectedTrancheId && echeances.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Sélectionnez une échéance
                   </label>
                   <div className="border border-slate-300 rounded-lg max-h-96 overflow-y-auto">
-                    {echeances.map((e, index) => (
+                    {echeances.map((e: any, index: number) => (
                       <button
-                        key={e.id}
+                        key={e.date}
                         type="button"
-                        onClick={() => handleEcheanceSelect(e.id)}
+                        onClick={() => handleEcheanceSelect(e.date)}
                         className={`w-full p-4 text-left hover:bg-blue-50 transition-colors ${
                           index !== echeances.length - 1 ? 'border-b border-slate-200' : ''
                         }`}
@@ -337,18 +478,22 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <p className="text-sm font-semibold text-slate-900">
-                              {e.souscription?.investisseur?.nom_raison_sociale}
+                              {new Date(e.date).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                              })}
                             </p>
                             <p className="text-xs text-slate-600 mt-1">
-                              Échéance: {new Date(e.date_echeance).toLocaleDateString('fr-FR')}
+                              {e.investorCount} investisseur{e.investorCount > 1 ? 's' : ''}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-bold text-finixar-green">
-                              {formatCurrency(e.souscription?.coupon_net || 0)}
+                              {formatCurrency(e.totalNet)}
                             </p>
                             <p className="text-xs text-slate-500">
-                              Brut: {formatCurrency(e.souscription?.coupon_brut || 0)}
+                              Brut: {formatCurrency(e.totalBrut)}
                             </p>
                           </div>
                         </div>
@@ -366,21 +511,30 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
             </>
           )}
 
-          {/* Payment Form (when echeance selected) */}
-          {selectedEcheance && (
+          {/* Payment Form (when echeance selected OR single echeance from props) */}
+          {(selectedEcheance || (echeance && singleEcheanceData)) && (
             <>
               {/* Amount Info */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-blue-900 font-medium">Montant attendu</p>
+                  <div className="flex-1">
+                    <p className="text-sm text-blue-900 font-medium">
+                      {selectedEcheance ? 'Montant total attendu' : 'Montant attendu'}
+                    </p>
                     <p className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(selectedEcheance.souscription?.coupon_net || 0)}
+                      {formatCurrency(selectedEcheance ? selectedEcheance.totalNet : (echeance?.souscription.coupon_net || 0))}
                     </p>
                     <p className="text-xs text-blue-700 mt-1">
-                      Brut: {formatCurrency(selectedEcheance.souscription?.coupon_brut || 0)}
+                      Brut: {formatCurrency(selectedEcheance ? selectedEcheance.totalBrut : (echeance?.souscription.coupon_brut || 0))}
                     </p>
                   </div>
+                  {selectedEcheance && (
+                    <div className="text-right">
+                      <p className="text-xs text-blue-700">
+                        {selectedEcheance.investorCount} paiement{selectedEcheance.investorCount > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -524,7 +678,7 @@ export function QuickPaymentModal({ echeance, onClose, onSuccess }: QuickPayment
           </button>
           <button
             onClick={handleSubmit}
-            disabled={processing || !selectedEcheance}
+            disabled={processing || (!selectedEcheance && !singleEcheanceData)}
             className="px-4 py-2 text-sm font-medium text-white bg-finixar-teal hover:bg-finixar-teal-hover rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {processing ? (
