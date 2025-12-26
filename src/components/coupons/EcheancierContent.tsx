@@ -324,8 +324,82 @@ export function EcheancierContent({
 
     setMarkingUnpaid(echeance.id);
     try {
-      // Update the echeance to remove payment link and status
-      const { error: echeanceError } = await supabase
+      // Get the paiement_id from the echeance
+      const { data: echeanceData, error: echeanceQueryError } = await supabase
+        .from('coupons_echeances')
+        .select('paiement_id')
+        .eq('id', echeance.id)
+        .single();
+
+      if (echeanceQueryError) throw echeanceQueryError;
+
+      const paiementId = echeanceData?.paiement_id;
+
+      if (paiementId) {
+        // 1. Get all payment proofs for this payment
+        const { data: proofs, error: proofsError } = await supabase
+          .from('payment_proofs')
+          .select('id, file_url')
+          .eq('paiement_id', paiementId);
+
+        if (proofsError) throw proofsError;
+
+        // 2. For each proof, check if it's used by other payments (reference counting)
+        const filesToDelete: string[] = [];
+
+        if (proofs && proofs.length > 0) {
+          for (const proof of proofs) {
+            // Count how many other payment_proofs records use this file_url
+            const { data: otherProofs, error: countError } = await supabase
+              .from('payment_proofs')
+              .select('id')
+              .eq('file_url', proof.file_url)
+              .neq('paiement_id', paiementId);
+
+            if (countError) throw countError;
+
+            // Only delete file if no other payments reference it
+            if (!otherProofs || otherProofs.length === 0) {
+              // Extract file path from URL
+              const url = new URL(proof.file_url);
+              const pathParts = url.pathname.split('/');
+              const fileName = pathParts[pathParts.length - 1];
+              filesToDelete.push(fileName);
+            }
+          }
+
+          // 3. Delete payment_proofs records
+          const { error: deleteProofsError } = await supabase
+            .from('payment_proofs')
+            .delete()
+            .eq('paiement_id', paiementId);
+
+          if (deleteProofsError) throw deleteProofsError;
+
+          // 4. Delete storage files (only those not referenced by other payments)
+          if (filesToDelete.length > 0) {
+            const { error: storageError } = await supabase.storage
+              .from('payment-proofs')
+              .remove(filesToDelete);
+
+            if (storageError) {
+              console.error('Error deleting storage files:', storageError);
+              // Don't throw - continue with deletion even if storage cleanup fails
+            }
+          }
+        }
+
+        // 5. Delete the paiements record
+        const { error: deletePaiementError } = await supabase
+          .from('paiements')
+          .delete()
+          .eq('id', paiementId);
+
+        if (deletePaiementError) throw deletePaiementError;
+      }
+
+      // 6. Update the echeance to remove payment link and status
+      const { error: echeanceUpdateError } = await supabase
         .from('coupons_echeances')
         .update({
           statut: null,
@@ -333,14 +407,14 @@ export function EcheancierContent({
         } as never)
         .eq('id', echeance.id);
 
-      if (echeanceError) throw echeanceError;
+      if (echeanceUpdateError) throw echeanceUpdateError;
 
       // Refresh the echeances list
       await fetchEcheances();
 
       setAlertModalConfig({
         title: 'Succès',
-        message: 'L\'échéance a été marquée comme non payée.',
+        message: 'L\'échéance a été marquée comme non payée et tous les enregistrements associés ont été supprimés.',
         type: 'success'
       });
       setShowAlertModal(true);

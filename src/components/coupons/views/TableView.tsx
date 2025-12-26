@@ -6,6 +6,8 @@ interface TableViewProps {
   coupons: Coupon[];
   onQuickPay: (coupon: Coupon) => void;
   onViewDetails: (coupon: Coupon) => void;
+  onMarkAsUnpaid?: (coupon: Coupon) => void;
+  markingUnpaid?: string | null;
   selectedCoupons: Set<string>;
   onToggleSelect: (couponId: string) => void;
   onToggleSelectAll: () => void;
@@ -28,6 +30,8 @@ export function TableView({
   coupons,
   onQuickPay,
   onViewDetails,
+  onMarkAsUnpaid,
+  markingUnpaid,
 }: TableViewProps) {
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
 
@@ -350,6 +354,16 @@ export function TableView({
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
+                              {coupon.statut_calculated === 'paye' && onMarkAsUnpaid && (
+                                <button
+                                  onClick={() => onMarkAsUnpaid(coupon)}
+                                  disabled={markingUnpaid === coupon.id}
+                                  className="p-1.5 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Marquer comme non payé"
+                                >
+                                  <XCircle className={`w-4 h-4 ${markingUnpaid === coupon.id ? 'animate-pulse' : ''}`} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

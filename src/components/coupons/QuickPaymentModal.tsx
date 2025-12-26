@@ -86,11 +86,15 @@ export function QuickPaymentModal({
   // Payment form
   const [datePaiement, setDatePaiement] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
-  const [useSharedProof, setUseSharedProof] = useState(true);
-  const [sharedProofFile, setSharedProofFile] = useState<File | null>(null);
-  const [investorProofs, setInvestorProofs] = useState<Map<string, File>>(new Map());
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
+
+  // AI-first proof upload
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [fileUrls, setFileUrls] = useState<Map<string, string>>(new Map());
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiMatches, setAiMatches] = useState<Map<string, {investorId: string, investorName: string, confidence: number, isManual: boolean}>>(new Map());
+  const [analyzed, setAnalyzed] = useState(false);
 
   // Derived state
   const selectedEcheanceData = echeanceGroups.find(g => g.date === selectedEcheanceDate);
@@ -373,36 +377,152 @@ export function QuickPaymentModal({
     }
   };
 
-  const handleSharedProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Le fichier est trop volumineux (max 5MB)');
-        return;
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate file sizes
+    const oversizedFiles = files.filter(f => f.size > 5 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      setError(`${oversizedFiles.length} fichier(s) trop volumineux (max 5MB)`);
+      return;
+    }
+
+    setError('');
+    setProcessing(true);
+
+    try {
+      const newFileUrls = new Map(fileUrls);
+
+      // Upload each file to storage
+      for (const file of files) {
+        const fileName = `${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('payment-proofs')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          console.error('Error uploading file:', uploadError);
+          toast.warning(`Erreur lors du téléchargement de ${file.name}`);
+          continue;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('payment-proofs')
+          .getPublicUrl(fileName);
+
+        newFileUrls.set(file.name, urlData.publicUrl);
       }
-      setSharedProofFile(file);
-      setError('');
+
+      setUploadedFiles(prev => [...prev, ...files]);
+      setFileUrls(newFileUrls);
+      setAnalyzed(false); // Reset analyzed state when new files are added
+    } catch (err) {
+      console.error('Error uploading files:', err);
+      setError('Erreur lors du téléchargement des fichiers');
+    } finally {
+      setProcessing(false);
     }
   };
 
-  const handleInvestorProofChange = (echeanceId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Le fichier est trop volumineux (max 5MB)');
-        return;
+  const handleAnalyzeWithAI = async () => {
+    if (uploadedFiles.length === 0) {
+      setError('Veuillez d\'abord télécharger des fichiers');
+      return;
+    }
+
+    setAnalyzing(true);
+    setError('');
+
+    try {
+      // Prepare file URLs and expected payments
+      const fileUrlsList = Array.from(fileUrls.values());
+      const selectedInvestorsList = investors.filter(i => selectedInvestors.has(i.echeance_id));
+      const expectedPayments = selectedInvestorsList.map(inv => ({
+        investorName: inv.investisseur_nom,
+        expectedAmount: inv.montant_net,
+        investorId: inv.investisseur_id,
+        echeanceId: inv.echeance_id
+      }));
+
+      // Call analyze-payment Edge Function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No session found');
       }
-      const newProofs = new Map(investorProofs);
-      newProofs.set(echeanceId, file);
-      setInvestorProofs(newProofs);
-      setError('');
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-payment`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            fileUrls: fileUrlsList,
+            expectedPayments
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.erreur || 'Erreur lors de l\'analyse');
+      }
+
+      const result = await response.json();
+
+      // Process matches
+      const newMatches = new Map<string, {investorId: string, investorName: string, confidence: number, isManual: boolean}>();
+
+      if (result.correspondances && Array.isArray(result.correspondances)) {
+        result.correspondances.forEach((match: any, index: number) => {
+          const fileName = uploadedFiles[index]?.name;
+          if (fileName && match.attendu) {
+            newMatches.set(fileName, {
+              investorId: match.attendu.investorId,
+              investorName: match.attendu.investorName,
+              confidence: match.confiance || 0,
+              isManual: false
+            });
+          }
+        });
+      }
+
+      setAiMatches(newMatches);
+      setAnalyzed(true);
+      toast.success('Analyse terminée !');
+    } catch (err: any) {
+      console.error('Error analyzing files:', err);
+      setError('Erreur lors de l\'analyse IA: ' + err.message);
+    } finally {
+      setAnalyzing(false);
     }
   };
 
-  const removeInvestorProof = (echeanceId: string) => {
-    const newProofs = new Map(investorProofs);
-    newProofs.delete(echeanceId);
-    setInvestorProofs(newProofs);
+  const handleManualAssignment = (fileName: string, investorId: string) => {
+    const investor = investors.find(i => i.investisseur_id === investorId);
+    if (!investor) return;
+
+    const newMatches = new Map(aiMatches);
+    newMatches.set(fileName, {
+      investorId: investor.investisseur_id,
+      investorName: investor.investisseur_nom,
+      confidence: 100,
+      isManual: true
+    });
+    setAiMatches(newMatches);
+  };
+
+  const removeFile = (fileName: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.name !== fileName));
+    const newFileUrls = new Map(fileUrls);
+    newFileUrls.delete(fileName);
+    setFileUrls(newFileUrls);
+    const newMatches = new Map(aiMatches);
+    newMatches.delete(fileName);
+    setAiMatches(newMatches);
   };
 
   const toggleInvestor = (echeanceId: string) => {
@@ -440,27 +560,7 @@ export function QuickPaymentModal({
     try {
       const selectedInvestorsList = investors.filter(i => selectedInvestors.has(i.echeance_id));
 
-      let sharedProofUrl: string | null = null;
-
-      // If using shared proof, upload it once
-      if (useSharedProof && sharedProofFile) {
-        const fileName = `${Date.now()}_${sharedProofFile.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('payment-proofs')
-          .upload(fileName, sharedProofFile);
-
-        if (uploadError) {
-          console.error('Error uploading shared proof:', uploadError);
-          toast.warning('Paiement enregistré mais la preuve n\'a pas pu être téléchargée');
-        } else {
-          const { data: urlData } = supabase.storage
-            .from('payment-proofs')
-            .getPublicUrl(fileName);
-          sharedProofUrl = urlData.publicUrl;
-        }
-      }
-
-      // Create payment record for each selected investor
+      // Create payment records and link proofs based on AI matches
       for (const investor of selectedInvestorsList) {
         const { data: paiement, error: paiementError } = await supabase
           .from('paiements')
@@ -481,53 +581,33 @@ export function QuickPaymentModal({
 
         if (paiementError) throw paiementError;
 
-        // Handle proof upload based on mode
-        let proofUrl: string | null = null;
-        let proofFileName: string | null = null;
-        let proofFileSize: number | null = null;
-
-        if (useSharedProof && sharedProofUrl) {
-          // Use the shared proof for this investor
-          proofUrl = sharedProofUrl;
-          proofFileName = sharedProofFile!.name;
-          proofFileSize = sharedProofFile!.size;
-        } else if (!useSharedProof) {
-          // Check if this investor has an individual proof
-          const individualProof = investorProofs.get(investor.echeance_id);
-          if (individualProof) {
-            // Upload individual proof
-            const fileName = `${Date.now()}_${individualProof.name}`;
-            const { error: uploadError } = await supabase.storage
-              .from('payment-proofs')
-              .upload(fileName, individualProof);
-
-            if (uploadError) {
-              console.error('Error uploading individual proof:', uploadError);
-            } else {
-              const { data: urlData } = supabase.storage
-                .from('payment-proofs')
-                .getPublicUrl(fileName);
-              proofUrl = urlData.publicUrl;
-              proofFileName = individualProof.name;
-              proofFileSize = individualProof.size;
-            }
+        // Find all files assigned to this investor based on AI matches
+        const assignedFiles: string[] = [];
+        aiMatches.forEach((match, fileName) => {
+          if (match.investorId === investor.investisseur_id) {
+            assignedFiles.push(fileName);
           }
-        }
+        });
 
-        // Link proof to payment if we have one
-        if (proofUrl && paiement) {
-          const { error: proofError } = await supabase
-            .from('payment_proofs')
-            .insert({
-              paiement_id: paiement.id,
-              file_url: proofUrl,
-              file_name: proofFileName!,
-              file_size: proofFileSize!,
-              validated_at: new Date().toISOString(),
-            });
+        // Link each assigned proof to this payment
+        for (const fileName of assignedFiles) {
+          const proofUrl = fileUrls.get(fileName);
+          const file = uploadedFiles.find(f => f.name === fileName);
 
-          if (proofError) {
-            console.error('Error linking proof:', proofError);
+          if (proofUrl && file && paiement) {
+            const { error: proofError } = await supabase
+              .from('payment_proofs')
+              .insert({
+                paiement_id: paiement.id,
+                file_url: proofUrl,
+                file_name: file.name,
+                file_size: file.size,
+                validated_at: new Date().toISOString(),
+              });
+
+            if (proofError) {
+              console.error('Error linking proof:', proofError);
+            }
           }
         }
 
@@ -936,141 +1016,138 @@ export function QuickPaymentModal({
                 />
               </div>
 
-              {/* Proof Upload */}
+              {/* AI-First Proof Upload */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-3">
                   <div className="flex items-center gap-2">
                     <Upload className="w-4 h-4" />
-                    <span>Preuve de paiement (optionnel)</span>
+                    <span>Preuves de paiement (optionnel)</span>
                   </div>
                 </label>
 
-                {/* Proof mode selector */}
-                <div className="flex gap-4 mb-4">
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      checked={useSharedProof}
-                      onChange={() => setUseSharedProof(true)}
-                      className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-slate-700">Une preuve pour tous</span>
-                  </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      checked={!useSharedProof}
-                      onChange={() => setUseSharedProof(false)}
-                      className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-slate-700">Preuves individuelles</span>
+                {/* File Upload */}
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="proof-upload"
+                    disabled={processing}
+                  />
+                  <label
+                    htmlFor="proof-upload"
+                    className="flex flex-col items-center cursor-pointer"
+                  >
+                    <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                    <p className="text-sm font-medium text-slate-700">
+                      Cliquez pour ajouter des preuves
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      PDF ou images (max 5MB par fichier)
+                    </p>
                   </label>
                 </div>
 
-                {/* Shared proof upload */}
-                {useSharedProof ? (
-                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={handleSharedProofChange}
-                      className="hidden"
-                      id="shared-proof-upload"
-                    />
-                    <label
-                      htmlFor="shared-proof-upload"
-                      className="flex flex-col items-center cursor-pointer"
-                    >
-                      {sharedProofFile ? (
-                        <div className="text-center">
-                          <div className="bg-green-100 text-green-700 px-4 py-2 rounded-lg mb-2">
-                            {sharedProofFile.name}
-                          </div>
-                          <p className="text-sm text-slate-600">
-                            {(sharedProofFile.size / 1024).toFixed(1)} KB
-                          </p>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setSharedProofFile(null);
-                            }}
-                            className="text-sm text-red-600 hover:text-red-700 mt-2"
-                          >
-                            Retirer le fichier
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <Upload className="w-8 h-8 text-slate-400 mb-2" />
-                          <p className="text-sm font-medium text-slate-700">
-                            Cliquez pour ajouter une preuve
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1">
-                            PDF ou image (max 5MB)
-                          </p>
-                        </>
-                      )}
-                    </label>
-                    {sharedProofFile && (
-                      <div className="flex items-start gap-2 mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-blue-800">
-                          Cette preuve sera appliquée à tous les investisseurs sélectionnés.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  /* Individual proofs */
-                  <div className="space-y-2 border border-slate-300 rounded-lg p-4 max-h-80 overflow-y-auto">
-                    {selectedInvestorsList.map(investor => (
-                      <div key={investor.echeance_id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-slate-900">{investor.investisseur_nom}</p>
-                          <p className="text-xs text-slate-600">{formatCurrency(investor.montant_net)}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {investorProofs.has(investor.echeance_id) ? (
+                {/* Uploaded Files List */}
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-slate-700">
+                        {uploadedFiles.length} fichier{uploadedFiles.length > 1 ? 's' : ''} téléchargé{uploadedFiles.length > 1 ? 's' : ''}
+                      </p>
+                      {!analyzed && (
+                        <button
+                          onClick={handleAnalyzeWithAI}
+                          disabled={analyzing || processing}
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {analyzing ? (
                             <>
-                              <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded">
-                                {investorProofs.get(investor.echeance_id)!.name.substring(0, 20)}...
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => removeInvestorProof(investor.echeance_id)}
-                                className="text-xs text-red-600 hover:text-red-700"
-                              >
-                                Retirer
-                              </button>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Analyse en cours...
                             </>
                           ) : (
                             <>
-                              <input
-                                type="file"
-                                accept="image/*,.pdf"
-                                onChange={(e) => handleInvestorProofChange(investor.echeance_id, e)}
-                                className="hidden"
-                                id={`proof-${investor.echeance_id}`}
-                              />
-                              <label
-                                htmlFor={`proof-${investor.echeance_id}`}
-                                className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer flex items-center gap-1"
-                              >
-                                <Upload className="w-3 h-3" />
-                                Ajouter preuve
-                              </label>
+                              <BarChart3 className="w-4 h-4" />
+                              Analyser avec IA
                             </>
                           )}
-                        </div>
-                      </div>
-                    ))}
-                    <div className="flex items-start gap-2 mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-yellow-800">
-                        Vous pouvez ajouter une preuve individuelle pour chaque investisseur. Les investisseurs sans preuve seront enregistrés sans justificatif.
-                      </p>
+                        </button>
+                      )}
                     </div>
+
+                    <div className="border border-slate-300 rounded-lg divide-y divide-slate-200 max-h-80 overflow-y-auto">
+                      {uploadedFiles.map((file) => {
+                        const match = aiMatches.get(file.name);
+                        const confidenceColor = match && !match.isManual
+                          ? match.confidence > 80 ? 'text-green-700 bg-green-100'
+                          : match.confidence > 60 ? 'text-yellow-700 bg-yellow-100'
+                          : 'text-orange-700 bg-orange-100'
+                          : '';
+
+                        return (
+                          <div key={file.name} className="p-3 bg-slate-50">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-900 truncate">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-slate-600">
+                                  {(file.size / 1024).toFixed(1)} KB
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => removeFile(file.name)}
+                                disabled={processing}
+                                className="text-red-600 hover:text-red-700 text-xs font-medium ml-2"
+                              >
+                                Retirer
+                              </button>
+                            </div>
+
+                            {analyzed && (
+                              <div className="mt-2">
+                                <div className="flex items-center gap-2">
+                                  <select
+                                    value={match?.investorId || ''}
+                                    onChange={(e) => handleManualAssignment(file.name, e.target.value)}
+                                    className="flex-1 text-xs px-2 py-1.5 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                    <option value="">Non assigné</option>
+                                    {investors.filter(i => selectedInvestors.has(i.echeance_id)).map(inv => (
+                                      <option key={inv.investisseur_id} value={inv.investisseur_id}>
+                                        {inv.investisseur_nom}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  {match && !match.isManual && (
+                                    <span className={`text-xs font-medium px-2 py-1 rounded ${confidenceColor}`}>
+                                      {match.confidence}% IA
+                                    </span>
+                                  )}
+                                  {match && match.isManual && (
+                                    <span className="text-xs font-medium px-2 py-1 rounded text-blue-700 bg-blue-100">
+                                      Manuel
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {analyzed && (
+                      <div className="flex items-start gap-2 mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-blue-800">
+                          L'IA a analysé les fichiers. Vérifiez les assignments et modifiez-les si nécessaire. Les fichiers non assignés ne seront pas liés à un paiement.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
