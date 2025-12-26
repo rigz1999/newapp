@@ -148,6 +148,35 @@ export function TrancheWizard({
       return;
     }
 
+    // CRITICAL: Check if date_emission is being changed and if there are any payments
+    if (dateEmission !== editingTranche.date_emission) {
+      // Check for existing payments via souscriptions
+      const { data: souscriptions } = await supabase
+        .from('souscriptions')
+        .select('id')
+        .eq('tranche_id', editingTranche.id);
+
+      if (souscriptions && souscriptions.length > 0) {
+        const subscriptionIds = souscriptions.map(s => s.id);
+
+        const { data: paidEcheances } = await supabase
+          .from('coupons_echeances')
+          .select('id, statut, date_paiement')
+          .in('souscription_id', subscriptionIds)
+          .not('statut', 'is', null);
+
+        if (paidEcheances && paidEcheances.length > 0) {
+          setError(
+            `ATTENTION: Impossible de modifier la date d'émission.\n\n` +
+            `Cette tranche a ${paidEcheances.length} paiement(s) déjà enregistré(s).\n` +
+            `Modifier la date d'émission supprimerait tous les échéanciers existants et les paiements seraient perdus.\n\n` +
+            `Pour modifier la date d'émission, veuillez d'abord annuler tous les paiements enregistrés.`
+          );
+          return;
+        }
+      }
+    }
+
     setProcessing(true);
     setError("");
     setSuccessMessage("");
@@ -161,7 +190,7 @@ export function TrancheWizard({
         periodicite_coupons: periodiciteCoupons || null,
       }});
 
-      const { error: updateError } = await supabase
+      const { error: updateError} = await supabase
         .from("tranches")
         .update({
           tranche_name: trancheName,
