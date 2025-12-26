@@ -14,6 +14,7 @@ import { DiagnosticPage } from './pages/DiagnosticPage';
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
 const ProjectDetail = lazy(() => import('./components/projects/ProjectDetail'));
+const ProjectCommentsPage = lazy(() => import('./components/projects/ProjectCommentsPage').then(m => ({ default: m.ProjectCommentsPage })));
 const EcheancierPage = lazy(() => import('./components/coupons/EcheancierPage').then(m => ({ default: m.EcheancierPage })));
 const Coupons = lazy(() => import('./components/coupons/Coupons'));
 const Investors = lazy(() => import('./components/investors/Investors'));
@@ -113,6 +114,16 @@ function App() {
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
                     <EcheancierPage />
+                  </Suspense>
+                </ErrorBoundary>
+              }
+            />
+            <Route
+              path="projets/:projectId/comments"
+              element={
+                <ErrorBoundary>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ProjectCommentsPage />
                   </Suspense>
                 </ErrorBoundary>
               }

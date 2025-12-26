@@ -15,6 +15,7 @@ import { Tooltip } from '../common/Tooltip';
 import { Copy } from 'lucide-react';
 import { EcheancierModal } from '../coupons/EcheancierModal';
 import { PaymentsModal } from '../payments/PaymentsModal';  // ✅ AJOUT
+import { ProjectComments } from './ProjectComments';  // ✅ AJOUT - Comments feature
 import {
   ArrowLeft,
   Edit,
@@ -1075,55 +1076,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           }}
         />
 
-        {/* ✅ SECTION MODIFIÉE - Historique des paiements */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex items-baseline gap-3 mb-4">
-            <h2 className="text-xl font-bold text-slate-900">Historique des paiements</h2>
-            <button
-              onClick={() => setShowPaymentsModal(true)}
-              className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-              aria-label={`Voir tous les paiements (${payments.length})`}
-            >
-              Voir tout ({payments.length})
-            </button>
-          </div>
-
-          {payments.length === 0 ? (
-            <p className="text-center text-slate-400 py-8">Aucun paiement enregistré</p>
-          ) : (
-            <div className="space-y-4" role="list" aria-label="Liste des paiements récents">
-              {payments.slice(0, PAYMENTS_LIMIT).map((payment) => (
-                <div
-                  key={payment.id}
-                  className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50"
-                  role="listitem"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-2 h-2 rounded-full ${
-                      payment.statut === 'Payé' || payment.statut === 'payé' ? 'bg-green-500' : 'bg-orange-500'
-                    }`} aria-hidden="true" />
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        {payment.type || 'Paiement'} - {payment.id_paiement}
-                      </p>
-                      <p className="text-xs text-slate-600">{formatDate(payment.date_paiement)}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-900">{formatCurrency(payment.montant)}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      payment.statut === 'Payé' || payment.statut === 'payé'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-orange-100 text-orange-700'
-                    }`}>
-                      {payment.statut}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* ✅ SECTION REMPLACÉE - Commentaires du projet */}
+        {project && (
+          <ProjectComments projectId={projectId!} orgId={project.org_id} />
+        )}
 
         {showTrancheWizard && (
           <TrancheWizard
