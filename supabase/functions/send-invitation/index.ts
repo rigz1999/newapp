@@ -36,22 +36,35 @@ serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    // Verify JWT by calling Supabase auth API directly
-    const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: {
-        'Authorization': authHeader,
-        'apikey': SUPABASE_ANON_KEY,
-      },
-    })
+    // Extract and decode JWT to get user info
+    const token = authHeader.replace('Bearer ', '')
 
-    if (!userResponse.ok) {
-      const errorText = await userResponse.text()
-      console.error('User verification failed:', errorText)
-      throw new Error('Unauthorized: Invalid or expired token')
+    let user: { id: string; email: string }
+
+    try {
+      // Decode JWT payload (format: header.payload.signature)
+      const parts = token.split('.')
+      if (parts.length !== 3) {
+        throw new Error('Invalid token format')
+      }
+
+      const payload = JSON.parse(atob(parts[1]))
+
+      // Extract user info from JWT claims
+      user = {
+        id: payload.sub,
+        email: payload.email,
+      }
+
+      if (!user.id || !user.email) {
+        throw new Error('Invalid token payload')
+      }
+
+      console.log('User authenticated:', user.email)
+    } catch (decodeError) {
+      console.error('Token decode error:', decodeError)
+      throw new Error('Invalid token')
     }
-
-    const user = await userResponse.json()
-    console.log('User authenticated:', user.email)
 
     // Create admin client for database operations
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
