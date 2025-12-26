@@ -398,11 +398,10 @@ export function EcheancierContent({
         if (deletePaiementError) throw deletePaiementError;
       }
 
-      // 6. Update the echeance to remove payment link and status
+      // 6. Update the echeance to remove payment link
       const { error: echeanceUpdateError } = await supabase
         .from('coupons_echeances')
         .update({
-          statut: null,
           paiement_id: null
         } as never)
         .eq('id', echeance.id);
