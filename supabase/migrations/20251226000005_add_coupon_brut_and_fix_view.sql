@@ -2,7 +2,11 @@
 -- Fix: Currently showing same value for brut and net
 -- Solution: Join to souscriptions to get coupon_brut (gross amount before tax)
 
-CREATE OR REPLACE VIEW public.coupons_optimized AS
+-- Drop the existing view first (can't remove columns with CREATE OR REPLACE)
+DROP VIEW IF EXISTS public.coupons_optimized;
+
+-- Recreate the view with the correct structure
+CREATE VIEW public.coupons_optimized AS
 SELECT
   ce.id,
   ce.souscription_id,
