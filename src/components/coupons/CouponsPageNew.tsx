@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useCoupons, Coupon } from '../../hooks/coupons/useCoupons';
 import { useCouponFilters } from '../../hooks/coupons/useCouponFilters';
-import { TimelineView } from './views/TimelineView';
 import { TableView } from './views/TableView';
 import { QuickPaymentModal } from './QuickPaymentModal';
 import { TableSkeleton } from '../common/Skeleton';
@@ -12,8 +11,6 @@ import {
   Receipt,
   Search,
   Download,
-  Grid3x3,
-  List,
   Filter,
   ChevronDown,
   ChevronUp,
@@ -25,15 +22,12 @@ import {
 import ExcelJS from 'exceljs';
 import { toast } from '../../utils/toast';
 
-type ViewMode = 'timeline' | 'table';
-
 interface CouponsPageNewProps {
   organization?: { id: string; name: string; role: string };
 }
 
 export function CouponsPageNew(_props: CouponsPageNewProps) {
   // View state
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showFilters, setShowFilters] = useState(false);
 
   // Filter state
@@ -72,17 +66,6 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       month: 'short',
       year: 'numeric',
     });
-  };
-
-  const handlePayTranche = (
-    projectId: string,
-    trancheId: string,
-    echeanceDate: string,
-    projectName: string,
-    trancheName: string
-  ) => {
-    // Open QuickPaymentModal - user can select which echeance to pay
-    setShowQuickPayment(true);
   };
 
   const handleQuickPay = (coupon: Coupon) => {
@@ -301,32 +284,6 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
             />
           </div>
 
-          {/* View Switcher */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('timeline')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
-                viewMode === 'timeline'
-                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                  : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
-              }`}
-            >
-              <Grid3x3 className="w-5 h-5" />
-              Par date
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
-                viewMode === 'table'
-                  ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                  : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
-              }`}
-            >
-              <List className="w-5 h-5" />
-              Tableau
-            </button>
-          </div>
-
           {/* Filters Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -425,27 +382,15 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         )}
       </div>
 
-      {/* View Content */}
-      {viewMode === 'timeline' && (
-        <TimelineView
-          coupons={coupons}
-          onPayTranche={handlePayTranche}
-          onViewDetails={handleViewDetails}
-          selectedCoupons={selectedCoupons}
-          onToggleSelect={handleToggleSelect}
-        />
-      )}
-
-      {viewMode === 'table' && (
-        <TableView
-          coupons={coupons}
-          onQuickPay={handleQuickPay}
-          onViewDetails={handleViewDetails}
-          selectedCoupons={selectedCoupons}
-          onToggleSelect={handleToggleSelect}
-          onToggleSelectAll={handleToggleSelectAll}
-        />
-      )}
+      {/* Table View */}
+      <TableView
+        coupons={coupons}
+        onQuickPay={handleQuickPay}
+        onViewDetails={handleViewDetails}
+        selectedCoupons={selectedCoupons}
+        onToggleSelect={handleToggleSelect}
+        onToggleSelectAll={handleToggleSelectAll}
+      />
 
       {/* Pagination */}
       {totalPages > 1 && (
