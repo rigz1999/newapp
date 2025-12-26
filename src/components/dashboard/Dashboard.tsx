@@ -271,7 +271,6 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             `
             )
             .in('tranche_id', trancheIds)
-            .eq('statut', 'payé')
             .order('date_paiement', { ascending: false })
             .limit(5),
           supabase
