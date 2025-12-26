@@ -179,11 +179,14 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         if (deletePaiementError) throw deletePaiementError;
       }
 
-      // 6. Update the echeance to remove payment link
+      // 6. Update the echeance to remove payment link and reset to unpaid state
       const { error: echeanceUpdateError } = await supabase
         .from('coupons_echeances')
         .update({
-          paiement_id: null
+          paiement_id: null,
+          statut: 'en_attente',
+          date_paiement: null,
+          montant_paye: null
         } as never)
         .eq('id', coupon.id);
 
