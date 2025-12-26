@@ -4,6 +4,7 @@ import { useCouponFilters } from '../../hooks/coupons/useCouponFilters';
 import { TimelineView } from './views/TimelineView';
 import { TableView } from './views/TableView';
 import { PaymentWizard } from '../payments/PaymentWizard';
+import { QuickPaymentModal } from './QuickPaymentModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination } from '../common/Pagination';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
@@ -50,7 +51,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
   // Modal state
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
+  const [showQuickPayment, setShowQuickPayment] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+  const [selectedCouponForQuickPay, setSelectedCouponForQuickPay] = useState<Coupon | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   // Payment wizard preselection
@@ -97,6 +100,11 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       trancheName,
     });
     setShowPaymentWizard(true);
+  };
+
+  const handleQuickPay = (coupon: Coupon) => {
+    setSelectedCouponForQuickPay(coupon);
+    setShowQuickPayment(true);
   };
 
   const handleViewDetails = (coupon: Coupon) => {
@@ -448,7 +456,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       {viewMode === 'table' && (
         <TableView
           coupons={coupons}
-          onQuickPay={(coupon) => handlePayTranche(coupon.projet_id, coupon.tranche_id, coupon.date_echeance, coupon.projet_nom, coupon.tranche_nom)}
+          onQuickPay={handleQuickPay}
           onViewDetails={handleViewDetails}
           selectedCoupons={selectedCoupons}
           onToggleSelect={handleToggleSelect}
@@ -488,6 +496,30 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           preselectedEcheanceDate={wizardPreselect.echeanceDate}
           showProjectName={wizardPreselect.projectName}
           showTrancheName={wizardPreselect.trancheName}
+        />
+      )}
+
+      {/* Quick Payment Modal */}
+      {showQuickPayment && selectedCouponForQuickPay && (
+        <QuickPaymentModal
+          echeance={{
+            id: selectedCouponForQuickPay.id,
+            date_echeance: selectedCouponForQuickPay.date_echeance,
+            souscription: {
+              coupon_net: selectedCouponForQuickPay.montant_net,
+              coupon_brut: selectedCouponForQuickPay.montant_brut,
+              investisseur: {
+                nom_raison_sociale: selectedCouponForQuickPay.investisseur_nom,
+              },
+            },
+          }}
+          onClose={() => {
+            setShowQuickPayment(false);
+            setSelectedCouponForQuickPay(null);
+          }}
+          onSuccess={() => {
+            refresh();
+          }}
         />
       )}
 
