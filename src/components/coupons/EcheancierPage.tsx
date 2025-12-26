@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import ExcelJS from 'exceljs';
-import { PaymentWizard } from '../payments/PaymentWizard';
+import { QuickPaymentModal } from './QuickPaymentModal';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { AlertModal } from '../common/Modals';
 
@@ -1124,9 +1124,9 @@ export function EcheancierPage() {
         </div>
       </div>
 
-      {/* Payment Wizard Modal */}
+      {/* Quick Payment Modal */}
       {showPaymentWizard && (
-        <PaymentWizard
+        <QuickPaymentModal
           onClose={() => {
             setShowPaymentWizard(false);
             setPreselectedTrancheId(undefined);
@@ -1138,9 +1138,6 @@ export function EcheancierPage() {
             setPreselectedEcheanceDate(undefined);
             fetchEcheances();
           }}
-          preselectedProjectId={projectId}
-          preselectedTrancheId={preselectedTrancheId}
-          preselectedEcheanceDate={preselectedEcheanceDate}
         />
       )}
 

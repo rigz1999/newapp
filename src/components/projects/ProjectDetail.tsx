@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { TrancheWizard } from '../tranches/TrancheWizard';
-import { PaymentWizard } from '../payments/PaymentWizard';
+import { QuickPaymentModal } from '../coupons/QuickPaymentModal';
 import { EcheancierCard } from '../coupons/EcheancierCard';
 import { SubscriptionsModal } from '../subscriptions/SubscriptionsModal';
 import { TranchesModal } from '../tranches/TranchesModal';
@@ -1399,7 +1399,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         )}
 
         {showPaymentWizard && (
-          <PaymentWizard
+          <QuickPaymentModal
             onClose={() => setShowPaymentWizard(false)}
             onSuccess={() => {
               setShowPaymentWizard(false);

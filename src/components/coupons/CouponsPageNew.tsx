@@ -3,7 +3,6 @@ import { useCoupons, Coupon } from '../../hooks/coupons/useCoupons';
 import { useCouponFilters } from '../../hooks/coupons/useCouponFilters';
 import { TimelineView } from './views/TimelineView';
 import { TableView } from './views/TableView';
-import { PaymentWizard } from '../payments/PaymentWizard';
 import { QuickPaymentModal } from './QuickPaymentModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination } from '../common/Pagination';
@@ -50,20 +49,10 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   const [selectedCoupons, setSelectedCoupons] = useState<Set<string>>(new Set());
 
   // Modal state
-  const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [showQuickPayment, setShowQuickPayment] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [selectedCouponForQuickPay, setSelectedCouponForQuickPay] = useState<Coupon | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-
-  // Payment wizard preselection
-  const [wizardPreselect, setWizardPreselect] = useState<{
-    projectId?: string;
-    trancheId?: string;
-    echeanceDate?: string;
-    projectName?: string;
-    trancheName?: string;
-  }>({});
 
   // Excel export state
   const [exportingExcel, setExportingExcel] = useState(false);
@@ -92,14 +81,8 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
     projectName: string,
     trancheName: string
   ) => {
-    setWizardPreselect({
-      projectId,
-      trancheId,
-      echeanceDate,
-      projectName,
-      trancheName,
-    });
-    setShowPaymentWizard(true);
+    // Open QuickPaymentModal - user can select which echeance to pay
+    setShowQuickPayment(true);
   };
 
   const handleQuickPay = (coupon: Coupon) => {
@@ -478,31 +461,10 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         </div>
       )}
 
-      {/* Payment Wizard */}
-      {showPaymentWizard && (
-        <PaymentWizard
-          onClose={() => {
-            setShowPaymentWizard(false);
-            setWizardPreselect({});
-          }}
-          onSuccess={() => {
-            refresh();
-            toast.success('Paiement enregistré avec succès');
-            setWizardPreselect({});
-            setSelectedCoupons(new Set());
-          }}
-          preselectedProjectId={wizardPreselect.projectId}
-          preselectedTrancheId={wizardPreselect.trancheId}
-          preselectedEcheanceDate={wizardPreselect.echeanceDate}
-          showProjectName={wizardPreselect.projectName}
-          showTrancheName={wizardPreselect.trancheName}
-        />
-      )}
-
       {/* Quick Payment Modal */}
-      {showQuickPayment && selectedCouponForQuickPay && (
+      {showQuickPayment && (
         <QuickPaymentModal
-          echeance={{
+          echeance={selectedCouponForQuickPay ? {
             id: selectedCouponForQuickPay.id,
             date_echeance: selectedCouponForQuickPay.date_echeance,
             souscription: {
@@ -512,7 +474,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                 nom_raison_sociale: selectedCouponForQuickPay.investisseur_nom,
               },
             },
-          }}
+          } : undefined}
           onClose={() => {
             setShowQuickPayment(false);
             setSelectedCouponForQuickPay(null);

@@ -52,7 +52,7 @@ export function DashboardQuickActions({
           </div>
           <div className="text-left">
             <p className="font-semibold text-slate-900 text-sm">Nouveau paiement</p>
-            <p className="text-xs text-slate-600">Téléverser le justificatif</p>
+            <p className="text-xs text-slate-600">Enregistrer un paiement</p>
           </div>
         </button>
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { TrancheWizard } from '../tranches/TrancheWizard';
-import { PaymentWizard } from '../payments/PaymentWizard';
+import { QuickPaymentModal } from '../coupons/QuickPaymentModal';
 import { getDashboardCacheKey, onCacheInvalidated } from '../../utils/cacheManager';
 import { AlertModal } from '../common/Modals';
 import { DashboardSkeleton } from '../common/Skeleton';
@@ -687,7 +687,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         </>
       )}
 
-      {/* Tranche & Payment wizards */}
+      {/* Tranche wizard */}
       {showTrancheWizard && (
         <TrancheWizard
           onClose={() => setShowTrancheWizard(false)}
@@ -698,8 +698,9 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         />
       )}
 
+      {/* Quick Payment Modal */}
       {showQuickPayment && (
-        <PaymentWizard
+        <QuickPaymentModal
           onClose={() => setShowQuickPayment(false)}
           onSuccess={() => {
             setShowQuickPayment(false);
@@ -707,7 +708,6 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           }}
         />
       )}
-
 
       {/* Alert Modal */}
       <AlertModal
