@@ -84,7 +84,9 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       return;
     } // Ne rien faire si message positif
 
-    if (alertId === 'late-payments') {
+    if (alertId === 'overdue-coupons') {
+      navigate('/coupons');
+    } else if (alertId === 'late-payments') {
       navigate('/paiements');
     } else if (alertId === 'upcoming-week') {
       navigate('/paiements');
@@ -266,9 +268,10 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
 
       let recentPaymentsData: Payment[] = [];
       let groupedCoupons: UpcomingCoupon[] = [];
+      let allCouponsForAlerts: UpcomingCoupon[] = [];
 
       if (trancheIds.length > 0) {
-        const [paymentsRes2, couponsRes] = await Promise.all([
+        const [paymentsRes2, couponsRes, allCouponsRes] = await Promise.all([
           supabase
             .from('paiements')
             .select(
@@ -295,6 +298,20 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
             .order('prochaine_date_coupon', { ascending: true })
             .limit(10),
+          // Fetch ALL coupons (including overdue) for alert generation
+          supabase
+            .from('souscriptions')
+            .select(
+              `
+              id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
+              tranche:tranches(
+                tranche_name, projet_id,
+                projet:projets(projet)
+              )
+            `
+            )
+            .in('tranche_id', trancheIds)
+            .order('prochaine_date_coupon', { ascending: true }),
         ]);
 
         if (paymentsRes2.error) {
@@ -303,8 +320,12 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         if (couponsRes.error) {
           logger.warn('Supabase error coupons:', couponsRes.error);
         }
+        if (allCouponsRes.error) {
+          logger.warn('Supabase error all coupons:', allCouponsRes.error);
+        }
 
         recentPaymentsData = paymentsRes2.data || [];
+        allCouponsForAlerts = allCouponsRes.data || [];
 
         interface CouponData {
           tranche_id: string;
@@ -350,7 +371,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
 
       // Générer les alertes dynamiques
       const dynamicAlerts = generateAlerts(
-        groupedCoupons.slice(0, 5),
+        allCouponsForAlerts,
         recentPaymentsData,
         ribManquantsCount
       );
