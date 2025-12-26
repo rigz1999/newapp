@@ -39,6 +39,8 @@ serve(async (req) => {
     // Extract and decode JWT to get user info
     const token = authHeader.replace('Bearer ', '')
 
+    let user: { id: string; email: string }
+
     try {
       // Decode JWT payload (format: header.payload.signature)
       const parts = token.split('.')
@@ -49,7 +51,7 @@ serve(async (req) => {
       const payload = JSON.parse(atob(parts[1]))
 
       // Extract user info from JWT claims
-      const user = {
+      user = {
         id: payload.sub,
         email: payload.email,
       }
