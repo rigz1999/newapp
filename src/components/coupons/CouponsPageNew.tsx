@@ -464,17 +464,11 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       {/* Quick Payment Modal */}
       {showQuickPayment && (
         <QuickPaymentModal
-          echeance={selectedCouponForQuickPay ? {
-            id: selectedCouponForQuickPay.id,
-            date_echeance: selectedCouponForQuickPay.date_echeance,
-            souscription: {
-              coupon_net: selectedCouponForQuickPay.montant_net,
-              coupon_brut: selectedCouponForQuickPay.montant_brut,
-              investisseur: {
-                nom_raison_sociale: selectedCouponForQuickPay.investisseur_nom,
-              },
-            },
-          } : undefined}
+          preselectedProjectId={selectedCouponForQuickPay?.projet_id}
+          preselectedProjectName={selectedCouponForQuickPay?.projet_nom}
+          preselectedTrancheId={selectedCouponForQuickPay?.tranche_id}
+          preselectedTrancheName={selectedCouponForQuickPay?.tranche_nom}
+          preselectedEcheanceDate={selectedCouponForQuickPay?.date_echeance}
           onClose={() => {
             setShowQuickPayment(false);
             setSelectedCouponForQuickPay(null);

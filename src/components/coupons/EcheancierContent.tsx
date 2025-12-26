@@ -76,6 +76,9 @@ export function EcheancierContent({
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [showQuickPayment, setShowQuickPayment] = useState(false);
   const [selectedEcheanceForQuickPay, setSelectedEcheanceForQuickPay] = useState<Echeance | null>(null);
+  const [preselectedProjectName, setPreselectedProjectName] = useState('');
+  const [preselectedTrancheId, setPreselectedTrancheId] = useState('');
+  const [preselectedTrancheName, setPreselectedTrancheName] = useState('');
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertModalConfig, setAlertModalConfig] = useState<{
     title: string;
@@ -894,7 +897,25 @@ export function EcheancierContent({
                                             {getEcheanceStatus(echeance) !== 'paye' ? (
                                               <div className="flex items-center justify-center gap-2">
                                                 <button
-                                                  onClick={() => {
+                                                  onClick={async () => {
+                                                    // Fetch tranche data for this echeance
+                                                    const { data: sousData } = await supabase
+                                                      .from('souscriptions')
+                                                      .select('tranche_id, tranches!inner(tranche_name)')
+                                                      .eq('id', echeance.souscription_id)
+                                                      .single();
+
+                                                    const { data: projectData } = await supabase
+                                                      .from('projets')
+                                                      .select('projet')
+                                                      .eq('id', projectId)
+                                                      .single();
+
+                                                    if (sousData && projectData) {
+                                                      setPreselectedTrancheId(sousData.tranche_id);
+                                                      setPreselectedTrancheName(sousData.tranches.tranche_name);
+                                                      setPreselectedProjectName(projectData.projet);
+                                                    }
                                                     setSelectedEcheanceForQuickPay(echeance);
                                                     setShowQuickPayment(true);
                                                   }}
@@ -980,7 +1001,11 @@ export function EcheancierContent({
       {/* Quick Payment Modal */}
       {showQuickPayment && selectedEcheanceForQuickPay && (
         <QuickPaymentModal
-          echeance={selectedEcheanceForQuickPay}
+          preselectedProjectId={projectId}
+          preselectedProjectName={preselectedProjectName}
+          preselectedTrancheId={preselectedTrancheId}
+          preselectedTrancheName={preselectedTrancheName}
+          preselectedEcheanceDate={selectedEcheanceForQuickPay.date_echeance}
           onClose={() => {
             setShowQuickPayment(false);
             setSelectedEcheanceForQuickPay(null);
