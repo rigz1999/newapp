@@ -66,7 +66,8 @@ export function generateAlerts(
   const now = new Date();
 
   // 1. ÉCHEANCES EN RETARD (Overdue coupons)
-  // Check status field first (from coupons_echeances), fallback to date comparison (from souscriptions)
+  // Note: Échéances are counted by UNIQUE DATES, not by investor
+  // Example: 10 investors, 1 date = 1 échéance (not 10)
   const overdueCoupons = upcomingCoupons.filter(c => {
     // If we have statut field (from coupons_echeances), check if unpaid and overdue
     if (c.statut !== undefined) {
@@ -80,13 +81,18 @@ export function generateAlerts(
     return false;
   });
 
-  if (overdueCoupons.length > 0) {
+  // Group by unique dates to count échéances (not investors)
+  const uniqueOverdueDates = new Set(
+    overdueCoupons.map(c => c.date_echeance || c.prochaine_date_coupon).filter(Boolean)
+  );
+
+  if (uniqueOverdueDates.size > 0) {
     const totalOverdue = overdueCoupons.reduce((sum, c) => sum + (c.montant_coupon || c.coupon_brut || 0), 0);
     alerts.push({
       id: 'overdue-coupons',
       type: 'late_payment',
-      message: `${overdueCoupons.length} échéance${overdueCoupons.length > 1 ? 's' : ''} en retard (${formatCurrency(totalOverdue)})`,
-      count: overdueCoupons.length,
+      message: `${uniqueOverdueDates.size} échéance${uniqueOverdueDates.size > 1 ? 's' : ''} en retard (${formatCurrency(totalOverdue)})`,
+      count: uniqueOverdueDates.size,
     });
   }
 
@@ -118,13 +124,18 @@ export function generateAlerts(
     return couponDate >= now && couponDate <= weekThreshold;
   });
 
-  if (upcomingThisWeek.length > 0) {
+  // Group by unique dates
+  const uniqueUpcomingDates = new Set(
+    upcomingThisWeek.map(c => c.date_echeance || c.prochaine_date_coupon).filter(Boolean)
+  );
+
+  if (uniqueUpcomingDates.size > 0) {
     const totalAmount = upcomingThisWeek.reduce((sum, c) => sum + (c.montant_coupon || c.coupon_brut || 0), 0);
     alerts.push({
       id: 'upcoming-week',
       type: 'upcoming_coupons',
-      message: `${upcomingThisWeek.length} coupon${upcomingThisWeek.length > 1 ? 's' : ''} à payer cette semaine (${formatCurrency(totalAmount)})`,
-      count: upcomingThisWeek.length,
+      message: `${uniqueUpcomingDates.size} coupon${uniqueUpcomingDates.size > 1 ? 's' : ''} à payer cette semaine (${formatCurrency(totalAmount)})`,
+      count: uniqueUpcomingDates.size,
     });
   }
 
@@ -140,27 +151,32 @@ export function generateAlerts(
   });
 
   if (urgentCoupons.length > 0) {
-    // Grouper par tranche
+    // Grouper par tranche et compter les dates uniques (pas les investisseurs)
     const byTranche = urgentCoupons.reduce((acc, c) => {
       const trancheName = c.tranche?.tranche_name || c.souscription?.tranche?.tranche_name || 'Inconnu';
       const dateStr = c.date_echeance || c.prochaine_date_coupon || '';
       if (!acc[trancheName]) {
         acc[trancheName] = {
-          count: 0,
-          date: dateStr,
+          dates: new Set<string>(),
+          firstDate: dateStr,
         };
       }
-      acc[trancheName].count++;
+      if (dateStr) {
+        acc[trancheName].dates.add(dateStr);
+      }
       return acc;
-    }, {} as Record<string, { count: number; date: string }>);
+    }, {} as Record<string, { dates: Set<string>; firstDate: string }>);
 
     Object.entries(byTranche).forEach(([tranche, data]) => {
-      alerts.push({
-        id: `deadline-${tranche}`,
-        type: 'deadline',
-        message: `Échéance urgente : ${tranche} - ${getRelativeDate(data.date)} (${formatDate(data.date)})`,
-        count: data.count,
-      });
+      // Only create alert if there are unique dates for this tranche
+      if (data.dates.size > 0) {
+        alerts.push({
+          id: `deadline-${tranche}`,
+          type: 'deadline',
+          message: `Échéance urgente : ${tranche} - ${getRelativeDate(data.firstDate)} (${formatDate(data.firstDate)})`,
+          count: data.dates.size,
+        });
+      }
     });
   }
 
