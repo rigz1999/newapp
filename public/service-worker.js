@@ -3,7 +3,7 @@
 // Path: public/service-worker.js
 // ============================================
 
-const CACHE_NAME = 'finixar-v8';
+const CACHE_NAME = 'finixar-v9';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -49,7 +49,13 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Only cache successful responses
+          // For SPA routing, if server returns 404, serve index.html instead
+          if (!response.ok && request.mode === 'navigate') {
+            return caches.match('/index.html').then((cachedResponse) => {
+              return cachedResponse || response;
+            });
+          }
+          // Cache successful responses
           if (response.ok) {
             const responseClone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -59,7 +65,7 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // For SPA routing, fallback to cached index.html for navigation requests
+          // Network error, fallback to cached index.html for navigation
           if (request.mode === 'navigate') {
             return caches.match('/index.html');
           }
