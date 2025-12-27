@@ -218,6 +218,26 @@ export function EcheancierPage() {
         };
       });
 
+      // DEBUG: Check how many paid écheances are loaded
+      const paidCount = enrichedEcheances.filter(e => e.statut === 'paye').length;
+      const totalCount = enrichedEcheances.length;
+
+      console.log('=== ÉCHEANCIER PAGE DEBUG ===');
+      console.log('Subscriptions found:', subscriptions.length);
+      console.log('Subscription IDs:', subscriptionIds);
+      console.log('Total écheances loaded:', totalCount);
+      console.log('Écheances with statut=paye:', paidCount);
+      console.log('All écheances:', enrichedEcheances.map(e => ({
+        id: e.id,
+        statut: e.statut,
+        investisseur: e.souscription.investisseur.nom_raison_sociale,
+        date: e.date_echeance,
+        paiement_id: (e as any).paiement_id
+      })));
+
+      // VERY VISIBLE DEBUG: Alert to check if paid écheance is loaded
+      alert(`DEBUG ÉCHEANCIER PAGE:\nLoaded ${totalCount} écheances total\n${paidCount} are marked as 'paye'\n\nCheck console for details`);
+
       setEcheances(enrichedEcheances);
     } catch {
       setEcheances([]);
