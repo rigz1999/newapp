@@ -222,21 +222,17 @@ export function EcheancierPage() {
       const paidCount = enrichedEcheances.filter(e => e.statut === 'paye').length;
       const totalCount = enrichedEcheances.length;
 
-      console.log('=== ÉCHEANCIER PAGE DEBUG ===');
-      console.log('Subscriptions found:', subscriptions.length);
+      console.log('\n\n=== ÉCHEANCIER PAGE DEBUG ===');
+      console.log(`Subscriptions found: ${subscriptions.length}`);
       console.log('Subscription IDs:', subscriptionIds);
-      console.log('Total écheances loaded:', totalCount);
-      console.log('Écheances with statut=paye:', paidCount);
-      console.log('All écheances:', enrichedEcheances.map(e => ({
-        id: e.id,
-        statut: e.statut,
-        investisseur: e.souscription.investisseur.nom_raison_sociale,
-        date: e.date_echeance,
-        paiement_id: (e as any).paiement_id
-      })));
+      console.log(`\nTotal écheances loaded: ${totalCount}`);
+      console.log(`Écheances with statut=paye: ${paidCount}\n`);
 
-      // VERY VISIBLE DEBUG: Alert to check if paid écheance is loaded
-      alert(`DEBUG ÉCHEANCIER PAGE:\nLoaded ${totalCount} écheances total\n${paidCount} are marked as 'paye'\n\nCheck console for details`);
+      console.log('All écheances details:');
+      enrichedEcheances.forEach((e, idx) => {
+        console.log(`  ${idx + 1}. ${e.souscription.investisseur.nom_raison_sociale} - ${e.date_echeance} - statut: ${e.statut} - id: ${e.id}`);
+      });
+      console.log('\n=== END DEBUG ===\n\n');
 
       setEcheances(enrichedEcheances);
     } catch {
