@@ -544,7 +544,7 @@ export function EcheancierPage() {
         .from('user_email_connections')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (connError || !connection) {
         setAlertModalConfig({
