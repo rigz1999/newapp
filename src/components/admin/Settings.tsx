@@ -346,8 +346,11 @@ export default function Settings() {
         `&scope=${scope}` +
         `&state=${state}`;
 
-      // Redirect to Microsoft OAuth
-      window.location.href = authUrl;
+      // Open Microsoft OAuth in new tab
+      window.open(authUrl, '_blank', 'noopener,noreferrer');
+
+      // Reset loading state since we're staying on current page
+      setConnectingEmail(false);
     } catch (err) {
       setConnectingEmail(false);
       setErrorMessage(formatErrorMessage(err));
