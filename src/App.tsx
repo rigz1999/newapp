@@ -48,7 +48,7 @@ function App() {
             path="/login"
             element={
               user && (isAdmin || organization) ? (
-                <Navigate to="/dashboard" replace />
+                <Navigate to="/" replace />
               ) : (
                 <Login />
               )
@@ -79,7 +79,7 @@ function App() {
             }
           >
             <Route
-              path="dashboard"
+              index
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
@@ -87,10 +87,6 @@ function App() {
                   </Suspense>
                 </ErrorBoundary>
               }
-            />
-            <Route
-              index
-              element={<Navigate to="/dashboard" replace />}
             />
             <Route
               path="projets"
@@ -196,7 +192,7 @@ function App() {
                     </Suspense>
                   </ErrorBoundary>
                 ) : (
-                  <Navigate to="/dashboard" replace />
+                  <Navigate to="/" replace />
                 )
               }
             />
@@ -212,7 +208,7 @@ function App() {
                     </Suspense>
                   </ErrorBoundary>
                 ) : (
-                  <Navigate to="/dashboard" replace />
+                  <Navigate to="/" replace />
                 )
               }
             />
