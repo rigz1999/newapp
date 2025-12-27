@@ -3,7 +3,7 @@
 // Path: public/service-worker.js
 // ============================================
 
-const CACHE_NAME = 'finixar-v2';
+const CACHE_NAME = 'finixar-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
