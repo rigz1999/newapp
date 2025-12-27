@@ -154,33 +154,39 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
 
   const fetchStats = async () => {
     try {
-      // Fetch aggregated stats
+      // Fetch aggregated stats - need date_echeance to count unique dates
       const { data: enAttenteData } = await supabase
         .from('coupons_optimized')
-        .select('montant_net')
+        .select('montant_net, date_echeance')
         .eq('statut_calculated', 'en_attente');
 
       const { data: payesData } = await supabase
         .from('coupons_optimized')
-        .select('montant_paye, montant_net')
+        .select('montant_paye, montant_net, date_echeance')
         .eq('statut_calculated', 'paye');
 
       const { data: enRetardData } = await supabase
         .from('coupons_optimized')
-        .select('montant_net')
+        .select('montant_net, date_echeance')
         .eq('statut_calculated', 'en_retard');
+
+      // Count unique échéance dates (not investor rows)
+      // Example: 10 investors, 3 échéances = count 3 (not 30)
+      const uniqueEnAttenteDates = new Set(enAttenteData?.map(c => c.date_echeance) || []);
+      const uniquePayesDates = new Set(payesData?.map(c => c.date_echeance) || []);
+      const uniqueEnRetardDates = new Set(enRetardData?.map(c => c.date_echeance) || []);
 
       setStats({
         enAttente: {
-          count: enAttenteData?.length || 0,
+          count: uniqueEnAttenteDates.size,
           total: enAttenteData?.reduce((sum, c) => sum + c.montant_net, 0) || 0,
         },
         payes: {
-          count: payesData?.length || 0,
+          count: uniquePayesDates.size,
           total: payesData?.reduce((sum, c) => sum + (c.montant_paye || c.montant_net), 0) || 0,
         },
         enRetard: {
-          count: enRetardData?.length || 0,
+          count: uniqueEnRetardDates.size,
           total: enRetardData?.reduce((sum, c) => sum + c.montant_net, 0) || 0,
         },
       });
