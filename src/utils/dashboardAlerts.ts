@@ -151,27 +151,32 @@ export function generateAlerts(
   });
 
   if (urgentCoupons.length > 0) {
-    // Grouper par tranche
+    // Grouper par tranche et compter les dates uniques (pas les investisseurs)
     const byTranche = urgentCoupons.reduce((acc, c) => {
       const trancheName = c.tranche?.tranche_name || c.souscription?.tranche?.tranche_name || 'Inconnu';
       const dateStr = c.date_echeance || c.prochaine_date_coupon || '';
       if (!acc[trancheName]) {
         acc[trancheName] = {
-          count: 0,
-          date: dateStr,
+          dates: new Set<string>(),
+          firstDate: dateStr,
         };
       }
-      acc[trancheName].count++;
+      if (dateStr) {
+        acc[trancheName].dates.add(dateStr);
+      }
       return acc;
-    }, {} as Record<string, { count: number; date: string }>);
+    }, {} as Record<string, { dates: Set<string>; firstDate: string }>);
 
     Object.entries(byTranche).forEach(([tranche, data]) => {
-      alerts.push({
-        id: `deadline-${tranche}`,
-        type: 'deadline',
-        message: `Échéance urgente : ${tranche} - ${getRelativeDate(data.date)} (${formatDate(data.date)})`,
-        count: data.count,
-      });
+      // Only create alert if there are unique dates for this tranche
+      if (data.dates.size > 0) {
+        alerts.push({
+          id: `deadline-${tranche}`,
+          type: 'deadline',
+          message: `Échéance urgente : ${tranche} - ${getRelativeDate(data.firstDate)} (${formatDate(data.firstDate)})`,
+          count: data.dates.size,
+        });
+      }
     });
   }
 
