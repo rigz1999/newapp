@@ -142,6 +142,23 @@ export function EcheancierContent({
         };
       });
 
+      // DEBUG: Log écheances to check statut field
+      console.log('=== ÉCHEANCIER DEBUG ===');
+      console.log('Total écheances:', enrichedEcheances.length);
+      console.log('Écheances with statut=paye:', enrichedEcheances.filter(e => e.statut === 'paye').length);
+      console.log('Sample écheance:', enrichedEcheances[0]);
+      enrichedEcheances.forEach((e, idx) => {
+        if (e.statut === 'paye') {
+          console.log(`Paid écheance #${idx}:`, {
+            id: e.id,
+            statut: e.statut,
+            paiement_id: e.paiement_id,
+            date_paiement: e.date_paiement,
+            investisseur: e.souscription.investisseur.nom_raison_sociale
+          });
+        }
+      });
+
       setEcheances(enrichedEcheances);
     } catch {
       setEcheances([]);
