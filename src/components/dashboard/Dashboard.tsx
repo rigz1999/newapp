@@ -298,20 +298,28 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
             .order('prochaine_date_coupon', { ascending: true })
             .limit(10),
-          // Fetch ALL coupons (including overdue) for alert generation
+          // Fetch ALL écheances (including overdue) for alert generation
+          // Using coupons_echeances instead of souscriptions to match Coupons page count
           supabase
-            .from('souscriptions')
+            .from('coupons_echeances')
             .select(
               `
-              id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
-              tranche:tranches(
-                tranche_name, projet_id,
-                projet:projets(projet)
+              id,
+              date_echeance,
+              montant_coupon,
+              statut,
+              souscription:souscriptions!inner(
+                tranche_id,
+                tranche:tranches(
+                  tranche_name,
+                  projet_id,
+                  projet:projets(projet)
+                )
               )
             `
             )
-            .in('tranche_id', trancheIds)
-            .order('prochaine_date_coupon', { ascending: true }),
+            .in('souscription.tranche_id', trancheIds)
+            .order('date_echeance', { ascending: true }),
         ]);
 
         if (paymentsRes2.error) {

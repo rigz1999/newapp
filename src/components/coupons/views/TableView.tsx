@@ -379,7 +379,7 @@ export function TableView({
                                       setOpenDropdown(null);
                                       onViewDetails(coupon);
                                     }}
-                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                   >
                                     <FileText className="w-4 h-4 text-slate-600" />
                                     <span>Voir détails</span>
@@ -393,7 +393,7 @@ export function TableView({
                                         onMarkAsUnpaid(coupon);
                                       }}
                                       disabled={markingUnpaid === coupon.id}
-                                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
                                     >
                                       <XCircle className={`w-4 h-4 text-finixar-red ${markingUnpaid === coupon.id ? 'animate-pulse' : ''}`} />
                                       <span>Marquer impayé</span>
@@ -407,10 +407,10 @@ export function TableView({
                                         setOpenDropdown(null);
                                         onQuickPay(coupon);
                                       }}
-                                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                     >
                                       <Upload className="w-4 h-4 text-green-600" />
-                                      <span>Enregistrer paiement</span>
+                                      <span>Payer</span>
                                     </button>
                                   )}
                                 </div>
