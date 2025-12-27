@@ -139,7 +139,6 @@ const DEFAULT_OPTIONS: ExportOptions = {
 export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: ExportModalProps) {
   const [selectedPreset, setSelectedPreset] = useState<ExportPreset>('complet');
   const [format, setFormat] = useState<ExportFormat>('excel');
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_OPTIONS);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
@@ -150,10 +149,9 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       try {
         const saved = localStorage.getItem('dashboard_export_config');
         if (saved) {
-          const { preset, format: savedFormat, options: savedOptions } = JSON.parse(saved);
+          const { preset, format: savedFormat } = JSON.parse(saved);
           setSelectedPreset(preset || 'complet');
           setFormat(savedFormat || 'excel');
-          if (savedOptions) setOptions(savedOptions);
         }
       } catch (e) {
         // Ignore errors
@@ -165,7 +163,6 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
   useEffect(() => {
     if (selectedPreset !== 'custom') {
       setOptions({ ...DEFAULT_OPTIONS, ...PRESET_CONFIGS[selectedPreset] });
-      setShowAdvanced(false);
     }
   }, [selectedPreset]);
 
@@ -352,7 +349,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       // Save preferences
       localStorage.setItem(
         'dashboard_export_config',
-        JSON.stringify({ preset: selectedPreset, format, options })
+        JSON.stringify({ preset: selectedPreset, format })
       );
 
       if (format === 'excel') {
@@ -748,366 +745,168 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
       onClick={onClose}
     >
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="p-6 border-b border-slate-200">
+        <div className="p-8 pb-6 border-b border-slate-100">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-xl font-bold text-slate-900">Exporter Synthèse du Dashboard</h3>
-              <p className="text-sm text-slate-600 mt-1">Choisissez les données à exporter</p>
+              <h3 className="text-2xl font-bold text-slate-900">Exporter votre synthèse</h3>
+              <p className="text-slate-500 mt-2">Sélectionnez le type de rapport souhaité</p>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Fermer">
-              <X className="w-6 h-6" />
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-lg transition-colors"
+              aria-label="Fermer"
+            >
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          {/* Presets */}
+        <div className="p-8">
+          {/* Presets - Large Card Style */}
+          <div className="grid grid-cols-1 gap-4 mb-8">
+            <button
+              onClick={() => handlePresetClick('complet')}
+              className={`group relative p-6 rounded-xl border-2 transition-all text-left ${
+                selectedPreset === 'complet'
+                  ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg scale-[1.02]'
+                  : 'border-slate-200 hover:border-blue-300 hover:shadow-md'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-lg ${selectedPreset === 'complet' ? 'bg-blue-500' : 'bg-slate-100 group-hover:bg-blue-100'}`}>
+                  <FileText className={`w-6 h-6 ${selectedPreset === 'complet' ? 'text-white' : 'text-slate-600 group-hover:text-blue-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-bold text-slate-900 mb-1">Synthèse Complète</h4>
+                  <p className="text-sm text-slate-600">Rapport complet incluant statistiques, paiements récents, coupons à venir et alertes</p>
+                </div>
+                {selectedPreset === 'complet' && (
+                  <div className="flex items-center gap-1 text-blue-600">
+                    <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                  </div>
+                )}
+              </div>
+            </button>
+
+            <button
+              onClick={() => handlePresetClick('paiements')}
+              className={`group relative p-6 rounded-xl border-2 transition-all text-left ${
+                selectedPreset === 'paiements'
+                  ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100 shadow-lg scale-[1.02]'
+                  : 'border-slate-200 hover:border-emerald-300 hover:shadow-md'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-lg ${selectedPreset === 'paiements' ? 'bg-emerald-500' : 'bg-slate-100 group-hover:bg-emerald-100'}`}>
+                  <Euro className={`w-6 h-6 ${selectedPreset === 'paiements' ? 'text-white' : 'text-slate-600 group-hover:text-emerald-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-bold text-slate-900 mb-1">Historique des Paiements</h4>
+                  <p className="text-sm text-slate-600">Liste détaillée de tous les paiements avec statistiques associées</p>
+                </div>
+                {selectedPreset === 'paiements' && (
+                  <div className="flex items-center gap-1 text-emerald-600">
+                    <div className="w-2 h-2 rounded-full bg-emerald-600"></div>
+                  </div>
+                )}
+              </div>
+            </button>
+
+            <button
+              onClick={() => handlePresetClick('coupons')}
+              className={`group relative p-6 rounded-xl border-2 transition-all text-left ${
+                selectedPreset === 'coupons'
+                  ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100 shadow-lg scale-[1.02]'
+                  : 'border-slate-200 hover:border-purple-300 hover:shadow-md'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-lg ${selectedPreset === 'coupons' ? 'bg-purple-500' : 'bg-slate-100 group-hover:bg-purple-100'}`}>
+                  <Calendar className={`w-6 h-6 ${selectedPreset === 'coupons' ? 'text-white' : 'text-slate-600 group-hover:text-purple-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-bold text-slate-900 mb-1">Coupons à Venir</h4>
+                  <p className="text-sm text-slate-600">Échéancier des prochains coupons avec alertes et montants</p>
+                </div>
+                {selectedPreset === 'coupons' && (
+                  <div className="flex items-center gap-1 text-purple-600">
+                    <div className="w-2 h-2 rounded-full bg-purple-600"></div>
+                  </div>
+                )}
+              </div>
+            </button>
+
+            <button
+              onClick={() => handlePresetClick('alertes')}
+              className={`group relative p-6 rounded-xl border-2 transition-all text-left ${
+                selectedPreset === 'alertes'
+                  ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100 shadow-lg scale-[1.02]'
+                  : 'border-slate-200 hover:border-orange-300 hover:shadow-md'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-lg ${selectedPreset === 'alertes' ? 'bg-orange-500' : 'bg-slate-100 group-hover:bg-orange-100'}`}>
+                  <AlertTriangle className={`w-6 h-6 ${selectedPreset === 'alertes' ? 'text-white' : 'text-slate-600 group-hover:text-orange-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-bold text-slate-900 mb-1">Rapport d'Alertes</h4>
+                  <p className="text-sm text-slate-600">Alertes urgentes et coupons nécessitant une attention immédiate</p>
+                </div>
+                {selectedPreset === 'alertes' && (
+                  <div className="flex items-center gap-1 text-orange-600">
+                    <div className="w-2 h-2 rounded-full bg-orange-600"></div>
+                  </div>
+                )}
+              </div>
+            </button>
+          </div>
+
+          {/* Format Selection */}
           <div className="mb-6">
-            <h4 className="text-sm font-semibold text-slate-900 mb-3">Modèles rapides</h4>
+            <label className="text-sm font-semibold text-slate-700 mb-3 block">Format du fichier</label>
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => handlePresetClick('complet')}
-                className={`p-4 border-2 rounded-lg transition-all text-left ${
-                  selectedPreset === 'complet'
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                  <span className="font-semibold text-slate-900">Complet</span>
-                </div>
-                <p className="text-xs text-slate-600">Toutes les données</p>
-              </button>
-
-              <button
-                onClick={() => handlePresetClick('paiements')}
-                className={`p-4 border-2 rounded-lg transition-all text-left ${
-                  selectedPreset === 'paiements'
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <Euro className="w-5 h-5 text-finixar-teal" />
-                  <span className="font-semibold text-slate-900">Paiements</span>
-                </div>
-                <p className="text-xs text-slate-600">Paiements uniquement</p>
-              </button>
-
-              <button
-                onClick={() => handlePresetClick('coupons')}
-                className={`p-4 border-2 rounded-lg transition-all text-left ${
-                  selectedPreset === 'coupons'
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <Calendar className="w-5 h-5 text-purple-600" />
-                  <span className="font-semibold text-slate-900">Coupons</span>
-                </div>
-                <p className="text-xs text-slate-600">Coupons à venir</p>
-              </button>
-
-              <button
-                onClick={() => handlePresetClick('alertes')}
-                className={`p-4 border-2 rounded-lg transition-all text-left ${
-                  selectedPreset === 'alertes'
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <AlertTriangle className="w-5 h-5 text-finixar-red" />
-                  <span className="font-semibold text-slate-900">Alertes</span>
-                </div>
-                <p className="text-xs text-slate-600">Alertes urgentes</p>
-              </button>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 border-t border-slate-200"></div>
-            <button
-              onClick={() => {
-                setShowAdvanced(!showAdvanced);
-                if (!showAdvanced) setSelectedPreset('custom');
-              }}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
-            >
-              {showAdvanced ? 'Masquer les options' : 'Personnaliser l\'export'}
-              {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-            <div className="flex-1 border-t border-slate-200"></div>
-          </div>
-
-          {/* Advanced Options */}
-          {showAdvanced && (
-            <div className="mb-6 space-y-4">
-              {/* Stats Card */}
-              <div className="border border-slate-200 rounded-lg p-4 bg-white">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="stats"
-                      checked={options.includeStats}
-                      onChange={(e) => setOptions({ ...options, includeStats: e.target.checked })}
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor="stats" className="font-semibold text-slate-900 cursor-pointer">
-                      Statistiques globales
-                    </label>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 ml-6">
-                  Total investi, coupons payés, projets actifs
-                </p>
-              </div>
-
-              {/* Payments Card */}
-              <div className="border border-slate-200 rounded-lg p-4 bg-white">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="payments"
-                      checked={options.includePayments}
-                      onChange={(e) => setOptions({ ...options, includePayments: e.target.checked })}
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor="payments" className="font-semibold text-slate-900 cursor-pointer">
-                      Paiements
-                    </label>
-                  </div>
-                </div>
-                {options.includePayments && (
-                  <div className="ml-6 space-y-3">
-                    <div>
-                      <label className="text-xs font-medium text-slate-700 mb-1 block">Période</label>
-                      <select
-                        value={options.paymentsDateRange}
-                        onChange={(e) => handleDateRangeChange('payments', e.target.value as DateRangePreset)}
-                        className="text-sm px-3 py-2 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="all">Toutes les périodes</option>
-                        <option value="this_month">Ce mois</option>
-                        <option value="last_3_months">3 derniers mois</option>
-                        <option value="last_6_months">6 derniers mois</option>
-                        <option value="this_year">Cette année</option>
-                        <option value="custom">Période personnalisée</option>
-                      </select>
-                    </div>
-                    {options.paymentsDateRange === 'custom' && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-xs font-medium text-slate-700 mb-1 block">Du</label>
-                          <input
-                            type="date"
-                            value={options.paymentsStartDate}
-                            onChange={(e) => setOptions({ ...options, paymentsStartDate: e.target.value })}
-                            className="text-sm px-2 py-1.5 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-700 mb-1 block">Au</label>
-                          <input
-                            type="date"
-                            value={options.paymentsEndDate}
-                            onChange={(e) => setOptions({ ...options, paymentsEndDate: e.target.value })}
-                            className="text-sm px-2 py-1.5 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <div>
-                      <label className="text-xs font-medium text-slate-700 mb-1 block">Nombre de paiements</label>
-                      <select
-                        value={options.paymentsLimit}
-                        onChange={(e) => setOptions({ ...options, paymentsLimit: parseInt(e.target.value) })}
-                        className="text-sm px-3 py-2 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="0">Tous les paiements</option>
-                        <option value="10">10 derniers</option>
-                        <option value="20">20 derniers</option>
-                        <option value="50">50 derniers</option>
-                        <option value="100">100 derniers</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Coupons Card */}
-              <div className="border border-slate-200 rounded-lg p-4 bg-white">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="coupons"
-                      checked={options.includeCoupons}
-                      onChange={(e) => setOptions({ ...options, includeCoupons: e.target.checked })}
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor="coupons" className="font-semibold text-slate-900 cursor-pointer">
-                      Coupons à venir
-                    </label>
-                  </div>
-                </div>
-                {options.includeCoupons && (
-                  <div className="ml-6 space-y-3">
-                    <div>
-                      <label className="text-xs font-medium text-slate-700 mb-1 block">Période</label>
-                      <select
-                        value={options.couponsDateRange}
-                        onChange={(e) => handleDateRangeChange('coupons', e.target.value as DateRangePreset)}
-                        className="text-sm px-3 py-2 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="all">Tous les coupons à venir</option>
-                        <option value="this_month">Fin de ce mois</option>
-                        <option value="last_3_months">3 prochains mois</option>
-                        <option value="last_6_months">6 prochains mois</option>
-                        <option value="this_year">Fin de cette année</option>
-                        <option value="custom">Période personnalisée</option>
-                      </select>
-                    </div>
-                    {options.couponsDateRange === 'custom' && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-xs font-medium text-slate-700 mb-1 block">Du</label>
-                          <input
-                            type="date"
-                            value={options.couponsStartDate}
-                            onChange={(e) => setOptions({ ...options, couponsStartDate: e.target.value })}
-                            className="text-sm px-2 py-1.5 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-700 mb-1 block">Au</label>
-                          <input
-                            type="date"
-                            value={options.couponsEndDate}
-                            onChange={(e) => setOptions({ ...options, couponsEndDate: e.target.value })}
-                            className="text-sm px-2 py-1.5 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <div>
-                      <label className="text-xs font-medium text-slate-700 mb-1 block">Nombre de coupons</label>
-                      <select
-                        value={options.couponsLimit}
-                        onChange={(e) => setOptions({ ...options, couponsLimit: parseInt(e.target.value) })}
-                        className="text-sm px-3 py-2 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="0">Tous les coupons</option>
-                        <option value="10">10 prochains</option>
-                        <option value="20">20 prochains</option>
-                        <option value="50">50 prochains</option>
-                        <option value="100">100 prochains</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Other Data Card */}
-              <div className="border border-slate-200 rounded-lg p-4 bg-white">
-                <h4 className="font-semibold text-slate-900 mb-3">Autres données</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="chart"
-                      checked={options.includeChart}
-                      onChange={(e) => setOptions({ ...options, includeChart: e.target.checked })}
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor="chart" className="text-sm text-slate-900 cursor-pointer">
-                      Données mensuelles (graphique)
-                    </label>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="alerts"
-                      checked={options.includeAlerts}
-                      onChange={(e) => setOptions({ ...options, includeAlerts: e.target.checked })}
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor="alerts" className="text-sm text-slate-900 cursor-pointer">
-                      Alertes actives
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Format */}
-          <div className="mb-6">
-            <h4 className="text-sm font-semibold text-slate-900 mb-3">Format d'export</h4>
-            <div className="flex gap-3">
-              <button
                 onClick={() => setFormat('excel')}
-                className={`flex-1 p-3 border-2 rounded-lg transition-all ${
+                className={`p-4 rounded-xl border-2 transition-all ${
                   format === 'excel'
-                    ? 'border-blue-600 bg-blue-50 text-blue-900'
-                    : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
-                <div className="font-semibold">Excel</div>
-                <div className="text-xs">(.xlsx)</div>
+                <div className={`text-center ${format === 'excel' ? 'text-blue-900' : 'text-slate-700'}`}>
+                  <div className="font-bold text-lg mb-1">Excel</div>
+                  <div className="text-xs opacity-75">.xlsx • Tableau de données</div>
+                </div>
               </button>
               <button
                 onClick={() => setFormat('pdf')}
-                className={`flex-1 p-3 border-2 rounded-lg transition-all ${
+                className={`p-4 rounded-xl border-2 transition-all ${
                   format === 'pdf'
-                    ? 'border-blue-600 bg-blue-50 text-blue-900'
-                    : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
-                <div className="font-semibold">PDF</div>
-                <div className="text-xs">(.pdf)</div>
+                <div className={`text-center ${format === 'pdf' ? 'text-blue-900' : 'text-slate-700'}`}>
+                  <div className="font-bold text-lg mb-1">PDF</div>
+                  <div className="text-xs opacity-75">.pdf • Document imprimable</div>
+                </div>
               </button>
-            </div>
-          </div>
-
-          {/* Preview */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="text-sm font-semibold text-blue-900 mb-2">Votre export contiendra:</h4>
-            <div className="text-sm text-blue-800 space-y-1">
-              {options.includeStats && <div>• Statistiques globales</div>}
-              {preview.paymentsCount > 0 && <div>• {preview.paymentsCount} paiement(s)</div>}
-              {preview.couponsCount > 0 && <div>• {preview.couponsCount} coupon(s)</div>}
-              {options.includeChart && dashboardData.monthlyData.length > 0 && (
-                <div>• {dashboardData.monthlyData.length} mois de données</div>
-              )}
-              {options.includeAlerts && dashboardData.alerts.length > 0 && (
-                <div>• {dashboardData.alerts.length} alerte(s)</div>
-              )}
-              {preview.sections === 0 && (
-                <div className="text-amber-700">⚠️ Aucune donnée sélectionnée</div>
-              )}
             </div>
           </div>
 
           {/* Progress Bar */}
           {exporting && exportProgress > 0 && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700">Export en cours...</span>
-                <span className="text-sm font-medium text-blue-600">{exportProgress}%</span>
+            <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-semibold text-blue-900">Génération du rapport...</span>
+                <span className="text-sm font-bold text-blue-600">{exportProgress}%</span>
               </div>
-              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+              <div className="w-full bg-blue-200 rounded-full h-3 overflow-hidden shadow-inner">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out shadow-sm"
                   style={{ width: `${exportProgress}%` }}
                 />
               </div>
@@ -1115,10 +914,10 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           )}
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="flex gap-4 pt-4 border-t border-slate-100">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+              className="px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium disabled:opacity-50"
               disabled={exporting}
             >
               Annuler
@@ -1126,14 +925,17 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             <button
               onClick={handleExport}
               disabled={exporting || preview.sections === 0}
-              className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all font-semibold disabled:from-slate-300 disabled:to-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 disabled:shadow-none"
             >
               {exporting ? (
-                'Export en cours...'
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Export en cours...
+                </div>
               ) : (
                 <>
-                  <Download className="w-4 h-4" />
-                  Télécharger
+                  <Download className="w-5 h-5" />
+                  Télécharger le rapport
                 </>
               )}
             </button>
