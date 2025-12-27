@@ -255,7 +255,7 @@ export function Coupons() {
         .from('user_reminder_settings')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!error && reminderSettings) {
         setRemindersEnabled(reminderSettings.enabled);
