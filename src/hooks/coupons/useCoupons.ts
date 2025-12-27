@@ -134,12 +134,55 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
       const end = start + pageSize - 1;
       query = query.range(start, end);
 
-      const { data, error: queryError, count } = await query;
+      const { data, error: queryError } = await query;
 
       if (queryError) throw queryError;
 
       setCoupons(data || []);
-      setTotalCount(count || 0);
+
+      // Count unique échéance dates (not investor rows)
+      // Need to run a separate query to get all matching records and count unique dates
+      let countQuery = supabase
+        .from('coupons_optimized')
+        .select('date_echeance');
+
+      // Apply same filters to count query
+      if (filters.search) {
+        countQuery = countQuery.or(
+          `investisseur_nom.ilike.%${filters.search}%,` +
+          `projet_nom.ilike.%${filters.search}%,` +
+          `tranche_nom.ilike.%${filters.search}%,` +
+          `investisseur_id_display.ilike.%${filters.search}%`
+        );
+      }
+
+      if (filters.statut && filters.statut.length > 0) {
+        countQuery = countQuery.in('statut_calculated', filters.statut);
+      }
+
+      if (filters.projets && filters.projets.length > 0) {
+        countQuery = countQuery.in('projet_nom', filters.projets);
+      }
+
+      if (filters.tranches && filters.tranches.length > 0) {
+        countQuery = countQuery.in('tranche_nom', filters.tranches);
+      }
+
+      if (filters.cgps && filters.cgps.length > 0) {
+        countQuery = countQuery.in('investisseur_cgp', filters.cgps);
+      }
+
+      if (filters.dateStart) {
+        countQuery = countQuery.gte('date_echeance', filters.dateStart);
+      }
+
+      if (filters.dateEnd) {
+        countQuery = countQuery.lte('date_echeance', filters.dateEnd);
+      }
+
+      const { data: allMatchingData } = await countQuery;
+      const uniqueDates = new Set(allMatchingData?.map(c => c.date_echeance) || []);
+      setTotalCount(uniqueDates.size);
 
       // Fetch stats separately (without pagination)
       await fetchStats();
