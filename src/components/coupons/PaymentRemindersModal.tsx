@@ -86,12 +86,13 @@ export default function PaymentRemindersModal({
   const handleUpdateReminderSettings = async () => {
     if (!user) return;
 
-    // Validate that at least one reminder period is selected if reminders are enabled
+    // Validate that at least one reminder period is selected ONLY if reminders are being enabled
     if (remindersEnabled && !remind7Days && !remind14Days && !remind30Days) {
       setErrorMessage('Veuillez sélectionner au moins une période de rappel');
       return;
     }
 
+    // When disabling, we don't need any validation - just save the disabled state
     setSaving(true);
     setErrorMessage('');
     setSuccessMessage('');
@@ -318,7 +319,7 @@ export default function PaymentRemindersModal({
             <div className="flex gap-3">
               <button
                 onClick={handleUpdateReminderSettings}
-                disabled={saving || !remindersEnabled}
+                disabled={saving}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {saving ? (
