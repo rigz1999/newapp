@@ -161,6 +161,23 @@ export function EcheancierPage() {
 
     setLoading(true);
     try {
+      // DEBUG: Check if the missing subscription exists
+      const { data: missingSub, error: missingErr } = await supabase
+        .from('souscriptions')
+        .select('id, id_souscription, projet_id, tranche_id')
+        .eq('id', 'd7dbfa71-ce10-43b5-bd40-59d93d2d2b2e');
+
+      console.log('\n=== CHECKING MISSING SUBSCRIPTION ===');
+      console.log('Query for subscription d7dbfa71-ce10-43b5-bd40-59d93d2d2b2e:');
+      console.log('Result:', missingSub);
+      console.log('Error:', missingErr);
+      console.log('Current projectId:', projectId);
+      if (missingSub && missingSub.length > 0) {
+        console.log('Subscription projet_id:', missingSub[0].projet_id);
+        console.log('Does it match current project?', missingSub[0].projet_id === projectId);
+      }
+      console.log('=== END MISSING SUBSCRIPTION CHECK ===\n');
+
       const { data: subscriptionsData, error: subsError } = await supabase
         .from('souscriptions')
         .select(
