@@ -101,7 +101,9 @@ export function EcheancierPage() {
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
+  const [projectName, setProjectName] = useState<string>('');
   const [preselectedTrancheId, setPreselectedTrancheId] = useState<string | undefined>(undefined);
+  const [preselectedTrancheName, setPreselectedTrancheName] = useState<string | undefined>(undefined);
   const [preselectedEcheanceDate, setPreselectedEcheanceDate] = useState<string | undefined>(
     undefined
   );
@@ -141,9 +143,24 @@ export function EcheancierPage() {
 
   useEffect(() => {
     if (projectId) {
+      fetchProjectName();
       fetchEcheances();
     }
   }, [projectId]);
+
+  const fetchProjectName = async () => {
+    if (!projectId) return;
+
+    const { data, error } = await supabase
+      .from('projets')
+      .select('projet')
+      .eq('id', projectId)
+      .single();
+
+    if (!error && data) {
+      setProjectName(data.projet);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -658,6 +675,7 @@ export function EcheancierPage() {
               <button
                 onClick={() => {
                   setPreselectedTrancheId(undefined);
+                  setPreselectedTrancheName(undefined);
                   setPreselectedEcheanceDate(undefined);
                   setShowPaymentWizard(true);
                 }}
@@ -845,6 +863,7 @@ export function EcheancierPage() {
                         onClick={e => {
                           e.stopPropagation();
                           setPreselectedTrancheId(trancheGroup.trancheId);
+                          setPreselectedTrancheName(trancheGroup.trancheName);
                           setPreselectedEcheanceDate(undefined);
                           setShowPaymentWizard(true);
                         }}
@@ -989,6 +1008,7 @@ export function EcheancierPage() {
                                               e.stopPropagation();
                                               setOpenDropdown(null);
                                               setPreselectedTrancheId(trancheGroup.trancheId);
+                                              setPreselectedTrancheName(trancheGroup.trancheName);
                                               setPreselectedEcheanceDate(dateGroup.date);
                                               setShowPaymentWizard(true);
                                             }}
@@ -1117,14 +1137,21 @@ export function EcheancierPage() {
       {/* Quick Payment Modal */}
       {showPaymentWizard && (
         <QuickPaymentModal
+          preselectedProjectId={projectId}
+          preselectedProjectName={projectName}
+          preselectedTrancheId={preselectedTrancheId}
+          preselectedTrancheName={preselectedTrancheName}
+          preselectedEcheanceDate={preselectedEcheanceDate}
           onClose={() => {
             setShowPaymentWizard(false);
             setPreselectedTrancheId(undefined);
+            setPreselectedTrancheName(undefined);
             setPreselectedEcheanceDate(undefined);
           }}
           onSuccess={() => {
             setShowPaymentWizard(false);
             setPreselectedTrancheId(undefined);
+            setPreselectedTrancheName(undefined);
             setPreselectedEcheanceDate(undefined);
             fetchEcheances();
           }}
