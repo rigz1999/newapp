@@ -101,7 +101,9 @@ export function EcheancierPage() {
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
+  const [projectName, setProjectName] = useState<string>('');
   const [preselectedTrancheId, setPreselectedTrancheId] = useState<string | undefined>(undefined);
+  const [preselectedTrancheName, setPreselectedTrancheName] = useState<string | undefined>(undefined);
   const [preselectedEcheanceDate, setPreselectedEcheanceDate] = useState<string | undefined>(
     undefined
   );
@@ -141,9 +143,24 @@ export function EcheancierPage() {
 
   useEffect(() => {
     if (projectId) {
+      fetchProjectName();
       fetchEcheances();
     }
   }, [projectId]);
+
+  const fetchProjectName = async () => {
+    if (!projectId) return;
+
+    const { data, error } = await supabase
+      .from('projets')
+      .select('projet')
+      .eq('id', projectId)
+      .single();
+
+    if (!error && data) {
+      setProjectName(data.projet);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -161,64 +178,37 @@ export function EcheancierPage() {
 
     setLoading(true);
     try {
-      // DEBUG: Check if the missing subscription exists
-      const { data: missingSub, error: missingErr } = await supabase
-        .from('souscriptions')
-        .select('id, id_souscription, projet_id, tranche_id')
-        .eq('id', 'd7dbfa71-ce10-43b5-bd40-59d93d2d2b2e');
-
-      console.log('\n=== CHECKING MISSING SUBSCRIPTION ===');
-      console.log('Query for subscription d7dbfa71-ce10-43b5-bd40-59d93d2d2b2e:');
-      console.log('Result:', missingSub);
-      console.log('Error:', missingErr);
-      console.log('Current projectId:', projectId);
-      if (missingSub && missingSub.length > 0) {
-        console.log('Subscription projet_id:', missingSub[0].projet_id);
-        console.log('Does it match current project?', missingSub[0].projet_id === projectId);
-      }
-      console.log('=== END MISSING SUBSCRIPTION CHECK ===\n');
-
-      const { data: subscriptionsData, error: subsError } = await supabase
-        .from('souscriptions')
-        .select(
-          `
-          id,
-          id_souscription,
-          coupon_brut,
-          coupon_net,
-          montant_investi,
-          investisseur:investisseurs(nom_raison_sociale, type),
-          tranche:tranches(id, tranche_name, date_echeance_finale)
-        `
-        )
-        .eq('projet_id', projectId);
-
-      if (subsError) {
-        throw subsError;
-      }
-
-      const subscriptions = (subscriptionsData || []) as SubscriptionData[];
-      const subscriptionIds = subscriptions.map(s => s.id);
-
-      if (subscriptionIds.length === 0) {
-        setEcheances([]);
-        setLoading(false);
-        return;
-      }
-
+      // Use INNER JOIN to automatically exclude orphaned écheances at database level
+      // This prevents écheances with invalid subscription_ids from being fetched
       const { data: echeancesData, error: echError } = await supabase
         .from('coupons_echeances')
-        .select('*')
-        .in('souscription_id', subscriptionIds)
+        .select(`
+          *,
+          souscription:souscriptions!inner(
+            id,
+            id_souscription,
+            coupon_brut,
+            coupon_net,
+            montant_investi,
+            investisseur:investisseurs(nom_raison_sociale, type),
+            tranche:tranches!inner(id, tranche_name, date_echeance_finale, projet_id)
+          )
+        `)
+        .eq('souscription.tranche.projet_id', projectId)
         .order('date_echeance', { ascending: true });
 
       if (echError) {
         throw echError;
       }
 
-      const echeances = (echeancesData || []) as EcheanceData[];
-      const enrichedEcheances = echeances.map(ech => {
-        const sub = subscriptions.find(s => s.id === ech.souscription_id);
+      if (!echeancesData || echeancesData.length === 0) {
+        setEcheances([]);
+        setLoading(false);
+        return;
+      }
+
+      const enrichedEcheances = echeancesData.map((ech: any) => {
+        const sub = ech.souscription;
         const isLastEcheance = sub?.tranche?.date_echeance_finale === ech.date_echeance;
 
         return {
@@ -234,22 +224,6 @@ export function EcheancierPage() {
           isLastEcheance,
         };
       });
-
-      // DEBUG: Check how many paid écheances are loaded
-      const paidCount = enrichedEcheances.filter(e => e.statut === 'paye').length;
-      const totalCount = enrichedEcheances.length;
-
-      console.log('\n\n=== ÉCHEANCIER PAGE DEBUG ===');
-      console.log(`Subscriptions found: ${subscriptions.length}`);
-      console.log('Subscription IDs:', subscriptionIds);
-      console.log(`\nTotal écheances loaded: ${totalCount}`);
-      console.log(`Écheances with statut=paye: ${paidCount}\n`);
-
-      console.log('All écheances details:');
-      enrichedEcheances.forEach((e, idx) => {
-        console.log(`  ${idx + 1}. ${e.souscription.investisseur.nom_raison_sociale} - ${e.date_echeance} - statut: ${e.statut} - id: ${e.id}`);
-      });
-      console.log('\n=== END DEBUG ===\n\n');
 
       setEcheances(enrichedEcheances);
     } catch {
@@ -701,6 +675,7 @@ export function EcheancierPage() {
               <button
                 onClick={() => {
                   setPreselectedTrancheId(undefined);
+                  setPreselectedTrancheName(undefined);
                   setPreselectedEcheanceDate(undefined);
                   setShowPaymentWizard(true);
                 }}
@@ -888,6 +863,7 @@ export function EcheancierPage() {
                         onClick={e => {
                           e.stopPropagation();
                           setPreselectedTrancheId(trancheGroup.trancheId);
+                          setPreselectedTrancheName(trancheGroup.trancheName);
                           setPreselectedEcheanceDate(undefined);
                           setShowPaymentWizard(true);
                         }}
@@ -1032,6 +1008,7 @@ export function EcheancierPage() {
                                               e.stopPropagation();
                                               setOpenDropdown(null);
                                               setPreselectedTrancheId(trancheGroup.trancheId);
+                                              setPreselectedTrancheName(trancheGroup.trancheName);
                                               setPreselectedEcheanceDate(dateGroup.date);
                                               setShowPaymentWizard(true);
                                             }}
@@ -1160,14 +1137,21 @@ export function EcheancierPage() {
       {/* Quick Payment Modal */}
       {showPaymentWizard && (
         <QuickPaymentModal
+          preselectedProjectId={projectId}
+          preselectedProjectName={projectName}
+          preselectedTrancheId={preselectedTrancheId}
+          preselectedTrancheName={preselectedTrancheName}
+          preselectedEcheanceDate={preselectedEcheanceDate}
           onClose={() => {
             setShowPaymentWizard(false);
             setPreselectedTrancheId(undefined);
+            setPreselectedTrancheName(undefined);
             setPreselectedEcheanceDate(undefined);
           }}
           onSuccess={() => {
             setShowPaymentWizard(false);
             setPreselectedTrancheId(undefined);
+            setPreselectedTrancheName(undefined);
             setPreselectedEcheanceDate(undefined);
             fetchEcheances();
           }}
