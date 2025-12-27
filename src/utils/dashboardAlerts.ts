@@ -20,11 +20,24 @@ export interface Payment {
 
 export interface UpcomingCoupon {
   id: string;
-  prochaine_date_coupon: string;
-  coupon_brut: number;
-  investisseur_id: string;
-  tranche_id: string;
+  date_echeance?: string; // Écheance date (from coupons_echeances)
+  prochaine_date_coupon?: string; // Subscription next coupon date (legacy, kept for backwards compatibility)
+  montant_coupon?: number; // Coupon amount (from coupons_echeances)
+  coupon_brut?: number; // Brut amount (legacy, kept for backwards compatibility)
+  statut?: string; // Payment status (from coupons_echeances)
+  investisseur_id?: string;
+  tranche_id?: string;
   investor_count?: number; // For grouped coupons
+  souscription?: {
+    tranche_id: string;
+    tranche?: {
+      tranche_name: string;
+      projet_id: string;
+      projet?: {
+        projet: string;
+      };
+    };
+  };
   tranche?: {
     tranche_name: string;
     projet_id: string;
@@ -53,13 +66,22 @@ export function generateAlerts(
   const now = new Date();
 
   // 1. ÉCHEANCES EN RETARD (Overdue coupons)
+  // Check status field first (from coupons_echeances), fallback to date comparison (from souscriptions)
   const overdueCoupons = upcomingCoupons.filter(c => {
-    const couponDate = new Date(c.prochaine_date_coupon);
-    return couponDate < now;
+    // If we have statut field (from coupons_echeances), check if unpaid and overdue
+    if (c.statut !== undefined) {
+      return c.statut !== 'paye' && c.date_echeance && new Date(c.date_echeance) < now;
+    }
+    // Legacy: if using prochaine_date_coupon from souscriptions
+    if (c.prochaine_date_coupon) {
+      const couponDate = new Date(c.prochaine_date_coupon);
+      return couponDate < now;
+    }
+    return false;
   });
 
   if (overdueCoupons.length > 0) {
-    const totalOverdue = overdueCoupons.reduce((sum, c) => sum + c.coupon_brut, 0);
+    const totalOverdue = overdueCoupons.reduce((sum, c) => sum + (c.montant_coupon || c.coupon_brut || 0), 0);
     alerts.push({
       id: 'overdue-coupons',
       type: 'late_payment',
@@ -88,12 +110,16 @@ export function generateAlerts(
   // 3. COUPONS À PAYER CETTE SEMAINE
   const weekThreshold = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const upcomingThisWeek = upcomingCoupons.filter(c => {
-    const couponDate = new Date(c.prochaine_date_coupon);
+    const dateStr = c.date_echeance || c.prochaine_date_coupon;
+    if (!dateStr) return false;
+    const couponDate = new Date(dateStr);
+    // Exclude paid coupons
+    if (c.statut === 'paye') return false;
     return couponDate >= now && couponDate <= weekThreshold;
   });
 
   if (upcomingThisWeek.length > 0) {
-    const totalAmount = upcomingThisWeek.reduce((sum, c) => sum + c.coupon_brut, 0);
+    const totalAmount = upcomingThisWeek.reduce((sum, c) => sum + (c.montant_coupon || c.coupon_brut || 0), 0);
     alerts.push({
       id: 'upcoming-week',
       type: 'upcoming_coupons',
@@ -105,18 +131,23 @@ export function generateAlerts(
   // 4. ÉCHÉANCES URGENTES (dans les 3 jours)
   const urgentThreshold = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
   const urgentCoupons = upcomingCoupons.filter(c => {
-    const couponDate = new Date(c.prochaine_date_coupon);
+    const dateStr = c.date_echeance || c.prochaine_date_coupon;
+    if (!dateStr) return false;
+    const couponDate = new Date(dateStr);
+    // Exclude paid coupons
+    if (c.statut === 'paye') return false;
     return couponDate >= now && couponDate <= urgentThreshold;
   });
 
   if (urgentCoupons.length > 0) {
     // Grouper par tranche
     const byTranche = urgentCoupons.reduce((acc, c) => {
-      const trancheName = c.tranche?.tranche_name || 'Inconnu';
+      const trancheName = c.tranche?.tranche_name || c.souscription?.tranche?.tranche_name || 'Inconnu';
+      const dateStr = c.date_echeance || c.prochaine_date_coupon || '';
       if (!acc[trancheName]) {
         acc[trancheName] = {
           count: 0,
-          date: c.prochaine_date_coupon,
+          date: dateStr,
         };
       }
       acc[trancheName].count++;
