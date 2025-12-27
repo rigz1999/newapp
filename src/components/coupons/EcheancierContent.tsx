@@ -110,6 +110,9 @@ export function EcheancierContent({
 
       const subscriptionIds = subscriptionsData?.map((s: any) => s.id) || [];
 
+      console.log('DEBUG: Found subscriptions:', subscriptionsData?.length);
+      console.log('DEBUG: Subscription IDs:', subscriptionIds);
+
       if (subscriptionIds.length === 0) {
         setEcheances([]);
         setLoading(false);
@@ -142,22 +145,22 @@ export function EcheancierContent({
         };
       });
 
-      // DEBUG: Log écheances to check statut field
+      // DEBUG: Check how many paid écheances are loaded
+      const paidCount = enrichedEcheances.filter(e => e.statut === 'paye').length;
+      const totalCount = enrichedEcheances.length;
+
       console.log('=== ÉCHEANCIER DEBUG ===');
-      console.log('Total écheances:', enrichedEcheances.length);
-      console.log('Écheances with statut=paye:', enrichedEcheances.filter(e => e.statut === 'paye').length);
-      console.log('Sample écheance:', enrichedEcheances[0]);
-      enrichedEcheances.forEach((e, idx) => {
-        if (e.statut === 'paye') {
-          console.log(`Paid écheance #${idx}:`, {
-            id: e.id,
-            statut: e.statut,
-            paiement_id: e.paiement_id,
-            date_paiement: e.date_paiement,
-            investisseur: e.souscription.investisseur.nom_raison_sociale
-          });
-        }
-      });
+      console.log('Total écheances loaded:', totalCount);
+      console.log('Écheances with statut=paye:', paidCount);
+      console.log('All écheances:', enrichedEcheances.map(e => ({
+        id: e.id,
+        statut: e.statut,
+        investisseur: e.souscription.investisseur.nom_raison_sociale,
+        date: e.date_echeance
+      })));
+
+      // VERY VISIBLE DEBUG: Alert to check if paid écheance is loaded
+      alert(`DEBUG: Loaded ${totalCount} écheances, ${paidCount} are marked as 'paye'`);
 
       setEcheances(enrichedEcheances);
     } catch {
