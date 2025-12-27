@@ -12,6 +12,7 @@ import { FilterPresets } from '../filters/FilterPresets';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { logger } from '../../utils/logger';
 import { formatErrorMessage } from '../../utils/errorMessages';
+import ExcelJS from 'exceljs';
 
 interface PaymentsProps {
   organization: { id: string; name: string; role: string };
@@ -241,25 +242,49 @@ export function Payments({ organization }: PaymentsProps) {
     return new Date(dateStr).toLocaleDateString('fr-FR');
   };
 
-  const exportToCSV = () => {
-    const headers = ['ID paiement', 'Projet', 'Émetteur', 'Tranche', 'Investisseur', 'Type', 'Montant', 'Date'];
-    const rows = filteredPayments.map((payment) => [
-      payment.id_paiement,
-      payment.tranche?.projet?.projet || '',
-      payment.tranche?.projet?.emetteur || '',
-      payment.tranche?.tranche_name || '',
-      payment.investisseur?.nom_raison_sociale || '',
-      payment.type || 'Coupon',
-      payment.montant,
-      formatDate(payment.date_paiement),
-    ]);
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Paiements');
 
-    const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    // Define columns (without ID)
+    worksheet.columns = [
+      { header: 'Projet', key: 'projet', width: 20 },
+      { header: 'Émetteur', key: 'emetteur', width: 20 },
+      { header: 'Tranche', key: 'tranche', width: 20 },
+      { header: 'Investisseur', key: 'investisseur', width: 25 },
+      { header: 'Type', key: 'type', width: 12 },
+      { header: 'Montant', key: 'montant', width: 15 },
+      { header: 'Date', key: 'date', width: 15 },
+    ];
+
+    // Add rows
+    filteredPayments.forEach((payment) => {
+      worksheet.addRow({
+        projet: payment.tranche?.projet?.projet || '',
+        emetteur: payment.tranche?.projet?.emetteur || '',
+        tranche: payment.tranche?.tranche_name || '',
+        investisseur: payment.investisseur?.nom_raison_sociale || '',
+        type: payment.type || 'Coupon',
+        montant: payment.montant,
+        date: formatDate(payment.date_paiement),
+      });
+    });
+
+    // Style header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE2E8F0' },
+    };
+
+    // Generate buffer and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `paiements_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `paiements_${new Date().toISOString().split('T')[0]}.xlsx`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -376,26 +401,50 @@ export function Payments({ organization }: PaymentsProps) {
     }
   };
 
-  const exportSelectedToCSV = () => {
+  const exportSelectedToExcel = async () => {
     const selected = filteredPayments.filter(p => selectedPayments.has(p.id));
-    const headers = ['ID paiement', 'Projet', 'Émetteur', 'Tranche', 'Investisseur', 'Type', 'Montant', 'Date'];
-    const rows = selected.map((payment) => [
-      payment.id_paiement,
-      payment.tranche?.projet?.projet || '',
-      payment.tranche?.projet?.emetteur || '',
-      payment.tranche?.tranche_name || '',
-      payment.investisseur?.nom_raison_sociale || '',
-      payment.type || 'Coupon',
-      payment.montant,
-      formatDate(payment.date_paiement),
-    ]);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Paiements sélectionnés');
 
-    const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    // Define columns (without ID)
+    worksheet.columns = [
+      { header: 'Projet', key: 'projet', width: 20 },
+      { header: 'Émetteur', key: 'emetteur', width: 20 },
+      { header: 'Tranche', key: 'tranche', width: 20 },
+      { header: 'Investisseur', key: 'investisseur', width: 25 },
+      { header: 'Type', key: 'type', width: 12 },
+      { header: 'Montant', key: 'montant', width: 15 },
+      { header: 'Date', key: 'date', width: 15 },
+    ];
+
+    // Add rows
+    selected.forEach((payment) => {
+      worksheet.addRow({
+        projet: payment.tranche?.projet?.projet || '',
+        emetteur: payment.tranche?.projet?.emetteur || '',
+        tranche: payment.tranche?.tranche_name || '',
+        investisseur: payment.investisseur?.nom_raison_sociale || '',
+        type: payment.type || 'Coupon',
+        montant: payment.montant,
+        date: formatDate(payment.date_paiement),
+      });
+    });
+
+    // Style header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE2E8F0' },
+    };
+
+    // Generate buffer and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `paiements_selection_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `paiements_selection_${new Date().toISOString().split('T')[0]}.xlsx`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -438,11 +487,11 @@ export function Payments({ organization }: PaymentsProps) {
           </div>
         </div>
         <button
-          onClick={exportToCSV}
+          onClick={exportToExcel}
           className="flex items-center gap-2 bg-finixar-action-view text-white px-4 py-2 rounded-lg hover:bg-finixar-action-view-hover transition-colors whitespace-nowrap"
         >
           <Download className="w-5 h-5" />
-          <span className="hidden sm:inline">Exporter CSV</span>
+          <span className="hidden sm:inline">Exporter Excel</span>
           <span className="sm:hidden">Export</span>
         </button>
       </div>
@@ -606,7 +655,7 @@ export function Payments({ organization }: PaymentsProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={exportSelectedToCSV}
+                    onClick={exportSelectedToExcel}
                     className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
                   >
                     <FileDown className="w-4 h-4" />
@@ -638,7 +687,6 @@ export function Payments({ organization }: PaymentsProps) {
                         className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                       />
                     </th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden lg:table-cell">ID</th>
                     <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">Projet</th>
                     <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">Tranche</th>
                     <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden sm:table-cell">Type</th>
@@ -658,8 +706,7 @@ export function Payments({ organization }: PaymentsProps) {
                           className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                         />
                       </td>
-                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm font-medium text-slate-900 hidden lg:table-cell">{payment.id_paiement}</td>
-                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600">
+                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600">
                       <div>
                         <p className="font-medium text-slate-900">{payment.tranche?.projet?.projet || '-'}</p>
                         <p className="text-xs text-slate-500 hidden xl:block">{payment.tranche?.projet?.emetteur || ''}</p>
