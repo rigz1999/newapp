@@ -79,7 +79,7 @@ function App() {
             }
           >
             <Route
-              index
+              path="/"
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
