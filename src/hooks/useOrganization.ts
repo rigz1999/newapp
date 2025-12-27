@@ -45,6 +45,7 @@ export function useOrganization(userId: string | undefined) {
     }
 
     const fetchOrganization = async () => {
+      setLoading(true); // Reset loading state when starting to fetch
       logger.log('useOrganization - Fetching memberships for userId:', userId);
 
       try {
