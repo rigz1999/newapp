@@ -3,7 +3,7 @@
 // Path: public/service-worker.js
 // ============================================
 
-const CACHE_NAME = 'finixar-v9';
+const CACHE_NAME = 'finixar-v10';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -44,18 +44,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network first strategy for HTML - SPA routing support
+  // SPA routing support - serve index.html for all navigation requests
   if (request.headers.get('accept').includes('text/html')) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // For SPA routing, if server returns 404, serve index.html instead
-          if (!response.ok && request.mode === 'navigate') {
-            return caches.match('/index.html').then((cachedResponse) => {
-              return cachedResponse || response;
+      // For navigation requests (page loads/refreshes), always fetch index.html
+      (request.mode === 'navigate' ?
+        fetch('/index.html').then((response) => {
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put('/index.html', responseClone);
             });
           }
-          // Cache successful responses
+          return response;
+        }).catch(() => caches.match('/index.html'))
+      :
+        // For non-navigation HTML requests, use normal network-first strategy
+        fetch(request).then((response) => {
           if (response.ok) {
             const responseClone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -63,14 +68,8 @@ self.addEventListener('fetch', (event) => {
             });
           }
           return response;
-        })
-        .catch(() => {
-          // Network error, fallback to cached index.html for navigation
-          if (request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return caches.match(request);
-        })
+        }).catch(() => caches.match(request))
+      )
     );
     return;
   }
