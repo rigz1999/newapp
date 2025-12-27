@@ -112,6 +112,8 @@ export function EcheancierPage() {
     unknown
   > | null>(null);
   const [paymentProofs, setPaymentProofs] = useState<Record<string, unknown>[]>([]);
+  const [echeanceProofUrls, setEcheanceProofUrls] = useState<Map<string, string>>(new Map());
+  const [uploadingProof, setUploadingProof] = useState<string | null>(null);
   const [markingUnpaid, setMarkingUnpaid] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -226,10 +228,110 @@ export function EcheancierPage() {
       });
 
       setEcheances(enrichedEcheances);
+
+      // Fetch proof URLs for paid écheances
+      await fetchProofUrls(enrichedEcheances);
     } catch {
       setEcheances([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProofUrls = async (echeancesList: Echeance[]) => {
+    const paidEcheances = echeancesList.filter(e => e.statut === 'paye');
+    if (paidEcheances.length === 0) return;
+
+    const proofUrlsMap = new Map<string, string>();
+
+    for (const echeance of paidEcheances) {
+      // Get paiement_id from écheance
+      const { data: echeanceData } = await supabase
+        .from('coupons_echeances')
+        .select('paiement_id')
+        .eq('id', echeance.id)
+        .single();
+
+      if (!echeanceData?.paiement_id) continue;
+
+      // Get proof for this paiement (only one proof per subscription)
+      const { data: proofData } = await supabase
+        .from('payment_proofs')
+        .select('file_url')
+        .eq('paiement_id', echeanceData.paiement_id)
+        .order('validated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (proofData?.file_url) {
+        proofUrlsMap.set(echeance.id, proofData.file_url);
+      }
+    }
+
+    setEcheanceProofUrls(proofUrlsMap);
+  };
+
+  const handleUploadProof = async (echeanceId: string, file: File) => {
+    setUploadingProof(echeanceId);
+    try {
+      // Get paiement_id
+      const { data: echeanceData } = await supabase
+        .from('coupons_echeances')
+        .select('paiement_id')
+        .eq('id', echeanceId)
+        .single();
+
+      if (!echeanceData?.paiement_id) {
+        throw new Error('Paiement introuvable');
+      }
+
+      // Upload file to storage
+      const fileName = `${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('payment-proofs')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('payment-proofs')
+        .getPublicUrl(fileName);
+
+      // Create payment_proof record
+      const { error: proofError } = await supabase
+        .from('payment_proofs')
+        .insert({
+          paiement_id: echeanceData.paiement_id,
+          file_url: urlData.publicUrl,
+          file_name: file.name,
+          file_size: file.size,
+          validated_at: new Date().toISOString(),
+        });
+
+      if (proofError) throw proofError;
+
+      // Update local state
+      const newProofUrls = new Map(echeanceProofUrls);
+      newProofUrls.set(echeanceId, urlData.publicUrl);
+      setEcheanceProofUrls(newProofUrls);
+
+      setAlertModalConfig({
+        title: 'Succès',
+        message: 'Preuve ajoutée avec succès',
+        type: 'success'
+      });
+      setShowAlertModal(true);
+    } catch (error: any) {
+      console.error('Error uploading proof:', error);
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: error.message || 'Erreur lors de l\'ajout de la preuve',
+        type: 'error'
+      });
+      setShowAlertModal(true);
+    } finally {
+      setUploadingProof(null);
     }
   };
 
@@ -933,7 +1035,7 @@ export function EcheancierPage() {
                                   } else if (paidCount > 0) {
                                     return (
                                       <span className="px-2.5 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
-                                        Partiel ({paidCount}/{totalCount})
+                                        {paidCount}/{totalCount} payés
                                       </span>
                                     );
                                   } else if (overdueCount > 0) {
@@ -1095,14 +1197,36 @@ export function EcheancierPage() {
                                           </div>
                                           {status === 'paye' && (
                                             <div className="flex items-center gap-2">
-                                              <button
-                                                onClick={() => handleViewPaymentProof(echeance)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                                                title="Voir le justificatif"
-                                              >
-                                                <FileText className="w-4 h-4" />
-                                                Voir preuve
-                                              </button>
+                                              {echeanceProofUrls.has(echeance.id) ? (
+                                                <a
+                                                  href={echeanceProofUrls.get(echeance.id)}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                                                  title="Ouvrir la preuve dans un nouvel onglet"
+                                                >
+                                                  <FileText className="w-4 h-4" />
+                                                  Preuve
+                                                </a>
+                                              ) : (
+                                                <label
+                                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                                  title="Ajouter une preuve"
+                                                >
+                                                  <input
+                                                    type="file"
+                                                    accept="image/*,.pdf"
+                                                    className="hidden"
+                                                    disabled={uploadingProof === echeance.id}
+                                                    onChange={(e) => {
+                                                      const file = e.target.files?.[0];
+                                                      if (file) handleUploadProof(echeance.id, file);
+                                                    }}
+                                                  />
+                                                  <Upload className={`w-4 h-4 ${uploadingProof === echeance.id ? 'animate-pulse' : ''}`} />
+                                                  {uploadingProof === echeance.id ? 'Envoi...' : 'Preuve'}
+                                                </label>
+                                              )}
                                               <button
                                                 onClick={() => handleMarkAsUnpaid(echeance)}
                                                 disabled={markingUnpaid === echeance.id}
