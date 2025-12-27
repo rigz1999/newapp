@@ -21,6 +21,9 @@ interface Subscription {
   prochaine_date_coupon: string | null;
   cgp: string | null;
   email_cgp: string | null;
+  // Payment status
+  echeances_payees?: number;
+  echeances_totales?: number;
   tranches: {
     tranche_name: string;
     projets: {
@@ -183,31 +186,48 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
 
     const subscriptionsData = (data || []) as Subscription[];
 
-    // Fetch next unpaid coupon date for each subscription
+    // Fetch payment status for each subscription (count unique dates paid vs total)
     if (subscriptionsData.length > 0) {
       const subscriptionIds = subscriptionsData.map(s => s.id);
 
-      // Get the earliest unpaid echeance for each subscription
+      // Get all echeances for these subscriptions
       const { data: echeances } = await supabase
         .from('coupons_echeances')
         .select('souscription_id, date_echeance, statut')
-        .in('souscription_id', subscriptionIds)
-        .in('statut', ['en_attente', 'en_retard'])
-        .order('date_echeance', { ascending: true });
+        .in('souscription_id', subscriptionIds);
 
-      // Map earliest unpaid echeance to each subscription
-      const nextCouponMap = new Map<string, string>();
+      // Count unique dates paid vs total for each subscription
+      const paymentStatusMap = new Map<string, { paid: number; total: number }>();
+
       echeances?.forEach(e => {
-        if (!nextCouponMap.has(e.souscription_id)) {
-          nextCouponMap.set(e.souscription_id, e.date_echeance);
+        if (!paymentStatusMap.has(e.souscription_id)) {
+          paymentStatusMap.set(e.souscription_id, { paid: new Set(), total: new Set() });
+        }
+        const status = paymentStatusMap.get(e.souscription_id);
+        status!.total.add(e.date_echeance);
+        if (e.statut === 'paye') {
+          status!.paid.add(e.date_echeance);
         }
       });
 
-      // Update subscriptions with calculated next coupon date
+      // Convert Sets to counts
+      const finalStatusMap = new Map<string, { paid: number; total: number }>();
+      paymentStatusMap.forEach((value, key) => {
+        finalStatusMap.set(key, {
+          paid: value.paid.size,
+          total: value.total.size
+        });
+      });
+
+      // Update subscriptions with payment status
       subscriptionsData.forEach(sub => {
-        const nextCouponDate = nextCouponMap.get(sub.id);
-        if (nextCouponDate) {
-          sub.prochaine_date_coupon = nextCouponDate;
+        const status = finalStatusMap.get(sub.id);
+        if (status) {
+          sub.echeances_payees = status.paid;
+          sub.echeances_totales = status.total;
+        } else {
+          sub.echeances_payees = 0;
+          sub.echeances_totales = 0;
         }
       });
     }
@@ -346,7 +366,8 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       { header: 'Montant investi', key: 'montantInvesti', width: 18 },
       { header: 'Coupon brut', key: 'couponBrut', width: 15 },
       { header: 'Coupon net', key: 'couponNet', width: 15 },
-      { header: 'Prochaine date coupon', key: 'prochaineDateCoupon', width: 20 },
+      { header: 'Échéances payées', key: 'echeancesPayees', width: 18 },
+      { header: 'Échéances totales', key: 'echeancesTotales', width: 18 },
     ];
 
     // Add rows
@@ -363,7 +384,8 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         montantInvesti: sub.montant_investi,
         couponBrut: sub.coupon_brut,
         couponNet: sub.coupon_net,
-        prochaineDateCoupon: formatDate(sub.prochaine_date_coupon),
+        echeancesPayees: sub.echeances_payees || 0,
+        echeancesTotales: sub.echeances_totales || 0,
       });
     });
 
@@ -704,7 +726,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       Coupon Net
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Prochain Coupon
+                      Échéances
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
                     </th>
@@ -739,8 +761,20 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-finixar-green">
                         {formatCurrency(sub.coupon_net)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                        {formatDate(sub.prochaine_date_coupon)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {sub.echeances_totales && sub.echeances_totales > 0 ? (
+                          <span className={`font-medium ${
+                            sub.echeances_payees === sub.echeances_totales
+                              ? 'text-green-600'
+                              : sub.echeances_payees === 0
+                              ? 'text-red-600'
+                              : 'text-orange-600'
+                          }`}>
+                            {sub.echeances_payees}/{sub.echeances_totales} payés
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center justify-end relative">
