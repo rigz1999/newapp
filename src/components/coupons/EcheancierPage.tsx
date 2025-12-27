@@ -161,47 +161,37 @@ export function EcheancierPage() {
 
     setLoading(true);
     try {
-      const { data: subscriptionsData, error: subsError } = await supabase
-        .from('souscriptions')
-        .select(
-          `
-          id,
-          id_souscription,
-          coupon_brut,
-          coupon_net,
-          montant_investi,
-          investisseur:investisseurs(nom_raison_sociale, type),
-          tranche:tranches(id, tranche_name, date_echeance_finale)
-        `
-        )
-        .eq('projet_id', projectId);
-
-      if (subsError) {
-        throw subsError;
-      }
-
-      const subscriptions = (subscriptionsData || []) as SubscriptionData[];
-      const subscriptionIds = subscriptions.map(s => s.id);
-
-      if (subscriptionIds.length === 0) {
-        setEcheances([]);
-        setLoading(false);
-        return;
-      }
-
+      // Use INNER JOIN to automatically exclude orphaned écheances at database level
+      // This prevents écheances with invalid subscription_ids from being fetched
       const { data: echeancesData, error: echError } = await supabase
         .from('coupons_echeances')
-        .select('*')
-        .in('souscription_id', subscriptionIds)
+        .select(`
+          *,
+          souscription:souscriptions!inner(
+            id,
+            id_souscription,
+            coupon_brut,
+            coupon_net,
+            montant_investi,
+            investisseur:investisseurs(nom_raison_sociale, type),
+            tranche:tranches!inner(id, tranche_name, date_echeance_finale, projet_id)
+          )
+        `)
+        .eq('souscription.tranche.projet_id', projectId)
         .order('date_echeance', { ascending: true });
 
       if (echError) {
         throw echError;
       }
 
-      const echeances = (echeancesData || []) as EcheanceData[];
-      const enrichedEcheances = echeances.map(ech => {
-        const sub = subscriptions.find(s => s.id === ech.souscription_id);
+      if (!echeancesData || echeancesData.length === 0) {
+        setEcheances([]);
+        setLoading(false);
+        return;
+      }
+
+      const enrichedEcheances = echeancesData.map((ech: any) => {
+        const sub = ech.souscription;
         const isLastEcheance = sub?.tranche?.date_echeance_finale === ech.date_echeance;
 
         return {
@@ -223,179 +213,6 @@ export function EcheancierPage() {
       setEcheances([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const cleanupOrphanedRecords = async () => {
-    if (!projectId) return;
-
-    console.log('\n🔧 Starting cleanup of orphaned records...');
-
-    try {
-      // Step 1: Get all valid subscription IDs for this project
-      const { data: validSubs, error: validErr } = await supabase
-        .from('souscriptions')
-        .select('id')
-        .eq('projet_id', projectId);
-
-      if (validErr) {
-        console.error('❌ Error fetching valid subscriptions:', validErr);
-        return;
-      }
-
-      const validSubIds = validSubs?.map(s => s.id) || [];
-      console.log(`Found ${validSubIds.length} valid subscriptions for this project`);
-
-      // Step 2: Get all écheances for valid subscriptions
-      const { data: allProjectEcheances, error: allEchErr } = await supabase
-        .from('coupons_echeances')
-        .select('id, souscription_id, paiement_id, date_echeance, statut')
-        .in('souscription_id', validSubIds.length > 0 ? validSubIds : ['']);
-
-      if (allEchErr) {
-        console.error('❌ Error fetching project écheances:', allEchErr);
-        return;
-      }
-
-      const validEcheanceIds = allProjectEcheances?.map(e => e.id) || [];
-
-      // Step 3: Find orphaned écheances (those with souscription_id NOT in valid subscriptions)
-      // We'll query all écheances and filter for ones that don't match valid subscriptions
-      const { data: potentialOrphans, error: orphanErr } = await supabase
-        .from('coupons_echeances')
-        .select('id, souscription_id, paiement_id, date_echeance, statut');
-
-      if (orphanErr) {
-        console.error('❌ Error finding orphaned écheances:', orphanErr);
-        return;
-      }
-
-      // Filter for orphans by checking if their subscription_id is not in the valid list
-      const orphanedEcheances = potentialOrphans?.filter(e => {
-        return !validSubIds.includes(e.souscription_id);
-      }) || [];
-
-      if (orphanedEcheances.length === 0) {
-        console.log('✅ No orphaned écheances found. Nothing to clean up.');
-        alert('Aucun enregistrement orphelin trouvé.');
-        return;
-      }
-
-      console.log(`Found ${orphanedEcheances.length} orphaned écheance(s)`);
-      console.log('Orphaned subscription IDs:', [...new Set(orphanedEcheances.map(e => e.souscription_id))]);
-
-      // Confirm with user before deleting
-      const confirmMsg = `Trouvé ${orphanedEcheances.length} écheance(s) orpheline(s) qui référencent des souscriptions inexistantes.\n\nVoulez-vous les supprimer?\n\nCela supprimera également:\n- Les paiements associés\n- Les preuves de paiement (si non partagées)\n\nCette action est irréversible.`;
-
-      if (!window.confirm(confirmMsg)) {
-        console.log('❌ Cleanup cancelled by user');
-        return;
-      }
-
-      // Step 4: Collect all paiement IDs
-      const paiementIds = orphanedEcheances
-        .filter(e => e.paiement_id)
-        .map(e => e.paiement_id);
-
-      // Step 5: If there are paiements, check their proof files
-      const proofFilesToCheck: string[] = [];
-      if (paiementIds.length > 0) {
-        const { data: paiements } = await supabase
-          .from('paiements')
-          .select('id, proof_file_id')
-          .in('id', paiementIds);
-
-        paiements?.forEach(p => {
-          if (p.proof_file_id) {
-            proofFilesToCheck.push(p.proof_file_id);
-          }
-        });
-
-        console.log(`Found ${paiementIds.length} paiement(s) to delete`);
-        console.log(`Found ${proofFilesToCheck.length} proof file(s) to check`);
-      }
-
-      // Step 6: Check if any proof files are referenced by other paiements
-      const proofFilesToDelete: string[] = [];
-      for (const proofId of proofFilesToCheck) {
-        const { data: otherPaiements, error: proofErr } = await supabase
-          .from('paiements')
-          .select('id')
-          .eq('proof_file_id', proofId)
-          .not('id', 'in', `(${paiementIds.join(',')})`);
-
-        if (!proofErr && (!otherPaiements || otherPaiements.length === 0)) {
-          // This proof is only used by orphaned paiements, safe to delete
-          proofFilesToDelete.push(proofId);
-        }
-      }
-
-      console.log(`${proofFilesToDelete.length} proof file(s) will be deleted (not shared)`);
-
-      // Step 7: Delete in correct order: paiements → écheances → proof files
-
-      // Delete paiements first
-      if (paiementIds.length > 0) {
-        const { error: delPaiementErr } = await supabase
-          .from('paiements')
-          .delete()
-          .in('id', paiementIds);
-
-        if (delPaiementErr) {
-          console.error('❌ Error deleting paiements:', delPaiementErr);
-          return;
-        }
-        console.log(`✅ Deleted ${paiementIds.length} orphaned paiement(s)`);
-      }
-
-      // Delete écheances
-      const echeanceIds = orphanedEcheances.map(e => e.id);
-      const { error: delEcheanceErr } = await supabase
-        .from('coupons_echeances')
-        .delete()
-        .in('id', echeanceIds);
-
-      if (delEcheanceErr) {
-        console.error('❌ Error deleting écheances:', delEcheanceErr);
-        return;
-      }
-      console.log(`✅ Deleted ${echeanceIds.length} orphaned écheance(s)`);
-
-      // Delete proof files
-      if (proofFilesToDelete.length > 0) {
-        const { error: delProofErr } = await supabase
-          .from('payment_proofs')
-          .delete()
-          .in('id', proofFilesToDelete);
-
-        if (delProofErr) {
-          console.error('❌ Error deleting proof files:', delProofErr);
-          // Continue anyway - this is not critical
-        } else {
-          console.log(`✅ Deleted ${proofFilesToDelete.length} orphaned proof file(s)`);
-        }
-      }
-
-      console.log('✅ Cleanup complete! Refreshing data...');
-
-      // Show success message
-      const summary = [];
-      summary.push(`✅ ${echeanceIds.length} écheance(s) supprimée(s)`);
-      if (paiementIds.length > 0) {
-        summary.push(`✅ ${paiementIds.length} paiement(s) supprimé(s)`);
-      }
-      if (proofFilesToDelete.length > 0) {
-        summary.push(`✅ ${proofFilesToDelete.length} preuve(s) supprimée(s)`);
-      }
-
-      alert('Nettoyage terminé!\n\n' + summary.join('\n'));
-
-      // Refresh the écheances data
-      await fetchEcheances();
-
-    } catch (error) {
-      console.error('❌ Cleanup failed:', error);
-      alert('Erreur lors du nettoyage: ' + (error as Error).message);
     }
   };
 
@@ -831,14 +648,6 @@ export function EcheancierPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button
-                onClick={cleanupOrphanedRecords}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-                title="Nettoyer les enregistrements orphelins"
-              >
-                <AlertCircle className="w-4 h-4" />
-                Nettoyer données orphelines
-              </button>
               <button
                 onClick={handleExportExcel}
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
