@@ -6,12 +6,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { GlobalSearch } from '../dashboard/GlobalSearch';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { logger } from '../../utils/logger';
+import { DashboardSkeleton } from '../common/Skeleton';
 
 interface LayoutProps {
   organization: { id: string; name: string; role: string };
+  isLoading?: boolean;
 }
 
-export function Layout({ organization }: LayoutProps) {
+export function Layout({ organization, isLoading = false }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
@@ -255,7 +257,7 @@ export function Layout({ organization }: LayoutProps) {
       </aside>
 
       <main className="flex-1 overflow-y-auto relative">
-        <Outlet />
+        {isLoading ? <DashboardSkeleton /> : <Outlet />}
       </main>
 
       {/* Global Search Modal */}

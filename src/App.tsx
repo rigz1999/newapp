@@ -66,10 +66,11 @@ function App() {
             path="/*"
             element={
               user ? (
-                orgLoading || authLoading ? (
-                  <DashboardSkeleton />
-                ) : (isAdmin || organization) ? (
-                  <Layout organization={organization || DEFAULT_ORG} />
+                (isAdmin || organization || orgLoading || authLoading) ? (
+                  <Layout
+                    organization={organization || DEFAULT_ORG}
+                    isLoading={orgLoading || authLoading}
+                  />
                 ) : (
                   <Navigate to="/login" replace />
                 )
