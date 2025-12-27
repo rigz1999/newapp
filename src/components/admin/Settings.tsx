@@ -119,7 +119,7 @@ export default function Settings() {
       .from('user_email_connections')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!emailError && emailConn) {
       setEmailConnection(emailConn);
