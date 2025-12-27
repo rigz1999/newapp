@@ -3,6 +3,7 @@ import { useCoupons, Coupon } from '../../hooks/coupons/useCoupons';
 import { useCouponFilters } from '../../hooks/coupons/useCouponFilters';
 import { TableView } from './views/TableView';
 import { QuickPaymentModal } from './QuickPaymentModal';
+import PaymentRemindersModal from './PaymentRemindersModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination } from '../common/Pagination';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
@@ -18,6 +19,7 @@ import {
   CheckCircle,
   AlertTriangle,
   X,
+  Bell,
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { toast } from '../../utils/toast';
@@ -48,6 +50,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [selectedCouponForQuickPay, setSelectedCouponForQuickPay] = useState<Coupon | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showRemindersModal, setShowRemindersModal] = useState(false);
 
   // Excel export state
   const [exportingExcel, setExportingExcel] = useState(false);
@@ -312,6 +315,13 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           </div>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={() => setShowRemindersModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md font-medium"
+          >
+            <Bell className="w-4 h-4" />
+            Rappels
+          </button>
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel}
@@ -595,6 +605,15 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           </div>
         </div>
       )}
+
+      {/* Payment Reminders Modal */}
+      <PaymentRemindersModal
+        isOpen={showRemindersModal}
+        onClose={() => setShowRemindersModal(false)}
+        onSettingsUpdated={() => {
+          // Optionally refresh data or show success message
+        }}
+      />
     </div>
   );
 }
