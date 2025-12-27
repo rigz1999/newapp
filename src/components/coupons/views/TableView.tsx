@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Coupon } from '../../../hooks/coupons/useCoupons';
-import { Building2, User, Eye, Upload, AlertCircle, Calendar, ChevronDown, ChevronRight, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { Building2, User, Upload, AlertCircle, Calendar, ChevronDown, ChevronRight, CheckCircle2, Clock, XCircle, MoreVertical, FileText } from 'lucide-react';
 
 interface TableViewProps {
   coupons: Coupon[];
@@ -34,6 +34,16 @@ export function TableView({
   markingUnpaid,
 }: TableViewProps) {
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenDropdown(null);
+    if (openDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openDropdown]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -346,23 +356,64 @@ export function TableView({
                             </div>
                           </td>
                           <td className="px-4 py-2.5">
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex items-center justify-end relative">
                               <button
-                                onClick={() => onViewDetails(coupon)}
-                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Voir détails"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdown(openDropdown === coupon.id ? null : coupon.id);
+                                }}
+                                className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                title="Actions"
                               >
-                                <Eye className="w-4 h-4" />
+                                <MoreVertical className="w-4 h-4" />
                               </button>
-                              {coupon.statut_calculated === 'paye' && onMarkAsUnpaid && (
-                                <button
-                                  onClick={() => onMarkAsUnpaid(coupon)}
-                                  disabled={markingUnpaid === coupon.id}
-                                  className="p-1.5 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Marquer comme non payé"
+
+                              {openDropdown === coupon.id && (
+                                <div
+                                  className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
-                                  <XCircle className={`w-4 h-4 ${markingUnpaid === coupon.id ? 'animate-pulse' : ''}`} />
-                                </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenDropdown(null);
+                                      onViewDetails(coupon);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                  >
+                                    <FileText className="w-4 h-4 text-slate-600" />
+                                    <span>Voir détails</span>
+                                  </button>
+
+                                  {coupon.statut_calculated === 'paye' && onMarkAsUnpaid && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenDropdown(null);
+                                        onMarkAsUnpaid(coupon);
+                                      }}
+                                      disabled={markingUnpaid === coupon.id}
+                                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                    >
+                                      <XCircle className={`w-4 h-4 text-finixar-red ${markingUnpaid === coupon.id ? 'animate-pulse' : ''}`} />
+                                      <span>Marquer impayé</span>
+                                    </button>
+                                  )}
+
+                                  {coupon.statut_calculated !== 'paye' && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenDropdown(null);
+                                        onQuickPay(coupon);
+                                      }}
+                                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                    >
+                                      <Upload className="w-4 h-4 text-green-600" />
+                                      <span>Enregistrer paiement</span>
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </td>
