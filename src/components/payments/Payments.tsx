@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Download, Search, Euro, CheckCircle2, Eye, Filter, X, AlertCircle, Trash2, FileDown, MoreVertical, FileText, XCircle } from 'lucide-react';
+import { Download, Search, Euro, CheckCircle2, Eye, Filter, X, AlertCircle, Trash2, FileDown, MoreVertical, FileText, XCircle, Upload } from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
@@ -74,6 +74,9 @@ export function Payments({ organization }: PaymentsProps) {
 
   // Dropdown menu
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  // Track which payments have proofs
+  const [paymentsWithProofs, setPaymentsWithProofs] = useState<Set<string>>(new Set());
 
   // Get unique values for filters
   const uniqueProjects = Array.from(
@@ -164,6 +167,18 @@ export function Payments({ organization }: PaymentsProps) {
         totalLate: 0,
         paymentsCount: paymentsData.length,
       });
+
+      // Fetch which payments have proofs
+      if (paymentsData.length > 0) {
+        const paymentIds = paymentsData.map(p => p.id);
+        const { data: proofsData } = await supabase
+          .from('payment_proofs')
+          .select('paiement_id')
+          .in('paiement_id', paymentIds);
+
+        const idsWithProofs = new Set(proofsData?.map(p => p.paiement_id) || []);
+        setPaymentsWithProofs(idsWithProofs);
+      }
 
     } catch (err) {
       const errorMessage = formatErrorMessage(err);
@@ -749,7 +764,7 @@ export function Payments({ organization }: PaymentsProps) {
 
                         {openDropdown === payment.id && (
                           <div
-                            className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+                            className="absolute right-0 top-full mt-1 w-52 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <button
@@ -760,8 +775,17 @@ export function Payments({ organization }: PaymentsProps) {
                               }}
                               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                             >
-                              <FileText className="w-4 h-4 text-slate-600" />
-                              <span>Voir la preuve</span>
+                              {paymentsWithProofs.has(payment.id) ? (
+                                <>
+                                  <FileText className="w-4 h-4 text-slate-600" />
+                                  <span>Voir la preuve</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-4 h-4 text-green-600" />
+                                  <span>Ajouter une preuve</span>
+                                </>
+                              )}
                             </button>
 
                             <button
