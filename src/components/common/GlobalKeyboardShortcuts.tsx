@@ -35,7 +35,7 @@ export function GlobalKeyboardShortcuts({ onSearch }: GlobalKeyboardShortcutsPro
       // Ctrl+B or Cmd+B - Go to Dashboard
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
-        navigate('/');
+        navigate('/dashboard');
         toast.success('Retour au dashboard');
       }
 

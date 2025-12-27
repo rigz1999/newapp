@@ -96,8 +96,8 @@ export function Layout({ organization }: LayoutProps) {
   };
 
   const isActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/' && !location.pathname.startsWith('/admin');
+    if (path === '/dashboard') {
+      return (location.pathname === '/' || location.pathname === '/dashboard') && !location.pathname.startsWith('/admin');
     }
     return location.pathname.startsWith(path);
   };
@@ -128,9 +128,9 @@ export function Layout({ organization }: LayoutProps) {
         <div className="flex-1 px-4">
           <nav className="space-y-1">
             <Link
-              to="/"
+              to="/dashboard"
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                isActive('/') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
+                isActive('/dashboard') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
               }`}
             >
               <Home className="w-4 h-4" />

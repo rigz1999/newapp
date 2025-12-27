@@ -198,7 +198,7 @@ export function InvitationAccept() {
 
       // Redirect after 3 seconds
       setTimeout(() => {
-        navigate('/');
+        navigate('/dashboard');
       }, 3000);
 
     } catch (err: any) {
@@ -280,7 +280,7 @@ export function InvitationAccept() {
             </p>
 
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/dashboard')}
               className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors"
             >
               Retour à l'accueil
@@ -496,7 +496,7 @@ export function InvitationAccept() {
             <p className="text-sm text-slate-500">
               Vous avez déjà un compte ?{' '}
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/login')}
                 className="text-slate-900 hover:underline font-medium"
               >
                 Se connecter
