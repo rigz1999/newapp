@@ -213,8 +213,7 @@ function App() {
               }
             />
 
-            {/* Wildcard must be LAST */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Removed wildcard redirect - it was causing page refreshes to redirect to dashboard */}
           </Route>
         </Routes>
       </BrowserRouter>

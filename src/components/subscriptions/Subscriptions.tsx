@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2, Filter, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { Users, Download, Search, Edit2, X, AlertTriangle, Eye, Trash2, Filter, ChevronDown, ChevronUp, FileText, MoreVertical, XCircle, TrendingUp, Euro, Calendar } from 'lucide-react';
 import { AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
@@ -9,6 +9,7 @@ import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { DateRangePicker } from '../filters/DateRangePicker';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
+import ExcelJS from 'exceljs';
 
 interface Subscription {
   id: string;
@@ -20,6 +21,9 @@ interface Subscription {
   prochaine_date_coupon: string | null;
   cgp: string | null;
   email_cgp: string | null;
+  // Payment status
+  echeances_payees?: number;
+  echeances_totales?: number;
   tranches: {
     tranche_name: string;
     projets: {
@@ -108,6 +112,18 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
 
+  // Dropdown menu
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenDropdown(null);
+    if (openDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openDropdown]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -168,7 +184,55 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       .order('date_souscription', { ascending: false })
       .limit(2000); // Safety limit to prevent loading too much data
 
-    setSubscriptions((data || []) as Subscription[]);
+    const subscriptionsData = (data || []) as Subscription[];
+
+    // Fetch payment status for each subscription (count unique dates paid vs total)
+    if (subscriptionsData.length > 0) {
+      const subscriptionIds = subscriptionsData.map(s => s.id);
+
+      // Get all echeances for these subscriptions
+      const { data: echeances } = await supabase
+        .from('coupons_echeances')
+        .select('souscription_id, date_echeance, statut')
+        .in('souscription_id', subscriptionIds);
+
+      // Count unique dates paid vs total for each subscription
+      const paymentStatusMap = new Map<string, { paid: number; total: number }>();
+
+      echeances?.forEach(e => {
+        if (!paymentStatusMap.has(e.souscription_id)) {
+          paymentStatusMap.set(e.souscription_id, { paid: new Set(), total: new Set() });
+        }
+        const status = paymentStatusMap.get(e.souscription_id);
+        status!.total.add(e.date_echeance);
+        if (e.statut === 'paye') {
+          status!.paid.add(e.date_echeance);
+        }
+      });
+
+      // Convert Sets to counts
+      const finalStatusMap = new Map<string, { paid: number; total: number }>();
+      paymentStatusMap.forEach((value, key) => {
+        finalStatusMap.set(key, {
+          paid: value.paid.size,
+          total: value.total.size
+        });
+      });
+
+      // Update subscriptions with payment status
+      subscriptionsData.forEach(sub => {
+        const status = finalStatusMap.get(sub.id);
+        if (status) {
+          sub.echeances_payees = status.paid;
+          sub.echeances_totales = status.total;
+        } else {
+          sub.echeances_payees = 0;
+          sub.echeances_totales = 0;
+        }
+      });
+    }
+
+    setSubscriptions(subscriptionsData);
     setLoading(false);
   };
 
@@ -285,48 +349,79 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
     }).format(amount);
   };
 
-  const exportToCSV = () => {
-    const headers = [
-      'Projet',
-      'Émetteur',
-      'Tranche',
-      'Investisseur',
-      'Type',
-      'Email',
-      'CGP',
-      'Date souscription',
-      'Quantité',
-      'Montant investi',
-      'Coupon brut',
-      'Coupon net',
-      'Prochaine date coupon',
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Souscriptions');
+
+    // Define columns (without Quantité)
+    worksheet.columns = [
+      { header: 'Projet', key: 'projet', width: 20 },
+      { header: 'Émetteur', key: 'emetteur', width: 20 },
+      { header: 'Tranche', key: 'tranche', width: 20 },
+      { header: 'Investisseur', key: 'investisseur', width: 25 },
+      { header: 'Type', key: 'type', width: 15 },
+      { header: 'Email', key: 'email', width: 25 },
+      { header: 'CGP', key: 'cgp', width: 20 },
+      { header: 'Date souscription', key: 'dateSouscription', width: 18 },
+      { header: 'Montant investi', key: 'montantInvesti', width: 18 },
+      { header: 'Coupon brut', key: 'couponBrut', width: 15 },
+      { header: 'Coupon net', key: 'couponNet', width: 15 },
+      { header: 'Échéances payées', key: 'echeancesPayees', width: 18 },
+      { header: 'Échéances totales', key: 'echeancesTotales', width: 18 },
     ];
 
-    const rows = filteredSubscriptions.map((sub) => [
-      sub.tranches.projets.projet,
-      sub.tranches.projets.emetteur,
-      sub.tranches.tranche_name,
-      sub.investisseurs.nom_raison_sociale || sub.investisseurs.representant_legal || '',
-      sub.investisseurs.type,
-      sub.investisseurs.email || '',
-      sub.cgp || sub.investisseurs.cgp || '',
-      formatDate(sub.date_souscription),
-      sub.nombre_obligations,
-      sub.montant_investi,
-      sub.coupon_brut,
-      sub.coupon_net,
-      formatDate(sub.prochaine_date_coupon),
-    ]);
+    // Add rows
+    filteredSubscriptions.forEach((sub) => {
+      worksheet.addRow({
+        projet: sub.tranches.projets.projet,
+        emetteur: sub.tranches.projets.emetteur,
+        tranche: sub.tranches.tranche_name,
+        investisseur: sub.investisseurs.nom_raison_sociale || sub.investisseurs.representant_legal || '',
+        type: sub.investisseurs.type,
+        email: sub.investisseurs.email || '',
+        cgp: sub.cgp || sub.investisseurs.cgp || '',
+        dateSouscription: formatDate(sub.date_souscription),
+        montantInvesti: sub.montant_investi,
+        couponBrut: sub.coupon_brut,
+        couponNet: sub.coupon_net,
+        echeancesPayees: sub.echeances_payees || 0,
+        echeancesTotales: sub.echeances_totales || 0,
+      });
+    });
 
-    const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    // Style header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE2E8F0' },
+    };
+
+    // Generate buffer and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `souscriptions_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `souscriptions_${new Date().toISOString().split('T')[0]}.xlsx`;
     link.click();
     URL.revokeObjectURL(url);
   };
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const totalSubscriptions = filteredSubscriptions.length;
+    const totalInvested = filteredSubscriptions.reduce((sum, sub) => sum + sub.montant_investi, 0);
+    const totalAnnualCoupons = filteredSubscriptions.reduce((sum, sub) => sum + sub.coupon_net, 0);
+    const avgInvestment = totalSubscriptions > 0 ? totalInvested / totalSubscriptions : 0;
+
+    return {
+      totalSubscriptions,
+      totalInvested,
+      totalAnnualCoupons,
+      avgInvestment,
+    };
+  }, [filteredSubscriptions]);
 
   // Extract unique values for multi-select filters
   const uniqueProjects = useMemo(() =>
@@ -434,17 +529,52 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-slate-900">Toutes les souscriptions</h1>
-              <p className="text-slate-600">{filteredSubscriptions.length} souscription{filteredSubscriptions.length > 1 ? 's' : ''}</p>
+              <p className="text-slate-600">{stats.totalSubscriptions} souscription{stats.totalSubscriptions > 1 ? 's' : ''}</p>
             </div>
           </div>
           <button
-            onClick={exportToCSV}
+            onClick={exportToExcel}
             disabled={filteredSubscriptions.length === 0}
             className="flex items-center gap-2 bg-finixar-action-view text-white px-4 py-2 rounded-lg hover:bg-finixar-action-view-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-5 h-5" />
-            <span>Exporter CSV</span>
+            <span>Exporter Excel</span>
           </button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-600 text-sm">Total souscriptions</span>
+              <Users className="w-5 h-5 text-blue-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stats.totalSubscriptions}</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-600 text-sm">Montant investi</span>
+              <TrendingUp className="w-5 h-5 text-green-600" />
+            </div>
+            <p className="text-2xl font-bold text-finixar-green">{formatCurrency(stats.totalInvested)}</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-600 text-sm">Coupons annuels</span>
+              <Euro className="w-5 h-5 text-purple-600" />
+            </div>
+            <p className="text-2xl font-bold text-purple-600">{formatCurrency(stats.totalAnnualCoupons)}</p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-600 text-sm">Investissement moyen</span>
+              <Calendar className="w-5 h-5 text-orange-600" />
+            </div>
+            <p className="text-2xl font-bold text-orange-600">{formatCurrency(stats.avgInvestment)}</p>
+          </div>
         </div>
 
         {/* Filters Section */}
@@ -590,19 +720,15 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       Date
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Quantité
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
                       Montant
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
                       Coupon Net
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Prochain Coupon
+                      Échéances
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Actions
+                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
                     </th>
                   </tr>
                 </thead>
@@ -629,41 +755,82 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                         {formatDate(sub.date_souscription)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-slate-900">
-                        {sub.nombre_obligations}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-slate-900">
                         {formatCurrency(sub.montant_investi)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-finixar-green">
                         {formatCurrency(sub.coupon_net)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                        {formatDate(sub.prochaine_date_coupon)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {sub.echeances_totales && sub.echeances_totales > 0 ? (
+                          <span className={`font-medium ${
+                            sub.echeances_payees === sub.echeances_totales
+                              ? 'text-green-600'
+                              : sub.echeances_payees === 0
+                              ? 'text-red-600'
+                              : 'text-orange-600'
+                          }`}>
+                            {sub.echeances_payees}/{sub.echeances_totales} payés
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center gap-2">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center justify-end relative">
                           <button
-                            onClick={() => handleViewClick(sub)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-colors"
-                            title="Voir les détails"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenDropdown(openDropdown === sub.id ? null : sub.id);
+                            }}
+                            className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                            title="Actions"
                           >
-                            <Eye className="w-4 h-4" />
+                            <MoreVertical className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => handleEditClick(sub)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-700 transition-colors"
-                            title="Modifier"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(sub)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-red-50 text-finixar-red hover:text-red-700 transition-colors"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+
+                          {openDropdown === sub.id && (
+                            <div
+                              className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdown(null);
+                                  handleViewClick(sub);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                              >
+                                <Eye className="w-4 h-4 text-slate-600" />
+                                <span>Voir détails</span>
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdown(null);
+                                  handleEditClick(sub);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4 text-slate-600" />
+                                <span>Modifier</span>
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenDropdown(null);
+                                  handleDeleteClick(sub);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                              >
+                                <XCircle className="w-4 h-4 text-red-600" />
+                                <span>Supprimer</span>
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>
