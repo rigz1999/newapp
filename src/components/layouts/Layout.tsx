@@ -6,12 +6,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { GlobalSearch } from '../dashboard/GlobalSearch';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { logger } from '../../utils/logger';
+import { DashboardSkeleton } from '../common/Skeleton';
 
 interface LayoutProps {
   organization: { id: string; name: string; role: string };
+  isLoading?: boolean;
 }
 
-export function Layout({ organization }: LayoutProps) {
+export function Layout({ organization, isLoading = false }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
@@ -96,8 +98,8 @@ export function Layout({ organization }: LayoutProps) {
   };
 
   const isActive = (path: string) => {
-    if (path === '/dashboard') {
-      return (location.pathname === '/' || location.pathname === '/dashboard') && !location.pathname.startsWith('/admin');
+    if (path === '/') {
+      return location.pathname === '/' && !location.pathname.startsWith('/admin');
     }
     return location.pathname.startsWith(path);
   };
@@ -128,9 +130,9 @@ export function Layout({ organization }: LayoutProps) {
         <div className="flex-1 px-4">
           <nav className="space-y-1">
             <Link
-              to="/dashboard"
+              to="/"
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                isActive('/dashboard') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
+                isActive('/') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
               }`}
             >
               <Home className="w-4 h-4" />
@@ -255,7 +257,7 @@ export function Layout({ organization }: LayoutProps) {
       </aside>
 
       <main className="flex-1 overflow-y-auto relative">
-        <Outlet />
+        {isLoading ? <DashboardSkeleton /> : <Outlet />}
       </main>
 
       {/* Global Search Modal */}

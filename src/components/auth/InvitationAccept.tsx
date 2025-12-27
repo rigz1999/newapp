@@ -198,7 +198,7 @@ export function InvitationAccept() {
 
       // Redirect after 3 seconds
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/');
       }, 3000);
 
     } catch (err: any) {
@@ -280,7 +280,7 @@ export function InvitationAccept() {
             </p>
 
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/')}
               className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors"
             >
               Retour à l'accueil

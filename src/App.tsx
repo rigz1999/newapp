@@ -48,7 +48,7 @@ function App() {
             path="/login"
             element={
               user && (isAdmin || organization) ? (
-                <Navigate to="/dashboard" replace />
+                <Navigate to="/" replace />
               ) : (
                 <Login />
               )
@@ -66,10 +66,11 @@ function App() {
             path="/*"
             element={
               user ? (
-                orgLoading || authLoading ? (
-                  <DashboardSkeleton />
-                ) : (isAdmin || organization) ? (
-                  <Layout organization={organization || DEFAULT_ORG} />
+                (isAdmin || organization || orgLoading || authLoading) ? (
+                  <Layout
+                    organization={organization || DEFAULT_ORG}
+                    isLoading={orgLoading || authLoading}
+                  />
                 ) : (
                   <Navigate to="/login" replace />
                 )
@@ -79,7 +80,7 @@ function App() {
             }
           >
             <Route
-              path="dashboard"
+              index
               element={
                 <ErrorBoundary>
                   <Suspense fallback={<LoadingFallback />}>
@@ -87,10 +88,6 @@ function App() {
                   </Suspense>
                 </ErrorBoundary>
               }
-            />
-            <Route
-              index
-              element={<Navigate to="/dashboard" replace />}
             />
             <Route
               path="projets"
@@ -196,7 +193,7 @@ function App() {
                     </Suspense>
                   </ErrorBoundary>
                 ) : (
-                  <Navigate to="/dashboard" replace />
+                  <Navigate to="/" replace />
                 )
               }
             />
@@ -212,7 +209,7 @@ function App() {
                     </Suspense>
                   </ErrorBoundary>
                 ) : (
-                  <Navigate to="/dashboard" replace />
+                  <Navigate to="/" replace />
                 )
               }
             />
