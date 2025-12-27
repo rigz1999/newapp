@@ -142,6 +142,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_OPTIONS);
   const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
 
   // Load last selection from localStorage
   useEffect(() => {
@@ -185,39 +186,70 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
     setSelectedPreset(preset);
   };
 
-  const calculateDateRange = (preset: DateRangePreset): { start: string; end: string } => {
+  const calculateDateRange = (preset: DateRangePreset, forFuture: boolean = false): { start: string; end: string } => {
     const today = new Date();
-    const end = today.toISOString().split('T')[0];
+    const start = today.toISOString().split('T')[0];
 
-    switch (preset) {
-      case 'this_month': {
-        const start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-        return { start, end };
+    if (forFuture) {
+      // For future dates (coupons)
+      switch (preset) {
+        case 'this_month': {
+          const end = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+          return { start, end };
+        }
+        case 'last_3_months': {
+          const end = new Date(today);
+          end.setMonth(end.getMonth() + 3);
+          return { start, end: end.toISOString().split('T')[0] };
+        }
+        case 'last_6_months': {
+          const end = new Date(today);
+          end.setMonth(end.getMonth() + 6);
+          return { start, end: end.toISOString().split('T')[0] };
+        }
+        case 'this_year': {
+          const end = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
+          return { start, end };
+        }
+        case 'all':
+          return { start, end: '' };
+        case 'custom':
+        default:
+          return { start: options.couponsStartDate, end: options.couponsEndDate };
       }
-      case 'last_3_months': {
-        const start = new Date(today);
-        start.setMonth(start.getMonth() - 3);
-        return { start: start.toISOString().split('T')[0], end };
+    } else {
+      // For past dates (payments)
+      const end = today.toISOString().split('T')[0];
+      switch (preset) {
+        case 'this_month': {
+          const start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+          return { start, end };
+        }
+        case 'last_3_months': {
+          const start = new Date(today);
+          start.setMonth(start.getMonth() - 3);
+          return { start: start.toISOString().split('T')[0], end };
+        }
+        case 'last_6_months': {
+          const start = new Date(today);
+          start.setMonth(start.getMonth() - 6);
+          return { start: start.toISOString().split('T')[0], end };
+        }
+        case 'this_year': {
+          const start = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+          return { start, end };
+        }
+        case 'all':
+          return { start: '', end: '' };
+        case 'custom':
+        default:
+          return { start: options.paymentsStartDate, end: options.paymentsEndDate };
       }
-      case 'last_6_months': {
-        const start = new Date(today);
-        start.setMonth(start.getMonth() - 6);
-        return { start: start.toISOString().split('T')[0], end };
-      }
-      case 'this_year': {
-        const start = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
-        return { start, end };
-      }
-      case 'all':
-        return { start: '', end: '' };
-      case 'custom':
-      default:
-        return { start: options.paymentsStartDate, end: options.paymentsEndDate };
     }
   };
 
   const handleDateRangeChange = (type: 'payments' | 'coupons', preset: DateRangePreset) => {
-    const { start, end } = calculateDateRange(preset);
+    const { start, end } = calculateDateRange(preset, type === 'coupons');
 
     if (type === 'payments') {
       setOptions({
@@ -330,14 +362,26 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       }
     } catch (error) {
       console.error('Export error:', error);
-      alert('Erreur lors de l\'export. Veuillez réessayer.');
+      let errorMessage = 'Une erreur est survenue lors de l\'export.';
+
+      if (error instanceof Error) {
+        if (error.message.includes('fetch') || error.message.includes('network')) {
+          errorMessage = 'Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
+        } else if (error.message.includes('permission')) {
+          errorMessage = 'Erreur de permission. Vous n\'avez pas accès à ces données.';
+        } else if (error.message.includes('quota') || error.message.includes('storage')) {
+          errorMessage = 'Espace de stockage insuffisant. Libérez de l\'espace et réessayez.';
+        }
+      }
+
+      alert(errorMessage);
+      setExportProgress(0);
     } finally {
       setExporting(false);
     }
   };
 
   const exportToExcel = async () => {
-    setExporting(true);
     setExportProgress(10);
 
     try {
@@ -513,15 +557,12 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       }, 500);
     } catch (error) {
       console.error('Excel export error:', error);
-      alert('Erreur lors de l\'export Excel. Veuillez réessayer.');
-    } finally {
-      setExporting(false);
       setExportProgress(0);
+      throw error; // Re-throw to be caught by handleExport
     }
   };
 
   const exportToPDF = async () => {
-    setExporting(true);
     setExportProgress(10);
 
     try {
@@ -667,10 +708,8 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       }, 500);
     } catch (error) {
       console.error('PDF export error:', error);
-      alert('Erreur lors de l\'export PDF. Veuillez réessayer.');
-    } finally {
-      setExporting(false);
       setExportProgress(0);
+      throw error; // Re-throw to be caught by handleExport
     }
   };
 
@@ -799,171 +838,214 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
                 setShowAdvanced(!showAdvanced);
                 if (!showAdvanced) setSelectedPreset('custom');
               }}
-              className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-2"
+              className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
             >
-              Options avancées {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showAdvanced ? 'Masquer les options' : 'Personnaliser l\'export'}
+              {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
             <div className="flex-1 border-t border-slate-200"></div>
           </div>
 
           {/* Advanced Options */}
           {showAdvanced && (
-            <div className="mb-6 space-y-4 p-4 bg-slate-50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="stats"
-                  checked={options.includeStats}
-                  onChange={(e) => setOptions({ ...options, includeStats: e.target.checked })}
-                  className="rounded"
-                />
-                <label htmlFor="stats" className="text-sm text-slate-900">
-                  Statistiques globales
-                </label>
+            <div className="mb-6 space-y-4">
+              {/* Stats Card */}
+              <div className="border border-slate-200 rounded-lg p-4 bg-white">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="stats"
+                      checked={options.includeStats}
+                      onChange={(e) => setOptions({ ...options, includeStats: e.target.checked })}
+                      className="rounded text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="stats" className="font-semibold text-slate-900 cursor-pointer">
+                      Statistiques globales
+                    </label>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-600 ml-6">
+                  Total investi, coupons payés, projets actifs
+                </p>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="payments"
-                    checked={options.includePayments}
-                    onChange={(e) => setOptions({ ...options, includePayments: e.target.checked })}
-                    className="rounded"
-                  />
-                  <label htmlFor="payments" className="text-sm text-slate-900">
-                    Paiements
-                  </label>
+              {/* Payments Card */}
+              <div className="border border-slate-200 rounded-lg p-4 bg-white">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="payments"
+                      checked={options.includePayments}
+                      onChange={(e) => setOptions({ ...options, includePayments: e.target.checked })}
+                      className="rounded text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="payments" className="font-semibold text-slate-900 cursor-pointer">
+                      Paiements
+                    </label>
+                  </div>
                 </div>
                 {options.includePayments && (
-                  <div className="ml-6 space-y-2">
-                    <select
-                      value={options.paymentsDateRange}
-                      onChange={(e) => handleDateRangeChange('payments', e.target.value as DateRangePreset)}
-                      className="text-sm px-3 py-1 border border-slate-300 rounded w-full"
-                    >
-                      <option value="all">Toutes les périodes</option>
-                      <option value="this_month">Ce mois</option>
-                      <option value="last_3_months">3 derniers mois</option>
-                      <option value="last_6_months">6 derniers mois</option>
-                      <option value="this_year">Cette année</option>
-                      <option value="custom">Personnalisé</option>
-                    </select>
+                  <div className="ml-6 space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 mb-1 block">Période</label>
+                      <select
+                        value={options.paymentsDateRange}
+                        onChange={(e) => handleDateRangeChange('payments', e.target.value as DateRangePreset)}
+                        className="text-sm px-3 py-2 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="all">Toutes les périodes</option>
+                        <option value="this_month">Ce mois</option>
+                        <option value="last_3_months">3 derniers mois</option>
+                        <option value="last_6_months">6 derniers mois</option>
+                        <option value="this_year">Cette année</option>
+                        <option value="custom">Période personnalisée</option>
+                      </select>
+                    </div>
                     {options.paymentsDateRange === 'custom' && (
-                      <div className="flex gap-2">
-                        <input
-                          type="date"
-                          value={options.paymentsStartDate}
-                          onChange={(e) => setOptions({ ...options, paymentsStartDate: e.target.value })}
-                          className="text-xs px-2 py-1 border border-slate-300 rounded flex-1"
-                          placeholder="Du"
-                        />
-                        <input
-                          type="date"
-                          value={options.paymentsEndDate}
-                          onChange={(e) => setOptions({ ...options, paymentsEndDate: e.target.value })}
-                          className="text-xs px-2 py-1 border border-slate-300 rounded flex-1"
-                          placeholder="Au"
-                        />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs font-medium text-slate-700 mb-1 block">Du</label>
+                          <input
+                            type="date"
+                            value={options.paymentsStartDate}
+                            onChange={(e) => setOptions({ ...options, paymentsStartDate: e.target.value })}
+                            className="text-sm px-2 py-1.5 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-700 mb-1 block">Au</label>
+                          <input
+                            type="date"
+                            value={options.paymentsEndDate}
+                            onChange={(e) => setOptions({ ...options, paymentsEndDate: e.target.value })}
+                            className="text-sm px-2 py-1.5 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     )}
-                    <select
-                      value={options.paymentsLimit}
-                      onChange={(e) => setOptions({ ...options, paymentsLimit: parseInt(e.target.value) })}
-                      className="text-sm px-3 py-1 border border-slate-300 rounded w-full"
-                    >
-                      <option value="0">Tous les paiements</option>
-                      <option value="10">10 derniers</option>
-                      <option value="20">20 derniers</option>
-                      <option value="50">50 derniers</option>
-                    </select>
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 mb-1 block">Nombre de paiements</label>
+                      <select
+                        value={options.paymentsLimit}
+                        onChange={(e) => setOptions({ ...options, paymentsLimit: parseInt(e.target.value) })}
+                        className="text-sm px-3 py-2 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="0">Tous les paiements</option>
+                        <option value="10">10 derniers</option>
+                        <option value="20">20 derniers</option>
+                        <option value="50">50 derniers</option>
+                        <option value="100">100 derniers</option>
+                      </select>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="coupons"
-                    checked={options.includeCoupons}
-                    onChange={(e) => setOptions({ ...options, includeCoupons: e.target.checked })}
-                    className="rounded"
-                  />
-                  <label htmlFor="coupons" className="text-sm text-slate-900">
-                    Coupons à venir
-                  </label>
+              {/* Coupons Card */}
+              <div className="border border-slate-200 rounded-lg p-4 bg-white">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="coupons"
+                      checked={options.includeCoupons}
+                      onChange={(e) => setOptions({ ...options, includeCoupons: e.target.checked })}
+                      className="rounded text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="coupons" className="font-semibold text-slate-900 cursor-pointer">
+                      Coupons à venir
+                    </label>
+                  </div>
                 </div>
                 {options.includeCoupons && (
-                  <div className="ml-6 space-y-2">
-                    <select
-                      value={options.couponsDateRange}
-                      onChange={(e) => handleDateRangeChange('coupons', e.target.value as DateRangePreset)}
-                      className="text-sm px-3 py-1 border border-slate-300 rounded w-full"
-                    >
-                      <option value="all">Tous les coupons à venir</option>
-                      <option value="this_month">Ce mois</option>
-                      <option value="last_3_months">3 prochains mois</option>
-                      <option value="last_6_months">6 prochains mois</option>
-                      <option value="this_year">Cette année</option>
-                      <option value="custom">Personnalisé</option>
-                    </select>
+                  <div className="ml-6 space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 mb-1 block">Période</label>
+                      <select
+                        value={options.couponsDateRange}
+                        onChange={(e) => handleDateRangeChange('coupons', e.target.value as DateRangePreset)}
+                        className="text-sm px-3 py-2 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="all">Tous les coupons à venir</option>
+                        <option value="this_month">Fin de ce mois</option>
+                        <option value="last_3_months">3 prochains mois</option>
+                        <option value="last_6_months">6 prochains mois</option>
+                        <option value="this_year">Fin de cette année</option>
+                        <option value="custom">Période personnalisée</option>
+                      </select>
+                    </div>
                     {options.couponsDateRange === 'custom' && (
-                      <div className="flex gap-2">
-                        <input
-                          type="date"
-                          value={options.couponsStartDate}
-                          onChange={(e) => setOptions({ ...options, couponsStartDate: e.target.value })}
-                          className="text-xs px-2 py-1 border border-slate-300 rounded flex-1"
-                          placeholder="Du"
-                        />
-                        <input
-                          type="date"
-                          value={options.couponsEndDate}
-                          onChange={(e) => setOptions({ ...options, couponsEndDate: e.target.value })}
-                          className="text-xs px-2 py-1 border border-slate-300 rounded flex-1"
-                          placeholder="Au"
-                        />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs font-medium text-slate-700 mb-1 block">Du</label>
+                          <input
+                            type="date"
+                            value={options.couponsStartDate}
+                            onChange={(e) => setOptions({ ...options, couponsStartDate: e.target.value })}
+                            className="text-sm px-2 py-1.5 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-slate-700 mb-1 block">Au</label>
+                          <input
+                            type="date"
+                            value={options.couponsEndDate}
+                            onChange={(e) => setOptions({ ...options, couponsEndDate: e.target.value })}
+                            className="text-sm px-2 py-1.5 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     )}
-                    <select
-                      value={options.couponsLimit}
-                      onChange={(e) => setOptions({ ...options, couponsLimit: parseInt(e.target.value) })}
-                      className="text-sm px-3 py-1 border border-slate-300 rounded w-full"
-                    >
-                      <option value="0">Tous les coupons</option>
-                      <option value="10">10 prochains</option>
-                      <option value="20">20 prochains</option>
-                      <option value="50">50 prochains</option>
-                    </select>
+                    <div>
+                      <label className="text-xs font-medium text-slate-700 mb-1 block">Nombre de coupons</label>
+                      <select
+                        value={options.couponsLimit}
+                        onChange={(e) => setOptions({ ...options, couponsLimit: parseInt(e.target.value) })}
+                        className="text-sm px-3 py-2 border border-slate-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="0">Tous les coupons</option>
+                        <option value="10">10 prochains</option>
+                        <option value="20">20 prochains</option>
+                        <option value="50">50 prochains</option>
+                        <option value="100">100 prochains</option>
+                      </select>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="chart"
-                  checked={options.includeChart}
-                  onChange={(e) => setOptions({ ...options, includeChart: e.target.checked })}
-                  className="rounded"
-                />
-                <label htmlFor="chart" className="text-sm text-slate-900">
-                  Données mensuelles (graphique)
-                </label>
-              </div>
+              {/* Other Data Card */}
+              <div className="border border-slate-200 rounded-lg p-4 bg-white">
+                <h4 className="font-semibold text-slate-900 mb-3">Autres données</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="chart"
+                      checked={options.includeChart}
+                      onChange={(e) => setOptions({ ...options, includeChart: e.target.checked })}
+                      className="rounded text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="chart" className="text-sm text-slate-900 cursor-pointer">
+                      Données mensuelles (graphique)
+                    </label>
+                  </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="alerts"
-                  checked={options.includeAlerts}
-                  onChange={(e) => setOptions({ ...options, includeAlerts: e.target.checked })}
-                  className="rounded"
-                />
-                <label htmlFor="alerts" className="text-sm text-slate-900">
-                  Alertes actives
-                </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="alerts"
+                      checked={options.includeAlerts}
+                      onChange={(e) => setOptions({ ...options, includeAlerts: e.target.checked })}
+                      className="rounded text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="alerts" className="text-sm text-slate-900 cursor-pointer">
+                      Alertes actives
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -1015,6 +1097,22 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
               )}
             </div>
           </div>
+
+          {/* Progress Bar */}
+          {exporting && exportProgress > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-slate-700">Export en cours...</span>
+                <span className="text-sm font-medium text-blue-600">{exportProgress}%</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${exportProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3">
