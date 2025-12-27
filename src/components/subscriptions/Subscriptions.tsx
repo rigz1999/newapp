@@ -349,80 +349,6 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
     }).format(amount);
   };
 
-  const exportToExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Souscriptions');
-
-    // Define columns (without Quantité)
-    worksheet.columns = [
-      { header: 'Projet', key: 'projet', width: 20 },
-      { header: 'Émetteur', key: 'emetteur', width: 20 },
-      { header: 'Tranche', key: 'tranche', width: 20 },
-      { header: 'Investisseur', key: 'investisseur', width: 25 },
-      { header: 'Type', key: 'type', width: 15 },
-      { header: 'Email', key: 'email', width: 25 },
-      { header: 'CGP', key: 'cgp', width: 20 },
-      { header: 'Date souscription', key: 'dateSouscription', width: 18 },
-      { header: 'Montant investi', key: 'montantInvesti', width: 18 },
-      { header: 'Coupon brut', key: 'couponBrut', width: 15 },
-      { header: 'Coupon net', key: 'couponNet', width: 15 },
-      { header: 'Échéances payées', key: 'echeancesPayees', width: 18 },
-      { header: 'Échéances totales', key: 'echeancesTotales', width: 18 },
-    ];
-
-    // Add rows
-    filteredSubscriptions.forEach((sub) => {
-      worksheet.addRow({
-        projet: sub.tranches.projets.projet,
-        emetteur: sub.tranches.projets.emetteur,
-        tranche: sub.tranches.tranche_name,
-        investisseur: sub.investisseurs.nom_raison_sociale || sub.investisseurs.representant_legal || '',
-        type: sub.investisseurs.type,
-        email: sub.investisseurs.email || '',
-        cgp: sub.cgp || sub.investisseurs.cgp || '',
-        dateSouscription: formatDate(sub.date_souscription),
-        montantInvesti: sub.montant_investi,
-        couponBrut: sub.coupon_brut,
-        couponNet: sub.coupon_net,
-        echeancesPayees: sub.echeances_payees || 0,
-        echeancesTotales: sub.echeances_totales || 0,
-      });
-    });
-
-    // Style header row
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE2E8F0' },
-    };
-
-    // Generate buffer and download
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `souscriptions_${new Date().toISOString().split('T')[0]}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    const totalSubscriptions = filteredSubscriptions.length;
-    const totalInvested = filteredSubscriptions.reduce((sum, sub) => sum + sub.montant_investi, 0);
-    const totalAnnualCoupons = filteredSubscriptions.reduce((sum, sub) => sum + sub.coupon_net, 0);
-    const avgInvestment = totalSubscriptions > 0 ? totalInvested / totalSubscriptions : 0;
-
-    return {
-      totalSubscriptions,
-      totalInvested,
-      totalAnnualCoupons,
-      avgInvestment,
-    };
-  }, [filteredSubscriptions]);
-
   // Extract unique values for multi-select filters
   const uniqueProjects = useMemo(() =>
     Array.from(
@@ -519,6 +445,80 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
 
     return true;
   });
+
+  // Calculate stats - must be after filteredSubscriptions
+  const stats = useMemo(() => {
+    const totalSubscriptions = filteredSubscriptions.length;
+    const totalInvested = filteredSubscriptions.reduce((sum, sub) => sum + sub.montant_investi, 0);
+    const totalAnnualCoupons = filteredSubscriptions.reduce((sum, sub) => sum + sub.coupon_net, 0);
+    const avgInvestment = totalSubscriptions > 0 ? totalInvested / totalSubscriptions : 0;
+
+    return {
+      totalSubscriptions,
+      totalInvested,
+      totalAnnualCoupons,
+      avgInvestment,
+    };
+  }, [filteredSubscriptions]);
+
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Souscriptions');
+
+    // Define columns (without Quantité)
+    worksheet.columns = [
+      { header: 'Projet', key: 'projet', width: 20 },
+      { header: 'Émetteur', key: 'emetteur', width: 20 },
+      { header: 'Tranche', key: 'tranche', width: 20 },
+      { header: 'Investisseur', key: 'investisseur', width: 25 },
+      { header: 'Type', key: 'type', width: 15 },
+      { header: 'Email', key: 'email', width: 25 },
+      { header: 'CGP', key: 'cgp', width: 20 },
+      { header: 'Date souscription', key: 'dateSouscription', width: 18 },
+      { header: 'Montant investi', key: 'montantInvesti', width: 18 },
+      { header: 'Coupon brut', key: 'couponBrut', width: 15 },
+      { header: 'Coupon net', key: 'couponNet', width: 15 },
+      { header: 'Échéances payées', key: 'echeancesPayees', width: 18 },
+      { header: 'Échéances totales', key: 'echeancesTotales', width: 18 },
+    ];
+
+    // Add rows
+    filteredSubscriptions.forEach((sub) => {
+      worksheet.addRow({
+        projet: sub.tranches.projets.projet,
+        emetteur: sub.tranches.projets.emetteur,
+        tranche: sub.tranches.tranche_name,
+        investisseur: sub.investisseurs.nom_raison_sociale || sub.investisseurs.representant_legal || '',
+        type: sub.investisseurs.type,
+        email: sub.investisseurs.email || '',
+        cgp: sub.cgp || sub.investisseurs.cgp || '',
+        dateSouscription: formatDate(sub.date_souscription),
+        montantInvesti: sub.montant_investi,
+        couponBrut: sub.coupon_brut,
+        couponNet: sub.coupon_net,
+        echeancesPayees: sub.echeances_payees || 0,
+        echeancesTotales: sub.echeances_totales || 0,
+      });
+    });
+
+    // Style header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE2E8F0' },
+    };
+
+    // Generate buffer and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `souscriptions_${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
