@@ -786,7 +786,7 @@ export default function Settings() {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={handleUpdateReminderSettings}
-                disabled={saving || !remindersEnabled}
+                disabled={saving}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {saving ? (
