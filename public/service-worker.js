@@ -3,7 +3,7 @@
 // Path: public/service-worker.js
 // ============================================
 
-const CACHE_NAME = 'finixar-v7';
+const CACHE_NAME = 'finixar-v8';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -44,18 +44,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network first strategy for HTML
+  // Network first strategy for HTML - SPA routing support
   if (request.headers.get('accept').includes('text/html')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
-          });
+          // Only cache successful responses
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => {
+          // For SPA routing, fallback to cached index.html for navigation requests
+          if (request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+          return caches.match(request);
+        })
     );
     return;
   }
