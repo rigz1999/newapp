@@ -33,11 +33,6 @@ function App() {
 
   const LoadingFallback = () => <DashboardSkeleton />;
 
-  // Loading state
-  if (authLoading) {
-    return <DashboardSkeleton />;
-  }
-
   return (
     <ThemeProvider>
       <ErrorBoundary>
@@ -47,7 +42,9 @@ function App() {
           <Route
             path="/login"
             element={
-              user && (isAdmin || organization) ? (
+              authLoading ? (
+                <DashboardSkeleton />
+              ) : user && (isAdmin || organization) ? (
                 <Navigate to="/" replace />
               ) : (
                 <Login />
@@ -55,21 +52,35 @@ function App() {
             }
           />
           <Route path="/invitation/accept" element={<InvitationAccept />} />
-          <Route path="/diagnostic" element={user ? <DiagnosticPage /> : <Navigate to="/login" replace />} />
+          <Route
+            path="/diagnostic"
+            element={authLoading ? <DashboardSkeleton /> : user ? <DiagnosticPage /> : <Navigate to="/login" replace />}
+          />
 
           {/* OAuth Callback Routes - Require authentication */}
-          <Route path="/auth/callback/microsoft" element={user ? <EmailOAuthCallback /> : <Navigate to="/login" replace />} />
-          <Route path="/auth/callback/google" element={user ? <EmailOAuthCallback /> : <Navigate to="/login" replace />} />
+          <Route
+            path="/auth/callback/microsoft"
+            element={authLoading ? <DashboardSkeleton /> : user ? <EmailOAuthCallback /> : <Navigate to="/login" replace />}
+          />
+          <Route
+            path="/auth/callback/google"
+            element={authLoading ? <DashboardSkeleton /> : user ? <EmailOAuthCallback /> : <Navigate to="/login" replace />}
+          />
 
           {/* Protected Routes - Authentication required */}
           <Route
             path="/*"
             element={
-              user ? (
-                (isAdmin || organization || orgLoading || authLoading) ? (
+              authLoading ? (
+                <Layout
+                  organization={DEFAULT_ORG}
+                  isLoading={true}
+                />
+              ) : user ? (
+                (isAdmin || organization || orgLoading) ? (
                   <Layout
                     organization={organization || DEFAULT_ORG}
-                    isLoading={orgLoading || authLoading}
+                    isLoading={orgLoading}
                   />
                 ) : (
                   <Navigate to="/login" replace />
