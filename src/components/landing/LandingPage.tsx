@@ -76,15 +76,15 @@ export function LandingPage() {
             <div className="text-white">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-6 border border-white/20">
                 <div className="w-2 h-2 bg-finixar-teal rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Conforme RGPD • Hébergement Souverain</span>
+                <span className="text-sm font-medium">🇫🇷 Données hébergées en France • Conforme RGPD</span>
               </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-                Plateforme de gestion d'investissements nouvelle génération
+                La gestion d'actifs, simplifiée et sécurisée
               </h1>
 
               <p className="text-lg sm:text-xl text-slate-300 mb-8 leading-relaxed">
-                Centralisez vos projets, gérez vos investissements et automatisez le paiement de vos coupons dans une interface sécurisée et intuitive.
+                Pilotez vos projets, suivez vos échéances et gérez vos relations investisseurs sur une plateforme unique conçue pour les professionnels de la finance.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -176,7 +176,7 @@ export function LandingPage() {
                 <Users className="w-7 h-7 text-green-600" />
               </div>
               <h3 className="text-lg font-bold text-finixar-deep-blue mb-3">
-                Gestion des investisseurs
+                Relations investisseurs
               </h3>
               <p className="text-slate-600 text-sm leading-relaxed">
                 Centralisez les informations de vos investisseurs et gérez leurs RIB en toute sécurité.
@@ -202,7 +202,7 @@ export function LandingPage() {
                 <Euro className="w-7 h-7 text-orange-600" />
               </div>
               <h3 className="text-lg font-bold text-finixar-deep-blue mb-3">
-                Paiements et preuves
+                Distribution de revenus et reporting
               </h3>
               <p className="text-slate-600 text-sm leading-relaxed">
                 Gestion des coupons avec import Excel et téléchargement de justificatifs de paiement.
@@ -259,10 +259,10 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-red-900 mb-2">
-                    Multiplication des versions et perte de traçabilité
+                    Absence de traçabilité et risque d'audit
                   </h3>
                   <p className="text-red-800 text-sm leading-relaxed">
-                    "Version_finale_v3_VRAIE.xlsx"... Impossible de savoir quelle version est la bonne. Aucune traçabilité sur qui a modifié quoi et quand. En cas d'audit, vous êtes incapables de justifier vos décisions.
+                    Fichiers multiples sans historique de modifications. Absence de piste d'audit complète sur les décisions d'investissement. Difficulté à démontrer la conformité lors des contrôles réglementaires.
                   </p>
                 </div>
               </div>
@@ -276,10 +276,10 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-orange-900 mb-2">
-                    Des heures gaspillées sur des tâches répétitives
+                    Inefficacité opérationnelle des processus manuels
                   </h3>
                   <p className="text-orange-800 text-sm leading-relaxed">
-                    Copier-coller des RIB, calculer des coupons, envoyer des emails un par un... Vous méritez mieux que de passer 15 heures par semaine sur ces tâches sans valeur ajoutée.
+                    Saisie manuelle répétitive des RIB, calculs de coupons sujets aux erreurs, communications individuelles chronophages. Temps significatif consacré à des tâches sans valeur ajoutée au détriment de l'analyse stratégique.
                   </p>
                 </div>
               </div>
@@ -293,10 +293,10 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-purple-900 mb-2">
-                    Échéances manquées et investisseurs mécontents
+                    Risque opérationnel lié au suivi manuel des échéances
                   </h3>
                   <p className="text-purple-800 text-sm leading-relaxed">
-                    Un rappel oublié, une échéance ratée... et votre réputation en prend un coup. Sans système automatisé, impossible de suivre toutes les dates importantes.
+                    Absence de système centralisé de suivi des dates critiques. Risque de non-respect des obligations contractuelles envers les investisseurs. Impact potentiel sur la relation client et la réputation du fonds.
                   </p>
                 </div>
               </div>
@@ -310,13 +310,68 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-yellow-900 mb-2">
-                    Exposition aux risques juridiques et réglementaires
+                    Non-conformité RGPD et risques de sécurité des données
                   </h3>
                   <p className="text-yellow-800 text-sm leading-relaxed">
-                    Fichiers Excel non chiffrés contenant RIB et données financières sensibles. Partage par email sans contrôle d'accès. Une fuite de données peut coûter jusqu'à 4% de votre chiffre d'affaires en amendes RGPD.
+                    Stockage de données sensibles (RIB, informations personnelles) sans chiffrement approprié. Partage par e-mail sans contrôle d'accès ni traçabilité. Exposition aux sanctions réglementaires pouvant atteindre 4% du chiffre d'affaires annuel.
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pourquoi Finixar Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
+              Pourquoi Finixar
+            </h2>
+            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
+              Une plateforme pensée pour les professionnels de la gestion d'actifs
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Benefit 1 - Investor Data */}
+            <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200">
+              <div className="w-14 h-14 bg-finixar-brand-blue/10 rounded-xl flex items-center justify-center mb-6">
+                <Users className="w-7 h-7 text-finixar-brand-blue" />
+              </div>
+              <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
+                Base d'investisseurs centralisée
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Gestion structurée des données investisseurs et RIB dans un référentiel unique. Élimination de la saisie manuelle et des erreurs de ressaisie.
+              </p>
+            </div>
+
+            {/* Benefit 2 - Automated Reminders */}
+            <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200">
+              <div className="w-14 h-14 bg-finixar-teal/10 rounded-xl flex items-center justify-center mb-6">
+                <Bell className="w-7 h-7 text-finixar-teal" />
+              </div>
+              <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
+                Rappels automatisés par e-mail
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Notifications automatiques pour vos échéances critiques. Réduction du risque de non-respect des obligations contractuelles envers vos investisseurs.
+              </p>
+            </div>
+
+            {/* Benefit 3 - Excel Import/Export */}
+            <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200">
+              <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
+                <FileText className="w-7 h-7 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
+                Compatibilité Excel complète
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Import des données de coupons depuis vos fichiers Excel existants. Export des rapports au format Excel pour vos besoins comptables et réglementaires.
+              </p>
             </div>
           </div>
         </div>
@@ -327,7 +382,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-block px-4 py-2 bg-finixar-teal/10 rounded-full mb-4">
-              <span className="text-finixar-teal font-semibold text-sm">LA SOLUTION QUE VOUS ATTENDIEZ</span>
+              <span className="text-finixar-teal font-semibold text-sm">FONCTIONNALITÉS EN ACTION</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-bold text-finixar-deep-blue mb-6">
               Dites adieu aux fichiers Excel
@@ -341,10 +396,14 @@ export function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-6 mb-12">
             <div className="bg-white rounded-2xl shadow-xl p-3 border border-slate-200">
               <img
-                src="/images/dashboard-screenshot.png"
-                alt="Tableau de bord Finixar"
+                src="/images/reminders.png"
+                alt="Rappels automatiques Finixar"
                 className="rounded-lg w-full h-auto"
               />
+              <div className="mt-4 px-2">
+                <h3 className="font-semibold text-finixar-deep-blue mb-1">Rappels automatiques par e-mail</h3>
+                <p className="text-sm text-slate-600">Ne manquez plus jamais une échéance avec les notifications intelligentes</p>
+              </div>
             </div>
             <div className="bg-white rounded-2xl shadow-xl p-3 border border-slate-200">
               <img
@@ -352,6 +411,10 @@ export function LandingPage() {
                 alt="Gestion des coupons Finixar"
                 className="rounded-lg w-full h-auto"
               />
+              <div className="mt-4 px-2">
+                <h3 className="font-semibold text-finixar-deep-blue mb-1">Gestion centralisée des coupons</h3>
+                <p className="text-sm text-slate-600">Suivez vos coupons, échéances et paiements en un seul endroit</p>
+              </div>
             </div>
           </div>
 
