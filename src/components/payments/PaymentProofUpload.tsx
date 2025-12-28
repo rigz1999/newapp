@@ -519,6 +519,53 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                 </div>
               )}
 
+              {/* Simple upload button (AI analysis disabled) */}
+              <button
+                onClick={async () => {
+                  if (!payment) return;
+                  setAnalyzing(true);
+                  setError(null);
+
+                  try {
+                    // Upload each file directly
+                    for (const file of files) {
+                      const safeName = sanitizeFileName(file.name);
+                      const fileName = `${payment.id}/${Date.now()}_${safeName}`;
+
+                      const { error: uploadError } = await supabase.storage
+                        .from('payment-proofs')
+                        .upload(fileName, file);
+
+                      if (uploadError) throw uploadError;
+
+                      const { data: urlData } = supabase.storage
+                        .from('payment-proofs')
+                        .getPublicUrl(fileName);
+
+                      await supabase.from('payment_proofs').insert({
+                        paiement_id: payment.id,
+                        file_url: urlData.publicUrl,
+                        file_name: file.name,
+                        file_size: file.size
+                      });
+                    }
+
+                    onSuccess();
+                    onClose();
+                  } catch (err: any) {
+                    setError(err.message || 'Erreur lors de l\'upload');
+                  } finally {
+                    setAnalyzing(false);
+                  }
+                }}
+                disabled={files.length === 0 || analyzing}
+                className="w-full bg-finixar-teal text-white py-3 rounded-lg font-medium hover:bg-finixar-teal-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {analyzing && <Loader2 className="w-5 h-5 animate-spin" />}
+                {analyzing ? 'Upload en cours...' : 'Télécharger les justificatifs'}
+              </button>
+
+              {/* DISABLED - AI ANALYSIS BUTTON (can be re-enabled later)
               <button
                 onClick={handleAnalyze}
                 disabled={files.length === 0 || analyzing}
@@ -527,9 +574,11 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                 {analyzing && <Loader2 className="w-5 h-5 animate-spin" />}
                 {analyzing ? 'Analyse en cours...' : 'Analyser le justificatif'}
               </button>
+              END DISABLED */}
             </>
           ) : (
             <div className="space-y-4">
+              {/* DISABLED - AI ANALYSIS RESULTS DISPLAY (can be re-enabled later)
               {analysisResult.correspondances?.map((match: any, idx: number) => (
                 <div key={idx} className={`border-2 rounded-lg p-6 ${getMatchColor(match.statut)}`}>
                   <div className="mb-4">
@@ -619,6 +668,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                 <ArrowLeft className="w-4 h-4" />
                 Retour
               </button>
+              END DISABLED */}
             </div>
           )}
         </div>
