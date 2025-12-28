@@ -127,17 +127,16 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
     setError(null);
 
     try {
-      const uploadedUrls: string[] = [];
+      const base64Images: string[] = [];
       const tempFileNames: string[] = [];
+      const uploadedBlobs: Blob[] = [];
 
-      // Process all files (convert PDFs to images, upload images directly)
+      // Process all files (convert PDFs to images, process images directly)
       for (const file of files) {
         if (file.type === 'application/pdf') {
-
           const arrayBuffer = await file.arrayBuffer();
           const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
           const numPages = pdf.numPages;
-
 
           // Convert each page
           for (let pageNum = 1; pageNum <= numPages; pageNum++) {
@@ -154,69 +153,53 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
               viewport: viewport
             }).promise;
 
-            // Convert canvas to blob
+            // Convert canvas to blob and base64
             const blob = await new Promise<Blob>((resolve) => {
-              canvas.toBlob((b) => resolve(b!), 'image/png');
+              canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.95);
             });
 
-            const fileName = `${Date.now()}_${file.name.replace('.pdf', '')}_page${pageNum}.png`;
+            // Convert to base64
+            const base64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const base64String = reader.result as string;
+                // Remove data:image/jpeg;base64, prefix
+                const base64Data = base64String.split(',')[1];
+                resolve(base64Data);
+              };
+              reader.readAsDataURL(blob);
+            });
 
+            const fileName = `${Date.now()}_${file.name.replace('.pdf', '')}_page${pageNum}.jpg`;
 
-            // Upload to temp storage
-            const { data: _uploadData, error: uploadError } = await supabase.storage
-              .from('payment-proofs-temp')
-              .upload(fileName, blob, {
-                contentType: 'image/png',
-                upsert: false
-              });
-
-            if (uploadError) {
-              throw uploadError;
-            }
-
-
-            // Get public URL
-            const { data: urlData } = supabase.storage
-              .from('payment-proofs-temp')
-              .getPublicUrl(fileName);
-
-
-            uploadedUrls.push(urlData.publicUrl);
+            base64Images.push(base64);
             tempFileNames.push(fileName);
-
+            uploadedBlobs.push(blob);
           }
         } else {
-          // Upload image directly
+          // Convert image to base64
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64String = reader.result as string;
+              const base64Data = base64String.split(',')[1];
+              resolve(base64Data);
+            };
+            reader.readAsDataURL(file);
+          });
+
           const fileName = `${Date.now()}_${file.name}`;
 
-
-          const { data: _uploadData, error: uploadError } = await supabase.storage
-            .from('payment-proofs-temp')
-            .upload(fileName, file, {
-              contentType: file.type,
-              upsert: false
-            });
-
-          if (uploadError) {
-            throw uploadError;
-          }
-
-
-          const { data: urlData } = supabase.storage
-            .from('payment-proofs-temp')
-            .getPublicUrl(fileName);
-
-
-          uploadedUrls.push(urlData.publicUrl);
+          base64Images.push(base64);
           tempFileNames.push(fileName);
+          uploadedBlobs.push(file);
         }
       }
 
-      // Vérifier que les URLs ne sont pas vides
-      if (uploadedUrls.length === 0 || !uploadedUrls[0]) {
-        throw new Error('Aucune URL de fichier générée - problème d\'upload');
+      // Vérifier que les images ne sont pas vides
+      if (base64Images.length === 0) {
+        throw new Error('Aucune image générée - problème de conversion');
       }
-
 
       // Use batch function for everything (has better fuzzy matching)
       const expectedPayments = isTrancheMode
@@ -232,10 +215,9 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           }];
 
       const requestBody = {
-        fileUrls: uploadedUrls,
+        base64Images,
         expectedPayments
       };
-
 
       const response = await supabase.functions.invoke('analyze-payment-batch', {
         body: requestBody
@@ -256,7 +238,8 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
       setAnalysisResult({
         ...data,
-        tempFileNames: tempFileNames
+        tempFileNames: tempFileNames,
+        uploadedBlobs: uploadedBlobs
       });
 
     } catch (err: any) {
@@ -268,15 +251,14 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
   const handleConfirm = async (match: any) => {
     try {
-      const tempFileNames = analysisResult.tempFileNames;
+      const uploadedBlobs = analysisResult.uploadedBlobs;
 
-      // Télécharger la première image
-      const firstFileName = tempFileNames[0];
-      const { data: downloadData, error: downloadError } = await supabase.storage
-        .from('payment-proofs-temp')
-        .download(firstFileName);
+      if (!uploadedBlobs || uploadedBlobs.length === 0) {
+        throw new Error('Aucune image à sauvegarder');
+      }
 
-      if (downloadError) throw downloadError;
+      // Use the first blob for upload
+      const firstBlob = uploadedBlobs[0];
 
       if (isTrancheMode) {
         // Batch payment confirmation - create payment records for each matched payment
@@ -325,7 +307,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
         const permanentFileName = `${paymentData.id}/${Date.now()}_${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
-          .upload(permanentFileName, downloadData);
+          .upload(permanentFileName, firstBlob);
 
         if (uploadError) throw uploadError;
 
@@ -354,7 +336,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
         const permanentFileName = `${payment!.id}/${Date.now()}_${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
-          .upload(permanentFileName, downloadData);
+          .upload(permanentFileName, firstBlob);
 
         if (uploadError) throw uploadError;
 
@@ -378,11 +360,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
         if (dbError) throw dbError;
       }
 
-      // Supprimer TOUS les fichiers temp
-      await supabase.storage
-        .from('payment-proofs-temp')
-        .remove(tempFileNames);
-
       onSuccess();
       onClose();
 
@@ -392,11 +369,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
   };
 
   const handleReject = async () => {
-    if (analysisResult?.tempFileNames) {
-      await supabase.storage
-        .from('payment-proofs-temp')
-        .remove(analysisResult.tempFileNames);
-    }
     setFiles([]);
     setAnalysisResult(null);
     setError(null);
