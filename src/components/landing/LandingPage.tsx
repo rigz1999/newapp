@@ -341,7 +341,7 @@ export function LandingPage() {
                 <Users className="w-7 h-7 text-finixar-brand-blue" />
               </div>
               <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
-                Base investisseurs centralisée
+                Base d'investisseurs centralisée
               </h3>
               <p className="text-slate-600 leading-relaxed">
                 Gestion structurée des données investisseurs et RIB dans un référentiel unique. Élimination de la saisie manuelle et des erreurs de ressaisie.
@@ -354,23 +354,23 @@ export function LandingPage() {
                 <Bell className="w-7 h-7 text-finixar-teal" />
               </div>
               <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
-                Suivi automatisé des échéances
+                Rappels automatisés par e-mail
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                Notifications automatiques par e-mail pour toutes vos dates critiques. Réduction du risque de non-respect des obligations contractuelles.
+                Notifications automatiques pour vos échéances critiques. Réduction du risque de non-respect des obligations contractuelles envers vos investisseurs.
               </p>
             </div>
 
-            {/* Benefit 3 - Coupon Management */}
+            {/* Benefit 3 - Excel Import/Export */}
             <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200">
               <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
-                <Euro className="w-7 h-7 text-purple-600" />
+                <FileText className="w-7 h-7 text-purple-600" />
               </div>
               <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
-                Suivi centralisé des coupons
+                Compatibilité Excel complète
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                Consolidation des échéances et paiements dans une interface unique. Traçabilité complète des opérations et justificatifs associés.
+                Import des données de coupons depuis vos fichiers Excel existants. Export des rapports au format Excel pour vos besoins comptables et réglementaires.
               </p>
             </div>
           </div>
