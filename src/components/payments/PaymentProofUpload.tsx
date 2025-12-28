@@ -241,17 +241,14 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
         data = response.data;
         funcError = response.error;
       } else {
-        // Single payment analysis
+        // Single payment analysis - format as array for edge function
         const requestBody = {
           fileUrls: uploadedUrls,
-          expectedAmount: payment!.montant,
-          dueDate: new Date(payment!.date_paiement).toLocaleDateString('fr-FR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }).split('/').join('-'),
-          trancheName: payment!.tranche?.tranche_name || '',
-          investorName: payment!.investisseur?.nom_raison_sociale || ''
+          expectedPayments: [{
+            investorName: payment!.investisseur?.nom_raison_sociale || '',
+            expectedAmount: payment!.montant,
+            paymentId: payment!.id
+          }]
         };
 
 
