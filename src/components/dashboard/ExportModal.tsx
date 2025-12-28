@@ -40,6 +40,28 @@ const formatCurrencyForPDF = (amount: number): string => {
   return formatted;
 };
 
+// Translate alert types to French
+const translateAlertType = (type: string): string => {
+  const translations: Record<string, string> = {
+    'late_payment': 'Paiement en retard',
+    'deadline': 'Échéance',
+    'missing_rib': 'RIB manquant',
+    'upcoming_coupon': 'Coupon à venir',
+    'warning': 'Avertissement',
+    'error': 'Erreur',
+    'info': 'Information'
+  };
+  return translations[type] || type;
+};
+
+// Fix text spacing issues in PDF (removes extra spaces between characters)
+const fixTextForPDF = (text: string): string => {
+  return text
+    .replace(/\u00A0/g, ' ')  // Replace non-breaking space
+    .replace(/\s+/g, ' ')     // Normalize multiple spaces
+    .trim();
+};
+
 type ExportPreset = 'complet' | 'paiements' | 'coupons' | 'alertes' | 'custom';
 type ExportFormat = 'excel' | 'pdf';
 type DateRangePreset = 'all' | 'this_month' | 'last_3_months' | 'last_6_months' | 'this_year' | 'custom';
@@ -696,11 +718,11 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         startY: yPos,
         head: [['ID', 'Tranche', 'Montant', 'Date', 'Statut']],
         body: payments.map((p) => [
-          p.id_paiement || p.id,
-          p.tranche?.tranche_name || 'N/A',
+          fixTextForPDF(p.id_paiement || p.id),
+          fixTextForPDF(p.tranche?.tranche_name || 'N/A'),
           formatCurrencyForPDF(p.montant),
           formatDate(p.date_paiement),
-          p.statut,
+          fixTextForPDF(p.statut),
         ]),
         theme: 'striped',
         headStyles: {
@@ -748,8 +770,8 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             (new Date(c.prochaine_date_coupon).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
           );
           return [
-            c.tranche?.projet?.projet || 'N/A',
-            c.tranche?.tranche_name || 'N/A',
+            fixTextForPDF(c.tranche?.projet?.projet || 'N/A'),
+            fixTextForPDF(c.tranche?.tranche_name || 'N/A'),
             formatCurrencyForPDF(parseFloat(c.coupon_brut.toString())),
             formatDate(c.prochaine_date_coupon),
             daysUntil.toString(),
@@ -796,7 +818,10 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       autoTable(doc, {
         startY: yPos,
         head: [['Type', 'Message']],
-        body: dashboardData.alerts.map((a) => [a.type, a.message]),
+        body: dashboardData.alerts.map((a) => [
+          translateAlertType(a.type),
+          fixTextForPDF(a.message)
+        ]),
         theme: 'striped',
         headStyles: {
           fillColor: [239, 68, 68], // red-500
