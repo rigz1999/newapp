@@ -98,17 +98,17 @@ serve(async (req) => {
   }
 
   try {
-    const { base64Images, expectedPayments } = await req.json()
+    const { fileUrls, expectedPayments } = await req.json()
 
-    console.log('Analyse batch:', { imageCount: base64Images?.length, expectedPayments })
+    console.log('Analyse batch:', { fileUrls, expectedPayments })
 
-    if (!base64Images || (Array.isArray(base64Images) && base64Images.length === 0)) {
-      throw new Error('Aucune image fournie')
+    if (!fileUrls || (Array.isArray(fileUrls) && fileUrls.length === 0)) {
+      throw new Error('Aucune URL de fichier fournie')
     }
 
-    const images = Array.isArray(base64Images) ? base64Images : [base64Images]
+    const urls = Array.isArray(fileUrls) ? fileUrls : [fileUrls]
 
-    console.log('Images à analyser:', images.length)
+    console.log('URLs à analyser:', urls)
 
     // Construire le contenu avec toutes les images
     const content: any[] = [
@@ -141,13 +141,14 @@ CRITIQUE - EXTRAIS TOUS LES PAIEMENTS:
       }
     ]
 
-    // Ajouter toutes les images (base64)
-    for (const base64 of images) {
-      if (base64 && typeof base64 === 'string' && base64.trim() !== '') {
+    // Ajouter toutes les images
+    for (const url of urls) {
+      if (url && typeof url === 'string' && url.trim() !== '') {
         content.push({
           type: 'image_url',
-          image_url: { url: `data:image/jpeg;base64,${base64}` }
+          image_url: { url: url }
         })
+        console.log('Image ajoutée:', url)
       }
     }
 

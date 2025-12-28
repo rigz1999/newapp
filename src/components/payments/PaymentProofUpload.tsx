@@ -218,54 +218,37 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
       }
 
 
-      let data, funcError;
-
-      if (isTrancheMode) {
-        // Batch analysis for tranche payments
-        const expectedPayments = subscriptions!.map(sub => ({
-          investorName: sub.investisseur.nom_raison_sociale,
-          expectedAmount: Number(sub.coupon_net) || 0,
-          subscriptionId: sub.id
-        }));
-
-        const requestBody = {
-          fileUrls: uploadedUrls,
-          expectedPayments
-        };
-
-
-        const response = await supabase.functions.invoke('analyze-payment-batch', {
-          body: requestBody
-        });
-
-        data = response.data;
-        funcError = response.error;
-      } else {
-        // Single payment analysis - format as array for edge function
-        const requestBody = {
-          fileUrls: uploadedUrls,
-          expectedPayments: [{
+      // Use batch function for everything (has better fuzzy matching)
+      const expectedPayments = isTrancheMode
+        ? subscriptions!.map(sub => ({
+            investorName: sub.investisseur.nom_raison_sociale,
+            expectedAmount: Number(sub.coupon_net) || 0,
+            subscriptionId: sub.id
+          }))
+        : [{
             investorName: payment!.investisseur?.nom_raison_sociale || '',
             expectedAmount: payment!.montant,
             paymentId: payment!.id
-          }]
-        };
+          }];
+
+      const requestBody = {
+        fileUrls: uploadedUrls,
+        expectedPayments
+      };
 
 
-        const response = await supabase.functions.invoke('analyze-payment', {
-          body: requestBody
-        });
+      const response = await supabase.functions.invoke('analyze-payment-batch', {
+        body: requestBody
+      });
 
-        data = response.data;
-        funcError = response.error;
-      }
+      const data = response.data;
+      const funcError = response.error;
 
 
       if (funcError) {
         // Check if the function doesn't exist
         if (funcError.message?.includes('not found') || funcError.message?.includes('FunctionsRelayError')) {
-          const functionName = isTrancheMode ? 'analyze-payment-batch' : 'analyze-payment';
-          throw new Error(`La fonction d'analyse des paiements n'est pas disponible. Veuillez contacter l'administrateur pour déployer la fonction Edge "${functionName}".`);
+          throw new Error(`La fonction d'analyse des paiements n'est pas disponible. Veuillez contacter l'administrateur pour déployer la fonction Edge "analyze-payment-batch".`);
         }
         throw funcError;
       }
