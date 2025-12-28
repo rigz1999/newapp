@@ -412,7 +412,7 @@ export function LandingPage() {
                 className="rounded-lg w-full h-auto"
               />
               <div className="mt-4 px-2">
-                <h3 className="font-semibold text-finixar-deep-blue mb-1">Distribution de revenus centralisée</h3>
+                <h3 className="font-semibold text-finixar-deep-blue mb-1">Gestion centralisée des coupons</h3>
                 <p className="text-sm text-slate-600">Suivez vos coupons, échéances et paiements en un seul endroit</p>
               </div>
             </div>
