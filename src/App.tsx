@@ -10,6 +10,7 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
 import { ThemeProvider } from './context/ThemeContext';
 import { DiagnosticPage } from './pages/DiagnosticPage';
+import { UnderConstruction } from './components/landing/UnderConstruction';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
@@ -32,6 +33,21 @@ function App() {
   const { organization, loading: orgLoading } = useOrganization(user?.id);
 
   const LoadingFallback = () => <DashboardSkeleton />;
+
+  // Check if we're on the main domain (finixar.com) or app subdomain (app.finixar.com)
+  const hostname = window.location.hostname;
+  const isMainDomain = hostname === 'finixar.com' || hostname === 'www.finixar.com';
+
+  // Show landing page on main domain, app on subdomain or localhost
+  if (isMainDomain) {
+    return (
+      <ThemeProvider>
+        <ErrorBoundary>
+          <UnderConstruction />
+        </ErrorBoundary>
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider>
