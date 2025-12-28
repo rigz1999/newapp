@@ -777,7 +777,16 @@ export function Payments({ organization }: PaymentsProps) {
                     <td className="px-2 md:px-4 py-3">
                       <div className="flex items-center justify-end gap-2 relative">
                         {paymentsWithProofs.has(payment.id) && (
-                          <FileText className="w-4 h-4 text-finixar-green" title="Justificatif disponible" />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewProofs(payment);
+                            }}
+                            className="p-1 text-finixar-green hover:bg-green-50 rounded transition-colors"
+                            title="Voir le justificatif"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
                         )}
                         {payment.note && (
                           <div className="relative">
@@ -786,7 +795,7 @@ export function Payments({ organization }: PaymentsProps) {
                                 e.stopPropagation();
                                 setShowNotePopover(showNotePopover === payment.id ? null : payment.id);
                               }}
-                              className="note-icon p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                               title="Voir la note"
                             >
                               <StickyNote className="w-4 h-4" />
