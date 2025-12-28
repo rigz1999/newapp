@@ -76,15 +76,15 @@ export function LandingPage() {
             <div className="text-white">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-6 border border-white/20">
                 <div className="w-2 h-2 bg-finixar-teal rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Conforme RGPD • Hébergement Souverain</span>
+                <span className="text-sm font-medium">🇫🇷 Données hébergées en France • Conforme RGPD</span>
               </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-                Plateforme de gestion d'investissements nouvelle génération
+                La gestion d'actifs, simplifiée et sécurisée
               </h1>
 
               <p className="text-lg sm:text-xl text-slate-300 mb-8 leading-relaxed">
-                Centralisez vos projets, suivez vos échéances et gérez vos coupons dans une interface sécurisée et intuitive.
+                Pilotez vos projets, suivez vos échéances et gérez vos relations investisseurs sur une plateforme unique conçue pour les professionnels de la finance.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -176,7 +176,7 @@ export function LandingPage() {
                 <Users className="w-7 h-7 text-green-600" />
               </div>
               <h3 className="text-lg font-bold text-finixar-deep-blue mb-3">
-                Gestion des investisseurs
+                Relations investisseurs
               </h3>
               <p className="text-slate-600 text-sm leading-relaxed">
                 Centralisez les informations de vos investisseurs et gérez leurs RIB en toute sécurité.
@@ -202,7 +202,7 @@ export function LandingPage() {
                 <Euro className="w-7 h-7 text-orange-600" />
               </div>
               <h3 className="text-lg font-bold text-finixar-deep-blue mb-3">
-                Paiements et preuves
+                Distribution de revenus et reporting
               </h3>
               <p className="text-slate-600 text-sm leading-relaxed">
                 Gestion des coupons avec import Excel et téléchargement de justificatifs de paiement.
@@ -313,10 +313,65 @@ export function LandingPage() {
                     Non-conformité RGPD et risques de sécurité des données
                   </h3>
                   <p className="text-yellow-800 text-sm leading-relaxed">
-                    Stockage de données sensibles (RIB, informations personnelles) sans chiffrement approprié. Partage par email sans contrôle d'accès ni traçabilité. Exposition aux sanctions réglementaires pouvant atteindre 4% du chiffre d'affaires annuel.
+                    Stockage de données sensibles (RIB, informations personnelles) sans chiffrement approprié. Partage par e-mail sans contrôle d'accès ni traçabilité. Exposition aux sanctions réglementaires pouvant atteindre 4% du chiffre d'affaires annuel.
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pourquoi Finixar Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
+              Pourquoi Finixar
+            </h2>
+            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
+              Une plateforme pensée pour les professionnels de la gestion d'actifs
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Benefit 1 - Multi-org */}
+            <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200">
+              <div className="w-14 h-14 bg-finixar-brand-blue/10 rounded-xl flex items-center justify-center mb-6">
+                <Building2 className="w-7 h-7 text-finixar-brand-blue" />
+              </div>
+              <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
+                Multi-organisation
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Gérez plusieurs entités, holdings ou fonds depuis une seule interface. Isolation complète des données entre organisations.
+              </p>
+            </div>
+
+            {/* Benefit 2 - Excel Export */}
+            <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200">
+              <div className="w-14 h-14 bg-finixar-teal/10 rounded-xl flex items-center justify-center mb-6">
+                <FileText className="w-7 h-7 text-finixar-teal" />
+              </div>
+              <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
+                Exports pour vos audits
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Exportez vos données filtrées en un clic. Format Excel prêt pour votre comptabilité, vos commissaires aux comptes et vos audits réglementaires.
+              </p>
+            </div>
+
+            {/* Benefit 3 - Real-time */}
+            <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200">
+              <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
+                <Zap className="w-7 h-7 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
+                Collaboration en temps réel
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Travaillez en équipe sans risque de doublons. Synchronisation instantanée des modifications pour une vue toujours à jour.
+              </p>
             </div>
           </div>
         </div>
@@ -327,7 +382,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-block px-4 py-2 bg-finixar-teal/10 rounded-full mb-4">
-              <span className="text-finixar-teal font-semibold text-sm">LA SOLUTION QUE VOUS ATTENDIEZ</span>
+              <span className="text-finixar-teal font-semibold text-sm">FONCTIONNALITÉS EN ACTION</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-bold text-finixar-deep-blue mb-6">
               Dites adieu aux fichiers Excel
@@ -337,14 +392,29 @@ export function LandingPage() {
             </p>
           </div>
 
-          {/* Screenshot */}
-          <div className="max-w-5xl mx-auto mb-12">
+          {/* Screenshots Grid */}
+          <div className="grid lg:grid-cols-2 gap-6 mb-12">
+            <div className="bg-white rounded-2xl shadow-xl p-3 border border-slate-200">
+              <img
+                src="/images/reminders.png"
+                alt="Rappels automatiques Finixar"
+                className="rounded-lg w-full h-auto"
+              />
+              <div className="mt-4 px-2">
+                <h3 className="font-semibold text-finixar-deep-blue mb-1">Rappels automatiques par e-mail</h3>
+                <p className="text-sm text-slate-600">Ne manquez plus jamais une échéance avec les notifications intelligentes</p>
+              </div>
+            </div>
             <div className="bg-white rounded-2xl shadow-xl p-3 border border-slate-200">
               <img
                 src="/images/coupons-screenshot.png"
                 alt="Gestion des coupons Finixar"
                 className="rounded-lg w-full h-auto"
               />
+              <div className="mt-4 px-2">
+                <h3 className="font-semibold text-finixar-deep-blue mb-1">Distribution de revenus centralisée</h3>
+                <p className="text-sm text-slate-600">Suivez vos coupons, échéances et paiements en un seul endroit</p>
+              </div>
             </div>
           </div>
 
