@@ -10,7 +10,7 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
 import { ThemeProvider } from './context/ThemeContext';
 import { DiagnosticPage } from './pages/DiagnosticPage';
-import { UnderConstruction } from './components/landing/UnderConstruction';
+import { LandingPage } from './components/landing/LandingPage';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
@@ -43,7 +43,7 @@ function App() {
     return (
       <ThemeProvider>
         <ErrorBoundary>
-          <UnderConstruction />
+          <LandingPage />
         </ErrorBoundary>
       </ThemeProvider>
     );
