@@ -1,8 +1,24 @@
-import { TrendingUp, ArrowRight, Shield, FileText, Users, Euro, BarChart3, Lock, CheckCircle, Clock, Headphones, Building2, Award, Check } from 'lucide-react';
+import { TrendingUp, ArrowRight, Shield, FileText, Users, Euro, BarChart3, Lock, CheckCircle, Clock, Headphones, Building2, Award, Check, Bell, AlertCircle, Zap } from 'lucide-react';
 
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
+      <style>{`
+        @keyframes blob {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-slate-200 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -48,8 +64,13 @@ export function LandingPage() {
       </nav>
 
       {/* Hero Section - Dark */}
-      <section className="pt-24 pb-16 bg-gradient-to-br from-finixar-deep-blue via-[#1a2642] to-finixar-deep-blue px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+      <section className="pt-24 pb-16 bg-gradient-to-br from-finixar-deep-blue via-[#1a2642] to-finixar-deep-blue px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Animated floating orbs */}
+        <div className="absolute top-20 left-10 w-64 h-64 bg-finixar-brand-blue/30 rounded-full blur-3xl animate-blob"></div>
+        <div className="absolute top-40 right-10 w-80 h-80 bg-finixar-teal/20 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-20 left-1/3 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-blob animation-delay-4000"></div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <div className="text-white">
@@ -135,9 +156,9 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1 */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 hover:border-blue-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 hover:border-blue-200 hover:-translate-y-1">
               <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                 <FileText className="w-7 h-7 text-blue-600" />
               </div>
@@ -150,7 +171,7 @@ export function LandingPage() {
             </div>
 
             {/* Feature 2 */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 hover:border-green-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 hover:border-green-200 hover:-translate-y-1">
               <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4">
                 <Users className="w-7 h-7 text-green-600" />
               </div>
@@ -163,7 +184,7 @@ export function LandingPage() {
             </div>
 
             {/* Feature 3 */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 hover:border-purple-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 hover:border-purple-200 hover:-translate-y-1">
               <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
                 <BarChart3 className="w-7 h-7 text-purple-600" />
               </div>
@@ -176,7 +197,7 @@ export function LandingPage() {
             </div>
 
             {/* Feature 4 */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 hover:border-orange-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 hover:border-orange-200 hover:-translate-y-1">
               <div className="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
                 <Euro className="w-7 h-7 text-orange-600" />
               </div>
@@ -187,6 +208,116 @@ export function LandingPage() {
                 Gestion des coupons avec import Excel et téléchargement de justificatifs de paiement.
               </p>
             </div>
+
+            {/* Feature 5 - Auto Reminders */}
+            <div className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 hover:border-yellow-200 hover:-translate-y-1">
+              <div className="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center mb-4">
+                <Bell className="w-7 h-7 text-yellow-600" />
+              </div>
+              <h3 className="text-lg font-bold text-finixar-deep-blue mb-3">
+                Rappels automatiques
+              </h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                Ne manquez plus jamais une échéance. Le système envoie des rappels automatiques aux investisseurs.
+              </p>
+            </div>
+
+            {/* Feature 6 - Real-time Dashboard */}
+            <div className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-2xl transition-all duration-300 border border-slate-100 hover:border-indigo-200 hover:-translate-y-1">
+              <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-4">
+                <TrendingUp className="w-7 h-7 text-indigo-600" />
+              </div>
+              <h3 className="text-lg font-bold text-finixar-deep-blue mb-3">
+                Tableaux de bord en temps réel
+              </h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                Visualisez l'état de vos investissements en temps réel avec des mises à jour instantanées.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pain Points Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white border-y border-slate-200">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
+              Vous en avez assez de perdre votre temps avec Excel ?
+            </h2>
+            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
+              Vous n'êtes pas seul. Des centaines d'heures perdues chaque année à cause des mêmes problèmes.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Pain 1 */}
+            <div className="bg-red-50 border-2 border-red-100 rounded-2xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-red-900 mb-2">
+                    Erreurs coûteuses et stress permanent
+                  </h3>
+                  <p className="text-red-800 text-sm leading-relaxed">
+                    Une formule cassée, un RIB incorrect, un montant mal saisi... et c'est la catastrophe. Vos investisseurs ne vous font plus confiance et vous passez vos nuits à tout vérifier manuellement.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Pain 2 */}
+            <div className="bg-orange-50 border-2 border-orange-100 rounded-2xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-orange-900 mb-2">
+                    Des heures gaspillées sur des tâches répétitives
+                  </h3>
+                  <p className="text-orange-800 text-sm leading-relaxed">
+                    Copier-coller des RIB, calculer des coupons, envoyer des emails un par un... Vous méritez mieux que de passer 15 heures par semaine sur ces tâches sans valeur ajoutée.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Pain 3 */}
+            <div className="bg-purple-50 border-2 border-purple-100 rounded-2xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-purple-900 mb-2">
+                    Échéances manquées et investisseurs mécontents
+                  </h3>
+                  <p className="text-purple-800 text-sm leading-relaxed">
+                    Un rappel oublié, une échéance ratée... et votre réputation en prend un coup. Sans système automatisé, impossible de suivre toutes les dates importantes.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Pain 4 */}
+            <div className="bg-yellow-50 border-2 border-yellow-100 rounded-2xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-yellow-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-yellow-900 mb-2">
+                    Risques de conformité et données non sécurisées
+                  </h3>
+                  <p className="text-yellow-800 text-sm leading-relaxed">
+                    Des fichiers Excel partagés par email avec des données sensibles... Un cauchemar RGPD qui attend de se produire. Vous savez que ce n'est pas conforme, mais vous n'avez pas d'alternative.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -195,11 +326,14 @@ export function LandingPage() {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
-              Zéro Excel, Zéro erreur
+            <div className="inline-block px-4 py-2 bg-finixar-teal/10 rounded-full mb-4">
+              <span className="text-finixar-teal font-semibold text-sm">LA SOLUTION QUE VOUS ATTENDIEZ</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-bold text-finixar-deep-blue mb-6">
+              Dites adieu aux fichiers Excel
             </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Automatisez vos workflows et éliminez les erreurs manuelles grâce au dashboard temps réel de Finixar
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Finixar automatise <span className="font-bold text-finixar-brand-blue">100% de vos tâches répétitives</span> et élimine les erreurs qui coûtent cher
             </p>
           </div>
 
@@ -296,7 +430,7 @@ export function LandingPage() {
                   <div>
                     <h4 className="font-semibold text-finixar-deep-blue mb-1">Authentification sécurisée</h4>
                     <p className="text-slate-600 text-sm">
-                      Connexion via Microsoft ou Google pour une authentification simple et sécurisée.
+                      Connexion via Microsoft pour une authentification simple et sécurisée avec vos comptes professionnels.
                     </p>
                   </div>
                 </div>
