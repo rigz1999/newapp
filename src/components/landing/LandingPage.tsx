@@ -243,15 +243,13 @@ export function LandingPage() {
             </p>
           </div>
 
-          {/* Dashboard Screenshot Placeholder */}
+          {/* Dashboard Screenshot */}
           <div className="bg-white rounded-2xl shadow-2xl p-2 border border-slate-200">
-            <div className="bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl aspect-video flex items-center justify-center">
-              <div className="text-center">
-                <BarChart3 className="w-20 h-20 text-slate-400 mx-auto mb-4" />
-                <p className="text-slate-600 text-lg font-medium">Aperçu du tableau de bord</p>
-                <p className="text-slate-500 text-sm mt-2">(Screenshot à insérer ici)</p>
-              </div>
-            </div>
+            <img
+              src="/images/dashboard-screenshot.png"
+              alt="Tableau de bord Finixar en temps réel"
+              className="rounded-xl w-full h-auto"
+            />
           </div>
 
           {/* Stats Below */}
