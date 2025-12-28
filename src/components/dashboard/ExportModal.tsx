@@ -139,6 +139,7 @@ const DEFAULT_OPTIONS: ExportOptions = {
 export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: ExportModalProps) {
   const [selectedPreset, setSelectedPreset] = useState<ExportPreset>('complet');
   const [format, setFormat] = useState<ExportFormat>('excel');
+  const [showCustomize, setShowCustomize] = useState(false);
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_OPTIONS);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
@@ -149,9 +150,13 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       try {
         const saved = localStorage.getItem('dashboard_export_config');
         if (saved) {
-          const { preset, format: savedFormat } = JSON.parse(saved);
+          const { preset, format: savedFormat, options: savedOptions } = JSON.parse(saved);
           setSelectedPreset(preset || 'complet');
           setFormat(savedFormat || 'excel');
+          if (savedOptions) {
+            setOptions(savedOptions);
+            setShowCustomize(true);
+          }
         }
       } catch (e) {
         // Ignore errors
@@ -181,6 +186,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
   const handlePresetClick = (preset: ExportPreset) => {
     setSelectedPreset(preset);
+    setShowCustomize(false);
   };
 
   const calculateDateRange = (preset: DateRangePreset, forFuture: boolean = false): { start: string; end: string } => {
@@ -349,7 +355,11 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       // Save preferences
       localStorage.setItem(
         'dashboard_export_config',
-        JSON.stringify({ preset: selectedPreset, format })
+        JSON.stringify({
+          preset: selectedPreset,
+          format,
+          options: showCustomize ? options : undefined
+        })
       );
 
       if (format === 'excel') {
@@ -745,17 +755,17 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
       onClick={onClose}
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="p-8 pb-6 border-b border-slate-100">
+        <div className="px-6 pt-6 pb-4 border-b border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-2xl font-bold text-slate-900">Exporter votre synthèse</h3>
-              <p className="text-slate-500 mt-2">Sélectionnez le type de rapport souhaité</p>
+              <h3 className="text-lg font-bold text-slate-900">Exporter Synthèse</h3>
+              <p className="text-sm text-slate-600 mt-1">Choisissez votre rapport</p>
             </div>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-lg transition-colors"
+              className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors"
               aria-label="Fermer"
             >
               <X className="w-5 h-5" />
@@ -764,149 +774,191 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         </div>
 
         {/* Content */}
-        <div className="p-8">
-          {/* Presets - Large Card Style */}
-          <div className="grid grid-cols-1 gap-4 mb-8">
+        <div className="p-6">
+          {/* Presets - Compact 2x2 Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-5">
             <button
               onClick={() => handlePresetClick('complet')}
-              className={`group relative p-6 rounded-xl border-2 transition-all text-left ${
+              className={`p-3 rounded-lg border-2 transition-all ${
                 selectedPreset === 'complet'
-                  ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg scale-[1.02]'
-                  : 'border-slate-200 hover:border-blue-300 hover:shadow-md'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-200 hover:border-slate-300'
               }`}
             >
-              <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-lg ${selectedPreset === 'complet' ? 'bg-blue-500' : 'bg-slate-100 group-hover:bg-blue-100'}`}>
-                  <FileText className={`w-6 h-6 ${selectedPreset === 'complet' ? 'text-white' : 'text-slate-600 group-hover:text-blue-600'}`} />
+              <div className="flex flex-col items-center text-center gap-2">
+                <div className={`p-2 rounded-lg ${selectedPreset === 'complet' ? 'bg-blue-500' : 'bg-slate-100'}`}>
+                  <FileText className={`w-5 h-5 ${selectedPreset === 'complet' ? 'text-white' : 'text-slate-600'}`} />
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-bold text-slate-900 mb-1">Synthèse Complète</h4>
-                  <p className="text-sm text-slate-600">Rapport complet incluant statistiques, paiements récents, coupons à venir et alertes</p>
-                </div>
-                {selectedPreset === 'complet' && (
-                  <div className="flex items-center gap-1 text-blue-600">
-                    <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                  </div>
-                )}
+                <span className={`text-sm font-semibold ${selectedPreset === 'complet' ? 'text-blue-900' : 'text-slate-900'}`}>
+                  Synthèse Complète
+                </span>
               </div>
             </button>
 
             <button
               onClick={() => handlePresetClick('paiements')}
-              className={`group relative p-6 rounded-xl border-2 transition-all text-left ${
+              className={`p-3 rounded-lg border-2 transition-all ${
                 selectedPreset === 'paiements'
-                  ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100 shadow-lg scale-[1.02]'
-                  : 'border-slate-200 hover:border-emerald-300 hover:shadow-md'
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-slate-200 hover:border-slate-300'
               }`}
             >
-              <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-lg ${selectedPreset === 'paiements' ? 'bg-emerald-500' : 'bg-slate-100 group-hover:bg-emerald-100'}`}>
-                  <Euro className={`w-6 h-6 ${selectedPreset === 'paiements' ? 'text-white' : 'text-slate-600 group-hover:text-emerald-600'}`} />
+              <div className="flex flex-col items-center text-center gap-2">
+                <div className={`p-2 rounded-lg ${selectedPreset === 'paiements' ? 'bg-emerald-500' : 'bg-slate-100'}`}>
+                  <Euro className={`w-5 h-5 ${selectedPreset === 'paiements' ? 'text-white' : 'text-slate-600'}`} />
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-bold text-slate-900 mb-1">Historique des Paiements</h4>
-                  <p className="text-sm text-slate-600">Liste détaillée de tous les paiements avec statistiques associées</p>
-                </div>
-                {selectedPreset === 'paiements' && (
-                  <div className="flex items-center gap-1 text-emerald-600">
-                    <div className="w-2 h-2 rounded-full bg-emerald-600"></div>
-                  </div>
-                )}
+                <span className={`text-sm font-semibold ${selectedPreset === 'paiements' ? 'text-emerald-900' : 'text-slate-900'}`}>
+                  Paiements
+                </span>
               </div>
             </button>
 
             <button
               onClick={() => handlePresetClick('coupons')}
-              className={`group relative p-6 rounded-xl border-2 transition-all text-left ${
+              className={`p-3 rounded-lg border-2 transition-all ${
                 selectedPreset === 'coupons'
-                  ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100 shadow-lg scale-[1.02]'
-                  : 'border-slate-200 hover:border-purple-300 hover:shadow-md'
+                  ? 'border-purple-500 bg-purple-50'
+                  : 'border-slate-200 hover:border-slate-300'
               }`}
             >
-              <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-lg ${selectedPreset === 'coupons' ? 'bg-purple-500' : 'bg-slate-100 group-hover:bg-purple-100'}`}>
-                  <Calendar className={`w-6 h-6 ${selectedPreset === 'coupons' ? 'text-white' : 'text-slate-600 group-hover:text-purple-600'}`} />
+              <div className="flex flex-col items-center text-center gap-2">
+                <div className={`p-2 rounded-lg ${selectedPreset === 'coupons' ? 'bg-purple-500' : 'bg-slate-100'}`}>
+                  <Calendar className={`w-5 h-5 ${selectedPreset === 'coupons' ? 'text-white' : 'text-slate-600'}`} />
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-bold text-slate-900 mb-1">Coupons à Venir</h4>
-                  <p className="text-sm text-slate-600">Échéancier des prochains coupons avec alertes et montants</p>
-                </div>
-                {selectedPreset === 'coupons' && (
-                  <div className="flex items-center gap-1 text-purple-600">
-                    <div className="w-2 h-2 rounded-full bg-purple-600"></div>
-                  </div>
-                )}
+                <span className={`text-sm font-semibold ${selectedPreset === 'coupons' ? 'text-purple-900' : 'text-slate-900'}`}>
+                  Coupons
+                </span>
               </div>
             </button>
 
             <button
               onClick={() => handlePresetClick('alertes')}
-              className={`group relative p-6 rounded-xl border-2 transition-all text-left ${
+              className={`p-3 rounded-lg border-2 transition-all ${
                 selectedPreset === 'alertes'
-                  ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100 shadow-lg scale-[1.02]'
-                  : 'border-slate-200 hover:border-orange-300 hover:shadow-md'
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-slate-200 hover:border-slate-300'
               }`}
             >
-              <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-lg ${selectedPreset === 'alertes' ? 'bg-orange-500' : 'bg-slate-100 group-hover:bg-orange-100'}`}>
-                  <AlertTriangle className={`w-6 h-6 ${selectedPreset === 'alertes' ? 'text-white' : 'text-slate-600 group-hover:text-orange-600'}`} />
+              <div className="flex flex-col items-center text-center gap-2">
+                <div className={`p-2 rounded-lg ${selectedPreset === 'alertes' ? 'bg-orange-500' : 'bg-slate-100'}`}>
+                  <AlertTriangle className={`w-5 h-5 ${selectedPreset === 'alertes' ? 'text-white' : 'text-slate-600'}`} />
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-bold text-slate-900 mb-1">Rapport d'Alertes</h4>
-                  <p className="text-sm text-slate-600">Alertes urgentes et coupons nécessitant une attention immédiate</p>
-                </div>
-                {selectedPreset === 'alertes' && (
-                  <div className="flex items-center gap-1 text-orange-600">
-                    <div className="w-2 h-2 rounded-full bg-orange-600"></div>
-                  </div>
-                )}
+                <span className={`text-sm font-semibold ${selectedPreset === 'alertes' ? 'text-orange-900' : 'text-slate-900'}`}>
+                  Alertes
+                </span>
               </div>
             </button>
           </div>
 
-          {/* Format Selection */}
-          <div className="mb-6">
-            <label className="text-sm font-semibold text-slate-700 mb-3 block">Format du fichier</label>
-            <div className="grid grid-cols-2 gap-3">
+          {/* Format Selection - Segmented Control */}
+          <div className="mb-5">
+            <label className="text-xs font-semibold text-slate-700 mb-2 block">Format</label>
+            <div className="inline-flex p-1 bg-slate-100 rounded-lg w-full">
               <button
                 onClick={() => setFormat('excel')}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
                   format === 'excel'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <div className={`text-center ${format === 'excel' ? 'text-blue-900' : 'text-slate-700'}`}>
-                  <div className="font-bold text-lg mb-1">Excel</div>
-                  <div className="text-xs opacity-75">.xlsx • Tableau de données</div>
-                </div>
+                Excel
               </button>
               <button
                 onClick={() => setFormat('pdf')}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
                   format === 'pdf'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <div className={`text-center ${format === 'pdf' ? 'text-blue-900' : 'text-slate-700'}`}>
-                  <div className="font-bold text-lg mb-1">PDF</div>
-                  <div className="text-xs opacity-75">.pdf • Document imprimable</div>
-                </div>
+                PDF
               </button>
             </div>
           </div>
 
+          {/* Customize Toggle */}
+          <button
+            onClick={() => setShowCustomize(!showCustomize)}
+            className="w-full mb-4 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center justify-center gap-1.5 py-2"
+          >
+            <ChevronDown className={`w-4 h-4 transition-transform ${showCustomize ? 'rotate-180' : ''}`} />
+            {showCustomize ? 'Masquer les options' : 'Personnaliser'}
+          </button>
+
+          {/* Customization Options */}
+          {showCustomize && (
+            <div className="mb-5 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 mb-2 block">Période (Paiements)</label>
+                <select
+                  value={options.paymentsDateRange}
+                  onChange={(e) => handleDateRangeChange('payments', e.target.value as DateRangePreset)}
+                  className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">Tous</option>
+                  <option value="this_month">Ce mois</option>
+                  <option value="last_3_months">3 derniers mois</option>
+                  <option value="last_6_months">6 derniers mois</option>
+                  <option value="this_year">Cette année</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 mb-2 block">Limite (Paiements)</label>
+                <select
+                  value={options.paymentsLimit}
+                  onChange={(e) => setOptions({ ...options, paymentsLimit: parseInt(e.target.value) })}
+                  className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="0">Tous</option>
+                  <option value="10">10 derniers</option>
+                  <option value="20">20 derniers</option>
+                  <option value="50">50 derniers</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 mb-2 block">Période (Coupons)</label>
+                <select
+                  value={options.couponsDateRange}
+                  onChange={(e) => handleDateRangeChange('coupons', e.target.value as DateRangePreset)}
+                  className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">Tous à venir</option>
+                  <option value="this_month">Ce mois</option>
+                  <option value="last_3_months">3 prochains mois</option>
+                  <option value="last_6_months">6 prochains mois</option>
+                  <option value="this_year">Cette année</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 mb-2 block">Limite (Coupons)</label>
+                <select
+                  value={options.couponsLimit}
+                  onChange={(e) => setOptions({ ...options, couponsLimit: parseInt(e.target.value) })}
+                  className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="0">Tous</option>
+                  <option value="10">10 prochains</option>
+                  <option value="20">20 prochains</option>
+                  <option value="50">50 prochains</option>
+                </select>
+              </div>
+            </div>
+          )}
+
           {/* Progress Bar */}
           {exporting && exportProgress > 0 && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-blue-900">Génération du rapport...</span>
-                <span className="text-sm font-bold text-blue-600">{exportProgress}%</span>
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-blue-900">Export en cours...</span>
+                <span className="text-xs font-bold text-blue-600">{exportProgress}%</span>
               </div>
-              <div className="w-full bg-blue-200 rounded-full h-3 overflow-hidden shadow-inner">
+              <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out shadow-sm"
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
                   style={{ width: `${exportProgress}%` }}
                 />
               </div>
@@ -914,10 +966,10 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           )}
 
           {/* Actions */}
-          <div className="flex gap-4 pt-4 border-t border-slate-100">
+          <div className="flex gap-3 pt-4 border-t border-slate-200">
             <button
               onClick={onClose}
-              className="px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-all font-medium disabled:opacity-50"
+              className="px-4 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all text-sm font-medium disabled:opacity-50"
               disabled={exporting}
             >
               Annuler
@@ -925,17 +977,17 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             <button
               onClick={handleExport}
               disabled={exporting || preview.sections === 0}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all font-semibold disabled:from-slate-300 disabled:to-slate-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 disabled:shadow-none"
+              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-semibold disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {exporting ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Export en cours...
+                  <span>Export...</span>
                 </div>
               ) : (
                 <>
-                  <Download className="w-5 h-5" />
-                  Télécharger le rapport
+                  <Download className="w-4 h-4" />
+                  <span>Télécharger</span>
                 </>
               )}
             </button>
