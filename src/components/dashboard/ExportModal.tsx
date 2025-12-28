@@ -772,7 +772,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       if (latePayments > 0 || pendingPayments > 0) {
         doc.setTextColor(239, 68, 68); // red-500
         doc.setFont('helvetica', 'bold');
-        doc.text(`⚠ Points d'attention:`, SPACING.MARGIN + 5, lineY);
+        doc.text(`Points d'attention:`, SPACING.MARGIN + 5, lineY);
         doc.setFont('helvetica', 'normal');
         lineY += 6;
         if (latePayments > 0) {
@@ -1015,7 +1015,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
-        doc.text(`🔴 CRITIQUE - Action immédiate requise (${criticalAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
+        doc.text(`CRITIQUE - Action immédiate requise (${criticalAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
         yPos += 7 + SPACING.SMALL;
 
         criticalAlerts.forEach((alert) => {
@@ -1049,7 +1049,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
-        doc.text(`🟡 AVERTISSEMENT (${warningAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
+        doc.text(`AVERTISSEMENT (${warningAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
         yPos += 7 + SPACING.SMALL;
 
         warningAlerts.forEach((alert) => {
@@ -1083,7 +1083,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
-        doc.text(`🔵 INFORMATION (${infoAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
+        doc.text(`INFORMATION (${infoAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
         yPos += 7 + SPACING.SMALL;
 
         infoAlerts.forEach((alert) => {
