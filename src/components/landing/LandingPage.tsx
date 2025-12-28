@@ -341,10 +341,10 @@ export function LandingPage() {
                 <Building2 className="w-7 h-7 text-finixar-brand-blue" />
               </div>
               <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
-                Multi-organisation
+                Gérez tous vos fonds au même endroit
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                Gérez plusieurs entités, holdings ou fonds depuis une seule interface. Isolation complète des données entre organisations.
+                Fini les connexions multiples et les fichiers éparpillés. Pilotez toutes vos entités depuis une interface unique tout en gardant chaque fonds parfaitement séparé.
               </p>
             </div>
 
@@ -354,10 +354,10 @@ export function LandingPage() {
                 <FileText className="w-7 h-7 text-finixar-teal" />
               </div>
               <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
-                Exports pour vos audits
+                Prêt pour vos audits et reporting
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                Exportez vos données filtrées en un clic. Format Excel prêt pour votre comptabilité, vos commissaires aux comptes et vos audits réglementaires.
+                Transmettez vos données à votre expert-comptable et vos auditeurs en un clic. Exports Excel structurés et filtrables selon vos besoins de conformité.
               </p>
             </div>
 
@@ -367,10 +367,10 @@ export function LandingPage() {
                 <Zap className="w-7 h-7 text-purple-600" />
               </div>
               <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
-                Collaboration en temps réel
+                Toute l'équipe synchronisée
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                Travaillez en équipe sans risque de doublons. Synchronisation instantanée des modifications pour une vue toujours à jour.
+                Fini les "qui a la dernière version ?". Votre équipe travaille sur les mêmes données en temps réel, sans conflits ni doublons.
               </p>
             </div>
           </div>
