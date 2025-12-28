@@ -14,6 +14,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ proofId: string; fileUrl: string; fileName: string } | null>(null);
   const [selectedProofForPreview, setSelectedProofForPreview] = useState<any | null>(null);
+  const [markAsUnpaid, setMarkAsUnpaid] = useState(false);
 
   // Alert modal state
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -90,8 +91,8 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
       }
 
       const remainingProofs = proofs.filter(p => p.id !== proofId);
-      if (remainingProofs.length === 0) {
-        // No more proofs - need to update both payment and related echeances
+      if (remainingProofs.length === 0 && markAsUnpaid) {
+        // No more proofs AND user chose to mark as unpaid
         const today = new Date();
         const dueDate = new Date(payment.date_paiement);
         const isOverdue = today > dueDate;
@@ -107,9 +108,6 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
             montant_paye: null
           })
           .eq('paiement_id', payment.id);
-
-        // Note: We don't update paiements table anymore since the payment might not have a status field
-        // or it might be managed differently. The important part is updating coupons_echeances.
       }
 
       setAlertModalConfig({
@@ -134,6 +132,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
     } finally {
       setDeleting(null);
       setConfirmDelete(null);
+      setMarkAsUnpaid(false);
     }
   };
 
@@ -190,7 +189,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
                       <div className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <p className="font-medium text-slate-900">📄 {proof.file_name}</p>
+                            <p className="font-medium text-slate-900">{proof.file_name}</p>
                             <p className="text-sm text-slate-500 mt-1">
                               Téléchargé: {new Date(proof.validated_at).toLocaleDateString('fr-FR', {
                                 day: '2-digit',
@@ -272,15 +271,29 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
 
             {proofs.length === 1 && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-                <p className="text-sm text-amber-800">
-                  <strong>Attention:</strong> C'est le dernier justificatif. Le statut du paiement sera modifié en "En attente" ou "En retard".
+                <p className="text-sm text-amber-800 mb-3">
+                  <strong>Attention:</strong> C'est le dernier justificatif.
                 </p>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={markAsUnpaid}
+                    onChange={(e) => setMarkAsUnpaid(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 text-finixar-teal border-slate-300 rounded focus:ring-finixar-teal"
+                  />
+                  <span className="text-sm text-slate-700">
+                    Marquer le paiement comme non payé
+                  </span>
+                </label>
               </div>
             )}
 
             <div className="flex gap-3">
               <button
-                onClick={() => setConfirmDelete(null)}
+                onClick={() => {
+                  setConfirmDelete(null);
+                  setMarkAsUnpaid(false);
+                }}
                 disabled={deleting !== null}
                 className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
               >

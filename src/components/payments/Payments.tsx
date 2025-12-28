@@ -756,7 +756,10 @@ export function Payments({ organization }: PaymentsProps) {
                     </td>
                     <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 hidden md:table-cell">{formatDate(payment.date_paiement)}</td>
                     <td className="px-2 md:px-4 py-3">
-                      <div className="flex items-center justify-end relative">
+                      <div className="flex items-center justify-end gap-2 relative">
+                        {paymentsWithProofs.has(payment.id) && (
+                          <FileText className="w-4 h-4 text-finixar-green" title="Justificatif disponible" />
+                        )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
