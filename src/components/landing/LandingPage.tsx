@@ -79,8 +79,8 @@ export function LandingPage() {
                 <span className="text-sm font-medium">Conforme RGPD • Hébergement Souverain</span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                La plateforme de gestion d'investissements nouvelle génération
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+                Plateforme de gestion d'investissements nouvelle génération
               </h1>
 
               <p className="text-lg sm:text-xl text-slate-300 mb-8 leading-relaxed">
@@ -218,7 +218,7 @@ export function LandingPage() {
                 Rappels automatiques
               </h3>
               <p className="text-slate-600 text-sm leading-relaxed">
-                Ne manquez plus jamais une échéance. Le système envoie des rappels automatiques aux investisseurs.
+                Ne manquez plus jamais une échéance. Recevez des rappels automatiques pour toutes vos dates importantes.
               </p>
             </div>
 
@@ -231,7 +231,7 @@ export function LandingPage() {
                 Tableaux de bord en temps réel
               </h3>
               <p className="text-slate-600 text-sm leading-relaxed">
-                Visualisez l'état de vos investissements en temps réel avec des mises à jour instantanées.
+                Visualisez l'état de vos projets en temps réel avec des mises à jour instantanées.
               </p>
             </div>
           </div>
@@ -259,10 +259,10 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-red-900 mb-2">
-                    Erreurs coûteuses et stress permanent
+                    Multiplication des versions et perte de traçabilité
                   </h3>
                   <p className="text-red-800 text-sm leading-relaxed">
-                    Une formule cassée, un RIB incorrect, un montant mal saisi... et c'est la catastrophe. Vos investisseurs ne vous font plus confiance et vous passez vos nuits à tout vérifier manuellement.
+                    "Version_finale_v3_VRAIE.xlsx"... Impossible de savoir quelle version est la bonne. Aucune traçabilité sur qui a modifié quoi et quand. En cas d'audit, vous êtes incapables de justifier vos décisions.
                   </p>
                 </div>
               </div>
@@ -310,10 +310,10 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-yellow-900 mb-2">
-                    Risques de conformité et données non sécurisées
+                    Exposition aux risques juridiques et réglementaires
                   </h3>
                   <p className="text-yellow-800 text-sm leading-relaxed">
-                    Des fichiers Excel partagés par email avec des données sensibles... Un cauchemar RGPD qui attend de se produire. Vous savez que ce n'est pas conforme, mais vous n'avez pas d'alternative.
+                    Fichiers Excel non chiffrés contenant RIB et données financières sensibles. Partage par email sans contrôle d'accès. Une fuite de données peut coûter jusqu'à 4% de votre chiffre d'affaires en amendes RGPD.
                   </p>
                 </div>
               </div>
@@ -337,17 +337,26 @@ export function LandingPage() {
             </p>
           </div>
 
-          {/* Dashboard Screenshot */}
-          <div className="bg-white rounded-2xl shadow-2xl p-2 border border-slate-200">
-            <img
-              src="/images/dashboard-screenshot.png"
-              alt="Tableau de bord Finixar en temps réel"
-              className="rounded-xl w-full h-auto"
-            />
+          {/* Screenshots Grid */}
+          <div className="grid lg:grid-cols-2 gap-6 mb-12">
+            <div className="bg-white rounded-2xl shadow-xl p-3 border border-slate-200">
+              <img
+                src="/images/dashboard-screenshot.png"
+                alt="Tableau de bord Finixar"
+                className="rounded-lg w-full h-auto"
+              />
+            </div>
+            <div className="bg-white rounded-2xl shadow-xl p-3 border border-slate-200">
+              <img
+                src="/images/coupons-screenshot.png"
+                alt="Gestion des coupons Finixar"
+                className="rounded-lg w-full h-auto"
+              />
+            </div>
           </div>
 
           {/* Stats Below */}
-          <div className="grid md:grid-cols-3 gap-8 mt-12">
+          <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-finixar-teal/10 rounded-2xl mb-4">
                 <TrendingUp className="w-8 h-8 text-finixar-teal" />
@@ -416,9 +425,9 @@ export function LandingPage() {
                     <Check className="w-4 h-4 text-green-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Isolation des données</h4>
+                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Confidentialité totale</h4>
                     <p className="text-slate-600 text-sm">
-                      Row-Level Security (RLS) garantit que chaque organisation accède uniquement à ses propres données.
+                      Système d'isolation avancé garantissant que vos données restent strictement confidentielles et inaccessibles aux tiers.
                     </p>
                   </div>
                 </div>
@@ -540,26 +549,23 @@ export function LandingPage() {
               <ul className="space-y-2 text-sm text-slate-400">
                 <li><a href="#fonctionnalites" className="hover:text-white transition-colors">Fonctionnalités</a></li>
                 <li><a href="#securite" className="hover:text-white transition-colors">Sécurité</a></li>
-                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors">Tarifs</a></li>
-                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors">Documentation</a></li>
+                <li><a href="mailto:contact@finixar.com?subject=Demande de tarifs" className="hover:text-white transition-colors">Demander un devis</a></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4">Entreprise</h4>
+              <h4 className="font-semibold mb-4">Contact</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors">À propos</a></li>
-                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors">Contact</a></li>
-                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors">Carrières</a></li>
+                <li><a href="mailto:contact@finixar.com?subject=Demande de démo" className="hover:text-white transition-colors">Demander une démo</a></li>
+                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors">Support</a></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-semibold mb-4">Légal</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors">Mentions Légales</a></li>
-                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors">CGV</a></li>
-                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors">Politique de Confidentialité</a></li>
+                <li><a href="mailto:contact@finixar.com?subject=Mentions légales" className="hover:text-white transition-colors">Mentions légales</a></li>
+                <li><a href="mailto:contact@finixar.com?subject=CGV" className="hover:text-white transition-colors">CGV</a></li>
               </ul>
             </div>
           </div>
