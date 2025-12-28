@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Upload, X, CheckCircle, AlertTriangle, XCircle, Trash2 } from 'lucide-react';
+import { Upload, X, CheckCircle, AlertTriangle, XCircle, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { sanitizeFileName } from '../../utils/sanitizer';
@@ -108,6 +108,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
   const handleRemoveFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+    setError(null);
   };
 
   const handleAnalyze = async () => {
@@ -369,7 +370,6 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
   };
 
   const handleReject = async () => {
-    setFiles([]);
     setAnalysisResult(null);
     setError(null);
   };
@@ -522,8 +522,9 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
               <button
                 onClick={handleAnalyze}
                 disabled={files.length === 0 || analyzing}
-                className="w-full bg-finixar-teal text-white py-3 rounded-lg font-medium hover:bg-finixar-teal-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-finixar-teal text-white py-3 rounded-lg font-medium hover:bg-finixar-teal-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
+                {analyzing && <Loader2 className="w-5 h-5 animate-spin" />}
                 {analyzing ? 'Analyse en cours...' : 'Analyser le justificatif'}
               </button>
             </>
@@ -531,14 +532,26 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
             <div className="space-y-4">
               {analysisResult.correspondances?.map((match: any, idx: number) => (
                 <div key={idx} className={`border-2 rounded-lg p-6 ${getMatchColor(match.statut)}`}>
-                  <div className="flex items-start gap-4 mb-4">
-                    {getMatchIcon(match.statut)}
-                    <div className="flex-1">
-                      <h4 className="font-bold text-slate-900 mb-1">
-                        {match.statut === 'correspondance' && `✅ Correspondance (${match.confiance}%)`}
-                        {match.statut === 'partielle' && `⚠️ Correspondance partielle (${match.confiance}%)`}
-                        {match.statut === 'pas-de-correspondance' && `❌ Pas de correspondance (${match.confiance}%)`}
-                      </h4>
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2">
+                      {match.statut === 'correspondance' && (
+                        <>
+                          <CheckCircle className="w-5 h-5 text-finixar-green" />
+                          <h4 className="font-bold text-slate-900">Correspondance ({match.confiance}%)</h4>
+                        </>
+                      )}
+                      {match.statut === 'partielle' && (
+                        <>
+                          <AlertTriangle className="w-5 h-5 text-finixar-amber" />
+                          <h4 className="font-bold text-slate-900">Correspondance partielle ({match.confiance}%)</h4>
+                        </>
+                      )}
+                      {match.statut === 'pas-de-correspondance' && (
+                        <>
+                          <XCircle className="w-5 h-5 text-finixar-red" />
+                          <h4 className="font-bold text-slate-900">Pas de correspondance ({match.confiance}%)</h4>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -580,17 +593,19 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                     {match.confiance > 50 && (
                       <button
                         onClick={() => handleConfirm(match)}
-                        className="flex-1 bg-finixar-teal text-white py-2 rounded-lg font-medium hover:bg-finixar-teal-hover transition-colors"
+                        className="flex-1 bg-finixar-teal text-white py-2 rounded-lg font-medium hover:bg-finixar-teal-hover transition-colors flex items-center justify-center gap-2"
                       >
-                        ✓ Confirmer & Marquer Payé
+                        <CheckCircle className="w-4 h-4" />
+                        Confirmer & Marquer Payé
                       </button>
                     )}
                     {match.confiance <= 50 && (
                       <button
                         onClick={() => handleConfirm(match)}
-                        className="flex-1 bg-finixar-red text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                        className="flex-1 bg-finixar-red text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                       >
-                        ⚠️ Forcer la Confirmation
+                        <AlertTriangle className="w-4 h-4" />
+                        Forcer la Confirmation
                       </button>
                     )}
                   </div>
@@ -599,9 +614,10 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
               <button
                 onClick={handleReject}
-                className="w-full bg-slate-200 text-slate-700 py-3 rounded-lg font-medium hover:bg-slate-300 transition-colors mt-4"
+                className="w-full bg-slate-200 text-slate-700 py-3 rounded-lg font-medium hover:bg-slate-300 transition-colors mt-4 flex items-center justify-center gap-2"
               >
-                ✗ Rejeter & Supprimer
+                <ArrowLeft className="w-4 h-4" />
+                Retour
               </button>
             </div>
           )}
