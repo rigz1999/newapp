@@ -638,49 +638,49 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
       // Consistent spacing constants
       const SPACING = {
-        SECTION: 12,        // Between major sections
-        TITLE: 8,           // After section titles
-        ELEMENT: 8,         // Between elements
-        SMALL: 5,           // Small gaps within related items
+        SECTION: 10,        // Between major sections
+        TITLE: 6,           // After section titles
+        ELEMENT: 6,         // Between elements
+        SMALL: 3,           // Small gaps within related items
         MARGIN: 15          // Left/right margins
       };
 
       // Professional Header with background
       doc.setFillColor(31, 94, 234); // Blue background
-      doc.rect(0, 0, pageWidth, 45, 'F');
+      doc.rect(0, 0, pageWidth, 35, 'F');
 
       // Title
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(24);
+      doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
-      doc.text('Synthèse opérationnelle', 15, 22);
+      doc.text('Synthèse opérationnelle', 15, 16);
 
       // Period and date
-      doc.setFontSize(11);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       const periodLabel = options.paymentsDateRange === 'this_week' ? 'Cette semaine' :
                          options.paymentsDateRange === 'this_month' ? 'Ce mois' :
                          options.paymentsDateRange === 'last_3_months' ? '3 derniers mois' :
                          options.paymentsDateRange === 'last_6_months' ? '6 derniers mois' :
                          options.paymentsDateRange === 'this_year' ? 'Cette année' : 'Période personnalisée';
-      doc.text(`Période: ${periodLabel}`, 15, 31);
-      doc.text(`Généré le: ${formatDate(new Date().toISOString().split('T')[0])}`, 15, 38);
+      doc.text(`Période: ${periodLabel}`, 15, 23);
+      doc.text(`Généré le: ${formatDate(new Date().toISOString().split('T')[0])}`, 15, 29);
 
-      yPos = 60;
+      yPos = 45;
 
     // Statistics - Card Style
     if (options.includeStats) {
       // Reset text color
       doc.setTextColor(51, 65, 85); // slate-700
-      doc.setFontSize(16);
+      doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('Statistiques globales', SPACING.MARGIN, yPos);
       yPos += SPACING.TITLE;
 
       // Stats cards in 2x2 grid
-      const cardWidth = (pageWidth - (SPACING.MARGIN * 2) - SPACING.ELEMENT) / 2;
-      const cardHeight = 28;
-      const gap = SPACING.ELEMENT;
+      const cardWidth = (pageWidth - (SPACING.MARGIN * 2) - SPACING.SMALL) / 2;
+      const cardHeight = 22;
+      const gap = SPACING.SMALL;
 
       const stats = [
         {
@@ -717,14 +717,14 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
         // Label
         doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9);
+        doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        doc.text(stat.label, x + 6, y + 8);
+        doc.text(stat.label, x + 4, y + 6);
 
         // Value
-        doc.setFontSize(16);
+        doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
-        doc.text(stat.value, x + 6, y + 20);
+        doc.text(stat.value, x + 4, y + 16);
       });
 
       yPos += (cardHeight * 2) + gap + SPACING.SECTION;
@@ -738,7 +738,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       }
 
       doc.setTextColor(51, 65, 85);
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('Activité de la période', SPACING.MARGIN, yPos);
       yPos += SPACING.TITLE;
@@ -753,34 +753,34 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       const averagePayment = totalPayments > 0 ? totalAmount / totalPayments : 0;
 
       // Activity box with light background
-      const boxHeight = (latePayments > 0 || pendingPayments > 0) ? 38 : 25;
+      const boxHeight = (latePayments > 0 || pendingPayments > 0) ? 28 : 18;
       doc.setFillColor(248, 250, 252); // slate-50
       doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), boxHeight, 2, 2, 'F');
 
       doc.setTextColor(71, 85, 105); // slate-600
-      doc.setFontSize(8);
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
 
-      let lineY = yPos + 6;
-      doc.text(`Paiements traités: ${totalPayments} paiements - ${formatCurrencyForPDF(totalAmount)}`, SPACING.MARGIN + 5, lineY);
-      lineY += 6;
-      doc.text(`Taux de complétion: ${completionRate}% (${completedPayments}/${totalPayments})`, SPACING.MARGIN + 5, lineY);
-      lineY += 6;
-      doc.text(`Paiement moyen: ${formatCurrencyForPDF(averagePayment)}`, SPACING.MARGIN + 5, lineY);
-      lineY += 6;
+      let lineY = yPos + 4;
+      doc.text(`Paiements traités: ${totalPayments} paiements - ${formatCurrencyForPDF(totalAmount)}`, SPACING.MARGIN + 3, lineY);
+      lineY += 5;
+      doc.text(`Taux de complétion: ${completionRate}% (${completedPayments}/${totalPayments})`, SPACING.MARGIN + 3, lineY);
+      lineY += 5;
+      doc.text(`Paiement moyen: ${formatCurrencyForPDF(averagePayment)}`, SPACING.MARGIN + 3, lineY);
+      lineY += 5;
 
       if (latePayments > 0 || pendingPayments > 0) {
         doc.setTextColor(239, 68, 68); // red-500
         doc.setFont('helvetica', 'bold');
-        doc.text(`Points d'attention:`, SPACING.MARGIN + 5, lineY);
+        doc.text(`Points d'attention:`, SPACING.MARGIN + 3, lineY);
         doc.setFont('helvetica', 'normal');
-        lineY += 6;
+        lineY += 5;
         if (latePayments > 0) {
-          doc.text(`  • ${latePayments} paiement${latePayments > 1 ? 's' : ''} en retard`, SPACING.MARGIN + 5, lineY);
-          lineY += 6;
+          doc.text(`  • ${latePayments} paiement${latePayments > 1 ? 's' : ''} en retard`, SPACING.MARGIN + 3, lineY);
+          lineY += 5;
         }
         if (pendingPayments > 0) {
-          doc.text(`  • ${pendingPayments} paiement${pendingPayments > 1 ? 's' : ''} en attente`, SPACING.MARGIN + 5, lineY);
+          doc.text(`  • ${pendingPayments} paiement${pendingPayments > 1 ? 's' : ''} en attente`, SPACING.MARGIN + 3, lineY);
         }
       }
 
@@ -795,7 +795,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       }
 
       doc.setTextColor(51, 65, 85);
-      doc.setFontSize(16);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('Derniers paiements', SPACING.MARGIN, yPos);
       yPos += SPACING.TITLE;
@@ -845,23 +845,23 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       const lateAll = allPayments.filter(p => p.statut?.toLowerCase()?.includes('retard') || p.statut?.toLowerCase()?.includes('late')).length;
 
       doc.setFillColor(248, 250, 252); // slate-50
-      doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 16, 2, 2, 'F');
+      doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 13, 2, 2, 'F');
 
       doc.setTextColor(71, 85, 105);
-      doc.setFontSize(8);
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
-      doc.text('Résumé de la période', SPACING.MARGIN + 5, yPos + 5);
+      doc.text('Résumé de la période', SPACING.MARGIN + 3, yPos + 4);
       doc.setFont('helvetica', 'normal');
-      doc.text(`• Total paiements: ${totalAllPayments}`, SPACING.MARGIN + 5, yPos + 10);
-      doc.text(`• Montant total: ${formatCurrencyForPDF(totalAllAmount)}`, 70, yPos + 10);
-      doc.text(`• Complétés: ${completedAll} (${Math.round((completedAll/totalAllPayments)*100)}%)`, SPACING.MARGIN + 5, yPos + 14);
-      if (pendingAll > 0) doc.text(`• En attente: ${pendingAll}`, 70, yPos + 14);
+      doc.text(`• Total paiements: ${totalAllPayments}`, SPACING.MARGIN + 3, yPos + 8);
+      doc.text(`• Montant total: ${formatCurrencyForPDF(totalAllAmount)}`, 70, yPos + 8);
+      doc.text(`• Complétés: ${completedAll} (${Math.round((completedAll/totalAllPayments)*100)}%)`, SPACING.MARGIN + 3, yPos + 11);
+      if (pendingAll > 0) doc.text(`• En attente: ${pendingAll}`, 70, yPos + 11);
       if (lateAll > 0) {
         doc.setTextColor(239, 68, 68);
-        doc.text(`• En retard: ${lateAll}`, 120, yPos + 14);
+        doc.text(`• En retard: ${lateAll}`, 120, yPos + 11);
       }
 
-      yPos += 16 + SPACING.ELEMENT;
+      yPos += 13 + SPACING.ELEMENT;
 
       if (displayPayments.length < totalAllPayments) {
         doc.setTextColor(100, 116, 139); // slate-500
@@ -880,7 +880,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       }
 
       doc.setTextColor(51, 65, 85);
-      doc.setFontSize(16);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       const couponDays = options.couponsRange === 'next_7_days' ? '7 prochains jours' :
                         options.couponsRange === 'next_30_days' ? '30 prochains jours' :
@@ -981,7 +981,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       }
 
       doc.setTextColor(51, 65, 85);
-      doc.setFontSize(16);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text(`Alertes (${dashboardData.alerts.length} au total)`, SPACING.MARGIN, yPos);
       yPos += SPACING.TITLE;
