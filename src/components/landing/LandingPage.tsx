@@ -84,7 +84,7 @@ export function LandingPage() {
               </h1>
 
               <p className="text-lg sm:text-xl text-slate-300 mb-8 leading-relaxed">
-                Centralisez vos projets, gérez vos investissements et automatisez le paiement de vos coupons dans une interface sécurisée et intuitive.
+                Centralisez vos projets, suivez vos échéances et gérez vos coupons dans une interface sécurisée et intuitive.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -259,10 +259,10 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-red-900 mb-2">
-                    Multiplication des versions et perte de traçabilité
+                    Absence de traçabilité et risque d'audit
                   </h3>
                   <p className="text-red-800 text-sm leading-relaxed">
-                    "Version_finale_v3_VRAIE.xlsx"... Impossible de savoir quelle version est la bonne. Aucune traçabilité sur qui a modifié quoi et quand. En cas d'audit, vous êtes incapables de justifier vos décisions.
+                    Fichiers multiples sans historique de modifications. Absence de piste d'audit complète sur les décisions d'investissement. Difficulté à démontrer la conformité lors des contrôles réglementaires.
                   </p>
                 </div>
               </div>
@@ -276,10 +276,10 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-orange-900 mb-2">
-                    Des heures gaspillées sur des tâches répétitives
+                    Inefficacité opérationnelle des processus manuels
                   </h3>
                   <p className="text-orange-800 text-sm leading-relaxed">
-                    Copier-coller des RIB, calculer des coupons, envoyer des emails un par un... Vous méritez mieux que de passer 15 heures par semaine sur ces tâches sans valeur ajoutée.
+                    Saisie manuelle répétitive des RIB, calculs de coupons sujets aux erreurs, communications individuelles chronophages. Temps significatif consacré à des tâches sans valeur ajoutée au détriment de l'analyse stratégique.
                   </p>
                 </div>
               </div>
@@ -293,10 +293,10 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-purple-900 mb-2">
-                    Échéances manquées et investisseurs mécontents
+                    Risque opérationnel lié au suivi manuel des échéances
                   </h3>
                   <p className="text-purple-800 text-sm leading-relaxed">
-                    Un rappel oublié, une échéance ratée... et votre réputation en prend un coup. Sans système automatisé, impossible de suivre toutes les dates importantes.
+                    Absence de système centralisé de suivi des dates critiques. Risque de non-respect des obligations contractuelles envers les investisseurs. Impact potentiel sur la relation client et la réputation du fonds.
                   </p>
                 </div>
               </div>
@@ -310,10 +310,10 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-yellow-900 mb-2">
-                    Exposition aux risques juridiques et réglementaires
+                    Non-conformité RGPD et risques de sécurité des données
                   </h3>
                   <p className="text-yellow-800 text-sm leading-relaxed">
-                    Fichiers Excel non chiffrés contenant RIB et données financières sensibles. Partage par email sans contrôle d'accès. Une fuite de données peut coûter jusqu'à 4% de votre chiffre d'affaires en amendes RGPD.
+                    Stockage de données sensibles (RIB, informations personnelles) sans chiffrement approprié. Partage par email sans contrôle d'accès ni traçabilité. Exposition aux sanctions réglementaires pouvant atteindre 4% du chiffre d'affaires annuel.
                   </p>
                 </div>
               </div>
@@ -337,15 +337,8 @@ export function LandingPage() {
             </p>
           </div>
 
-          {/* Screenshots Grid */}
-          <div className="grid lg:grid-cols-2 gap-6 mb-12">
-            <div className="bg-white rounded-2xl shadow-xl p-3 border border-slate-200">
-              <img
-                src="/images/dashboard-screenshot.png"
-                alt="Tableau de bord Finixar"
-                className="rounded-lg w-full h-auto"
-              />
-            </div>
+          {/* Screenshot */}
+          <div className="max-w-5xl mx-auto mb-12">
             <div className="bg-white rounded-2xl shadow-xl p-3 border border-slate-200">
               <img
                 src="/images/coupons-screenshot.png"
