@@ -328,7 +328,10 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         .from('paiements')
         .select(`
           id, id_paiement, montant, date_paiement, statut,
-          tranche:tranches(tranche_name, projet_id)
+          tranche:tranches(
+            tranche_name,
+            projet:projets(projet)
+          )
         `)
         .order('date_paiement', { ascending: false });
 
@@ -633,6 +636,14 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       const pageWidth = doc.internal.pageSize.width;
       let yPos = 25;
 
+      // Consistent spacing constants
+      const SPACING = {
+        SECTION: 15,        // Between major sections
+        TITLE: 8,           // After section titles
+        ELEMENT: 10,        // Between elements
+        MARGIN: 15          // Left/right margins
+      };
+
       // Professional Header with background
       doc.setFillColor(31, 94, 234); // Blue background
       doc.rect(0, 0, pageWidth, 45, 'F');
@@ -662,13 +673,13 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       doc.setTextColor(51, 65, 85); // slate-700
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('Statistiques globales', 15, yPos);
-      yPos += 12;
+      doc.text('Statistiques globales', SPACING.MARGIN, yPos);
+      yPos += SPACING.TITLE;
 
       // Stats cards in 2x2 grid
-      const cardWidth = (pageWidth - 40) / 2;
+      const cardWidth = (pageWidth - (SPACING.MARGIN * 2) - SPACING.ELEMENT) / 2;
       const cardHeight = 28;
-      const gap = 5;
+      const gap = SPACING.ELEMENT;
 
       const stats = [
         {
@@ -696,7 +707,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       stats.forEach((stat, index) => {
         const col = index % 2;
         const row = Math.floor(index / 2);
-        const x = 15 + (col * (cardWidth + gap));
+        const x = SPACING.MARGIN + (col * (cardWidth + gap));
         const y = yPos + (row * (cardHeight + gap));
 
         // Card background
@@ -715,7 +726,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         doc.text(stat.value, x + 6, y + 20);
       });
 
-      yPos += (cardHeight * 2) + gap + 20;
+      yPos += (cardHeight * 2) + gap + SPACING.SECTION;
     }
 
     // Activity summary section - NEW
@@ -728,8 +739,8 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       doc.setTextColor(51, 65, 85);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('Activité de la période', 15, yPos);
-      yPos += 10;
+      doc.text('Activité de la période', SPACING.MARGIN, yPos);
+      yPos += SPACING.TITLE;
 
       // Calculate summary statistics from filtered payments
       const totalPayments = payments.length;
@@ -742,7 +753,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
       // Activity box with light background
       doc.setFillColor(248, 250, 252); // slate-50
-      doc.roundedRect(15, yPos, pageWidth - 30, 45, 2, 2, 'F');
+      doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 45, 2, 2, 'F');
 
       doc.setTextColor(71, 85, 105); // slate-600
       doc.setFontSize(9);
@@ -771,7 +782,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         }
       }
 
-      yPos += 52;
+      yPos += 45 + SPACING.SECTION;
     }
 
     // Recent payments (last 15)
@@ -784,8 +795,8 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       doc.setTextColor(51, 65, 85);
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('Derniers paiements', 15, yPos);
-      yPos += 10;
+      doc.text('Derniers paiements', SPACING.MARGIN, yPos);
+      yPos += SPACING.TITLE;
 
       // Limit to last 15 payments for display
       const displayPayments = payments.slice(0, 15);
@@ -814,14 +825,14 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         alternateRowStyles: {
           fillColor: [248, 250, 252] // slate-50
         },
-        margin: { left: 15, right: 15 },
+        margin: { left: SPACING.MARGIN, right: SPACING.MARGIN },
         styles: {
           lineColor: [226, 232, 240], // slate-200
           lineWidth: 0.1
         }
       });
 
-      yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 10;
+      yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + SPACING.ELEMENT;
 
       // Summary box after payments table
       const allPayments = payments; // This includes all filtered payments
@@ -832,30 +843,30 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       const lateAll = allPayments.filter(p => p.statut?.toLowerCase()?.includes('retard') || p.statut?.toLowerCase()?.includes('late')).length;
 
       doc.setFillColor(248, 250, 252); // slate-50
-      doc.roundedRect(15, yPos, pageWidth - 30, 22, 2, 2, 'F');
+      doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 22, 2, 2, 'F');
 
       doc.setTextColor(71, 85, 105);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text('Résumé de la période', 20, yPos + 7);
+      doc.text('Résumé de la période', SPACING.MARGIN + 5, yPos + 7);
       doc.setFont('helvetica', 'normal');
-      doc.text(`• Total paiements: ${totalAllPayments}`, 20, yPos + 13);
+      doc.text(`• Total paiements: ${totalAllPayments}`, SPACING.MARGIN + 5, yPos + 13);
       doc.text(`• Montant total: ${formatCurrencyForPDF(totalAllAmount)}`, 70, yPos + 13);
-      doc.text(`• Complétés: ${completedAll} (${Math.round((completedAll/totalAllPayments)*100)}%)`, 20, yPos + 19);
+      doc.text(`• Complétés: ${completedAll} (${Math.round((completedAll/totalAllPayments)*100)}%)`, SPACING.MARGIN + 5, yPos + 19);
       if (pendingAll > 0) doc.text(`• En attente: ${pendingAll}`, 70, yPos + 19);
       if (lateAll > 0) {
         doc.setTextColor(239, 68, 68);
         doc.text(`• En retard: ${lateAll}`, 120, yPos + 19);
       }
 
-      yPos += 30;
+      yPos += 22 + SPACING.ELEMENT;
 
       if (displayPayments.length < totalAllPayments) {
         doc.setTextColor(100, 116, 139); // slate-500
         doc.setFontSize(8);
         doc.setFont('helvetica', 'italic');
-        doc.text(`(Affichage des 15 derniers paiements sur ${totalAllPayments} au total)`, 15, yPos);
-        yPos += 10;
+        doc.text(`(Affichage des 15 derniers paiements sur ${totalAllPayments} au total)`, SPACING.MARGIN, yPos);
+        yPos += SPACING.ELEMENT;
       }
     }
 
@@ -873,8 +884,8 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
                         options.couponsRange === 'next_30_days' ? '30 prochains jours' :
                         options.couponsRange === 'next_90_days' ? '90 prochains jours' :
                         options.couponsRange === 'next_6_months' ? '6 prochains mois' : 'Période personnalisée';
-      doc.text(`Coupons à venir - par projet (${couponDays})`, 15, yPos);
-      yPos += 10;
+      doc.text(`Coupons à venir - par projet (${couponDays})`, SPACING.MARGIN, yPos);
+      yPos += SPACING.TITLE;
 
       // Group coupons by project
       const couponsByProject = coupons.reduce((acc: any, coupon: any) => {
@@ -904,16 +915,16 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
         // Project header with colored background
         doc.setFillColor(168, 85, 247); // purple-500
-        doc.roundedRect(15, yPos, pageWidth - 30, 10, 2, 2, 'F');
+        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 10, 2, 2, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
-        doc.text(group.projectName, 18, yPos + 7);
-        yPos += 12;
+        doc.text(group.projectName, SPACING.MARGIN + 3, yPos + 7);
+        yPos += SPACING.ELEMENT;
 
         // Project details
         doc.setFillColor(250, 245, 255); // purple-50
-        doc.roundedRect(15, yPos, pageWidth - 30, 18, 2, 2, 'F');
+        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 18, 2, 2, 'F');
         doc.setTextColor(71, 85, 105);
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
@@ -925,8 +936,8 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           (new Date(nextCoupon.prochaine_date_coupon).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
         );
 
-        doc.text(`• ${group.count} coupon${group.count > 1 ? 's' : ''} - ${formatCurrencyForPDF(group.totalAmount)} total`, 18, yPos + 6);
-        doc.text(`• Prochain: ${formatDate(nextCoupon.prochaine_date_coupon)} (dans ${daysUntilNext} jour${daysUntilNext > 1 ? 's' : ''})`, 18, yPos + 12);
+        doc.text(`• ${group.count} coupon${group.count > 1 ? 's' : ''} - ${formatCurrencyForPDF(group.totalAmount)} total`, SPACING.MARGIN + 3, yPos + 6);
+        doc.text(`• Prochain: ${formatDate(nextCoupon.prochaine_date_coupon)} (dans ${daysUntilNext} jour${daysUntilNext > 1 ? 's' : ''})`, SPACING.MARGIN + 3, yPos + 12);
 
         if (group.count > 1) {
           const subsequentDates = group.coupons
@@ -936,28 +947,28 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           if (subsequentDates) {
             doc.setFontSize(8);
             doc.setTextColor(100, 116, 139);
-            doc.text(`  Suivants: ${subsequentDates}${group.count > 3 ? '...' : ''}`, 18, yPos + 16);
+            doc.text(`  Suivants: ${subsequentDates}${group.count > 3 ? '...' : ''}`, SPACING.MARGIN + 3, yPos + 16);
           }
         }
 
-        yPos += 22;
+        yPos += 18 + SPACING.ELEMENT;
       });
 
       // Summary section
-      yPos += 5;
+      yPos += SPACING.ELEMENT;
       const totalCoupons = coupons.length;
       const totalCouponAmount = coupons.reduce((sum, c) => sum + parseFloat(c.coupon_brut.toString()), 0);
 
       doc.setFillColor(248, 250, 252); // slate-50
-      doc.roundedRect(15, yPos, pageWidth - 30, 15, 2, 2, 'F');
+      doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 15, 2, 2, 'F');
       doc.setTextColor(71, 85, 105);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text(`TOTAL: ${totalCoupons} coupon${totalCoupons > 1 ? 's' : ''} - ${formatCurrencyForPDF(totalCouponAmount)}`, 20, yPos + 7);
+      doc.text(`TOTAL: ${totalCoupons} coupon${totalCoupons > 1 ? 's' : ''} - ${formatCurrencyForPDF(totalCouponAmount)}`, SPACING.MARGIN + 5, yPos + 7);
       doc.setFont('helvetica', 'normal');
-      doc.text(`${projectGroups.length} projet${projectGroups.length > 1 ? 's' : ''}`, 20, yPos + 12);
+      doc.text(`${projectGroups.length} projet${projectGroups.length > 1 ? 's' : ''}`, SPACING.MARGIN + 5, yPos + 12);
 
-      yPos += 20;
+      yPos += 15 + SPACING.SECTION;
     }
 
     // Alerts - Grouped by severity
@@ -970,8 +981,8 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       doc.setTextColor(51, 65, 85);
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Alertes (${dashboardData.alerts.length} au total)`, 15, yPos);
-      yPos += 12;
+      doc.text(`Alertes (${dashboardData.alerts.length} au total)`, SPACING.MARGIN, yPos);
+      yPos += SPACING.TITLE;
 
       // Categorize alerts by severity
       const criticalAlerts = dashboardData.alerts.filter(a =>
@@ -998,12 +1009,12 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       // Critical section
       if (criticalAlerts.length > 0) {
         doc.setFillColor(239, 68, 68); // red-500
-        doc.roundedRect(15, yPos, pageWidth - 30, 8, 2, 2, 'F');
+        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 8, 2, 2, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text(`🔴 CRITIQUE - Action immédiate requise (${criticalAlerts.length})`, 18, yPos + 6);
-        yPos += 10;
+        doc.text(`🔴 CRITIQUE - Action immédiate requise (${criticalAlerts.length})`, SPACING.MARGIN + 3, yPos + 6);
+        yPos += SPACING.ELEMENT;
 
         criticalAlerts.forEach((alert) => {
           if (yPos > 265) {
@@ -1011,18 +1022,18 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             yPos = 25;
           }
           doc.setFillColor(254, 242, 242); // red-50
-          doc.roundedRect(15, yPos, pageWidth - 30, 10, 2, 2, 'F');
+          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 10, 2, 2, 'F');
           doc.setTextColor(153, 27, 27); // red-900
           doc.setFontSize(9);
           doc.setFont('helvetica', 'bold');
-          doc.text(translateAlertType(alert.type), 18, yPos + 4);
+          doc.text(translateAlertType(alert.type), SPACING.MARGIN + 3, yPos + 4);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(71, 85, 105);
-          doc.text(fixTextForPDF(alert.message), 18, yPos + 8);
-          yPos += 12;
+          doc.text(fixTextForPDF(alert.message), SPACING.MARGIN + 3, yPos + 8);
+          yPos += SPACING.ELEMENT;
         });
 
-        yPos += 3;
+        yPos += SPACING.ELEMENT;
       }
 
       // Warning section
@@ -1032,12 +1043,12 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           yPos = 25;
         }
         doc.setFillColor(245, 158, 11); // amber-500
-        doc.roundedRect(15, yPos, pageWidth - 30, 8, 2, 2, 'F');
+        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 8, 2, 2, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text(`🟡 AVERTISSEMENT (${warningAlerts.length})`, 18, yPos + 6);
-        yPos += 10;
+        doc.text(`🟡 AVERTISSEMENT (${warningAlerts.length})`, SPACING.MARGIN + 3, yPos + 6);
+        yPos += SPACING.ELEMENT;
 
         warningAlerts.forEach((alert) => {
           if (yPos > 265) {
@@ -1045,18 +1056,18 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             yPos = 25;
           }
           doc.setFillColor(254, 252, 232); // amber-50
-          doc.roundedRect(15, yPos, pageWidth - 30, 10, 2, 2, 'F');
+          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 10, 2, 2, 'F');
           doc.setTextColor(120, 53, 15); // amber-900
           doc.setFontSize(9);
           doc.setFont('helvetica', 'bold');
-          doc.text(translateAlertType(alert.type), 18, yPos + 4);
+          doc.text(translateAlertType(alert.type), SPACING.MARGIN + 3, yPos + 4);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(71, 85, 105);
-          doc.text(fixTextForPDF(alert.message), 18, yPos + 8);
-          yPos += 12;
+          doc.text(fixTextForPDF(alert.message), SPACING.MARGIN + 3, yPos + 8);
+          yPos += SPACING.ELEMENT;
         });
 
-        yPos += 3;
+        yPos += SPACING.ELEMENT;
       }
 
       // Info section
@@ -1066,12 +1077,12 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           yPos = 25;
         }
         doc.setFillColor(59, 130, 246); // blue-500
-        doc.roundedRect(15, yPos, pageWidth - 30, 8, 2, 2, 'F');
+        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 8, 2, 2, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text(`🔵 INFORMATION (${infoAlerts.length})`, 18, yPos + 6);
-        yPos += 10;
+        doc.text(`🔵 INFORMATION (${infoAlerts.length})`, SPACING.MARGIN + 3, yPos + 6);
+        yPos += SPACING.ELEMENT;
 
         infoAlerts.forEach((alert) => {
           if (yPos > 265) {
@@ -1079,15 +1090,15 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             yPos = 25;
           }
           doc.setFillColor(239, 246, 255); // blue-50
-          doc.roundedRect(15, yPos, pageWidth - 30, 10, 2, 2, 'F');
+          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 10, 2, 2, 'F');
           doc.setTextColor(30, 58, 138); // blue-900
           doc.setFontSize(9);
           doc.setFont('helvetica', 'bold');
-          doc.text(translateAlertType(alert.type), 18, yPos + 4);
+          doc.text(translateAlertType(alert.type), SPACING.MARGIN + 3, yPos + 4);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(71, 85, 105);
-          doc.text(fixTextForPDF(alert.message), 18, yPos + 8);
-          yPos += 12;
+          doc.text(fixTextForPDF(alert.message), SPACING.MARGIN + 3, yPos + 8);
+          yPos += SPACING.ELEMENT;
         });
       }
     }
