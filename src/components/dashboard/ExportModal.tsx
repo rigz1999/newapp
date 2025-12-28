@@ -40,9 +40,32 @@ const formatCurrencyForPDF = (amount: number): string => {
   return formatted;
 };
 
+// Translate alert types to French
+const translateAlertType = (type: string): string => {
+  const translations: Record<string, string> = {
+    'late_payment': 'Paiement en retard',
+    'deadline': 'Échéance',
+    'missing_rib': 'RIB manquant',
+    'upcoming_coupon': 'Coupon à venir',
+    'warning': 'Avertissement',
+    'error': 'Erreur',
+    'info': 'Information'
+  };
+  return translations[type] || type;
+};
+
+// Fix text spacing issues in PDF (removes extra spaces between characters)
+const fixTextForPDF = (text: string): string => {
+  return text
+    .replace(/\u00A0/g, ' ')  // Replace non-breaking space
+    .replace(/\s+/g, ' ')     // Normalize multiple spaces
+    .trim();
+};
+
 type ExportPreset = 'complet' | 'paiements' | 'coupons' | 'alertes' | 'custom';
 type ExportFormat = 'excel' | 'pdf';
-type DateRangePreset = 'all' | 'this_month' | 'last_3_months' | 'last_6_months' | 'this_year' | 'custom';
+type DateRangePreset = 'this_week' | 'this_month' | 'last_3_months' | 'last_6_months' | 'this_year' | 'custom';
+type CouponRangePreset = 'next_7_days' | 'next_30_days' | 'next_90_days' | 'next_6_months';
 
 interface ExportOptions {
   includeStats: boolean;
@@ -58,7 +81,7 @@ interface ExportOptions {
   paymentsDateRange: DateRangePreset;
   paymentsStartDate: string;
   paymentsEndDate: string;
-  couponsDateRange: DateRangePreset;
+  couponsRange: CouponRangePreset;
   couponsStartDate: string;
   couponsEndDate: string;
 }
@@ -128,24 +151,34 @@ const getMonthAgoString = (months: number) => {
   date.setMonth(date.getMonth() - months);
   return date.toISOString().split('T')[0];
 };
+const getWeekAgoString = () => {
+  const date = new Date();
+  date.setDate(date.getDate() - 7);
+  return date.toISOString().split('T')[0];
+};
+const get30DaysFromNowString = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return date.toISOString().split('T')[0];
+};
 
 const DEFAULT_OPTIONS: ExportOptions = {
   includeStats: true,
   includePayments: true,
-  paymentsLimit: 10,
+  paymentsLimit: 15, // Show last 15 recent payments
   includeCoupons: true,
-  couponsLimit: 10,
-  includeChart: true,
+  couponsLimit: 0, // No limit for coupons (will group by project)
+  includeChart: false,
   includeAlerts: true,
   includeProjects: false,
   includeInvestorDetails: false,
   includeVisuals: false,
-  paymentsDateRange: 'last_3_months',
-  paymentsStartDate: getMonthAgoString(3),
+  paymentsDateRange: 'this_week',
+  paymentsStartDate: getWeekAgoString(),
   paymentsEndDate: getTodayString(),
-  couponsDateRange: 'all',
-  couponsStartDate: '',
-  couponsEndDate: '',
+  couponsRange: 'next_30_days',
+  couponsStartDate: getTodayString(),
+  couponsEndDate: get30DaysFromNowString(),
 };
 
 export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: ExportModalProps) {
@@ -201,86 +234,88 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
     setShowCustomize(false);
   };
 
-  const calculateDateRange = (preset: DateRangePreset, forFuture: boolean = false): { start: string; end: string } => {
+  const calculateDateRange = (preset: DateRangePreset): { start: string; end: string } => {
     const today = new Date();
-    const start = today.toISOString().split('T')[0];
+    const end = today.toISOString().split('T')[0];
 
-    if (forFuture) {
-      // For future dates (coupons)
-      switch (preset) {
-        case 'this_month': {
-          const end = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
-          return { start, end };
-        }
-        case 'last_3_months': {
-          const end = new Date(today);
-          end.setMonth(end.getMonth() + 3);
-          return { start, end: end.toISOString().split('T')[0] };
-        }
-        case 'last_6_months': {
-          const end = new Date(today);
-          end.setMonth(end.getMonth() + 6);
-          return { start, end: end.toISOString().split('T')[0] };
-        }
-        case 'this_year': {
-          const end = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
-          return { start, end };
-        }
-        case 'all':
-          return { start, end: '' };
-        case 'custom':
-        default:
-          return { start: options.couponsStartDate, end: options.couponsEndDate };
+    switch (preset) {
+      case 'this_week': {
+        const start = new Date(today);
+        start.setDate(start.getDate() - 7);
+        return { start: start.toISOString().split('T')[0], end };
       }
-    } else {
-      // For past dates (payments)
-      const end = today.toISOString().split('T')[0];
-      switch (preset) {
-        case 'this_month': {
-          const start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-          return { start, end };
-        }
-        case 'last_3_months': {
-          const start = new Date(today);
-          start.setMonth(start.getMonth() - 3);
-          return { start: start.toISOString().split('T')[0], end };
-        }
-        case 'last_6_months': {
-          const start = new Date(today);
-          start.setMonth(start.getMonth() - 6);
-          return { start: start.toISOString().split('T')[0], end };
-        }
-        case 'this_year': {
-          const start = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
-          return { start, end };
-        }
-        case 'all':
-          return { start: '', end: '' };
-        case 'custom':
-        default:
-          return { start: options.paymentsStartDate, end: options.paymentsEndDate };
+      case 'this_month': {
+        const start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        return { start, end };
       }
+      case 'last_3_months': {
+        const start = new Date(today);
+        start.setMonth(start.getMonth() - 3);
+        return { start: start.toISOString().split('T')[0], end };
+      }
+      case 'last_6_months': {
+        const start = new Date(today);
+        start.setMonth(start.getMonth() - 6);
+        return { start: start.toISOString().split('T')[0], end };
+      }
+      case 'this_year': {
+        const start = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+        return { start, end };
+      }
+      case 'custom':
+      default:
+        return { start: options.paymentsStartDate, end: options.paymentsEndDate };
     }
   };
 
-  const handleDateRangeChange = (type: 'payments' | 'coupons', preset: DateRangePreset) => {
-    const { start, end } = calculateDateRange(preset, type === 'coupons');
+  const calculateCouponRange = (preset: CouponRangePreset): { start: string; end: string } => {
+    const today = new Date();
+    const start = today.toISOString().split('T')[0];
 
-    if (type === 'payments') {
-      setOptions({
-        ...options,
-        paymentsDateRange: preset,
-        paymentsStartDate: start,
-        paymentsEndDate: end,
-      });
-    } else {
-      setOptions({
-        ...options,
-        couponsDateRange: preset,
-        couponsStartDate: start,
-        couponsEndDate: end,
-      });
+    switch (preset) {
+      case 'next_7_days': {
+        const end = new Date(today);
+        end.setDate(end.getDate() + 7);
+        return { start, end: end.toISOString().split('T')[0] };
+      }
+      case 'next_30_days': {
+        const end = new Date(today);
+        end.setDate(end.getDate() + 30);
+        return { start, end: end.toISOString().split('T')[0] };
+      }
+      case 'next_90_days': {
+        const end = new Date(today);
+        end.setDate(end.getDate() + 90);
+        return { start, end: end.toISOString().split('T')[0] };
+      }
+      case 'next_6_months': {
+        const end = new Date(today);
+        end.setMonth(end.getMonth() + 6);
+        return { start, end: end.toISOString().split('T')[0] };
+      }
+      default:
+        return { start: options.couponsStartDate, end: options.couponsEndDate };
     }
+  };
+
+  const handlePaymentsDateRangeChange = (preset: DateRangePreset) => {
+    const { start, end } = calculateDateRange(preset);
+    setOptions({
+      ...options,
+      paymentsDateRange: preset,
+      paymentsStartDate: start,
+      paymentsEndDate: end,
+    });
+  };
+
+  const handleCouponsRangeChange = (preset: CouponRangePreset) => {
+    const { start, end } = calculateCouponRange(preset);
+    setOptions({
+      ...options,
+      couponsRange: preset,
+      couponsStartDate: start,
+      couponsEndDate: end,
+    });
   };
 
   const fetchFilteredData = async () => {
@@ -324,14 +359,12 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         `)
         .order('prochaine_date_coupon', { ascending: true });
 
-      if (options.couponsStartDate && options.couponsDateRange !== 'all') {
+      // Always filter for future coupons based on the selected range
+      if (options.couponsStartDate) {
         query = query.gte('prochaine_date_coupon', options.couponsStartDate);
       }
-      if (options.couponsEndDate && options.couponsDateRange !== 'all') {
+      if (options.couponsEndDate) {
         query = query.lte('prochaine_date_coupon', options.couponsEndDate);
-      } else if (options.couponsDateRange === 'all') {
-        // For 'all', only get future coupons
-        query = query.gte('prochaine_date_coupon', getTodayString());
       }
 
       const { data, error } = await query;
@@ -608,12 +641,18 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
-      doc.text('Synthèse Dashboard', 15, 22);
+      doc.text('Synthèse opérationnelle', 15, 22);
 
-      // Date
+      // Period and date
       doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Généré le ${formatDate(new Date().toISOString().split('T')[0])}`, 15, 35);
+      const periodLabel = options.paymentsDateRange === 'this_week' ? 'Cette semaine' :
+                         options.paymentsDateRange === 'this_month' ? 'Ce mois' :
+                         options.paymentsDateRange === 'last_3_months' ? '3 derniers mois' :
+                         options.paymentsDateRange === 'last_6_months' ? '6 derniers mois' :
+                         options.paymentsDateRange === 'this_year' ? 'Cette année' : 'Période personnalisée';
+      doc.text(`Période: ${periodLabel}`, 15, 31);
+      doc.text(`Généré le: ${formatDate(new Date().toISOString().split('T')[0])}`, 15, 38);
 
       yPos = 60;
 
@@ -623,7 +662,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       doc.setTextColor(51, 65, 85); // slate-700
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('Statistiques Globales', 15, yPos);
+      doc.text('Statistiques globales', 15, yPos);
       yPos += 12;
 
       // Stats cards in 2x2 grid
@@ -679,7 +718,63 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       yPos += (cardHeight * 2) + gap + 20;
     }
 
-    // Payments
+    // Activity summary section - NEW
+    if (options.includeStats && payments.length > 0) {
+      if (yPos > 220) {
+        doc.addPage();
+        yPos = 25;
+      }
+
+      doc.setTextColor(51, 65, 85);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Activité de la période', 15, yPos);
+      yPos += 10;
+
+      // Calculate summary statistics from filtered payments
+      const totalPayments = payments.length;
+      const totalAmount = payments.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
+      const completedPayments = payments.filter(p => p.statut?.toLowerCase() === 'payé' || p.statut?.toLowerCase() === 'paid').length;
+      const pendingPayments = payments.filter(p => p.statut?.toLowerCase() === 'en attente' || p.statut?.toLowerCase() === 'pending').length;
+      const latePayments = payments.filter(p => p.statut?.toLowerCase()?.includes('retard') || p.statut?.toLowerCase()?.includes('late')).length;
+      const completionRate = totalPayments > 0 ? Math.round((completedPayments / totalPayments) * 100) : 0;
+      const averagePayment = totalPayments > 0 ? totalAmount / totalPayments : 0;
+
+      // Activity box with light background
+      doc.setFillColor(248, 250, 252); // slate-50
+      doc.roundedRect(15, yPos, pageWidth - 30, 45, 2, 2, 'F');
+
+      doc.setTextColor(71, 85, 105); // slate-600
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+
+      let lineY = yPos + 8;
+      doc.text(`Paiements traités: ${totalPayments} paiements - ${formatCurrencyForPDF(totalAmount)}`, 20, lineY);
+      lineY += 7;
+      doc.text(`Taux de complétion: ${completionRate}% (${completedPayments}/${totalPayments})`, 20, lineY);
+      lineY += 7;
+      doc.text(`Paiement moyen: ${formatCurrencyForPDF(averagePayment)}`, 20, lineY);
+      lineY += 7;
+
+      if (latePayments > 0 || pendingPayments > 0) {
+        doc.setTextColor(239, 68, 68); // red-500
+        doc.setFont('helvetica', 'bold');
+        doc.text(`⚠ Points d'attention:`, 20, lineY);
+        doc.setFont('helvetica', 'normal');
+        lineY += 7;
+        if (latePayments > 0) {
+          doc.text(`  • ${latePayments} paiement${latePayments > 1 ? 's' : ''} en retard`, 20, lineY);
+          lineY += 7;
+        }
+        if (pendingPayments > 0) {
+          doc.text(`  • ${pendingPayments} paiement${pendingPayments > 1 ? 's' : ''} en attente`, 20, lineY);
+        }
+      }
+
+      yPos += 52;
+    }
+
+    // Recent payments (last 15)
     if (options.includePayments && payments.length > 0) {
       if (yPos > 240) {
         doc.addPage();
@@ -689,18 +784,20 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       doc.setTextColor(51, 65, 85);
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('Paiements', 15, yPos);
+      doc.text('Derniers paiements', 15, yPos);
       yPos += 10;
+
+      // Limit to last 15 payments for display
+      const displayPayments = payments.slice(0, 15);
 
       autoTable(doc, {
         startY: yPos,
-        head: [['ID', 'Tranche', 'Montant', 'Date', 'Statut']],
-        body: payments.map((p) => [
-          p.id_paiement || p.id,
-          p.tranche?.tranche_name || 'N/A',
+        head: [['Projet', 'Montant', 'Date', 'Statut']],
+        body: displayPayments.map((p) => [
+          fixTextForPDF(p.tranche?.projet?.projet || p.tranche?.tranche_name || 'N/A'),
           formatCurrencyForPDF(p.montant),
           formatDate(p.date_paiement),
-          p.statut,
+          fixTextForPDF(p.statut),
         ]),
         theme: 'striped',
         headStyles: {
@@ -724,10 +821,45 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         }
       });
 
-      yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
+      yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 10;
+
+      // Summary box after payments table
+      const allPayments = payments; // This includes all filtered payments
+      const totalAllPayments = allPayments.length;
+      const totalAllAmount = allPayments.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
+      const completedAll = allPayments.filter(p => p.statut?.toLowerCase() === 'payé' || p.statut?.toLowerCase() === 'paid').length;
+      const pendingAll = allPayments.filter(p => p.statut?.toLowerCase() === 'en attente' || p.statut?.toLowerCase() === 'pending').length;
+      const lateAll = allPayments.filter(p => p.statut?.toLowerCase()?.includes('retard') || p.statut?.toLowerCase()?.includes('late')).length;
+
+      doc.setFillColor(248, 250, 252); // slate-50
+      doc.roundedRect(15, yPos, pageWidth - 30, 22, 2, 2, 'F');
+
+      doc.setTextColor(71, 85, 105);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Résumé de la période', 20, yPos + 7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`• Total paiements: ${totalAllPayments}`, 20, yPos + 13);
+      doc.text(`• Montant total: ${formatCurrencyForPDF(totalAllAmount)}`, 70, yPos + 13);
+      doc.text(`• Complétés: ${completedAll} (${Math.round((completedAll/totalAllPayments)*100)}%)`, 20, yPos + 19);
+      if (pendingAll > 0) doc.text(`• En attente: ${pendingAll}`, 70, yPos + 19);
+      if (lateAll > 0) {
+        doc.setTextColor(239, 68, 68);
+        doc.text(`• En retard: ${lateAll}`, 120, yPos + 19);
+      }
+
+      yPos += 30;
+
+      if (displayPayments.length < totalAllPayments) {
+        doc.setTextColor(100, 116, 139); // slate-500
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        doc.text(`(Affichage des 15 derniers paiements sur ${totalAllPayments} au total)`, 15, yPos);
+        yPos += 10;
+      }
     }
 
-    // Coupons
+    // Coupons - Grouped by project
     if (options.includeCoupons && coupons.length > 0) {
       if (yPos > 240) {
         doc.addPage();
@@ -737,50 +869,98 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       doc.setTextColor(51, 65, 85);
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('Coupons à Venir', 15, yPos);
+      const couponDays = options.couponsRange === 'next_7_days' ? '7 prochains jours' :
+                        options.couponsRange === 'next_30_days' ? '30 prochains jours' :
+                        options.couponsRange === 'next_90_days' ? '90 prochains jours' :
+                        options.couponsRange === 'next_6_months' ? '6 prochains mois' : 'Période personnalisée';
+      doc.text(`Coupons à venir - par projet (${couponDays})`, 15, yPos);
       yPos += 10;
 
-      autoTable(doc, {
-        startY: yPos,
-        head: [['Projet', 'Tranche', 'Montant', 'Date', 'Jours']],
-        body: coupons.map((c) => {
-          const daysUntil = Math.ceil(
-            (new Date(c.prochaine_date_coupon).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-          );
-          return [
-            c.tranche?.projet?.projet || 'N/A',
-            c.tranche?.tranche_name || 'N/A',
-            formatCurrencyForPDF(parseFloat(c.coupon_brut.toString())),
-            formatDate(c.prochaine_date_coupon),
-            daysUntil.toString(),
-          ];
-        }),
-        theme: 'striped',
-        headStyles: {
-          fillColor: [168, 85, 247], // purple-500
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          fontSize: 10,
-          cellPadding: 5
-        },
-        bodyStyles: {
-          fontSize: 9,
-          cellPadding: 4
-        },
-        alternateRowStyles: {
-          fillColor: [250, 245, 255] // purple-50
-        },
-        margin: { left: 15, right: 15 },
-        styles: {
-          lineColor: [226, 232, 240],
-          lineWidth: 0.1
+      // Group coupons by project
+      const couponsByProject = coupons.reduce((acc: any, coupon: any) => {
+        const projectName = fixTextForPDF(coupon.tranche?.projet?.projet || 'N/A');
+        if (!acc[projectName]) {
+          acc[projectName] = {
+            projectName,
+            coupons: [],
+            totalAmount: 0,
+            count: 0
+          };
         }
+        acc[projectName].coupons.push(coupon);
+        acc[projectName].totalAmount += parseFloat(coupon.coupon_brut.toString());
+        acc[projectName].count += 1;
+        return acc;
+      }, {});
+
+      const projectGroups = Object.values(couponsByProject);
+
+      // Display each project group
+      projectGroups.forEach((group: any, index: number) => {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 25;
+        }
+
+        // Project header with colored background
+        doc.setFillColor(168, 85, 247); // purple-500
+        doc.roundedRect(15, yPos, pageWidth - 30, 10, 2, 2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(group.projectName, 18, yPos + 7);
+        yPos += 12;
+
+        // Project details
+        doc.setFillColor(250, 245, 255); // purple-50
+        doc.roundedRect(15, yPos, pageWidth - 30, 18, 2, 2, 'F');
+        doc.setTextColor(71, 85, 105);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+
+        const nextCoupon = group.coupons.sort((a: any, b: any) =>
+          new Date(a.prochaine_date_coupon).getTime() - new Date(b.prochaine_date_coupon).getTime()
+        )[0];
+        const daysUntilNext = Math.ceil(
+          (new Date(nextCoupon.prochaine_date_coupon).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        doc.text(`• ${group.count} coupon${group.count > 1 ? 's' : ''} - ${formatCurrencyForPDF(group.totalAmount)} total`, 18, yPos + 6);
+        doc.text(`• Prochain: ${formatDate(nextCoupon.prochaine_date_coupon)} (dans ${daysUntilNext} jour${daysUntilNext > 1 ? 's' : ''})`, 18, yPos + 12);
+
+        if (group.count > 1) {
+          const subsequentDates = group.coupons
+            .slice(1, 3)
+            .map((c: any) => formatDate(c.prochaine_date_coupon))
+            .join(', ');
+          if (subsequentDates) {
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`  Suivants: ${subsequentDates}${group.count > 3 ? '...' : ''}`, 18, yPos + 16);
+          }
+        }
+
+        yPos += 22;
       });
 
-      yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
+      // Summary section
+      yPos += 5;
+      const totalCoupons = coupons.length;
+      const totalCouponAmount = coupons.reduce((sum, c) => sum + parseFloat(c.coupon_brut.toString()), 0);
+
+      doc.setFillColor(248, 250, 252); // slate-50
+      doc.roundedRect(15, yPos, pageWidth - 30, 15, 2, 2, 'F');
+      doc.setTextColor(71, 85, 105);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`TOTAL: ${totalCoupons} coupon${totalCoupons > 1 ? 's' : ''} - ${formatCurrencyForPDF(totalCouponAmount)}`, 20, yPos + 7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${projectGroups.length} projet${projectGroups.length > 1 ? 's' : ''}`, 20, yPos + 12);
+
+      yPos += 20;
     }
 
-    // Alerts
+    // Alerts - Grouped by severity
     if (options.includeAlerts && dashboardData.alerts.length > 0) {
       if (yPos > 240) {
         doc.addPage();
@@ -790,34 +970,126 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       doc.setTextColor(51, 65, 85);
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('Alertes', 15, yPos);
-      yPos += 10;
+      doc.text(`Alertes (${dashboardData.alerts.length} au total)`, 15, yPos);
+      yPos += 12;
 
-      autoTable(doc, {
-        startY: yPos,
-        head: [['Type', 'Message']],
-        body: dashboardData.alerts.map((a) => [a.type, a.message]),
-        theme: 'striped',
-        headStyles: {
-          fillColor: [239, 68, 68], // red-500
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          fontSize: 10,
-          cellPadding: 5
-        },
-        bodyStyles: {
-          fontSize: 9,
-          cellPadding: 4
-        },
-        alternateRowStyles: {
-          fillColor: [254, 242, 242] // red-50
-        },
-        margin: { left: 15, right: 15 },
-        styles: {
-          lineColor: [226, 232, 240],
-          lineWidth: 0.1
+      // Categorize alerts by severity
+      const criticalAlerts = dashboardData.alerts.filter(a =>
+        a.type?.toLowerCase().includes('retard') ||
+        a.type?.toLowerCase().includes('late') ||
+        a.type?.toLowerCase().includes('manquant') ||
+        a.type?.toLowerCase().includes('missing') ||
+        a.severity === 'critical'
+      );
+
+      const warningAlerts = dashboardData.alerts.filter(a =>
+        !criticalAlerts.includes(a) &&
+        (a.type?.toLowerCase().includes('échéance') ||
+         a.type?.toLowerCase().includes('deadline') ||
+         a.type?.toLowerCase().includes('warning') ||
+         a.type?.toLowerCase().includes('avertissement') ||
+         a.severity === 'warning')
+      );
+
+      const infoAlerts = dashboardData.alerts.filter(a =>
+        !criticalAlerts.includes(a) && !warningAlerts.includes(a)
+      );
+
+      // Critical section
+      if (criticalAlerts.length > 0) {
+        doc.setFillColor(239, 68, 68); // red-500
+        doc.roundedRect(15, yPos, pageWidth - 30, 8, 2, 2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`🔴 CRITIQUE - Action immédiate requise (${criticalAlerts.length})`, 18, yPos + 6);
+        yPos += 10;
+
+        criticalAlerts.forEach((alert) => {
+          if (yPos > 265) {
+            doc.addPage();
+            yPos = 25;
+          }
+          doc.setFillColor(254, 242, 242); // red-50
+          doc.roundedRect(15, yPos, pageWidth - 30, 10, 2, 2, 'F');
+          doc.setTextColor(153, 27, 27); // red-900
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text(translateAlertType(alert.type), 18, yPos + 4);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text(fixTextForPDF(alert.message), 18, yPos + 8);
+          yPos += 12;
+        });
+
+        yPos += 3;
+      }
+
+      // Warning section
+      if (warningAlerts.length > 0) {
+        if (yPos > 240) {
+          doc.addPage();
+          yPos = 25;
         }
-      });
+        doc.setFillColor(245, 158, 11); // amber-500
+        doc.roundedRect(15, yPos, pageWidth - 30, 8, 2, 2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`🟡 AVERTISSEMENT (${warningAlerts.length})`, 18, yPos + 6);
+        yPos += 10;
+
+        warningAlerts.forEach((alert) => {
+          if (yPos > 265) {
+            doc.addPage();
+            yPos = 25;
+          }
+          doc.setFillColor(254, 252, 232); // amber-50
+          doc.roundedRect(15, yPos, pageWidth - 30, 10, 2, 2, 'F');
+          doc.setTextColor(120, 53, 15); // amber-900
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text(translateAlertType(alert.type), 18, yPos + 4);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text(fixTextForPDF(alert.message), 18, yPos + 8);
+          yPos += 12;
+        });
+
+        yPos += 3;
+      }
+
+      // Info section
+      if (infoAlerts.length > 0) {
+        if (yPos > 240) {
+          doc.addPage();
+          yPos = 25;
+        }
+        doc.setFillColor(59, 130, 246); // blue-500
+        doc.roundedRect(15, yPos, pageWidth - 30, 8, 2, 2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`🔵 INFORMATION (${infoAlerts.length})`, 18, yPos + 6);
+        yPos += 10;
+
+        infoAlerts.forEach((alert) => {
+          if (yPos > 265) {
+            doc.addPage();
+            yPos = 25;
+          }
+          doc.setFillColor(239, 246, 255); // blue-50
+          doc.roundedRect(15, yPos, pageWidth - 30, 10, 2, 2, 'F');
+          doc.setTextColor(30, 58, 138); // blue-900
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text(translateAlertType(alert.type), 18, yPos + 4);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(71, 85, 105);
+          doc.text(fixTextForPDF(alert.message), 18, yPos + 8);
+          yPos += 12;
+        });
+      }
     }
 
       // Add footer with page numbers
@@ -892,7 +1164,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         <div className="px-6 pt-6 pb-4 border-b border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Exporter Synthèse</h3>
+              <h3 className="text-lg font-bold text-slate-900">Exporter synthèse</h3>
               <p className="text-sm text-slate-600 mt-1">Choisissez votre rapport</p>
             </div>
             <button
@@ -922,7 +1194,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
                   <FileText className={`w-5 h-5 ${selectedPreset === 'complet' ? 'text-white' : 'text-slate-600'}`} />
                 </div>
                 <span className={`text-sm font-semibold ${selectedPreset === 'complet' ? 'text-blue-900' : 'text-slate-900'}`}>
-                  Synthèse Complète
+                  Synthèse complète
                 </span>
               </div>
             </button>
@@ -1022,60 +1294,45 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           {showCustomize && (
             <div className="mb-5 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
               <div>
-                <label className="text-xs font-semibold text-slate-700 mb-2 block">Période (Paiements)</label>
+                <label className="text-xs font-semibold text-slate-700 mb-2 block">Période des paiements</label>
                 <select
                   value={options.paymentsDateRange}
-                  onChange={(e) => handleDateRangeChange('payments', e.target.value as DateRangePreset)}
+                  onChange={(e) => handlePaymentsDateRangeChange(e.target.value as DateRangePreset)}
                   className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="all">Tous</option>
-                  <option value="this_month">Ce mois</option>
+                  <option value="this_week">Cette semaine (7 jours)</option>
+                  <option value="this_month">Ce mois (30 jours)</option>
                   <option value="last_3_months">3 derniers mois</option>
                   <option value="last_6_months">6 derniers mois</option>
-                  <option value="this_year">Cette année</option>
+                  <option value="this_year">Année complète</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 mb-2 block">Limite (Paiements)</label>
+                <label className="text-xs font-semibold text-slate-700 mb-2 block">Affichage des paiements</label>
                 <select
                   value={options.paymentsLimit}
                   onChange={(e) => setOptions({ ...options, paymentsLimit: parseInt(e.target.value) })}
                   className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="0">Tous</option>
-                  <option value="10">10 derniers</option>
+                  <option value="15">15 derniers (recommandé)</option>
                   <option value="20">20 derniers</option>
                   <option value="50">50 derniers</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 mb-2 block">Période (Coupons)</label>
-                <select
-                  value={options.couponsDateRange}
-                  onChange={(e) => handleDateRangeChange('coupons', e.target.value as DateRangePreset)}
-                  className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="all">Tous à venir</option>
-                  <option value="this_month">Ce mois</option>
-                  <option value="last_3_months">3 prochains mois</option>
-                  <option value="last_6_months">6 prochains mois</option>
-                  <option value="this_year">Cette année</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 mb-2 block">Limite (Coupons)</label>
-                <select
-                  value={options.couponsLimit}
-                  onChange={(e) => setOptions({ ...options, couponsLimit: parseInt(e.target.value) })}
-                  className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
                   <option value="0">Tous</option>
-                  <option value="10">10 prochains</option>
-                  <option value="20">20 prochains</option>
-                  <option value="50">50 prochains</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 mb-2 block">Coupons à venir</label>
+                <select
+                  value={options.couponsRange}
+                  onChange={(e) => handleCouponsRangeChange(e.target.value as CouponRangePreset)}
+                  className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="next_7_days">7 prochains jours</option>
+                  <option value="next_30_days">30 prochains jours</option>
+                  <option value="next_90_days">90 prochains jours</option>
+                  <option value="next_6_months">6 prochains mois</option>
                 </select>
               </div>
             </div>
