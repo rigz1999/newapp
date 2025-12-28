@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Download, Search, Euro, CheckCircle2, Eye, Filter, X, AlertCircle, Trash2, FileDown, MoreVertical, FileText, XCircle, Upload } from 'lucide-react';
+import { Download, Search, Euro, CheckCircle2, Eye, Filter, X, AlertCircle, Trash2, FileDown, MoreVertical, FileText, XCircle, Upload, StickyNote } from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { PaymentProofUpload } from './PaymentProofUpload';
 import { TableSkeleton } from '../common/Skeleton';
@@ -25,6 +25,7 @@ interface Payment {
   type: string;
   montant: number;
   date_paiement: string;
+  note: string | null;
   tranche: {
     tranche_name: string;
     projet: {
@@ -80,6 +81,9 @@ export function Payments({ organization }: PaymentsProps) {
   // Track which payments have proofs
   const [paymentsWithProofs, setPaymentsWithProofs] = useState<Set<string>>(new Set());
 
+  // Note popover
+  const [showNotePopover, setShowNotePopover] = useState<string | null>(null);
+
   // Get unique values for filters
   const uniqueProjects = Array.from(
     new Set(payments.map(p => p.tranche?.projet?.projet).filter(Boolean))
@@ -127,6 +131,20 @@ export function Payments({ organization }: PaymentsProps) {
     }
   }, [openDropdown]);
 
+  // Close note popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.note-popover') && !target.closest('.note-icon')) {
+        setShowNotePopover(null);
+      }
+    };
+    if (showNotePopover) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showNotePopover]);
+
   const fetchPayments = async () => {
     setLoading(true);
 
@@ -140,6 +158,7 @@ export function Payments({ organization }: PaymentsProps) {
           type,
           montant,
           date_paiement,
+          note,
           tranche:tranches(
             tranche_name,
             projet:projets(
@@ -759,6 +778,39 @@ export function Payments({ organization }: PaymentsProps) {
                       <div className="flex items-center justify-end gap-2 relative">
                         {paymentsWithProofs.has(payment.id) && (
                           <FileText className="w-4 h-4 text-finixar-green" title="Justificatif disponible" />
+                        )}
+                        {payment.note && (
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowNotePopover(showNotePopover === payment.id ? null : payment.id);
+                              }}
+                              className="note-icon p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="Voir la note"
+                            >
+                              <StickyNote className="w-4 h-4" />
+                            </button>
+                            {showNotePopover === payment.id && (
+                              <div className="note-popover absolute right-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-slate-200 p-3 z-50">
+                                <div className="flex items-start justify-between mb-2">
+                                  <h4 className="text-sm font-semibold text-slate-900">Note</h4>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowNotePopover(null);
+                                    }}
+                                    className="text-slate-400 hover:text-slate-600"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <p className="text-sm text-slate-700 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                                  {payment.note}
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         )}
                         <button
                           onClick={(e) => {
