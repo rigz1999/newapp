@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Download, Search, Euro, CheckCircle2, Eye, Filter, X, AlertCircle, Trash2, FileDown, MoreVertical, FileText, XCircle, Upload } from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
+import { PaymentProofUpload } from './PaymentProofUpload';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
@@ -47,6 +48,7 @@ export function Payments({ organization }: PaymentsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [viewingProofs, setViewingProofs] = useState<Payment | null>(null);
+  const [uploadingProof, setUploadingProof] = useState<Payment | null>(null);
   const [proofs, setProofs] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalPaid: 0,
@@ -204,6 +206,10 @@ export function Payments({ organization }: PaymentsProps) {
     const proofsData = await loadProofs(payment.id);
     setProofs(proofsData);
     setViewingProofs(payment);
+  };
+
+  const handleUploadProof = (payment: Payment) => {
+    setUploadingProof(payment);
   };
 
   const filterPayments = () => {
@@ -771,7 +777,11 @@ export function Payments({ organization }: PaymentsProps) {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setOpenDropdown(null);
-                                handleViewProofs(payment);
+                                if (paymentsWithProofs.has(payment.id)) {
+                                  handleViewProofs(payment);
+                                } else {
+                                  handleUploadProof(payment);
+                                }
                               }}
                               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                             >
@@ -829,6 +839,17 @@ export function Payments({ organization }: PaymentsProps) {
           onProofDeleted={() => {
             fetchPayments();
             handleViewProofs(viewingProofs);
+          }}
+        />
+      )}
+
+      {uploadingProof && (
+        <PaymentProofUpload
+          payment={uploadingProof}
+          onClose={() => setUploadingProof(null)}
+          onSuccess={() => {
+            fetchPayments();
+            setUploadingProof(null);
           }}
         />
       )}
