@@ -335,42 +335,42 @@ export function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Benefit 1 - Multi-org */}
+            {/* Benefit 1 - Investor Data */}
             <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200">
               <div className="w-14 h-14 bg-finixar-brand-blue/10 rounded-xl flex items-center justify-center mb-6">
-                <Building2 className="w-7 h-7 text-finixar-brand-blue" />
+                <Users className="w-7 h-7 text-finixar-brand-blue" />
               </div>
               <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
-                Consolidation multi-fonds
+                Base investisseurs centralisée
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                Pilotez plusieurs entités et fonds depuis une interface centralisée. Séparation stricte des données avec vue consolidée pour la direction.
+                Gestion structurée des données investisseurs et RIB dans un référentiel unique. Élimination de la saisie manuelle et des erreurs de ressaisie.
               </p>
             </div>
 
-            {/* Benefit 2 - Excel Export */}
+            {/* Benefit 2 - Automated Reminders */}
             <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200">
               <div className="w-14 h-14 bg-finixar-teal/10 rounded-xl flex items-center justify-center mb-6">
-                <FileText className="w-7 h-7 text-finixar-teal" />
+                <Bell className="w-7 h-7 text-finixar-teal" />
               </div>
               <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
-                Exports conformes pour audits
+                Suivi automatisé des échéances
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                Générez des rapports structurés pour vos commissaires aux comptes et audits réglementaires. Données filtrables exportables au format Excel.
+                Notifications automatiques par e-mail pour toutes vos dates critiques. Réduction du risque de non-respect des obligations contractuelles.
               </p>
             </div>
 
-            {/* Benefit 3 - Real-time */}
+            {/* Benefit 3 - Coupon Management */}
             <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200">
               <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
-                <Zap className="w-7 h-7 text-purple-600" />
+                <Euro className="w-7 h-7 text-purple-600" />
               </div>
               <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
-                Collaboration temps réel
+                Suivi centralisé des coupons
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                Synchronisation instantanée entre utilisateurs. Contrôle de version automatique éliminant les conflits de données et doublons.
+                Consolidation des échéances et paiements dans une interface unique. Traçabilité complète des opérations et justificatifs associés.
               </p>
             </div>
           </div>
