@@ -1057,6 +1057,7 @@ export function QuickPaymentModal({
                       <p className="text-sm font-medium text-slate-700">
                         {uploadedFiles.length} fichier{uploadedFiles.length > 1 ? 's' : ''} téléchargé{uploadedFiles.length > 1 ? 's' : ''}
                       </p>
+                      {/* DISABLED - AI ANALYSIS BUTTON (can be re-enabled later)
                       {!analyzed && (
                         <button
                           onClick={handleAnalyzeWithAI}
@@ -1076,6 +1077,7 @@ export function QuickPaymentModal({
                           )}
                         </button>
                       )}
+                      END DISABLED */}
                     </div>
 
                     <div className="border border-slate-300 rounded-lg divide-y divide-slate-200 max-h-80 overflow-y-auto">
@@ -1107,6 +1109,7 @@ export function QuickPaymentModal({
                               </button>
                             </div>
 
+                            {/* DISABLED - AI ANALYSIS RESULTS DISPLAY (can be re-enabled later)
                             {analyzed && (
                               <div className="mt-2">
                                 <div className="flex items-center gap-2">
@@ -1135,11 +1138,13 @@ export function QuickPaymentModal({
                                 </div>
                               </div>
                             )}
+                            END DISABLED */}
                           </div>
                         );
                       })}
                     </div>
 
+                    {/* DISABLED - AI ANALYSIS INFO MESSAGE (can be re-enabled later)
                     {analyzed && (
                       <div className="flex items-start gap-2 mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -1148,6 +1153,7 @@ export function QuickPaymentModal({
                         </p>
                       </div>
                     )}
+                    END DISABLED */}
                   </div>
                 )}
               </div>
