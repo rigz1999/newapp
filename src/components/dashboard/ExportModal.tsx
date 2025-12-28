@@ -328,7 +328,10 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         .from('paiements')
         .select(`
           id, id_paiement, montant, date_paiement, statut,
-          tranche:tranches(tranche_name, projet_id)
+          tranche:tranches(
+            tranche_name,
+            projet:projets(projet)
+          )
         `)
         .order('date_paiement', { ascending: false });
 
