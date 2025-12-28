@@ -88,71 +88,31 @@ export function LandingPage() {
                   <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center">
                     <Shield className="w-4 h-4 text-finixar-teal" />
                   </div>
-                  <span className="text-sm text-slate-300">Sécurité niveau bancaire</span>
+                  <span className="text-sm text-slate-300">Hébergement sécurisé</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-finixar-teal" />
+                    <Lock className="w-4 h-4 text-finixar-teal" />
                   </div>
-                  <span className="text-sm text-slate-300">Configuration en 24h</span>
+                  <span className="text-sm text-slate-300">Conforme RGPD</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center">
                     <Headphones className="w-4 h-4 text-finixar-teal" />
                   </div>
-                  <span className="text-sm text-slate-300">Support dédié</span>
+                  <span className="text-sm text-slate-300">Support réactif</span>
                 </div>
               </div>
             </div>
 
-            {/* Right - Dashboard Preview Card */}
-            <div className="relative">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-6 shadow-2xl">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-white font-semibold">Tableau de bord en temps réel</h3>
-                  <div className="px-3 py-1 bg-finixar-teal/20 rounded-full">
-                    <span className="text-finixar-teal text-xs font-medium">Live</span>
-                  </div>
-                </div>
-
-                {/* Stats Cards */}
-                <div className="space-y-4">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-slate-400 text-sm mb-1">Projets actifs</p>
-                        <p className="text-white text-3xl font-bold">24</p>
-                      </div>
-                      <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-blue-400" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-slate-400 text-sm mb-1">Montant investi</p>
-                        <p className="text-white text-3xl font-bold">€2,4M</p>
-                      </div>
-                      <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                        <Euro className="w-6 h-6 text-green-400" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-slate-400 text-sm mb-1">Investisseurs</p>
-                        <p className="text-white text-3xl font-bold">156</p>
-                      </div>
-                      <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                        <Users className="w-6 h-6 text-purple-400" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            {/* Right - Dashboard Preview (real screenshot will be added later) */}
+            <div className="relative lg:block hidden">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-4 shadow-2xl">
+                <img
+                  src="/images/dashboard-screenshot.png"
+                  alt="Tableau de bord Finixar"
+                  className="rounded-xl w-full h-auto"
+                />
               </div>
 
               {/* Decorative Elements */}
@@ -181,11 +141,11 @@ export function LandingPage() {
               <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                 <FileText className="w-7 h-7 text-blue-600" />
               </div>
-              <h3 className="text-lg font-bold text-finixar-deep-blue mb-2">
-                Gestion de Projets & Tranches
+              <h3 className="text-lg font-bold text-finixar-deep-blue mb-3">
+                Gestion de projets et tranches
               </h3>
               <p className="text-slate-600 text-sm leading-relaxed">
-                Suivi précis des échéances et des montants investis avec gestion des tranches sécurisée.
+                Suivi précis des échéances et des montants investis avec gestion sécurisée des tranches.
               </p>
             </div>
 
@@ -194,11 +154,11 @@ export function LandingPage() {
               <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4">
                 <Users className="w-7 h-7 text-green-600" />
               </div>
-              <h3 className="text-lg font-bold text-finixar-deep-blue mb-2">
-                Portail Investisseur
+              <h3 className="text-lg font-bold text-finixar-deep-blue mb-3">
+                Gestion des investisseurs
               </h3>
               <p className="text-slate-600 text-sm leading-relaxed">
-                Espace dédié pour la consultation des actifs et des RIB en toute autonomie personnalisée.
+                Centralisez les informations de vos investisseurs et gérez leurs RIB en toute sécurité.
               </p>
             </div>
 
@@ -207,8 +167,8 @@ export function LandingPage() {
               <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
                 <BarChart3 className="w-7 h-7 text-purple-600" />
               </div>
-              <h3 className="text-lg font-bold text-finixar-deep-blue mb-2">
-                Système de Filtrage Avancé
+              <h3 className="text-lg font-bold text-finixar-deep-blue mb-3">
+                Système de filtrage avancé
               </h3>
               <p className="text-slate-600 text-sm leading-relaxed">
                 Navigation ultra-fluide grâce aux filtres en cascade et analytics intégrés en temps réel.
@@ -220,11 +180,11 @@ export function LandingPage() {
               <div className="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
                 <Euro className="w-7 h-7 text-orange-600" />
               </div>
-              <h3 className="text-lg font-bold text-finixar-deep-blue mb-2">
-                Paiements & Preuves
+              <h3 className="text-lg font-bold text-finixar-deep-blue mb-3">
+                Paiements et preuves
               </h3>
               <p className="text-slate-600 text-sm leading-relaxed">
-                Gestion des coupons avec import Excel et génération automatique de preuves optimales.
+                Gestion des coupons avec import Excel et téléchargement de justificatifs de paiement.
               </p>
             </div>
           </div>
@@ -298,9 +258,9 @@ export function LandingPage() {
                     <Check className="w-4 h-4 text-green-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Hébergement Souverain en France</h4>
+                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Hébergement souverain en France</h4>
                     <p className="text-slate-600 text-sm">
-                      Vos données ne quittent jamais le territoire Français, garantissant une conformité totale avec les réglementations européennes.
+                      Vos données sont hébergées en France (Région Paris), garantissant une conformité avec les réglementations européennes.
                     </p>
                   </div>
                 </div>
@@ -310,9 +270,9 @@ export function LandingPage() {
                     <Check className="w-4 h-4 text-green-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Chiffrement de bout en bout</h4>
+                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Chiffrement des données</h4>
                     <p className="text-slate-600 text-sm">
-                      Toutes les communications et données stockées sont chiffrées avec les standards bancaires les plus élevés (AES-256).
+                      Toutes les communications et données stockées sont chiffrées pour garantir leur confidentialité.
                     </p>
                   </div>
                 </div>
@@ -322,9 +282,9 @@ export function LandingPage() {
                     <Check className="w-4 h-4 text-green-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Row-Level Security (RLS)</h4>
+                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Isolation des données</h4>
                     <p className="text-slate-600 text-sm">
-                      Isolation complète des données entre organisations, garantissant que chaque entité accède uniquement à ses propres informations.
+                      Row-Level Security (RLS) garantit que chaque organisation accède uniquement à ses propres données.
                     </p>
                   </div>
                 </div>
@@ -334,58 +294,62 @@ export function LandingPage() {
                     <Check className="w-4 h-4 text-green-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Audit Trail Complet</h4>
+                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Authentification sécurisée</h4>
                     <p className="text-slate-600 text-sm">
-                      Traçabilité complète de toutes les actions effectuées sur la plateforme pour une transparence maximale.
+                      Connexion via Microsoft ou Google pour une authentification simple et sécurisée.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right - Certifications Card */}
+            {/* Right - Compliance Card */}
             <div className="bg-gradient-to-br from-finixar-deep-blue to-[#1a2642] rounded-2xl p-8 shadow-2xl">
-              <h3 className="text-2xl font-bold text-white mb-8">Certifications & Conformité</h3>
+              <h3 className="text-2xl font-bold text-white mb-8">Conformité & sécurité</h3>
 
-              <div className="grid grid-cols-2 gap-6 mb-8">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center">
-                  <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Shield className="w-6 h-6 text-blue-400" />
+              <div className="space-y-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                      <Lock className="w-6 h-6 text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold">RGPD</p>
+                      <p className="text-slate-400 text-sm">Conforme</p>
+                    </div>
                   </div>
-                  <p className="text-white font-semibold text-sm">ISO/IEC 27001</p>
-                  <p className="text-slate-400 text-xs mt-1">Certifié</p>
+                  <p className="text-slate-300 text-sm">
+                    Respect strict des réglementations européennes de protection des données personnelles.
+                  </p>
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center">
-                  <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Lock className="w-6 h-6 text-green-400" />
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold">Hébergement France</p>
+                      <p className="text-slate-400 text-sm">Région Paris</p>
+                    </div>
                   </div>
-                  <p className="text-white font-semibold text-sm">RGPD</p>
-                  <p className="text-slate-400 text-xs mt-1">100% Conforme</p>
+                  <p className="text-slate-300 text-sm">
+                    Infrastructure hébergée sur des serveurs situés en France pour garantir la souveraineté des données.
+                  </p>
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center">
-                  <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Building2 className="w-6 h-6 text-purple-400" />
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <Lock className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold">Chiffrement</p>
+                      <p className="text-slate-400 text-sm">SSL/TLS</p>
+                    </div>
                   </div>
-                  <p className="text-white font-semibold text-sm">SecNumCloud</p>
-                  <p className="text-slate-400 text-xs mt-1">En cours</p>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center">
-                  <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Award className="w-6 h-6 text-orange-400" />
-                  </div>
-                  <p className="text-white font-semibold text-sm">SOC 2 Type II</p>
-                  <p className="text-slate-400 text-xs mt-1">Certifié</p>
-                </div>
-              </div>
-
-              <div className="bg-finixar-teal/20 backdrop-blur-sm rounded-xl p-4 border border-finixar-teal/30">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-finixar-teal flex-shrink-0 mt-0.5" />
-                  <p className="text-white text-sm leading-relaxed">
-                    <strong>Uptime garanti:</strong> 99.9% de disponibilité avec SLA contractuel et compensation automatique en cas de non-respect.
+                  <p className="text-slate-300 text-sm">
+                    Toutes les communications sont chiffrées pour protéger vos données sensibles.
                   </p>
                 </div>
               </div>
@@ -401,7 +365,7 @@ export function LandingPage() {
             Prêt à transformer votre gestion d'investissements ?
           </h2>
           <p className="text-xl text-slate-300 mb-10">
-            Rejoignez les Asset Managers, Private Equity et Family Offices qui font confiance à Finixar pour gérer leurs investissements en toute sécurité.
+            Rejoignez les entreprises qui font confiance à Finixar pour gérer leurs investissements en toute sécurité.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
