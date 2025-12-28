@@ -8,24 +8,36 @@ type ExcelJS = any;
 type JsPDF = any;
 
 interface JsPDFWithAutoTable {
-  text: (text: string, x: number, y: number) => void;
+  text: (text: string, x: number, y: number, options?: any) => void;
   setFontSize: (size: number) => void;
   setTextColor: (r: number, g: number, b: number) => void;
+  setFillColor: (r: number, g: number, b: number) => void;
+  setFont: (font: string, style: string) => void;
+  rect: (x: number, y: number, width: number, height: number, style?: string) => void;
+  roundedRect: (x: number, y: number, width: number, height: number, rx: number, ry: number, style?: string) => void;
+  addPage: () => void;
+  setPage: (page: number) => void;
   save: (filename: string) => void;
   internal: {
     pageSize: {
       width: number;
       height: number;
     };
+    getNumberOfPages: () => number;
   };
   lastAutoTable: {
     finalY: number;
   };
 }
 
-// Format currency for PDF (replaces non-breaking spaces with regular spaces)
+// Format currency for PDF (replaces non-breaking spaces and fixes spacing issues)
 const formatCurrencyForPDF = (amount: number): string => {
-  return formatCurrency(amount).replace(/\u00A0/g, ' ');
+  // Get formatted currency and replace all non-breaking spaces with regular spaces
+  const formatted = formatCurrency(amount)
+    .replace(/\u00A0/g, ' ')  // Replace non-breaking space
+    .replace(/\s+/g, ' ')     // Normalize multiple spaces to single space
+    .trim();
+  return formatted;
 };
 
 type ExportPreset = 'complet' | 'paiements' | 'coupons' | 'alertes' | 'custom';
@@ -585,50 +597,97 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       setExportProgress(45);
 
       const doc = new jsPDF() as JsPDFWithAutoTable;
-    let yPos = 20;
+      const pageWidth = doc.internal.pageSize.width;
+      let yPos = 25;
 
-    // Title
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Synthèse Dashboard', 15, yPos);
-    yPos += 5;
+      // Professional Header with background
+      doc.setFillColor(31, 94, 234); // Blue background
+      doc.rect(0, 0, pageWidth, 45, 'F');
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Date: ${formatDate(new Date().toISOString().split('T')[0])}`, 15, yPos);
-    yPos += 15;
+      // Title
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Synthèse Dashboard', 15, 22);
 
-    // Statistics
+      // Date
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Généré le ${formatDate(new Date().toISOString().split('T')[0])}`, 15, 35);
+
+      yPos = 60;
+
+    // Statistics - Card Style
     if (options.includeStats) {
-      doc.setFontSize(14);
+      // Reset text color
+      doc.setTextColor(51, 65, 85); // slate-700
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.text('Statistiques Globales', 15, yPos);
-      yPos += 10;
+      yPos += 12;
 
-      autoTable(doc, {
-        startY: yPos,
-        head: [['Métrique', 'Valeur']],
-        body: [
-          ['Montant total investi', formatCurrencyForPDF(dashboardData.stats.totalInvested)],
-          ['Coupons payés ce mois', formatCurrencyForPDF(dashboardData.stats.couponsPaidThisMonth)],
-          ['Projets actifs', dashboardData.stats.activeProjects.toString()],
-          ['Coupons à venir (90j)', dashboardData.stats.upcomingCoupons.toString()],
-        ],
-        theme: 'grid',
-        headStyles: { fillColor: [31, 94, 234] },
+      // Stats cards in 2x2 grid
+      const cardWidth = (pageWidth - 40) / 2;
+      const cardHeight = 28;
+      const gap = 5;
+
+      const stats = [
+        {
+          label: 'Montant total investi',
+          value: formatCurrencyForPDF(dashboardData.stats.totalInvested),
+          color: [59, 130, 246] // blue-500
+        },
+        {
+          label: 'Coupons payés ce mois',
+          value: formatCurrencyForPDF(dashboardData.stats.couponsPaidThisMonth),
+          color: [16, 185, 129] // emerald-500
+        },
+        {
+          label: 'Projets actifs',
+          value: dashboardData.stats.activeProjects.toString(),
+          color: [168, 85, 247] // purple-500
+        },
+        {
+          label: 'Coupons à venir (90j)',
+          value: dashboardData.stats.upcomingCoupons.toString(),
+          color: [249, 115, 22] // orange-500
+        }
+      ];
+
+      stats.forEach((stat, index) => {
+        const col = index % 2;
+        const row = Math.floor(index / 2);
+        const x = 15 + (col * (cardWidth + gap));
+        const y = yPos + (row * (cardHeight + gap));
+
+        // Card background
+        doc.setFillColor(stat.color[0], stat.color[1], stat.color[2]);
+        doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
+
+        // Label
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text(stat.label, x + 6, y + 8);
+
+        // Value
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text(stat.value, x + 6, y + 20);
       });
 
-      yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
+      yPos += (cardHeight * 2) + gap + 20;
     }
 
     // Payments
     if (options.includePayments && payments.length > 0) {
-      if (yPos > 250) {
+      if (yPos > 240) {
         doc.addPage();
-        yPos = 20;
+        yPos = 25;
       }
 
-      doc.setFontSize(14);
+      doc.setTextColor(51, 65, 85);
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.text('Paiements', 15, yPos);
       yPos += 10;
@@ -643,8 +702,26 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           formatDate(p.date_paiement),
           p.statut,
         ]),
-        theme: 'grid',
-        headStyles: { fillColor: [31, 94, 234] },
+        theme: 'striped',
+        headStyles: {
+          fillColor: [31, 94, 234],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 10,
+          cellPadding: 5
+        },
+        bodyStyles: {
+          fontSize: 9,
+          cellPadding: 4
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252] // slate-50
+        },
+        margin: { left: 15, right: 15 },
+        styles: {
+          lineColor: [226, 232, 240], // slate-200
+          lineWidth: 0.1
+        }
       });
 
       yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
@@ -652,14 +729,15 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
     // Coupons
     if (options.includeCoupons && coupons.length > 0) {
-      if (yPos > 250) {
+      if (yPos > 240) {
         doc.addPage();
-        yPos = 20;
+        yPos = 25;
       }
 
-      doc.setFontSize(14);
+      doc.setTextColor(51, 65, 85);
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text('Coupons à venir', 15, yPos);
+      doc.text('Coupons à Venir', 15, yPos);
       yPos += 10;
 
       autoTable(doc, {
@@ -677,8 +755,26 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             daysUntil.toString(),
           ];
         }),
-        theme: 'grid',
-        headStyles: { fillColor: [31, 94, 234] },
+        theme: 'striped',
+        headStyles: {
+          fillColor: [168, 85, 247], // purple-500
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 10,
+          cellPadding: 5
+        },
+        bodyStyles: {
+          fontSize: 9,
+          cellPadding: 4
+        },
+        alternateRowStyles: {
+          fillColor: [250, 245, 255] // purple-50
+        },
+        margin: { left: 15, right: 15 },
+        styles: {
+          lineColor: [226, 232, 240],
+          lineWidth: 0.1
+        }
       });
 
       yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + 15;
@@ -686,12 +782,13 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
     // Alerts
     if (options.includeAlerts && dashboardData.alerts.length > 0) {
-      if (yPos > 250) {
+      if (yPos > 240) {
         doc.addPage();
-        yPos = 20;
+        yPos = 25;
       }
 
-      doc.setFontSize(14);
+      doc.setTextColor(51, 65, 85);
+      doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.text('Alertes', 15, yPos);
       yPos += 10;
@@ -700,10 +797,45 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         startY: yPos,
         head: [['Type', 'Message']],
         body: dashboardData.alerts.map((a) => [a.type, a.message]),
-        theme: 'grid',
-        headStyles: { fillColor: [239, 68, 68] },
+        theme: 'striped',
+        headStyles: {
+          fillColor: [239, 68, 68], // red-500
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 10,
+          cellPadding: 5
+        },
+        bodyStyles: {
+          fontSize: 9,
+          cellPadding: 4
+        },
+        alternateRowStyles: {
+          fillColor: [254, 242, 242] // red-50
+        },
+        margin: { left: 15, right: 15 },
+        styles: {
+          lineColor: [226, 232, 240],
+          lineWidth: 0.1
+        }
       });
     }
+
+      // Add footer with page numbers
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184); // slate-400
+
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        const pageSize = doc.internal.pageSize;
+        const pageHeight = pageSize.height;
+        doc.text(
+          `Page ${i} sur ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+      }
 
       // Save PDF
       setExportProgress(90);
