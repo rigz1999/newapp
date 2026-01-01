@@ -43,15 +43,25 @@ export function Login() {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://app.finixar.com/login',
-    });
+    try {
+      // Call custom edge function to send password reset email via Resend
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email: email.toLowerCase().trim() },
+      });
 
-    if (error) {
-      setError(formatErrorMessage(error));
-      setLoading(false);
-    } else {
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       setResetEmailSent(true);
+      setLoading(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue';
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -73,14 +83,15 @@ export function Login() {
             </h1>
             <p className="text-center text-slate-600 mb-8">
               {resetEmailSent
-                ? "Un email de réinitialisation a été envoyé"
-                : "Entrez votre email pour réinitialiser votre mot de passe"}
+                ? 'Un email de réinitialisation a été envoyé'
+                : 'Entrez votre email pour réinitialiser votre mot de passe'}
             </p>
 
             {resetEmailSent ? (
               <div>
                 <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-6">
-                  Un email avec un lien de réinitialisation a été envoyé à <strong>{email}</strong>. Vérifiez votre boîte de réception.
+                  Un email avec un lien de réinitialisation a été envoyé à <strong>{email}</strong>.
+                  Vérifiez votre boîte de réception.
                 </div>
                 <button
                   onClick={() => {
@@ -104,7 +115,7 @@ export function Login() {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                     required
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent transition-all"
                     placeholder="votre@email.fr"
@@ -156,15 +167,10 @@ export function Login() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-center text-finixar-text mb-2">
-            Finixar
-          </h1>
-          <p className="text-center text-slate-600 mb-8">
-            Connectez-vous à votre compte
-          </p>
+          <h1 className="text-2xl font-bold text-center text-finixar-text mb-2">Finixar</h1>
+          <p className="text-center text-slate-600 mb-8">Connectez-vous à votre compte</p>
 
           <form onSubmit={handleLogin} className="space-y-6">
-
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
                 Adresse email
@@ -173,7 +179,7 @@ export function Login() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 required
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent transition-all"
                 placeholder="votre@email.fr"
@@ -196,9 +202,9 @@ export function Login() {
               <div className="relative">
                 <input
                   id="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   required
                   minLength={6}
                   autoComplete="off"
@@ -211,11 +217,7 @@ export function Login() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                   tabIndex={-1}
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
