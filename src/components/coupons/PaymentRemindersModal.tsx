@@ -244,57 +244,57 @@ export default function PaymentRemindersModal({
               </label>
 
               {/* 7 days */}
-              <label className="flex items-center gap-3 cursor-pointer group p-3 rounded-lg hover:bg-slate-50 transition-colors">
+              <label className="flex items-start gap-3 cursor-pointer group p-3 rounded-lg hover:bg-slate-50 transition-colors">
                 <input
                   type="checkbox"
                   checked={remind7Days}
                   onChange={(e) => setRemind7Days(e.target.checked)}
                   disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-5 h-5 mt-0.5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 />
                 <div className="flex-1">
-                  <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                  <span className={`block text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
                     7 jours avant l'échéance
                   </span>
-                  <p className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <p className={`text-xs mt-0.5 ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
                     Rappel une semaine avant la date de paiement
                   </p>
                 </div>
               </label>
 
               {/* 14 days */}
-              <label className="flex items-center gap-3 cursor-pointer group p-3 rounded-lg hover:bg-slate-50 transition-colors">
+              <label className="flex items-start gap-3 cursor-pointer group p-3 rounded-lg hover:bg-slate-50 transition-colors">
                 <input
                   type="checkbox"
                   checked={remind14Days}
                   onChange={(e) => setRemind14Days(e.target.checked)}
                   disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-5 h-5 mt-0.5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 />
                 <div className="flex-1">
-                  <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                  <span className={`block text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
                     14 jours avant l'échéance
                   </span>
-                  <p className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <p className={`text-xs mt-0.5 ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
                     Rappel deux semaines avant la date de paiement
                   </p>
                 </div>
               </label>
 
               {/* 30 days */}
-              <label className="flex items-center gap-3 cursor-pointer group p-3 rounded-lg hover:bg-slate-50 transition-colors">
+              <label className="flex items-start gap-3 cursor-pointer group p-3 rounded-lg hover:bg-slate-50 transition-colors">
                 <input
                   type="checkbox"
                   checked={remind30Days}
                   onChange={(e) => setRemind30Days(e.target.checked)}
                   disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-5 h-5 mt-0.5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 />
                 <div className="flex-1">
-                  <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                  <span className={`block text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
                     30 jours avant l'échéance
                   </span>
-                  <p className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <p className={`text-xs mt-0.5 ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
                     Rappel un mois avant la date de paiement
                   </p>
                 </div>
