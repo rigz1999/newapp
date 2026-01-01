@@ -1,775 +1,392 @@
-import { TrendingUp, ArrowRight, Shield, FileText, Users, Euro, BarChart3, Lock, CheckCircle, Clock, Headphones, Building2, Award, Check, Bell, AlertCircle, Zap } from 'lucide-react';
+import { Lock, Globe, Zap, Shield, FileText, Sparkles, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 
 export function LandingPage() {
+  const [email, setEmail] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle email submission
+    console.log('Email submitted:', email);
+  };
+
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <div className="min-h-screen bg-[#050505] overflow-x-hidden">
+      {/* Custom Styles */}
       <style>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-feature-settings: 'ss01', 'ss03';
         }
-        .animate-blob {
-          animation: blob 7s infinite;
+
+        /* Smooth scroll */
+        html {
+          scroll-behavior: smooth;
         }
-        .animation-delay-2000 {
-          animation-delay: 2s;
+
+        /* Border beam animation */
+        @keyframes border-beam {
+          0%, 100% { opacity: 0; transform: translateX(-100%); }
+          50% { opacity: 1; }
         }
-        .animation-delay-4000 {
-          animation-delay: 4s;
+
+        .border-beam {
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          padding: 1px;
+          background: linear-gradient(90deg, transparent, #2E62FF, transparent);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask-composite: exclude;
+          animation: border-beam 3s infinite;
         }
-        /* Smooth premium transitions */
-        .transition-premium {
+
+        /* Ambient glow */
+        .ambient-glow {
+          filter: blur(120px);
+          opacity: 0.15;
+        }
+
+        /* Hover states */
+        .card-hover {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        /* Button press effect */
-        .btn-press:active {
+
+        .card-hover:hover {
+          transform: translateY(-4px);
+        }
+
+        .btn-primary {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary:active {
           transform: scale(0.98);
         }
+
+        /* Glassmorphism */
+        .glass {
+          background: rgba(17, 17, 19, 0.6);
+          backdrop-filter: blur(10px);
+          border: 1px solid #1F1F22;
+        }
+
+        /* Text styles */
+        .eyebrow {
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        h1, h2, h3 {
+          letter-spacing: -0.02em;
+        }
       `}</style>
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-slate-200 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div className="bg-finixar-brand-blue p-2 rounded-lg flex items-center justify-center w-10 h-10">
-                <TrendingUp className="w-6 h-6 text-white" strokeWidth={2.5} style={{ width: '24px', height: '24px' }} />
-              </div>
-              <span className="text-xl font-bold text-finixar-deep-blue leading-none">Finixar</span>
-            </div>
 
-            {/* Nav Links */}
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#fonctionnalites" className="text-slate-700 hover:text-finixar-brand-blue transition-colors font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-finixar-brand-blue after:transition-all hover:after:w-full">
-                Fonctionnalités
-              </a>
-              <a href="#securite" className="text-slate-700 hover:text-finixar-brand-blue transition-colors font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-finixar-brand-blue after:transition-all hover:after:w-full">
-                Sécurité
-              </a>
-              <a href="#contact" className="text-slate-700 hover:text-finixar-brand-blue transition-colors font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-finixar-brand-blue after:transition-all hover:after:w-full">
-                Contact
-              </a>
-            </div>
+      {/* 1. HERO SECTION */}
+      <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* Ambient Glows */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#2E62FF] rounded-full ambient-glow"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600 rounded-full ambient-glow"></div>
 
-            {/* CTA */}
-            <div className="flex items-center gap-3">
-              <a
-                href="http://app.finixar.com"
-                className="hidden sm:inline-flex items-center px-4 py-2 text-finixar-deep-blue hover:text-finixar-brand-blue font-medium transition-colors"
-              >
-                Connexion
-              </a>
-              <a
-                href="mailto:contact@finixar.com?subject=Demande de démo"
-                className="inline-flex items-center px-6 py-[11px] bg-finixar-brand-blue hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm hover:shadow-md leading-none btn-press transition-premium"
-                style={{ paddingTop: '11px', paddingBottom: '13px' }}
-              >
-                Voir une démo
-              </a>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section - Dark */}
-      <section className="pt-32 pb-24 bg-gradient-to-br from-[#0A0E1A] via-[#0D1426] to-[#0A0E1A] px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        {/* Animated floating orbs */}
-        <div className="absolute top-20 left-10 w-64 h-64 bg-finixar-brand-blue/30 rounded-full blur-3xl animate-blob"></div>
-        <div className="absolute top-40 right-10 w-80 h-80 bg-finixar-teal/20 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-20 left-1/3 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-blob animation-delay-4000"></div>
-
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="text-white">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-6 border border-white/20">
-                <div className="w-2 h-2 bg-finixar-teal rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">🇫🇷 Données hébergées en France • Conforme RGPD</span>
+        <div className="max-w-7xl mx-auto w-full relative z-10">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left - Text */}
+            <div>
+              <div className="eyebrow text-[#94A3B8] mb-8">
+                INFRASTRUCTURE D'INVESTISSEMENT DE NOUVELLE GÉNÉRATION
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight max-w-2xl">
-                Tous vos actifs, un seul tableau de bord. Automatisé.
+              <h1 className="text-5xl lg:text-7xl font-bold text-white mb-8 leading-tight">
+                Le Système d'Exploitation de votre Patrimoine.
               </h1>
 
-              <p className="text-lg sm:text-xl text-slate-200 mb-8 leading-relaxed max-w-xl">
-                Gérez vos projets d'investissement, automatisez vos rappels d'échéances et centralisez vos données investisseurs. Sans Excel.
+              <p className="text-xl text-[#94A3B8] mb-12 leading-relaxed max-w-xl">
+                Centralisez, analysez et optimisez l'ensemble de vos actifs mondiaux sur une interface unique. La puissance institutionnelle, enfin accessible aux particuliers.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <a
-                  href="mailto:contact@finixar.com?subject=Demande de démo"
-                  className="inline-flex items-center justify-center gap-2 px-8 bg-finixar-brand-blue hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 leading-none btn-press transition-premium"
-                  style={{ paddingTop: '17px', paddingBottom: '19px' }}
-                >
-                  <span>Voir Finixar en action</span>
-                  <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
-                </a>
-                <a
-                  href="http://app.finixar.com"
-                  className="inline-flex items-center justify-center gap-2 px-8 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg border border-white/30 backdrop-blur-sm leading-none btn-press transition-premium"
-                  style={{ paddingTop: '17px', paddingBottom: '19px' }}
-                >
-                  Commencer gratuitement
-                </a>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button className="btn-primary inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg">
+                  Demander un accès prioritaire
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+                <button className="inline-flex items-center justify-center px-8 py-4 text-white font-semibold rounded-lg border border-[#1F1F22] hover:border-[#2E62FF] transition-all">
+                  Voir la démo interactive
+                </button>
               </div>
+            </div>
 
-              {/* Trust Signal */}
-              <div className="flex items-center gap-2 mb-8">
-                <div className="flex items-center gap-1">
-                  <Shield className="w-4 h-4 text-finixar-teal" strokeWidth={2.5} />
-                  <span className="text-sm text-slate-300">Hébergement France</span>
-                </div>
-                <span className="text-slate-500">•</span>
-                <div className="flex items-center gap-1">
-                  <Lock className="w-4 h-4 text-finixar-teal" strokeWidth={2.5} />
-                  <span className="text-sm text-slate-300">Données chiffrées</span>
-                </div>
-                <span className="text-slate-500">•</span>
-                <div className="flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4 text-finixar-teal" strokeWidth={2.5} />
-                  <span className="text-sm text-slate-300">Conforme RGPD</span>
-                </div>
-              </div>
+            {/* Right - Dashboard Mockup */}
+            <div className="relative hidden lg:block">
+              <div className="glass rounded-2xl p-6 relative overflow-hidden">
+                <div className="border-beam"></div>
 
-              {/* Trust Badges */}
-              <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-white/20">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-4 h-4 text-finixar-teal" strokeWidth={2} />
+                {/* Dashboard UI Mockup */}
+                <div className="bg-[#0A0A0B] rounded-xl p-6 space-y-4">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[#52525B] text-sm mb-1">Valeur totale du portefeuille</div>
+                      <div className="text-white text-3xl font-bold">€2,847,392</div>
+                    </div>
+                    <div className="text-[#10B981] text-sm font-semibold">+12.4%</div>
                   </div>
-                  <span className="text-sm text-slate-300">Hébergement sécurisé</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Lock className="w-4 h-4 text-finixar-teal" strokeWidth={2} />
+
+                  {/* Chart Placeholder */}
+                  <div className="h-48 bg-gradient-to-br from-[#2E62FF]/10 to-transparent rounded-lg border border-[#1F1F22] flex items-end justify-around p-4">
+                    <div className="w-12 bg-[#2E62FF] rounded-t" style={{ height: '60%' }}></div>
+                    <div className="w-12 bg-[#2E62FF] rounded-t" style={{ height: '80%' }}></div>
+                    <div className="w-12 bg-[#2E62FF] rounded-t" style={{ height: '70%' }}></div>
+                    <div className="w-12 bg-[#2E62FF] rounded-t" style={{ height: '95%' }}></div>
+                    <div className="w-12 bg-[#2E62FF] rounded-t" style={{ height: '85%' }}></div>
                   </div>
-                  <span className="text-sm text-slate-300">Conforme RGPD</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Headphones className="w-4 h-4 text-finixar-teal" strokeWidth={2} />
+
+                  {/* Asset Allocation */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-[#111113] rounded-lg p-3 border border-[#1F1F22]">
+                      <div className="text-[#52525B] text-xs mb-1">Crypto</div>
+                      <div className="text-white font-semibold">42%</div>
+                    </div>
+                    <div className="bg-[#111113] rounded-lg p-3 border border-[#1F1F22]">
+                      <div className="text-[#52525B] text-xs mb-1">Actions</div>
+                      <div className="text-white font-semibold">38%</div>
+                    </div>
+                    <div className="bg-[#111113] rounded-lg p-3 border border-[#1F1F22]">
+                      <div className="text-[#52525B] text-xs mb-1">Immobilier</div>
+                      <div className="text-white font-semibold">20%</div>
+                    </div>
                   </div>
-                  <span className="text-sm text-slate-300">Support réactif</span>
                 </div>
               </div>
-            </div>
 
-            {/* Right - Dashboard Preview (real screenshot will be added later) */}
-            <div className="relative lg:block hidden">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-4 shadow-2xl">
-                <img
-                  src="/images/dashboard-screenshot.png"
-                  alt="Tableau de bord Finixar"
-                  className="rounded-xl w-full h-auto"
-                />
-              </div>
-
-              {/* Decorative Elements */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-finixar-brand-blue/20 rounded-full blur-3xl"></div>
-              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-finixar-teal/20 rounded-full blur-3xl"></div>
+              {/* Decorative glow */}
+              <div className="absolute -top-8 -right-8 w-64 h-64 bg-[#2E62FF] rounded-full ambient-glow"></div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Interface Intuitive Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      {/* 2. TRUST BAR */}
+      <section className="border-y border-[#1F1F22] py-8 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
-              Interface pensée pour l'efficacité
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Tableau de bord intuitif pour piloter vos investissements
-            </p>
-          </div>
-
-          {/* Simplified benefits grid */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="bg-white rounded-xl p-6 border border-slate-200 hover:border-finixar-brand-blue/30 transition-premium">
-              <div className="w-10 h-10 bg-finixar-brand-blue/10 rounded-lg mb-4 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-finixar-brand-blue" strokeWidth={2} />
-              </div>
-              <h4 className="font-semibold text-finixar-deep-blue mb-2">Vision globale</h4>
-              <p className="text-sm text-slate-600">Tous vos projets en un coup d'œil</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center opacity-30">
+            <div className="flex items-center gap-3 text-white">
+              <Lock className="w-5 h-5" />
+              <span className="text-sm font-medium">Chiffrement AES-256</span>
             </div>
-            <div className="bg-white rounded-xl p-6 border border-slate-200 hover:border-finixar-brand-blue/30 transition-premium">
-              <div className="w-10 h-10 bg-finixar-brand-blue/10 rounded-lg mb-4 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-finixar-brand-blue" strokeWidth={2} />
-              </div>
-              <h4 className="font-semibold text-finixar-deep-blue mb-2">Navigation rapide</h4>
-              <p className="text-sm text-slate-600">Accès instantané aux données</p>
+            <div className="flex items-center gap-3 text-white">
+              <Shield className="w-5 h-5" />
+              <span className="text-sm font-medium">Architecture "Zero-Knowledge"</span>
             </div>
-            <div className="bg-white rounded-xl p-6 border border-slate-200 hover:border-finixar-brand-blue/30 transition-premium">
-              <div className="w-10 h-10 bg-finixar-brand-blue/10 rounded-lg mb-4 flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-finixar-brand-blue" strokeWidth={2} />
-              </div>
-              <h4 className="font-semibold text-finixar-deep-blue mb-2">Analytics temps réel</h4>
-              <p className="text-sm text-slate-600">Rapports actualisés automatiquement</p>
+            <div className="flex items-center gap-3 text-white">
+              <Zap className="w-5 h-5" />
+              <span className="text-sm font-medium">Données Temps Réel</span>
+            </div>
+            <div className="flex items-center gap-3 text-white">
+              <Globe className="w-5 h-5" />
+              <span className="text-sm font-medium">Régulation Européenne</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section - Redesigned with screenshots */}
-      <section id="fonctionnalites" className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
+      {/* 3. PROBLEM/SOLUTION - Block A */}
+      <section className="py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#050505] to-[#0A0A0B]">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
-              Fonctionnalités clés pour Asset Managers
-            </h2>
-            <p className="text-lg text-slate-600">
-              Une suite complète d'outils conçus pour optimiser la gestion de vos investissements et automatiser vos processus financiers
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 - Projects & Tranches */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-finixar-brand-blue/30 transition-premium">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg border-2 border-finixar-brand-blue flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-5 h-5 text-finixar-brand-blue" strokeWidth={2.5} />
-                </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
-                  Gestion de projets
-                </h3>
-              </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                Suivi précis des échéances et des montants investis avec gestion sécurisée des tranches.
-              </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2">
-                <img
-                  src="/images/feature-projects.png"
-                  alt="Gestion de projets Finixar"
-                  className="rounded-lg w-full h-auto"
-                />
-              </div>
-            </div>
-
-            {/* Feature 2 - Investor Relations */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-green-400/30 transition-premium">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg border-2 border-green-600 flex items-center justify-center flex-shrink-0">
-                  <Users className="w-5 h-5 text-green-600" strokeWidth={2.5} />
-                </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
-                  Relations investisseurs
-                </h3>
-              </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                Centralisez les informations de vos investisseurs et gérez leurs RIB en toute sécurité.
-              </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2">
-                <img
-                  src="/images/feature-investors.png"
-                  alt="Relations investisseurs Finixar"
-                  className="rounded-lg w-full h-auto"
-                />
-              </div>
-            </div>
-
-            {/* Feature 3 - Advanced Filtering */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-purple-400/30 transition-premium">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg border-2 border-purple-600 flex items-center justify-center flex-shrink-0">
-                  <BarChart3 className="w-5 h-5 text-purple-600" strokeWidth={2.5} />
-                </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
-                  Filtrage avancé
-                </h3>
-              </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                Navigation ultra-fluide grâce aux filtres en cascade et analytics intégrés en temps réel.
-              </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2">
-                <img
-                  src="/images/feature-filtering.png"
-                  alt="Filtrage avancé Finixar"
-                  className="rounded-lg w-full h-auto"
-                />
-              </div>
-            </div>
-
-            {/* Feature 4 - Coupons Management */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-orange-400/30 transition-premium">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg border-2 border-orange-600 flex items-center justify-center flex-shrink-0">
-                  <Euro className="w-5 h-5 text-orange-600" strokeWidth={2.5} />
-                </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
-                  Gestion des coupons
-                </h3>
-              </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                Suivi centralisé des coupons avec import Excel et téléchargement de justificatifs de paiement.
-              </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2">
-                <img
-                  src="/images/coupons-screenshot.png"
-                  alt="Gestion des coupons Finixar"
-                  className="rounded-lg w-full h-auto"
-                />
-              </div>
-            </div>
-
-            {/* Feature 5 - Auto Reminders */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-finixar-teal/30 transition-premium">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg border-2 border-finixar-teal flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-5 h-5 text-finixar-teal" strokeWidth={2.5} />
-                </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
-                  Rappels automatiques
-                </h3>
-              </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                Notifications automatiques par e-mail pour toutes vos échéances critiques.
-              </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2">
-                <img
-                  src="/images/reminders.png"
-                  alt="Rappels automatiques Finixar"
-                  className="rounded-lg w-full h-auto"
-                />
-              </div>
-            </div>
-
-            {/* Feature 6 - Real-time Dashboard */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-indigo-400/30 transition-premium">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg border-2 border-indigo-600 flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="w-5 h-5 text-indigo-600" strokeWidth={2.5} />
-                </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
-                  Analytics temps réel
-                </h3>
-              </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                Visualisez l'état de vos projets avec des métriques et tableaux de bord actualisés instantanément.
-              </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2">
-                <img
-                  src="/images/feature-analytics.png"
-                  alt="Analytics temps réel Finixar"
-                  className="rounded-lg w-full h-auto"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pain Points Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white border-y border-slate-200">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
-              Vous en avez assez de perdre votre temps avec Excel ?
-            </h2>
-            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-              Vous n'êtes pas seul. Des centaines d'heures perdues chaque année à cause des mêmes problèmes.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Pain 1 */}
-            <div className="bg-red-50 border-2 border-red-100 rounded-2xl p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <AlertCircle className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-red-900 mb-2">
-                    Absence de traçabilité et risque d'audit
-                  </h3>
-                  <p className="text-red-800 text-sm leading-relaxed">
-                    Fichiers multiples sans historique de modifications. Absence de piste d'audit complète sur les décisions d'investissement. Difficulté à démontrer la conformité lors des contrôles réglementaires.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Pain 2 */}
-            <div className="bg-orange-50 border-2 border-orange-100 rounded-2xl p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-orange-900 mb-2">
-                    Inefficacité opérationnelle des processus manuels
-                  </h3>
-                  <p className="text-orange-800 text-sm leading-relaxed">
-                    Saisie manuelle répétitive des RIB, calculs de coupons sujets aux erreurs, communications individuelles chronophages. Temps significatif consacré à des tâches sans valeur ajoutée au détriment de l'analyse stratégique.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Pain 3 */}
-            <div className="bg-purple-50 border-2 border-purple-100 rounded-2xl p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-purple-900 mb-2">
-                    Risque opérationnel lié au suivi manuel des échéances
-                  </h3>
-                  <p className="text-purple-800 text-sm leading-relaxed">
-                    Absence de système centralisé de suivi des dates critiques. Risque de non-respect des obligations contractuelles envers les investisseurs. Impact potentiel sur la relation client et la réputation du fonds.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Pain 4 */}
-            <div className="bg-yellow-50 border-2 border-yellow-100 rounded-2xl p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-yellow-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-yellow-900 mb-2">
-                    Non-conformité RGPD et risques de sécurité des données
-                  </h3>
-                  <p className="text-yellow-800 text-sm leading-relaxed">
-                    Stockage de données sensibles (RIB, informations personnelles) sans chiffrement approprié. Partage par e-mail sans contrôle d'accès ni traçabilité. Exposition aux sanctions réglementaires pouvant atteindre 4% du chiffre d'affaires annuel.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pourquoi Finixar Section - Redesigned */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
-              Pourquoi choisir Finixar
-            </h2>
-            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-              Une solution complète conçue pour répondre aux enjeux métier des gestionnaires d'actifs
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Benefit 1 - Investor Data */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-lg transition-premium">
-              <div className="mb-8">
-                <span className="text-5xl font-bold text-finixar-brand-blue/20 leading-none">01</span>
-              </div>
-              <h3 className="text-xl font-bold text-finixar-deep-blue mb-4 leading-tight">
-                Base d'investisseurs centralisée
-              </h3>
-              <p className="text-slate-600 leading-relaxed text-sm">
-                Gestion structurée des données investisseurs et RIB dans un référentiel unique. Élimination de la saisie manuelle et des erreurs de ressaisie.
-              </p>
-            </div>
-
-            {/* Benefit 2 - Automated Reminders */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-lg transition-premium">
-              <div className="mb-8">
-                <span className="text-5xl font-bold text-finixar-teal/20 leading-none">02</span>
-              </div>
-              <h3 className="text-xl font-bold text-finixar-deep-blue mb-4 leading-tight">
-                Rappels automatisés par e-mail
-              </h3>
-              <p className="text-slate-600 leading-relaxed text-sm">
-                Notifications automatiques pour vos échéances critiques. Réduction du risque de non-respect des obligations contractuelles envers vos investisseurs.
-              </p>
-            </div>
-
-            {/* Benefit 3 - Excel Import/Export */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-lg transition-premium">
-              <div className="mb-8">
-                <span className="text-5xl font-bold text-purple-600/20 leading-none">03</span>
-              </div>
-              <h3 className="text-xl font-bold text-finixar-deep-blue mb-4 leading-tight">
-                Import/Export intelligent
-              </h3>
-              <p className="text-slate-600 leading-relaxed text-sm">
-                Importez vos données existantes dans Finixar en quelques clics. Exportez l'intégralité de vos données au format Excel pour vos analyses, reporting et besoins de conformité.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Zero Excel Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-block px-4 py-2 bg-finixar-teal/10 rounded-full mb-4">
-              <span className="text-finixar-teal font-semibold text-sm">FONCTIONNALITÉS EN ACTION</span>
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-bold text-finixar-deep-blue mb-6">
-              Dites adieu aux fichiers Excel
-            </h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Finixar automatise <span className="font-bold text-finixar-brand-blue">100% de vos tâches répétitives</span> et élimine les erreurs qui coûtent cher
-            </p>
-          </div>
-
-          {/* Screenshots Grid */}
-          <div className="grid lg:grid-cols-2 gap-6 mb-12">
-            <div className="bg-white rounded-2xl shadow-xl p-3 border border-slate-200">
-              <img
-                src="/images/reminders.png"
-                alt="Rappels automatiques Finixar"
-                className="rounded-lg w-full h-auto"
-              />
-              <div className="mt-4 px-2">
-                <h3 className="font-semibold text-finixar-deep-blue mb-1">Rappels automatiques par e-mail</h3>
-                <p className="text-sm text-slate-600">Ne manquez plus jamais une échéance avec les notifications intelligentes</p>
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl shadow-xl p-3 border border-slate-200">
-              <img
-                src="/images/coupons-screenshot.png"
-                alt="Gestion des coupons Finixar"
-                className="rounded-lg w-full h-auto"
-              />
-              <div className="mt-4 px-2">
-                <h3 className="font-semibold text-finixar-deep-blue mb-1">Gestion centralisée des coupons</h3>
-                <p className="text-sm text-slate-600">Suivez vos coupons, échéances et paiements en un seul endroit</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Below */}
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-finixar-teal/10 rounded-2xl mb-4">
-                <TrendingUp className="w-8 h-8 text-finixar-teal" />
-              </div>
-              <p className="text-3xl font-bold text-finixar-deep-blue mb-2">98%</p>
-              <p className="text-slate-600">Réduction des erreurs manuelles</p>
-            </div>
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-2xl mb-4">
-                <Clock className="w-8 h-8 text-blue-600" />
-              </div>
-              <p className="text-3xl font-bold text-finixar-deep-blue mb-2">15h</p>
-              <p className="text-slate-600">Économisées par semaine</p>
-            </div>
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-2xl mb-4">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
-              <p className="text-3xl font-bold text-finixar-deep-blue mb-2">100%</p>
-              <p className="text-slate-600">Conformité réglementaire</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Security Section - Split Layout */}
-      <section id="securite" className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left - Content */}
+          <div className="grid lg:grid-cols-2 gap-16 items-center mb-32">
+            {/* Left - Text */}
             <div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-6">
-                Sécurité de niveau bancaire pour vos données sensibles
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                Adieu aux feuilles de calculs obsolètes.
               </h2>
-              <p className="text-lg text-slate-600 mb-8">
-                Toutes vos données sont hébergées en France (Région Paris). Sécurité des données garantie par Row-Level Security (RLS) et chiffrement de bout en bout.
+              <p className="text-lg text-[#94A3B8] leading-relaxed">
+                La dispersion de vos données coûte cher. Finixar synchronise automatiquement vos comptes bancaires, portefeuilles crypto et investissements privés. Plus de saisie manuelle, plus d'erreurs.
               </p>
+            </div>
 
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="w-4 h-4 text-green-600" strokeWidth={2.5} />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1 leading-tight">Hébergement souverain en France</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                      Vos données sont hébergées en France (Région Paris), garantissant une conformité avec les réglementations européennes.
-                    </p>
+            {/* Right - UI Mockup */}
+            <div className="glass rounded-2xl p-6 relative">
+              <div className="bg-[#0A0A0B] rounded-xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="text-white font-semibold">Synchronisation...</div>
+                  <div className="flex gap-2">
+                    <div className="w-2 h-2 bg-[#2E62FF] rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-[#2E62FF] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-[#2E62FF] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                   </div>
                 </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="w-4 h-4 text-green-600" strokeWidth={2.5} />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1 leading-tight">Chiffrement des données</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                      Toutes les communications et données stockées sont chiffrées pour garantir leur confidentialité.
-                    </p>
-                  </div>
+                <div className="space-y-3">
+                  {['BNP Paribas', 'Coinbase Wallet', 'Interactive Brokers'].map((name, i) => (
+                    <div key={i} className="bg-[#111113] rounded-lg p-4 border border-[#1F1F22] flex items-center justify-between">
+                      <span className="text-white text-sm">{name}</span>
+                      <span className="text-[#10B981] text-xs">✓ Connecté</span>
+                    </div>
+                  ))}
                 </div>
+              </div>
+            </div>
+          </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="w-4 h-4 text-green-600" strokeWidth={2.5} />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1 leading-tight">Confidentialité totale</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                      Système d'isolation avancé garantissant que vos données restent strictement confidentielles et inaccessibles aux tiers.
-                    </p>
-                  </div>
-                </div>
+          {/* Block B - Reversed */}
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left - UI Mockup */}
+            <div className="glass rounded-2xl p-6 relative order-2 lg:order-1">
+              <div className="bg-[#0A0A0B] rounded-xl p-6">
+                <div className="text-white font-semibold mb-4">Performance nette</div>
+                <div className="text-5xl font-bold text-white mb-2">+18.7%</div>
+                <div className="text-[#52525B] text-sm mb-6">Rendement ajusté au risque (Sharpe: 1.42)</div>
 
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="w-4 h-4 text-green-600" strokeWidth={2.5} />
+                {/* Risk meter */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#94A3B8]">Niveau de risque</span>
+                    <span className="text-[#2E62FF]">Modéré</span>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1 leading-tight">Authentification sécurisée</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                      Connexion via Microsoft pour une authentification simple et sécurisée avec vos comptes professionnels.
-                    </p>
+                  <div className="h-2 bg-[#111113] rounded-full overflow-hidden">
+                    <div className="h-full w-3/5 bg-gradient-to-r from-[#10B981] to-[#2E62FF] rounded-full"></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right - Compliance Card */}
-            <div className="bg-gradient-to-br from-finixar-deep-blue to-[#1a2642] rounded-2xl p-8 shadow-2xl">
-              <h3 className="text-2xl font-bold text-white mb-8">Conformité & sécurité</h3>
-
-              <div className="space-y-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                      <Lock className="w-6 h-6 text-green-400" />
-                    </div>
-                    <div>
-                      <p className="text-white font-semibold">RGPD</p>
-                      <p className="text-slate-400 text-sm">Conforme</p>
-                    </div>
-                  </div>
-                  <p className="text-slate-300 text-sm">
-                    Respect strict des réglementations européennes de protection des données personnelles.
-                  </p>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                      <Shield className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-white font-semibold">Hébergement France</p>
-                      <p className="text-slate-400 text-sm">Région Paris</p>
-                    </div>
-                  </div>
-                  <p className="text-slate-300 text-sm">
-                    Infrastructure hébergée sur des serveurs situés en France pour garantir la souveraineté des données.
-                  </p>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                      <Lock className="w-6 h-6 text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="text-white font-semibold">Chiffrement</p>
-                      <p className="text-slate-400 text-sm">SSL/TLS</p>
-                    </div>
-                  </div>
-                  <p className="text-slate-300 text-sm">
-                    Toutes les communications sont chiffrées pour protéger vos données sensibles.
-                  </p>
-                </div>
-              </div>
+            {/* Right - Text */}
+            <div className="order-1 lg:order-2">
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                Une clarté radicale sur votre performance.
+              </h2>
+              <p className="text-lg text-[#94A3B8] leading-relaxed">
+                Ne confondez plus mouvement et performance. Nos algorithmes calculent votre rendement réel, net de frais et ajusté au risque, pour vous donner la vérité sur vos investissements.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#0A0E1A] via-[#0D1426] to-[#0A0E1A]">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 leading-tight max-w-3xl mx-auto">
-            Automatisez votre gestion d'actifs dès aujourd'hui
-          </h2>
-          <p className="text-xl text-slate-200 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Rejoignez les gestionnaires d'actifs qui ont déjà automatisé leurs processus avec Finixar.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href="mailto:contact@finixar.com?subject=Demande de démo"
-              className="inline-flex items-center justify-center gap-2 px-10 bg-finixar-brand-blue hover:bg-blue-700 text-white text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 leading-none btn-press transition-premium"
-              style={{ paddingTop: '21px', paddingBottom: '23px' }}
-            >
-              <span>Planifier une démo</span>
-              <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
-            </a>
-            <a
-              href="http://app.finixar.com"
-              className="inline-flex items-center justify-center px-10 bg-white/10 hover:bg-white/20 text-white text-lg font-semibold rounded-lg border border-white/30 backdrop-blur-sm leading-none btn-press transition-premium"
-              style={{ paddingTop: '21px', paddingBottom: '23px' }}
-            >
-              Commencer gratuitement
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer id="contact" className="bg-[#0A0E1A] text-white py-20 px-4 sm:px-6 lg:px-8 border-t border-white/10">
+      {/* 4. BENTO GRID - Features */}
+      <section className="py-32 px-4 sm:px-6 lg:px-8 bg-[#0A0A0B]">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <div className="flex items-center gap-2 mb-5">
-                <div className="bg-finixar-brand-blue p-2 rounded-lg">
-                  <TrendingUp className="w-5 h-5 text-white" />
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Card 1 - Privacy */}
+            <div className="glass rounded-2xl p-8 card-hover relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2E62FF]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-[#2E62FF]/10 rounded-xl flex items-center justify-center mb-6">
+                  <EyeOff className="w-6 h-6 text-[#2E62FF]" />
                 </div>
-                <span className="text-xl font-bold">Finixar</span>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Confidentialité Absolue
+                </h3>
+                <p className="text-[#94A3B8] leading-relaxed">
+                  Vos données sont chiffrées localement. Nous ne voyons jamais vos chiffres.
+                </p>
               </div>
-              <p className="text-slate-300 text-base leading-relaxed max-w-xs">
-                La plateforme de gestion d'actifs conçue pour les professionnels de la finance.
-              </p>
             </div>
 
-            <div>
-              <h4 className="font-semibold text-white mb-5 text-base tracking-wide">Produit</h4>
-              <ul className="space-y-3">
-                <li><a href="#fonctionnalites" className="text-slate-300 hover:text-white transition-premium tracking-wide text-base">Fonctionnalités</a></li>
-                <li><a href="#securite" className="text-slate-300 hover:text-white transition-premium tracking-wide text-base">Sécurité</a></li>
-                <li><a href="mailto:contact@finixar.com?subject=Demande de tarifs" className="text-slate-300 hover:text-white transition-premium tracking-wide text-base">Tarifs</a></li>
-              </ul>
+            {/* Card 2 - Tax */}
+            <div className="glass rounded-2xl p-8 card-hover relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2E62FF]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-[#2E62FF]/10 rounded-xl flex items-center justify-center mb-6">
+                  <FileText className="w-6 h-6 text-[#2E62FF]" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Reporting Fiscal Automatisé
+                </h3>
+                <p className="text-[#94A3B8] leading-relaxed">
+                  Générez vos IFU et rapports de plus-values en un clic.
+                </p>
+              </div>
             </div>
 
-            <div>
-              <h4 className="font-semibold text-white mb-5 text-base tracking-wide">Contact</h4>
-              <ul className="space-y-3">
-                <li><a href="mailto:contact@finixar.com?subject=Demande de démo" className="text-slate-300 hover:text-white transition-premium tracking-wide text-base">Demander une démo</a></li>
-                <li><a href="mailto:contact@finixar.com" className="text-slate-300 hover:text-white transition-premium tracking-wide text-base">Support</a></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-white mb-5 text-base tracking-wide">Légal</h4>
-              <ul className="space-y-3">
-                <li><a href="mailto:contact@finixar.com?subject=Mentions légales" className="text-slate-300 hover:text-white transition-premium tracking-wide text-base">Mentions légales</a></li>
-                <li><a href="mailto:contact@finixar.com?subject=CGV" className="text-slate-300 hover:text-white transition-premium tracking-wide text-base">CGV</a></li>
-              </ul>
+            {/* Card 3 - AI */}
+            <div className="glass rounded-2xl p-8 card-hover relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2E62FF]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-[#2E62FF]/10 rounded-xl flex items-center justify-center mb-6">
+                  <Sparkles className="w-6 h-6 text-[#2E62FF]" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">
+                  Intelligence Artificielle
+                </h3>
+                <p className="text-[#94A3B8] leading-relaxed">
+                  Détection automatique des opportunités de rééquilibrage.
+                </p>
+              </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="border-t border-white/10 pt-10 flex flex-col md:flex-row items-center justify-between gap-6">
-            <p className="text-slate-400 text-base">
-              © {new Date().getFullYear()} Finixar. Tous droits réservés.
-            </p>
-            <div className="flex items-center gap-6">
-              <p className="text-slate-400 text-base flex items-center gap-2">
-                <span>🇫🇷</span> Hébergé en France
+      {/* 5. THE MANIFESTO */}
+      <section className="py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0A0A0B] to-[#050505]">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-4xl font-bold text-white mb-8" style={{ fontFamily: 'Georgia, serif' }}>
+            Notre Engagement.
+          </h2>
+          <p className="text-xl text-[#94A3B8] leading-relaxed mb-8">
+            Nous construisons Finixar car les outils actuels ne suffisent plus. Nous n'avons pas de "clients cachés" ni de frais dissimulés. Nous construisons l'outil que nous voulions utiliser nous-mêmes : transparent, rapide et impénétrable.
+          </p>
+          <p className="text-[#52525B] italic">
+            — L'Équipe Technique Finixar.
+          </p>
+        </div>
+      </section>
+
+      {/* 6. FINAL CTA */}
+      <section className="py-32 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#2E62FF]/10 via-transparent to-purple-600/10"></div>
+
+        <div className="max-w-2xl mx-auto relative z-10">
+          <div className="glass rounded-3xl p-12 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#2E62FF]/5 to-transparent"></div>
+
+            <div className="relative z-10">
+              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+                Rejoignez le cercle des initiés.
+              </h2>
+              <p className="text-[#94A3B8] mb-8">
+                Les places pour la Beta privée sont limitées.
               </p>
-              <p className="text-slate-400 text-base flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                Conforme RGPD
-              </p>
+
+              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="votre@email.com"
+                  className="flex-1 px-6 py-4 bg-[#111113] border border-[#1F1F22] rounded-lg text-white placeholder-[#52525B] focus:outline-none focus:border-[#2E62FF]"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="btn-primary px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg whitespace-nowrap"
+                >
+                  S'inscrire sur liste d'attente
+                </button>
+              </form>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t border-[#1F1F22] py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-8 text-[#52525B] text-sm">
+            <a href="#" className="hover:text-white transition-colors">Confidentialité</a>
+            <span>•</span>
+            <a href="#" className="hover:text-white transition-colors">Mentions Légales</a>
+            <span>•</span>
+            <a href="#" className="hover:text-white transition-colors">Sécurité</a>
+            <span>•</span>
+            <a href="#" className="hover:text-white transition-colors">Status</a>
+          </div>
+          <div className="text-center mt-8 text-[#52525B] text-sm">
+            © {new Date().getFullYear()} Finixar. Infrastructure d'investissement de nouvelle génération.
           </div>
         </div>
       </footer>
