@@ -73,7 +73,7 @@ export function LandingPage() {
       </nav>
 
       {/* Hero Section - Dark */}
-      <section className="pt-32 pb-40 bg-gradient-to-br from-[#0A0E1A] via-[#0D1426] to-[#0A0E1A] px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <section className="pt-32 pb-24 bg-gradient-to-br from-[#0A0E1A] via-[#0D1426] to-[#0A0E1A] px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Animated floating orbs */}
         <div className="absolute top-20 left-10 w-64 h-64 bg-finixar-brand-blue/30 rounded-full blur-3xl animate-blob"></div>
         <div className="absolute top-40 right-10 w-80 h-80 bg-finixar-teal/20 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
@@ -174,7 +174,7 @@ export function LandingPage() {
       </section>
 
       {/* Interface Intuitive Section */}
-      <section className="py-40 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
@@ -231,7 +231,7 @@ export function LandingPage() {
       </section>
 
       {/* Features Section - Redesigned with screenshots */}
-      <section id="fonctionnalites" className="py-40 px-4 sm:px-6 lg:px-8 bg-white">
+      <section id="fonctionnalites" className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
@@ -379,7 +379,7 @@ export function LandingPage() {
       </section>
 
       {/* Pain Points Section */}
-      <section className="py-40 px-4 sm:px-6 lg:px-8 bg-white border-y border-slate-200">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white border-y border-slate-200">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
@@ -463,7 +463,7 @@ export function LandingPage() {
       </section>
 
       {/* Pourquoi Finixar Section - Redesigned */}
-      <section className="py-40 px-4 sm:px-6 lg:px-8 bg-slate-50">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
@@ -518,7 +518,7 @@ export function LandingPage() {
       </section>
 
       {/* Zero Excel Section */}
-      <section className="py-40 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-block px-4 py-2 bg-finixar-teal/10 rounded-full mb-4">
@@ -586,7 +586,7 @@ export function LandingPage() {
       </section>
 
       {/* Security Section - Split Layout */}
-      <section id="securite" className="py-40 px-4 sm:px-6 lg:px-8 bg-white">
+      <section id="securite" className="py-24 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left - Content */}
@@ -705,7 +705,7 @@ export function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-40 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#0A0E1A] via-[#0D1426] to-[#0A0E1A]">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#0A0E1A] via-[#0D1426] to-[#0A0E1A]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 leading-tight max-w-3xl mx-auto">
             Automatisez votre gestion d'actifs dès aujourd'hui
