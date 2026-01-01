@@ -367,10 +367,10 @@ export function LandingPage() {
                 <FileText className="w-7 h-7 text-purple-600" />
               </div>
               <h3 className="text-xl font-bold text-finixar-deep-blue mb-3">
-                Compatibilité Excel complète
+                Import/Export intelligent
               </h3>
               <p className="text-slate-600 leading-relaxed">
-                Import des données de coupons depuis vos fichiers Excel existants. Export des rapports au format Excel pour vos besoins comptables et réglementaires.
+                Importez vos données existantes dans Finixar en quelques clics. Exportez l'intégralité de vos données au format Excel pour vos analyses, reporting et besoins de conformité.
               </p>
             </div>
           </div>
