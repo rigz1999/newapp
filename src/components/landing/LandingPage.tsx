@@ -2,7 +2,7 @@ import { TrendingUp, ArrowRight, Shield, FileText, Users, Euro, BarChart3, Lock,
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       <style>{`
         @keyframes blob {
           0%, 100% { transform: translate(0px, 0px) scale(1); }
@@ -25,21 +25,21 @@ export function LandingPage() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="bg-finixar-brand-blue p-2 rounded-lg">
+              <div className="bg-finixar-brand-blue p-2 rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-finixar-deep-blue">Finixar</span>
+              <span className="text-xl font-bold text-finixar-deep-blue leading-none">Finixar</span>
             </div>
 
             {/* Nav Links */}
             <div className="hidden md:flex items-center gap-8">
-              <a href="#fonctionnalites" className="text-slate-700 hover:text-finixar-brand-blue transition-colors font-medium">
+              <a href="#fonctionnalites" className="text-slate-700 hover:text-finixar-brand-blue transition-colors font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-finixar-brand-blue after:transition-all hover:after:w-full">
                 Fonctionnalités
               </a>
-              <a href="#securite" className="text-slate-700 hover:text-finixar-brand-blue transition-colors font-medium">
+              <a href="#securite" className="text-slate-700 hover:text-finixar-brand-blue transition-colors font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-finixar-brand-blue after:transition-all hover:after:w-full">
                 Sécurité
               </a>
-              <a href="#contact" className="text-slate-700 hover:text-finixar-brand-blue transition-colors font-medium">
+              <a href="#contact" className="text-slate-700 hover:text-finixar-brand-blue transition-colors font-medium relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-finixar-brand-blue after:transition-all hover:after:w-full">
                 Contact
               </a>
             </div>
@@ -48,13 +48,13 @@ export function LandingPage() {
             <div className="flex items-center gap-3">
               <a
                 href="http://app.finixar.com"
-                className="hidden sm:block px-4 py-2 text-finixar-deep-blue hover:text-finixar-brand-blue font-medium transition-colors"
+                className="hidden sm:inline-flex items-center px-4 py-2 text-finixar-deep-blue hover:text-finixar-brand-blue font-medium transition-colors"
               >
                 Connexion
               </a>
               <a
                 href="mailto:contact@finixar.com?subject=Demande de démo"
-                className="px-5 py-2.5 bg-finixar-brand-blue hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                className="inline-flex items-center px-6 py-2.5 bg-finixar-brand-blue hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-sm hover:shadow-md"
               >
                 Demander une démo
               </a>
@@ -64,7 +64,7 @@ export function LandingPage() {
       </nav>
 
       {/* Hero Section - Dark */}
-      <section className="pt-24 pb-16 bg-gradient-to-br from-finixar-deep-blue via-[#1a2642] to-finixar-deep-blue px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <section className="pt-32 pb-20 bg-gradient-to-br from-finixar-deep-blue via-[#1a2642] to-finixar-deep-blue px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Animated floating orbs */}
         <div className="absolute top-20 left-10 w-64 h-64 bg-finixar-brand-blue/30 rounded-full blur-3xl animate-blob"></div>
         <div className="absolute top-40 right-10 w-80 h-80 bg-finixar-teal/20 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
@@ -90,14 +90,14 @@ export function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <a
                   href="mailto:contact@finixar.com?subject=Demande de démo"
-                  className="px-8 py-4 bg-finixar-brand-blue hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-finixar-brand-blue hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 >
                   <span>Demander une démo</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
                 </a>
                 <a
                   href="http://app.finixar.com"
-                  className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-all border border-white/30 backdrop-blur-sm flex items-center justify-center gap-2"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-all border border-white/30 backdrop-blur-sm"
                 >
                   En savoir plus
                 </a>
@@ -175,27 +175,27 @@ export function LandingPage() {
           </div>
 
           {/* Quick benefits below dashboard */}
-          <div className="grid md:grid-cols-3 gap-6 mt-16 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 mt-16 max-w-5xl mx-auto">
             <div className="text-center">
-              <div className="w-12 h-12 bg-finixar-brand-blue/10 rounded-xl mx-auto mb-3 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-finixar-brand-blue" />
+              <div className="w-12 h-12 bg-finixar-brand-blue/10 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-finixar-brand-blue" strokeWidth={2} />
               </div>
               <h4 className="font-semibold text-finixar-deep-blue mb-2">Vision globale</h4>
-              <p className="text-sm text-slate-600">Tous vos projets et investissements en un coup d'œil</p>
+              <p className="text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">Tous vos projets et investissements en un coup d'œil</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-finixar-teal/10 rounded-xl mx-auto mb-3 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-finixar-teal" />
+              <div className="w-12 h-12 bg-finixar-teal/10 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                <Zap className="w-6 h-6 text-finixar-teal" strokeWidth={2} />
               </div>
               <h4 className="font-semibold text-finixar-deep-blue mb-2">Navigation rapide</h4>
-              <p className="text-sm text-slate-600">Accédez instantanément aux informations recherchées</p>
+              <p className="text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">Accédez instantanément aux informations recherchées</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl mx-auto mb-3 flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-purple-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-purple-600" strokeWidth={2} />
               </div>
               <h4 className="font-semibold text-finixar-deep-blue mb-2">Analytics temps réel</h4>
-              <p className="text-sm text-slate-600">Métriques et rapports actualisés automatiquement</p>
+              <p className="text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">Métriques et rapports actualisés automatiquement</p>
             </div>
           </div>
         </div>
@@ -215,19 +215,19 @@ export function LandingPage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1 - Projects & Tranches */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-finixar-brand-blue/30 transition-all">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg border-2 border-finixar-brand-blue flex items-center justify-center">
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-finixar-brand-blue/30 transition-all duration-300">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-lg border-2 border-finixar-brand-blue flex items-center justify-center flex-shrink-0">
                   <FileText className="w-5 h-5 text-finixar-brand-blue" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue">
+                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
                   Gestion de projets
                 </h3>
               </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
                 Suivi précis des échéances et des montants investis avec gestion sécurisée des tranches.
               </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2 mt-4">
+              <div className="bg-white rounded-xl border border-slate-200 p-2">
                 <img
                   src="/images/feature-projects.png"
                   alt="Gestion de projets Finixar"
@@ -237,19 +237,19 @@ export function LandingPage() {
             </div>
 
             {/* Feature 2 - Investor Relations */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-green-400/30 transition-all">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg border-2 border-green-600 flex items-center justify-center">
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-green-400/30 transition-all duration-300">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-lg border-2 border-green-600 flex items-center justify-center flex-shrink-0">
                   <Users className="w-5 h-5 text-green-600" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue">
+                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
                   Relations investisseurs
                 </h3>
               </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
                 Centralisez les informations de vos investisseurs et gérez leurs RIB en toute sécurité.
               </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2 mt-4">
+              <div className="bg-white rounded-xl border border-slate-200 p-2">
                 <img
                   src="/images/feature-investors.png"
                   alt="Relations investisseurs Finixar"
@@ -259,19 +259,19 @@ export function LandingPage() {
             </div>
 
             {/* Feature 3 - Advanced Filtering */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-purple-400/30 transition-all">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg border-2 border-purple-600 flex items-center justify-center">
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-purple-400/30 transition-all duration-300">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-lg border-2 border-purple-600 flex items-center justify-center flex-shrink-0">
                   <BarChart3 className="w-5 h-5 text-purple-600" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue">
+                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
                   Filtrage avancé
                 </h3>
               </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
                 Navigation ultra-fluide grâce aux filtres en cascade et analytics intégrés en temps réel.
               </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2 mt-4">
+              <div className="bg-white rounded-xl border border-slate-200 p-2">
                 <img
                   src="/images/feature-filtering.png"
                   alt="Filtrage avancé Finixar"
@@ -281,19 +281,19 @@ export function LandingPage() {
             </div>
 
             {/* Feature 4 - Coupons Management */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-orange-400/30 transition-all">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg border-2 border-orange-600 flex items-center justify-center">
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-orange-400/30 transition-all duration-300">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-lg border-2 border-orange-600 flex items-center justify-center flex-shrink-0">
                   <Euro className="w-5 h-5 text-orange-600" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue">
+                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
                   Gestion des coupons
                 </h3>
               </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
                 Suivi centralisé des coupons avec import Excel et téléchargement de justificatifs de paiement.
               </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2 mt-4">
+              <div className="bg-white rounded-xl border border-slate-200 p-2">
                 <img
                   src="/images/coupons-screenshot.png"
                   alt="Gestion des coupons Finixar"
@@ -303,19 +303,19 @@ export function LandingPage() {
             </div>
 
             {/* Feature 5 - Auto Reminders */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-finixar-teal/30 transition-all">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg border-2 border-finixar-teal flex items-center justify-center">
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-finixar-teal/30 transition-all duration-300">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-lg border-2 border-finixar-teal flex items-center justify-center flex-shrink-0">
                   <Bell className="w-5 h-5 text-finixar-teal" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue">
+                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
                   Rappels automatiques
                 </h3>
               </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
                 Notifications automatiques par e-mail pour toutes vos échéances critiques.
               </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2 mt-4">
+              <div className="bg-white rounded-xl border border-slate-200 p-2">
                 <img
                   src="/images/reminders.png"
                   alt="Rappels automatiques Finixar"
@@ -325,19 +325,19 @@ export function LandingPage() {
             </div>
 
             {/* Feature 6 - Real-time Dashboard */}
-            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-indigo-400/30 transition-all">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg border-2 border-indigo-600 flex items-center justify-center">
+            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:border-indigo-400/30 transition-all duration-300">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-lg border-2 border-indigo-600 flex items-center justify-center flex-shrink-0">
                   <TrendingUp className="w-5 h-5 text-indigo-600" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-lg font-bold text-finixar-deep-blue">
+                <h3 className="text-lg font-bold text-finixar-deep-blue leading-tight">
                   Analytics temps réel
                 </h3>
               </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
                 Visualisez l'état de vos projets avec des métriques et tableaux de bord actualisés instantanément.
               </p>
-              <div className="bg-white rounded-xl border border-slate-200 p-2 mt-4">
+              <div className="bg-white rounded-xl border border-slate-200 p-2">
                 <img
                   src="/images/feature-analytics.png"
                   alt="Analytics temps réel Finixar"
@@ -447,40 +447,40 @@ export function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Benefit 1 - Investor Data */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-lg transition-shadow">
-              <div className="mb-6">
-                <span className="text-5xl font-bold text-finixar-brand-blue/20">01</span>
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300">
+              <div className="mb-8">
+                <span className="text-5xl font-bold text-finixar-brand-blue/20 leading-none">01</span>
               </div>
-              <h3 className="text-xl font-bold text-finixar-deep-blue mb-4">
+              <h3 className="text-xl font-bold text-finixar-deep-blue mb-4 leading-tight">
                 Base d'investisseurs centralisée
               </h3>
-              <p className="text-slate-600 leading-relaxed">
+              <p className="text-slate-600 leading-relaxed text-sm">
                 Gestion structurée des données investisseurs et RIB dans un référentiel unique. Élimination de la saisie manuelle et des erreurs de ressaisie.
               </p>
             </div>
 
             {/* Benefit 2 - Automated Reminders */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-lg transition-shadow">
-              <div className="mb-6">
-                <span className="text-5xl font-bold text-finixar-teal/20">02</span>
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300">
+              <div className="mb-8">
+                <span className="text-5xl font-bold text-finixar-teal/20 leading-none">02</span>
               </div>
-              <h3 className="text-xl font-bold text-finixar-deep-blue mb-4">
+              <h3 className="text-xl font-bold text-finixar-deep-blue mb-4 leading-tight">
                 Rappels automatisés par e-mail
               </h3>
-              <p className="text-slate-600 leading-relaxed">
+              <p className="text-slate-600 leading-relaxed text-sm">
                 Notifications automatiques pour vos échéances critiques. Réduction du risque de non-respect des obligations contractuelles envers vos investisseurs.
               </p>
             </div>
 
             {/* Benefit 3 - Excel Import/Export */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-lg transition-shadow">
-              <div className="mb-6">
-                <span className="text-5xl font-bold text-purple-600/20">03</span>
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-lg transition-all duration-300">
+              <div className="mb-8">
+                <span className="text-5xl font-bold text-purple-600/20 leading-none">03</span>
               </div>
-              <h3 className="text-xl font-bold text-finixar-deep-blue mb-4">
+              <h3 className="text-xl font-bold text-finixar-deep-blue mb-4 leading-tight">
                 Import/Export intelligent
               </h3>
-              <p className="text-slate-600 leading-relaxed">
+              <p className="text-slate-600 leading-relaxed text-sm">
                 Importez vos données existantes dans Finixar en quelques clics. Exportez l'intégralité de vos données au format Excel pour vos analyses, reporting et besoins de conformité.
               </p>
             </div>
@@ -687,14 +687,14 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href="mailto:contact@finixar.com?subject=Demande de démo"
-              className="px-10 py-5 bg-finixar-brand-blue hover:bg-blue-700 text-white text-lg font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2"
+              className="inline-flex items-center justify-center gap-2 px-10 py-5 bg-finixar-brand-blue hover:bg-blue-700 text-white text-lg font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
               <span>Demander une démo</span>
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
             </a>
             <a
               href="http://app.finixar.com"
-              className="px-10 py-5 bg-white/10 hover:bg-white/20 text-white text-lg font-semibold rounded-lg transition-all border border-white/30 backdrop-blur-sm"
+              className="inline-flex items-center justify-center px-10 py-5 bg-white/10 hover:bg-white/20 text-white text-lg font-semibold rounded-lg transition-all border border-white/30 backdrop-blur-sm"
             >
               Voir la documentation
             </a>
