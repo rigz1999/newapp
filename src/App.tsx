@@ -5,6 +5,7 @@ import { useOrganization } from './hooks/useOrganization';
 import { Login } from './components/auth/Login';
 import { Layout } from './components/layouts/Layout';
 import { InvitationAccept } from './components/auth/InvitationAccept';
+import { ResetPassword } from './components/auth/ResetPassword';
 import { EmailOAuthCallback } from './components/auth/EmailOAuthCallback';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
@@ -15,8 +16,14 @@ import { LandingPage } from './components/landing/LandingPage';
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
 const ProjectDetail = lazy(() => import('./components/projects/ProjectDetail'));
-const ProjectCommentsPage = lazy(() => import('./components/projects/ProjectCommentsPage').then(m => ({ default: m.ProjectCommentsPage })));
-const EcheancierPage = lazy(() => import('./components/coupons/EcheancierPage').then(m => ({ default: m.EcheancierPage })));
+const ProjectCommentsPage = lazy(() =>
+  import('./components/projects/ProjectCommentsPage').then(m => ({
+    default: m.ProjectCommentsPage,
+  }))
+);
+const EcheancierPage = lazy(() =>
+  import('./components/coupons/EcheancierPage').then(m => ({ default: m.EcheancierPage }))
+);
 const Coupons = lazy(() => import('./components/coupons/CouponsPageNew'));
 const Investors = lazy(() => import('./components/investors/Investors'));
 const Subscriptions = lazy(() => import('./components/subscriptions/Subscriptions'));
@@ -53,199 +60,218 @@ function App() {
     <ThemeProvider>
       <ErrorBoundary>
         <BrowserRouter>
-        <Routes>
-          {/* Public Routes - No authentication required */}
-          <Route
-            path="/login"
-            element={
-              authLoading ? (
-                <DashboardSkeleton />
-              ) : user && (isAdmin || organization) ? (
-                <Navigate to="/" replace />
-              ) : (
-                <Login />
-              )
-            }
-          />
-          <Route path="/invitation/accept" element={<InvitationAccept />} />
-          <Route
-            path="/diagnostic"
-            element={authLoading ? <DashboardSkeleton /> : user ? <DiagnosticPage /> : <Navigate to="/login" replace />}
-          />
-
-          {/* OAuth Callback Routes - Require authentication */}
-          <Route
-            path="/auth/callback/microsoft"
-            element={authLoading ? <DashboardSkeleton /> : user ? <EmailOAuthCallback /> : <Navigate to="/login" replace />}
-          />
-          <Route
-            path="/auth/callback/google"
-            element={authLoading ? <DashboardSkeleton /> : user ? <EmailOAuthCallback /> : <Navigate to="/login" replace />}
-          />
-
-          {/* Protected Routes - Authentication required */}
-          <Route
-            path="/*"
-            element={
-              authLoading ? (
-                <Layout
-                  organization={DEFAULT_ORG}
-                  isLoading={true}
-                />
-              ) : user ? (
-                (isAdmin || organization || orgLoading) ? (
-                  <Layout
-                    organization={organization || DEFAULT_ORG}
-                    isLoading={orgLoading}
-                  />
+          <Routes>
+            {/* Public Routes - No authentication required */}
+            <Route
+              path="/login"
+              element={
+                authLoading ? (
+                  <DashboardSkeleton />
+                ) : user && (isAdmin || organization) ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <Login />
+                )
+              }
+            />
+            <Route path="/invitation/accept" element={<InvitationAccept />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route
+              path="/diagnostic"
+              element={
+                authLoading ? (
+                  <DashboardSkeleton />
+                ) : user ? (
+                  <DiagnosticPage />
                 ) : (
                   <Navigate to="/login" replace />
                 )
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          >
-            <Route
-              index
-              element={
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Dashboard organization={organization || DEFAULT_ORG} />
-                  </Suspense>
-                </ErrorBoundary>
-              }
-            />
-            <Route
-              path="projets"
-              element={
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Projects organization={organization || DEFAULT_ORG} />
-                  </Suspense>
-                </ErrorBoundary>
-              }
-            />
-            <Route
-              path="projets/:projectId"
-              element={
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <ProjectDetail organization={organization || DEFAULT_ORG} />
-                  </Suspense>
-                </ErrorBoundary>
-              }
-            />
-            <Route
-              path="projets/:projectId/echeancier"
-              element={
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <EcheancierPage />
-                  </Suspense>
-                </ErrorBoundary>
-              }
-            />
-            <Route
-              path="projets/:projectId/comments"
-              element={
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <ProjectCommentsPage />
-                  </Suspense>
-                </ErrorBoundary>
-              }
-            />
-            <Route
-              path="coupons"
-              element={
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Coupons organization={organization || DEFAULT_ORG} />
-                  </Suspense>
-                </ErrorBoundary>
-              }
-            />
-            <Route
-              path="investisseurs"
-              element={
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Investors organization={organization || DEFAULT_ORG} />
-                  </Suspense>
-                </ErrorBoundary>
-              }
-            />
-            <Route
-              path="souscriptions"
-              element={
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Subscriptions organization={organization || DEFAULT_ORG} />
-                  </Suspense>
-                </ErrorBoundary>
-              }
-            />
-            <Route
-              path="paiements"
-              element={
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Payments organization={organization || DEFAULT_ORG} />
-                  </Suspense>
-                </ErrorBoundary>
               }
             />
 
-            {/* Settings - For all users */}
+            {/* OAuth Callback Routes - Require authentication */}
             <Route
-              path="parametres"
+              path="/auth/callback/microsoft"
               element={
-                <ErrorBoundary>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Settings />
-                  </Suspense>
-                </ErrorBoundary>
-              }
-            />
-
-            {/* Members Management - For Organization Admins and Super Admin */}
-            <Route
-              path="membres"
-              element={
-                (isOrgAdmin || isAdmin) ? (
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <Members />
-                    </Suspense>
-                  </ErrorBoundary>
+                authLoading ? (
+                  <DashboardSkeleton />
+                ) : user ? (
+                  <EmailOAuthCallback />
                 ) : (
-                  <Navigate to="/" replace />
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/auth/callback/google"
+              element={
+                authLoading ? (
+                  <DashboardSkeleton />
+                ) : user ? (
+                  <EmailOAuthCallback />
+                ) : (
+                  <Navigate to="/login" replace />
                 )
               }
             />
 
-            {/* Admin Panel - For Super Admins */}
+            {/* Protected Routes - Authentication required */}
             <Route
-              path="admin"
+              path="/*"
               element={
-                isAdmin ? (
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <AdminPanel />
-                    </Suspense>
-                  </ErrorBoundary>
+                authLoading ? (
+                  <Layout organization={DEFAULT_ORG} isLoading={true} />
+                ) : user ? (
+                  isAdmin || organization || orgLoading ? (
+                    <Layout organization={organization || DEFAULT_ORG} isLoading={orgLoading} />
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
                 ) : (
-                  <Navigate to="/" replace />
+                  <Navigate to="/login" replace />
                 )
               }
-            />
+            >
+              <Route
+                index
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Dashboard organization={organization || DEFAULT_ORG} />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="projets"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Projects organization={organization || DEFAULT_ORG} />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="projets/:projectId"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ProjectDetail organization={organization || DEFAULT_ORG} />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="projets/:projectId/echeancier"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <EcheancierPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="projets/:projectId/comments"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ProjectCommentsPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="coupons"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Coupons organization={organization || DEFAULT_ORG} />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="investisseurs"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Investors organization={organization || DEFAULT_ORG} />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="souscriptions"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Subscriptions organization={organization || DEFAULT_ORG} />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="paiements"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Payments organization={organization || DEFAULT_ORG} />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
 
-            {/* Removed wildcard redirect - it was causing page refreshes to redirect to dashboard */}
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </ErrorBoundary>
+              {/* Settings - For all users */}
+              <Route
+                path="parametres"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Settings />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+
+              {/* Members Management - For Organization Admins and Super Admin */}
+              <Route
+                path="membres"
+                element={
+                  isOrgAdmin || isAdmin ? (
+                    <ErrorBoundary>
+                      <Suspense fallback={<LoadingFallback />}>
+                        <Members />
+                      </Suspense>
+                    </ErrorBoundary>
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                }
+              />
+
+              {/* Admin Panel - For Super Admins */}
+              <Route
+                path="admin"
+                element={
+                  isAdmin ? (
+                    <ErrorBoundary>
+                      <Suspense fallback={<LoadingFallback />}>
+                        <AdminPanel />
+                      </Suspense>
+                    </ErrorBoundary>
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                }
+              />
+
+              {/* Removed wildcard redirect - it was causing page refreshes to redirect to dashboard */}
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }
