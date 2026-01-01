@@ -98,7 +98,7 @@ export function LandingPage() {
             {/* Right Buttons - Desktop */}
             <div className="hidden md:flex items-center gap-3">
               <a
-                href="http://app.finixar.com"
+                href="https://app.finixar.com"
                 className="px-5 py-2.5 text-slate-700 hover:text-slate-900 font-semibold transition-colors"
               >
                 Connexion
@@ -128,7 +128,7 @@ export function LandingPage() {
                 <a href="#securite" className="text-slate-700 font-medium">Sécurité</a>
                 <a href="#modules" className="text-slate-700 font-medium">Modules</a>
                 <a href="#tarifs" className="text-slate-700 font-medium">Tarifs</a>
-                <a href="http://app.finixar.com" className="text-slate-700 font-semibold">Connexion</a>
+                <a href="https://app.finixar.com" className="text-slate-700 font-semibold">Connexion</a>
                 <a
                   href="mailto:contact@finixar.com?subject=Demande de démonstration"
                   className="px-6 py-2.5 bg-[#2E62FF] text-white font-semibold rounded-lg text-center"
