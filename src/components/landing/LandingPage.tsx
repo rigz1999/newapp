@@ -25,8 +25,8 @@ export function LandingPage() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="bg-finixar-brand-blue p-2 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-white" />
+              <div className="bg-finixar-brand-blue p-2 rounded-lg flex items-center justify-center w-10 h-10">
+                <TrendingUp className="w-6 h-6 text-white" strokeWidth={2.5} style={{ width: '24px', height: '24px' }} />
               </div>
               <span className="text-xl font-bold text-finixar-deep-blue leading-none">Finixar</span>
             </div>
@@ -54,7 +54,8 @@ export function LandingPage() {
               </a>
               <a
                 href="mailto:contact@finixar.com?subject=Demande de démo"
-                className="inline-flex items-center px-6 py-2.5 bg-finixar-brand-blue hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-sm hover:shadow-md"
+                className="inline-flex items-center px-6 py-[11px] bg-finixar-brand-blue hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-sm hover:shadow-md leading-none"
+                style={{ paddingTop: '11px', paddingBottom: '13px' }}
               >
                 Demander une démo
               </a>
@@ -90,14 +91,16 @@ export function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <a
                   href="mailto:contact@finixar.com?subject=Demande de démo"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-finixar-brand-blue hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                  className="inline-flex items-center justify-center gap-2 px-8 bg-finixar-brand-blue hover:bg-blue-700 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 leading-none"
+                  style={{ paddingTop: '17px', paddingBottom: '19px' }}
                 >
                   <span>Demander une démo</span>
                   <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
                 </a>
                 <a
                   href="http://app.finixar.com"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-all border border-white/30 backdrop-blur-sm"
+                  className="inline-flex items-center justify-center gap-2 px-8 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-all border border-white/30 backdrop-blur-sm leading-none"
+                  style={{ paddingTop: '17px', paddingBottom: '19px' }}
                 >
                   En savoir plus
                 </a>
@@ -106,20 +109,20 @@ export function LandingPage() {
               {/* Trust Badges */}
               <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-white/20">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center">
-                    <Shield className="w-4 h-4 text-finixar-teal" />
+                  <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Shield className="w-4 h-4 text-finixar-teal" strokeWidth={2} />
                   </div>
                   <span className="text-sm text-slate-300">Hébergement sécurisé</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center">
-                    <Lock className="w-4 h-4 text-finixar-teal" />
+                  <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Lock className="w-4 h-4 text-finixar-teal" strokeWidth={2} />
                   </div>
                   <span className="text-sm text-slate-300">Conforme RGPD</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center">
-                    <Headphones className="w-4 h-4 text-finixar-teal" />
+                  <div className="w-8 h-8 bg-finixar-teal/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Headphones className="w-4 h-4 text-finixar-teal" strokeWidth={2} />
                   </div>
                   <span className="text-sm text-slate-300">Support réactif</span>
                 </div>
@@ -572,11 +575,11 @@ export function LandingPage() {
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="w-4 h-4 text-green-600" strokeWidth={2.5} />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Hébergement souverain en France</h4>
-                    <p className="text-slate-600 text-sm">
+                    <h4 className="font-semibold text-finixar-deep-blue mb-1 leading-tight">Hébergement souverain en France</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">
                       Vos données sont hébergées en France (Région Paris), garantissant une conformité avec les réglementations européennes.
                     </p>
                   </div>
@@ -584,11 +587,11 @@ export function LandingPage() {
 
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="w-4 h-4 text-green-600" strokeWidth={2.5} />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Chiffrement des données</h4>
-                    <p className="text-slate-600 text-sm">
+                    <h4 className="font-semibold text-finixar-deep-blue mb-1 leading-tight">Chiffrement des données</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">
                       Toutes les communications et données stockées sont chiffrées pour garantir leur confidentialité.
                     </p>
                   </div>
@@ -596,11 +599,11 @@ export function LandingPage() {
 
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="w-4 h-4 text-green-600" strokeWidth={2.5} />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Confidentialité totale</h4>
-                    <p className="text-slate-600 text-sm">
+                    <h4 className="font-semibold text-finixar-deep-blue mb-1 leading-tight">Confidentialité totale</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">
                       Système d'isolation avancé garantissant que vos données restent strictement confidentielles et inaccessibles aux tiers.
                     </p>
                   </div>
@@ -608,11 +611,11 @@ export function LandingPage() {
 
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="w-4 h-4 text-green-600" strokeWidth={2.5} />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-finixar-deep-blue mb-1">Authentification sécurisée</h4>
-                    <p className="text-slate-600 text-sm">
+                    <h4 className="font-semibold text-finixar-deep-blue mb-1 leading-tight">Authentification sécurisée</h4>
+                    <p className="text-slate-600 text-sm leading-relaxed">
                       Connexion via Microsoft pour une authentification simple et sécurisée avec vos comptes professionnels.
                     </p>
                   </div>
@@ -687,14 +690,16 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href="mailto:contact@finixar.com?subject=Demande de démo"
-              className="inline-flex items-center justify-center gap-2 px-10 py-5 bg-finixar-brand-blue hover:bg-blue-700 text-white text-lg font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center gap-2 px-10 bg-finixar-brand-blue hover:bg-blue-700 text-white text-lg font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 leading-none"
+              style={{ paddingTop: '21px', paddingBottom: '23px' }}
             >
               <span>Demander une démo</span>
               <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
             </a>
             <a
               href="http://app.finixar.com"
-              className="inline-flex items-center justify-center px-10 py-5 bg-white/10 hover:bg-white/20 text-white text-lg font-semibold rounded-lg transition-all border border-white/30 backdrop-blur-sm"
+              className="inline-flex items-center justify-center px-10 bg-white/10 hover:bg-white/20 text-white text-lg font-semibold rounded-lg transition-all border border-white/30 backdrop-blur-sm leading-none"
+              style={{ paddingTop: '21px', paddingBottom: '23px' }}
             >
               Voir la documentation
             </a>
@@ -719,27 +724,27 @@ export function LandingPage() {
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4">Produit</h4>
+              <h4 className="font-medium mb-4 tracking-wide">Produit</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#fonctionnalites" className="hover:text-white transition-colors">Fonctionnalités</a></li>
-                <li><a href="#securite" className="hover:text-white transition-colors">Sécurité</a></li>
-                <li><a href="mailto:contact@finixar.com?subject=Demande de tarifs" className="hover:text-white transition-colors">Demander un devis</a></li>
+                <li><a href="#fonctionnalites" className="hover:text-white transition-colors tracking-wide">Fonctionnalités</a></li>
+                <li><a href="#securite" className="hover:text-white transition-colors tracking-wide">Sécurité</a></li>
+                <li><a href="mailto:contact@finixar.com?subject=Demande de tarifs" className="hover:text-white transition-colors tracking-wide">Demander un devis</a></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4">Contact</h4>
+              <h4 className="font-medium mb-4 tracking-wide">Contact</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="mailto:contact@finixar.com?subject=Demande de démo" className="hover:text-white transition-colors">Demander une démo</a></li>
-                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors">Support</a></li>
+                <li><a href="mailto:contact@finixar.com?subject=Demande de démo" className="hover:text-white transition-colors tracking-wide">Demander une démo</a></li>
+                <li><a href="mailto:contact@finixar.com" className="hover:text-white transition-colors tracking-wide">Support</a></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4">Légal</h4>
+              <h4 className="font-medium mb-4 tracking-wide">Légal</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="mailto:contact@finixar.com?subject=Mentions légales" className="hover:text-white transition-colors">Mentions légales</a></li>
-                <li><a href="mailto:contact@finixar.com?subject=CGV" className="hover:text-white transition-colors">CGV</a></li>
+                <li><a href="mailto:contact@finixar.com?subject=Mentions légales" className="hover:text-white transition-colors tracking-wide">Mentions légales</a></li>
+                <li><a href="mailto:contact@finixar.com?subject=CGV" className="hover:text-white transition-colors tracking-wide">CGV</a></li>
               </ul>
             </div>
           </div>
