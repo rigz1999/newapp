@@ -178,53 +178,35 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-finixar-deep-blue mb-4">
-              Une interface pensée pour votre efficacité
+              Interface pensée pour l'efficacité
             </h2>
-            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-              Accédez à toutes vos données d'investissement depuis un tableau de bord intuitif et performant
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Tableau de bord intuitif pour piloter vos investissements
             </p>
           </div>
 
-          {/* Dashboard Showcase - Isometric style */}
-          <div className="relative">
-            {/* Main dashboard mockup */}
-            <div className="relative z-10 max-w-5xl mx-auto">
-              <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 sm:p-4">
-                <img
-                  src="/images/dashboard-preview.png"
-                  alt="Interface Finixar"
-                  className="rounded-lg w-full h-auto"
-                />
-              </div>
-            </div>
-
-            {/* Decorative elements */}
-            <div className="absolute top-10 -left-4 w-24 h-24 bg-finixar-brand-blue/10 rounded-2xl blur-2xl"></div>
-            <div className="absolute bottom-10 -right-4 w-32 h-32 bg-finixar-teal/10 rounded-2xl blur-2xl"></div>
-          </div>
-
-          {/* Quick benefits below dashboard */}
-          <div className="grid md:grid-cols-3 gap-8 mt-16 max-w-5xl mx-auto">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-finixar-brand-blue/10 rounded-xl mx-auto mb-4 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-finixar-brand-blue" strokeWidth={2} />
+          {/* Simplified benefits grid */}
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="bg-white rounded-xl p-6 border border-slate-200 hover:border-finixar-brand-blue/30 transition-premium">
+              <div className="w-10 h-10 bg-finixar-brand-blue/10 rounded-lg mb-4 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-finixar-brand-blue" strokeWidth={2} />
               </div>
               <h4 className="font-semibold text-finixar-deep-blue mb-2">Vision globale</h4>
-              <p className="text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">Tous vos projets et investissements en un coup d'œil</p>
+              <p className="text-sm text-slate-600">Tous vos projets en un coup d'œil</p>
             </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-finixar-teal/10 rounded-xl mx-auto mb-4 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-finixar-teal" strokeWidth={2} />
+            <div className="bg-white rounded-xl p-6 border border-slate-200 hover:border-finixar-brand-blue/30 transition-premium">
+              <div className="w-10 h-10 bg-finixar-brand-blue/10 rounded-lg mb-4 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-finixar-brand-blue" strokeWidth={2} />
               </div>
               <h4 className="font-semibold text-finixar-deep-blue mb-2">Navigation rapide</h4>
-              <p className="text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">Accédez instantanément aux informations recherchées</p>
+              <p className="text-sm text-slate-600">Accès instantané aux données</p>
             </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl mx-auto mb-4 flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-purple-600" strokeWidth={2} />
+            <div className="bg-white rounded-xl p-6 border border-slate-200 hover:border-finixar-brand-blue/30 transition-premium">
+              <div className="w-10 h-10 bg-finixar-brand-blue/10 rounded-lg mb-4 flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-finixar-brand-blue" strokeWidth={2} />
               </div>
               <h4 className="font-semibold text-finixar-deep-blue mb-2">Analytics temps réel</h4>
-              <p className="text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">Métriques et rapports actualisés automatiquement</p>
+              <p className="text-sm text-slate-600">Rapports actualisés automatiquement</p>
             </div>
           </div>
         </div>
