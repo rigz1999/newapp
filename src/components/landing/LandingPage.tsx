@@ -279,22 +279,22 @@ export function LandingPage() {
       </section>
 
       {/* 3. BENEFITS SECTION - HiBob style */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[#FFF7ED]">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Les bénéfices concrets de Finixar.
+              Des résultats mesurables.
             </h2>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Benefit 1 - Time Savings */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-              <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mb-6">
-                <Clock className="w-8 h-8 text-orange-600" />
+              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
+                <Clock className="w-8 h-8 text-[#2E62FF]" />
               </div>
-              <div className="text-3xl font-bold text-slate-900 mb-2">15h économisées</div>
-              <div className="text-sm font-semibold text-orange-600 mb-3">Gain de temps</div>
+              <div className="text-3xl font-bold text-slate-900 mb-2">15h par semaine</div>
+              <div className="text-sm font-semibold text-[#2E62FF] mb-3">Gain de temps</div>
               <p className="text-slate-600 leading-relaxed text-sm">
                 Automatisation complète des rappels et calculs. Finissez-en avec les tâches répétitives.
               </p>
@@ -302,11 +302,11 @@ export function LandingPage() {
 
             {/* Benefit 2 - Zero Errors */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
+                <CheckCircle className="w-8 h-8 text-[#2E62FF]" />
               </div>
-              <div className="text-3xl font-bold text-slate-900 mb-2">98% réduction</div>
-              <div className="text-sm font-semibold text-green-600 mb-3">Zéro erreur</div>
+              <div className="text-3xl font-bold text-slate-900 mb-2">98% moins d'erreurs</div>
+              <div className="text-sm font-semibold text-[#2E62FF] mb-3">Précision maximale</div>
               <p className="text-slate-600 leading-relaxed text-sm">
                 Calculs automatiques et vérifications intégrées éliminent les erreurs de saisie.
               </p>
@@ -314,11 +314,11 @@ export function LandingPage() {
 
             {/* Benefit 3 - Compliance */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
                 <Shield className="w-8 h-8 text-[#2E62FF]" />
               </div>
-              <div className="text-3xl font-bold text-slate-900 mb-2">100% audit-ready</div>
-              <div className="text-sm font-semibold text-[#2E62FF] mb-3">Conformité garantie</div>
+              <div className="text-3xl font-bold text-slate-900 mb-2">100% conforme</div>
+              <div className="text-sm font-semibold text-[#2E62FF] mb-3">Audit-ready</div>
               <p className="text-slate-600 leading-relaxed text-sm">
                 Traçabilité totale de toutes les opérations. Historique complet des modifications.
               </p>
@@ -326,11 +326,11 @@ export function LandingPage() {
 
             {/* Benefit 4 - Migration */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
                 <Upload className="w-8 h-8 text-[#2E62FF]" />
               </div>
-              <div className="text-3xl font-bold text-slate-900 mb-2">2 clics</div>
-              <div className="text-sm font-semibold text-[#2E62FF] mb-3">Migration facile</div>
+              <div className="text-3xl font-bold text-slate-900 mb-2">Migration simple</div>
+              <div className="text-sm font-semibold text-[#2E62FF] mb-3">Import Excel</div>
               <p className="text-slate-600 leading-relaxed text-sm">
                 Importez vos données Excel existantes sans refaire le travail. Export instantané.
               </p>
@@ -482,9 +482,9 @@ export function LandingPage() {
             </div>
 
             {/* Module 2 */}
-            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-green-500 transition-colors">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                <Users className="w-6 h-6 text-green-600" />
+            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-[#2E62FF] transition-colors">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                <Users className="w-6 h-6 text-[#2E62FF]" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">
                 Relations investisseurs
@@ -495,9 +495,9 @@ export function LandingPage() {
             </div>
 
             {/* Module 3 */}
-            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-purple-500 transition-colors">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-                <FileText className="w-6 h-6 text-purple-600" />
+            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-[#2E62FF] transition-colors">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                <FileText className="w-6 h-6 text-[#2E62FF]" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">
                 Échéancier & coupons
@@ -508,9 +508,9 @@ export function LandingPage() {
             </div>
 
             {/* Module 4 */}
-            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-orange-500 transition-colors">
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
-                <BarChart3 className="w-6 h-6 text-orange-600" />
+            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-[#2E62FF] transition-colors">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                <BarChart3 className="w-6 h-6 text-[#2E62FF]" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">
                 Reporting & export
@@ -534,9 +534,9 @@ export function LandingPage() {
             </div>
 
             {/* Module 6 */}
-            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-green-500 transition-colors">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-                <UserCheck className="w-6 h-6 text-green-600" />
+            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-[#2E62FF] transition-colors">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                <UserCheck className="w-6 h-6 text-[#2E62FF]" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">
                 Gestion d'équipe
@@ -549,120 +549,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* 6. SECURITY SECTION - Flow inspired */}
-      <section id="securite" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#4338CA] to-[#6366F1] text-white relative overflow-hidden">
-        {/* Decorative background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Une technologie de confiance.
-            </h2>
-            <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-              Vos données sont protégées par des standards de sécurité conformes aux exigences des institutions financières.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Security Feature 1 */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <div className="w-12 h-12 bg-blue-400/20 rounded-xl flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-blue-200" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">
-                Hébergement souverain
-              </h3>
-              <p className="text-blue-100 text-sm leading-relaxed">
-                Données hébergées en France (Région Paris).
-              </p>
-            </div>
-
-            {/* Security Feature 2 */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <div className="w-12 h-12 bg-cyan-400/20 rounded-xl flex items-center justify-center mb-4">
-                <Lock className="w-6 h-6 text-cyan-200" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">
-                Chiffrement des données
-              </h3>
-              <p className="text-blue-100 text-sm leading-relaxed">
-                SSL/TLS et isolation des bases de données (Row-Level Security).
-              </p>
-            </div>
-
-            {/* Security Feature 3 */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <div className="w-12 h-12 bg-purple-400/20 rounded-xl flex items-center justify-center mb-4">
-                <CheckCircle className="w-6 h-6 text-purple-200" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">
-                Audit-ready
-              </h3>
-              <p className="text-blue-100 text-sm leading-relaxed">
-                Historique complet des modifications pour une traçabilité totale.
-              </p>
-            </div>
-
-            {/* Security Feature 4 */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <div className="w-12 h-12 bg-indigo-400/20 rounded-xl flex items-center justify-center mb-4">
-                <Database className="w-6 h-6 text-indigo-200" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">
-                Disponibilité système
-              </h3>
-              <p className="text-blue-100 text-sm leading-relaxed">
-                Infrastructure haute disponibilité avec sauvegardes automatiques.
-              </p>
-            </div>
-
-            {/* Security Feature 5 */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <div className="w-12 h-12 bg-teal-400/20 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-teal-200" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold mb-2">
-                Authentification Microsoft
-              </h3>
-              <p className="text-blue-100 text-sm leading-relaxed">
-                Connexion sécurisée via vos comptes professionnels existants.
-              </p>
-            </div>
-
-            {/* Security Feature 6 */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <div className="w-12 h-12 bg-pink-400/20 rounded-xl flex items-center justify-center mb-4">
-                <Zap className="w-6 h-6 text-pink-200" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">
-                Mises à jour continues
-              </h3>
-              <p className="text-blue-100 text-sm leading-relaxed">
-                Améliorations régulières et patches de sécurité automatiques.
-              </p>
-            </div>
-          </div>
-
-          {/* CTA in Security Section */}
-          <div className="mt-16 text-center">
-            <a
-              href="mailto:contact@finixar.com?subject=Question sécurité"
-              className="inline-flex items-center gap-2 text-white hover:text-blue-200 font-semibold transition-colors"
-            >
-              Questions sur la sécurité ?
-              <ChevronRight className="w-5 h-5" />
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. EMOTIONAL BENEFITS - HiBob "weekends" style */}
+      {/* 6. EMOTIONAL BENEFITS - HiBob "weekends" style */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -707,6 +594,119 @@ export function LandingPage() {
                 Accédez instantanément aux dernières informations. Prenez vos décisions stratégiques sur des données fiables et actualisées.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. SECURITY SECTION - Flow inspired */}
+      <section id="securite" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#1E40AF] to-[#2E62FF] text-white relative overflow-hidden">
+        {/* Decorative background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+              Une technologie de confiance.
+            </h2>
+            <p className="text-xl text-blue-100 max-w-3xl mx-auto">
+              Vos données sont protégées par des standards de sécurité conformes aux exigences des institutions financières.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Security Feature 1 */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">
+                Hébergement souverain
+              </h3>
+              <p className="text-blue-100 text-sm leading-relaxed">
+                Données hébergées en France (Région Paris).
+              </p>
+            </div>
+
+            {/* Security Feature 2 */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">
+                Chiffrement des données
+              </h3>
+              <p className="text-blue-100 text-sm leading-relaxed">
+                SSL/TLS et isolation des bases de données (Row-Level Security).
+              </p>
+            </div>
+
+            {/* Security Feature 3 */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">
+                Audit-ready
+              </h3>
+              <p className="text-blue-100 text-sm leading-relaxed">
+                Historique complet des modifications pour une traçabilité totale.
+              </p>
+            </div>
+
+            {/* Security Feature 4 */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
+                <Database className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">
+                Disponibilité système
+              </h3>
+              <p className="text-blue-100 text-sm leading-relaxed">
+                Infrastructure haute disponibilité avec sauvegardes automatiques.
+              </p>
+            </div>
+
+            {/* Security Feature 5 */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold mb-2">
+                Authentification Microsoft
+              </h3>
+              <p className="text-blue-100 text-sm leading-relaxed">
+                Connexion sécurisée via vos comptes professionnels existants.
+              </p>
+            </div>
+
+            {/* Security Feature 6 */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">
+                Mises à jour continues
+              </h3>
+              <p className="text-blue-100 text-sm leading-relaxed">
+                Améliorations régulières et patches de sécurité automatiques.
+              </p>
+            </div>
+          </div>
+
+          {/* CTA in Security Section */}
+          <div className="mt-16 text-center">
+            <a
+              href="mailto:contact@finixar.com?subject=Question sécurité"
+              className="inline-flex items-center gap-2 text-white hover:text-blue-200 font-semibold transition-colors"
+            >
+              Questions sur la sécurité ?
+              <ChevronRight className="w-5 h-5" />
+            </a>
           </div>
         </div>
       </section>
