@@ -44,7 +44,7 @@ export function Login() {
     setError('');
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://finixar.com/reset-password',
+      redirectTo: 'https://app.finixar.com/login',
     });
 
     if (error) {
