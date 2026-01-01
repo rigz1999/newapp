@@ -1,8 +1,14 @@
-import { AlertTriangle, Clock, Shield, Lock, CheckCircle, ArrowRight, Menu, X, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Clock, Shield, Lock, CheckCircle, ArrowRight, Menu, X, ChevronRight, Upload, TrendingUp, Users, FileText, BarChart3, UserCheck, Zap, Database } from 'lucide-react';
 import { useState } from 'react';
 
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [email, setEmail] = useState('');
+
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    window.location.href = `mailto:contact@finixar.com?subject=Demande de démonstration&body=Email: ${email}`;
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -47,14 +53,17 @@ export function LandingPage() {
           background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
           border-radius: 12px;
           border: 1px solid #e2e8f0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           overflow: hidden;
+        }
+
+        .mockup-container img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
       `}</style>
 
-      {/* 1. NAVIGATION BAR (Sticky Top) */}
+      {/* NAVIGATION */}
       <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
@@ -78,8 +87,8 @@ export function LandingPage() {
               <a href="#securite" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
                 Sécurité
               </a>
-              <a href="#pour-qui" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
-                Pour qui ?
+              <a href="#modules" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
+                Modules
               </a>
               <a href="#tarifs" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
                 Tarifs
@@ -117,7 +126,7 @@ export function LandingPage() {
               <div className="flex flex-col gap-4">
                 <a href="#fonctionnalites" className="text-slate-700 font-medium">Fonctionnalités</a>
                 <a href="#securite" className="text-slate-700 font-medium">Sécurité</a>
-                <a href="#pour-qui" className="text-slate-700 font-medium">Pour qui ?</a>
+                <a href="#modules" className="text-slate-700 font-medium">Modules</a>
                 <a href="#tarifs" className="text-slate-700 font-medium">Tarifs</a>
                 <a href="http://app.finixar.com" className="text-slate-700 font-semibold">Connexion</a>
                 <a
@@ -132,35 +141,38 @@ export function LandingPage() {
         </div>
       </nav>
 
-      {/* 2. HERO SECTION (The "Excel Killer") */}
+      {/* 1. HERO SECTION */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#F5F7FA] to-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left - Text */}
             <div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
-                La fin des fichiers Excel pour la gestion d'actifs.
+                Récupérez 15 heures par semaine.
               </h1>
 
               <p className="text-xl text-slate-600 mb-8 leading-relaxed">
-                Centralisez vos projets, sécurisez vos données investisseurs et ne manquez plus aucune échéance de coupon. La plateforme SaaS dédiée aux gestionnaires d'actifs.
+                Finixar élimine les tâches manuelles de gestion d'actifs. Automatisez vos échéances, centralisez vos données investisseurs et restez conforme en permanence.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <a
-                  href="mailto:contact@finixar.com?subject=Demande de démonstration"
-                  className="btn-transition inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg"
+              {/* Email CTA Form */}
+              <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-3 mb-8">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="votre@email.com"
+                  className="flex-1 px-6 py-4 bg-white border-2 border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2E62FF] transition-colors"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="btn-transition inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg whitespace-nowrap"
                 >
-                  Demander une démonstration
+                  Voir une démo
                   <ArrowRight className="w-5 h-5" />
-                </a>
-                <a
-                  href="http://app.finixar.com"
-                  className="inline-flex items-center justify-center px-8 py-4 bg-white hover:bg-slate-50 text-slate-900 font-semibold rounded-lg border-2 border-slate-200 transition-colors"
-                >
-                  Accéder à la plateforme
-                </a>
-              </div>
+                </button>
+              </form>
 
               {/* Trust Badge */}
               <div className="flex items-center gap-4 text-sm text-slate-600">
@@ -179,94 +191,155 @@ export function LandingPage() {
             {/* Right - Product Mockup */}
             <div>
               <div className="mockup-container shadow-2xl">
-                {/* Placeholder for Dashboard Screenshot */}
-                <div className="w-full h-full bg-white p-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <div className="text-sm text-slate-500 mb-1">Projets en cours</div>
-                        <div className="text-3xl font-bold text-slate-900">12 projets actifs</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-slate-500 mb-1">Montant levé</div>
-                        <div className="text-2xl font-bold text-[#2E62FF]">€24.5M</div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                          <div className="flex-1">
-                            <div className="font-semibold text-slate-900 text-sm">Projet {i}</div>
-                            <div className="text-xs text-slate-500">Prochaine échéance: {15 + i} jours</div>
-                          </div>
-                          <div className="text-sm font-semibold text-slate-700">€{(Math.random() * 5 + 1).toFixed(1)}M</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <img src="/images/dashboard.png" alt="Tableau de bord Finixar" />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3. THE PROBLEM (Why You Exist) */}
+      {/* 2. PROBLEMS SECTION - Excel uniquement vs Finixar */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Les risques de la gestion manuelle.
+              Excel uniquement vs Finixar
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
               Les fichiers Excel exposent votre structure à des risques opérationnels, réglementaires et financiers.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Card 1 - Audit Risk */}
-            <div className="card-hover bg-white rounded-xl p-8 border-2 border-slate-200">
-              <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mb-6">
-                <AlertTriangle className="w-7 h-7 text-red-600" />
+          <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            {/* Left Column - Avec Excel uniquement */}
+            <div className="bg-red-50 rounded-2xl p-8 border-2 border-red-100">
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">Avec Excel uniquement</h3>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-red-600 font-bold text-sm">✕</span>
+                  </div>
+                  <span className="text-slate-700">Aucune traçabilité sur vos fichiers. Prouver votre conformité devient un calvaire administratif.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-red-600 font-bold text-sm">✕</span>
+                  </div>
+                  <span className="text-slate-700">Saisie manuelle répétitive et erreurs de calcul fréquentes.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-red-600 font-bold text-sm">✕</span>
+                  </div>
+                  <span className="text-slate-700">Risques RGPD : sanctions pouvant atteindre 4% du chiffre d'affaires annuel.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-red-600 font-bold text-sm">✕</span>
+                  </div>
+                  <span className="text-slate-700">Dispersion des données entre plusieurs fichiers et versions.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-red-600 font-bold text-sm">✕</span>
+                  </div>
+                  <span className="text-slate-700">Rappels manuels d'échéances souvent oubliés.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Right Column - Avec Finixar */}
+            <div className="bg-green-50 rounded-2xl p-8 border-2 border-green-100">
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">Avec Finixar</h3>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-700">Historique complet des modifications pour une traçabilité totale.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-700">Automatisation totale des calculs et saisies répétitives.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-700">Conformité RGPD garantie avec chiffrement des données sensibles.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-700">Base de données centralisée : une seule source de vérité.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-700">Alertes automatiques par email (J-30, J-7) pour toutes vos échéances.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. BENEFITS SECTION - HiBob style */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[#FFF7ED]">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Les bénéfices concrets de Finixar.
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Benefit 1 - Time Savings */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+              <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mb-6">
+                <Clock className="w-8 h-8 text-orange-600" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                Risque d'audit
-              </h3>
-              <p className="text-slate-600 leading-relaxed">
-                Aucune traçabilité sur vos fichiers Excel. Prouver votre conformité devient un calvaire administratif.
+              <div className="text-3xl font-bold text-slate-900 mb-2">15h économisées</div>
+              <div className="text-sm font-semibold text-orange-600 mb-3">Gain de temps</div>
+              <p className="text-slate-600 leading-relaxed text-sm">
+                Automatisation complète des rappels et calculs. Finissez-en avec les tâches répétitives.
               </p>
             </div>
 
-            {/* Card 2 - Operational */}
-            <div className="card-hover bg-white rounded-xl p-8 border-2 border-slate-200">
-              <div className="w-14 h-14 bg-orange-50 rounded-xl flex items-center justify-center mb-6">
-                <Clock className="w-7 h-7 text-orange-600" />
+            {/* Benefit 2 - Zero Errors */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-6">
+                <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                Perte de temps
-              </h3>
-              <p className="text-slate-600 leading-relaxed">
-                Saisie manuelle, erreurs de calcul et dispersion des informations. Gagnez jusqu'à 15h par semaine.
+              <div className="text-3xl font-bold text-slate-900 mb-2">98% réduction</div>
+              <div className="text-sm font-semibold text-green-600 mb-3">Zéro erreur</div>
+              <p className="text-slate-600 leading-relaxed text-sm">
+                Calculs automatiques et vérifications intégrées éliminent les erreurs de saisie.
               </p>
             </div>
 
-            {/* Card 3 - Compliance */}
-            <div className="card-hover bg-white rounded-xl p-8 border-2 border-slate-200">
-              <div className="w-14 h-14 bg-purple-50 rounded-xl flex items-center justify-center mb-6">
-                <Shield className="w-7 h-7 text-purple-600" />
+            {/* Benefit 3 - Compliance */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6">
+                <Shield className="w-8 h-8 text-[#2E62FF]" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                Non-conformité RGPD
-              </h3>
-              <p className="text-slate-600 leading-relaxed">
-                Stocker des RIB et données personnelles dans des fichiers locaux expose votre structure à des sanctions.
+              <div className="text-3xl font-bold text-slate-900 mb-2">100% audit-ready</div>
+              <div className="text-sm font-semibold text-[#2E62FF] mb-3">Conformité garantie</div>
+              <p className="text-slate-600 leading-relaxed text-sm">
+                Traçabilité totale de toutes les opérations. Historique complet des modifications.
+              </p>
+            </div>
+
+            {/* Benefit 4 - Migration */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6">
+                <Upload className="w-8 h-8 text-[#2E62FF]" />
+              </div>
+              <div className="text-3xl font-bold text-slate-900 mb-2">2 clics</div>
+              <div className="text-sm font-semibold text-[#2E62FF] mb-3">Migration facile</div>
+              <p className="text-slate-600 leading-relaxed text-sm">
+                Importez vos données Excel existantes sans refaire le travail. Export instantané.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. KEY FEATURES (Zig-Zag Layout with Mockups) */}
+      {/* 4. FEATURES - Zig-Zag Layout with Real Screenshots */}
       <section id="fonctionnalites" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50">
         <div className="max-w-7xl mx-auto">
           {/* Block A: Project & Tranche Management */}
@@ -301,26 +374,7 @@ export function LandingPage() {
             {/* Image Side */}
             <div>
               <div className="mockup-container shadow-xl">
-                <div className="w-full h-full bg-white p-6">
-                  <div className="text-sm font-semibold text-slate-900 mb-4">Timeline des tranches</div>
-                  <div className="space-y-3">
-                    {[
-                      { name: 'Tranche 1', status: 'Payée', amount: '€500K', color: 'bg-green-100 text-green-700' },
-                      { name: 'Tranche 2', status: 'En cours', amount: '€750K', color: 'bg-blue-100 text-blue-700' },
-                      { name: 'Tranche 3', status: 'À venir', amount: '€1.2M', color: 'bg-slate-100 text-slate-600' },
-                    ].map((tranche, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                        <div className="flex-1">
-                          <div className="font-semibold text-slate-900 text-sm">{tranche.name}</div>
-                          <div className={`inline-block px-2 py-0.5 rounded text-xs font-medium mt-1 ${tranche.color}`}>
-                            {tranche.status}
-                          </div>
-                        </div>
-                        <div className="text-sm font-bold text-slate-900">{tranche.amount}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <img src="/images/project-detail.png" alt="Détails du projet avec timeline des tranches" />
               </div>
             </div>
           </div>
@@ -330,41 +384,14 @@ export function LandingPage() {
             {/* Image Side */}
             <div className="order-2 lg:order-1">
               <div className="mockup-container shadow-xl">
-                <div className="w-full h-full bg-white p-6">
-                  <div className="text-sm font-semibold text-slate-900 mb-4">Profil investisseur</div>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                      <div className="text-xs text-slate-500 mb-1">Nom complet</div>
-                      <div className="font-semibold text-slate-900">Jean Dupont</div>
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                      <div className="text-xs text-slate-500 mb-1">Email</div>
-                      <div className="font-semibold text-slate-900">jean.dupont@example.com</div>
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-xs text-slate-500 mb-1">RIB</div>
-                          <div className="font-mono text-sm text-slate-400">FR** **** **** **** ****</div>
-                        </div>
-                        <Lock className="w-4 h-4 text-[#2E62FF]" />
-                      </div>
-                    </div>
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-900">Documents vérifiés</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <img src="/images/investors-table.png" alt="Table des investisseurs" />
               </div>
             </div>
 
             {/* Text Side */}
             <div className="order-1 lg:order-2">
               <div className="inline-block px-4 py-2 bg-green-50 text-green-700 rounded-full text-sm font-semibold mb-6">
-                CRM investisseurs
+                Relations investisseurs
               </div>
               <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
                 Un CRM investisseurs sécurisé.
@@ -421,97 +448,203 @@ export function LandingPage() {
             {/* Image Side */}
             <div>
               <div className="mockup-container shadow-xl">
-                <div className="w-full h-full bg-white p-6">
-                  <div className="text-sm font-semibold text-slate-900 mb-4">Échéancier des paiements</div>
-                  <div className="space-y-2">
-                    {[
-                      { date: '15 Jan 2026', project: 'Projet Alpha', status: 'Payé', color: 'bg-green-100 text-green-700' },
-                      { date: '28 Jan 2026', project: 'Projet Beta', status: 'En attente', color: 'bg-yellow-100 text-yellow-700' },
-                      { date: '05 Fév 2026', project: 'Projet Gamma', status: 'À venir', color: 'bg-blue-100 text-blue-700' },
-                      { date: '12 Fév 2026', project: 'Projet Delta', status: 'À venir', color: 'bg-slate-100 text-slate-600' },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs">
-                        <div className="flex-1">
-                          <div className="font-semibold text-slate-900">{item.project}</div>
-                          <div className="text-slate-500">{item.date}</div>
-                        </div>
-                        <div className={`px-2 py-1 rounded font-medium ${item.color}`}>
-                          {item.status}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <img src="/images/echeancier.png" alt="Échéancier des paiements" />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. SECURITY & TECH (The Trust Factor) */}
-      <section id="securite" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0B1120] text-white">
+      {/* 5. MULTI-MODULE GRID - Origin style */}
+      <section id="modules" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Une infrastructure de niveau bancaire.
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Une plateforme complète pour toute votre équipe.
             </h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Finixar couvre l'ensemble de vos besoins en gestion d'actifs, de la levée de fonds au reporting.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Module 1 */}
+            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-[#2E62FF] transition-colors">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                <TrendingUp className="w-6 h-6 text-[#2E62FF]" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                Gestion de projets
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Suivez vos levées de fonds de A à Z avec une vision claire sur chaque tranche.
+              </p>
+            </div>
+
+            {/* Module 2 */}
+            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-green-500 transition-colors">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                <Users className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                Relations investisseurs
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Centralisez les données et RIB en toute sécurité dans un CRM dédié.
+              </p>
+            </div>
+
+            {/* Module 3 */}
+            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-purple-500 transition-colors">
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                <FileText className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                Échéancier & coupons
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Automatisez les rappels et évitez les oublis grâce aux notifications intelligentes.
+              </p>
+            </div>
+
+            {/* Module 4 */}
+            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-orange-500 transition-colors">
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
+                <BarChart3 className="w-6 h-6 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                Reporting & export
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Générez vos rapports Excel en un clic pour vos analyses et besoins de conformité.
+              </p>
+            </div>
+
+            {/* Module 5 */}
+            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-[#2E62FF] transition-colors">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-[#2E62FF]" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                Conformité & audit
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Traçabilité complète de toutes les opérations pour une conformité garantie.
+              </p>
+            </div>
+
+            {/* Module 6 */}
+            <div className="bg-white rounded-xl p-8 border-2 border-slate-200 hover:border-green-500 transition-colors">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                <UserCheck className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                Gestion d'équipe
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Droits d'accès granulaires et collaboration multi-utilisateurs en temps réel.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. SECURITY SECTION - Flow inspired */}
+      <section id="securite" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#4338CA] to-[#6366F1] text-white relative overflow-hidden">
+        {/* Decorative background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+              Une technologie de confiance.
+            </h2>
+            <p className="text-xl text-blue-100 max-w-3xl mx-auto">
               Vos données sont protégées par des standards de sécurité conformes aux exigences des institutions financières.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Security Feature 1 */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-blue-400" />
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-blue-400/20 rounded-xl flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-blue-200" />
               </div>
               <h3 className="text-lg font-bold mb-2">
                 Hébergement souverain
               </h3>
-              <p className="text-slate-300 text-sm leading-relaxed">
+              <p className="text-blue-100 text-sm leading-relaxed">
                 Données hébergées en France (Région Paris).
               </p>
             </div>
 
             {/* Security Feature 2 */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-4">
-                <Lock className="w-6 h-6 text-green-400" />
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-cyan-400/20 rounded-xl flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6 text-cyan-200" />
               </div>
               <h3 className="text-lg font-bold mb-2">
-                Sécurité des données
+                Chiffrement des données
               </h3>
-              <p className="text-slate-300 text-sm leading-relaxed">
-                Chiffrement SSL/TLS et isolation des bases de données (Row-Level Security).
+              <p className="text-blue-100 text-sm leading-relaxed">
+                SSL/TLS et isolation des bases de données (Row-Level Security).
               </p>
             </div>
 
             {/* Security Feature 3 */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-4">
-                <CheckCircle className="w-6 h-6 text-purple-400" />
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-purple-400/20 rounded-xl flex items-center justify-center mb-4">
+                <CheckCircle className="w-6 h-6 text-purple-200" />
               </div>
               <h3 className="text-lg font-bold mb-2">
-                Audit-Ready
+                Audit-ready
               </h3>
-              <p className="text-slate-300 text-sm leading-relaxed">
+              <p className="text-blue-100 text-sm leading-relaxed">
                 Historique complet des modifications pour une traçabilité totale.
               </p>
             </div>
 
             {/* Security Feature 4 */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-orange-400" fill="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-indigo-400/20 rounded-xl flex items-center justify-center mb-4">
+                <Database className="w-6 h-6 text-indigo-200" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">
+                Disponibilité système
+              </h3>
+              <p className="text-blue-100 text-sm leading-relaxed">
+                Infrastructure haute disponibilité avec sauvegardes automatiques.
+              </p>
+            </div>
+
+            {/* Security Feature 5 */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-teal-400/20 rounded-xl flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-teal-200" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
               </div>
               <h3 className="text-lg font-bold mb-2">
-                Intégration Microsoft
+                Authentification Microsoft
               </h3>
-              <p className="text-slate-300 text-sm leading-relaxed">
-                Authentification sécurisée via vos comptes professionnels existants.
+              <p className="text-blue-100 text-sm leading-relaxed">
+                Connexion sécurisée via vos comptes professionnels existants.
+              </p>
+            </div>
+
+            {/* Security Feature 6 */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="w-12 h-12 bg-pink-400/20 rounded-xl flex items-center justify-center mb-4">
+                <Zap className="w-6 h-6 text-pink-200" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">
+                Mises à jour continues
+              </h3>
+              <p className="text-blue-100 text-sm leading-relaxed">
+                Améliorations régulières et patches de sécurité automatiques.
               </p>
             </div>
           </div>
@@ -520,7 +653,7 @@ export function LandingPage() {
           <div className="mt-16 text-center">
             <a
               href="mailto:contact@finixar.com?subject=Question sécurité"
-              className="inline-flex items-center gap-2 text-white hover:text-blue-300 font-semibold transition-colors"
+              className="inline-flex items-center gap-2 text-white hover:text-blue-200 font-semibold transition-colors"
             >
               Questions sur la sécurité ?
               <ChevronRight className="w-5 h-5" />
@@ -529,56 +662,83 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* For Who Section */}
-      <section id="pour-qui" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
-            Pour qui ?
-          </h2>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto mb-12">
-            Finixar est conçu pour les professionnels de la gestion d'actifs qui recherchent efficacité et conformité.
-          </p>
+      {/* 7. EMOTIONAL BENEFITS - HiBob "weekends" style */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Concentrez-vous sur ce qui compte vraiment.
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Finixar s'occupe des tâches administratives. Vous vous concentrez sur la stratégie d'investissement et la croissance de vos fonds.
+            </p>
+          </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="p-6">
-              <div className="text-4xl mb-4">🏢</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Gestionnaires d'actifs</h3>
-              <p className="text-slate-600">Gérez vos fonds et investissements avec précision.</p>
+          <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
+            {/* Benefit 1 */}
+            <div className="text-left">
+              <div className="text-6xl font-bold text-slate-200 mb-4">01</div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">
+                Automatisation totale
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Les rappels, calculs et exports se font automatiquement. Plus de temps perdu sur des tâches répétitives sans valeur ajoutée.
+              </p>
             </div>
-            <div className="p-6">
-              <div className="text-4xl mb-4">💼</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Family offices</h3>
-              <p className="text-slate-600">Centralisez la gestion patrimoniale de vos clients.</p>
+
+            {/* Benefit 2 */}
+            <div className="text-left">
+              <div className="text-6xl font-bold text-slate-200 mb-4">02</div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">
+                Collaboration fluide
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Toute l'équipe travaille sur la même base de données en temps réel. Fini les conflits de versions et les données obsolètes.
+              </p>
             </div>
-            <div className="p-6">
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Fonds d'investissement</h3>
-              <p className="text-slate-600">Automatisez le suivi de vos participations.</p>
+
+            {/* Benefit 3 */}
+            <div className="text-left">
+              <div className="text-6xl font-bold text-slate-200 mb-4">03</div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">
+                Données toujours à jour
+              </h3>
+              <p className="text-slate-600 leading-relaxed">
+                Accédez instantanément aux dernières informations. Prenez vos décisions stratégiques sur des données fiables et actualisées.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing Teaser */}
+      {/* 8. PRICING with Dual CTAs */}
       <section id="tarifs" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
             Tarifs sur mesure
           </h2>
-          <p className="text-xl text-slate-600 mb-8">
+          <p className="text-xl text-slate-600 mb-12">
             Nos tarifs s'adaptent à la taille de votre structure et au nombre d'utilisateurs. Contactez-nous pour obtenir un devis personnalisé.
           </p>
-          <a
-            href="mailto:contact@finixar.com?subject=Demande de tarifs"
-            className="btn-transition inline-flex items-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg"
-          >
-            Demander un devis
-            <ArrowRight className="w-5 h-5" />
-          </a>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a
+              href="mailto:contact@finixar.com?subject=Demande de tarifs"
+              className="btn-transition inline-flex items-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg"
+            >
+              Demander un devis
+              <ArrowRight className="w-5 h-5" />
+            </a>
+            <a
+              href="mailto:contact@finixar.com?subject=Demande de démonstration"
+              className="btn-transition inline-flex items-center gap-2 px-8 py-4 bg-white hover:bg-slate-50 text-slate-900 font-semibold rounded-lg border-2 border-slate-200"
+            >
+              Voir une démo
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* 6. FOOTER (Corporate) */}
+      {/* 9. FOOTER */}
       <footer className="bg-slate-900 text-white py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
@@ -603,7 +763,7 @@ export function LandingPage() {
               <ul className="space-y-3 text-sm">
                 <li><a href="#fonctionnalites" className="text-slate-400 hover:text-white transition-colors">Fonctionnalités</a></li>
                 <li><a href="#securite" className="text-slate-400 hover:text-white transition-colors">Sécurité</a></li>
-                <li><a href="#tarifs" className="text-slate-400 hover:text-white transition-colors">Mises à jour</a></li>
+                <li><a href="#modules" className="text-slate-400 hover:text-white transition-colors">Modules</a></li>
               </ul>
             </div>
 
