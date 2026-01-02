@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Menu,
   X,
-  ChevronDown,
   TrendingUp,
   Users,
   FileText,
@@ -14,6 +13,8 @@ import {
   Database,
   Clock,
   AlertCircle,
+  Sparkles,
+  ChevronRight,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -30,40 +31,105 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC]">
+    <div className="min-h-screen bg-white overflow-hidden">
       {/* Custom Styles */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=General+Sans:wght@400;500;600;700&display=swap');
 
         :root {
-          --navy: #0A1628;
-          --navy-light: #1A2942;
-          --gold: #B8965F;
-          --gold-light: #D4AF7A;
-          --slate: #475569;
-          --slate-light: #64748B;
-          --border: #E2E8F0;
+          --finixar-blue: #2E62FF;
+          --electric-blue: #3B82F6;
+          --cyan: #06B6D4;
+          --dark-navy: #0F172A;
+          --slate-900: #0F172A;
+          --slate-700: #334155;
+          --slate-500: #64748B;
         }
 
         * {
-          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+          font-family: 'General Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        h1, h2, h3, h4, h5, h6, .heading-font {
-          font-family: 'Sora', sans-serif;
-          font-weight: 700;
-          letter-spacing: -0.02em;
+        h1, h2, h3, h4, h5, h6, .clash {
+          font-family: 'Clash Display', sans-serif;
+          letter-spacing: -0.03em;
         }
 
         html {
           scroll-behavior: smooth;
         }
 
-        /* Sophisticated animations */
+        /* Animated gradient background */
+        @keyframes gradientShift {
+          0%, 100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+
+        .gradient-animate {
+          background: linear-gradient(135deg, #2E62FF 0%, #3B82F6 25%, #06B6D4 50%, #3B82F6 75%, #2E62FF 100%);
+          background-size: 200% 200%;
+          animation: gradientShift 8s ease infinite;
+        }
+
+        /* Morphing blob */
+        @keyframes morphBlob {
+          0%, 100% {
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+            transform: rotate(0deg) scale(1);
+          }
+          25% {
+            border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+            transform: rotate(90deg) scale(1.1);
+          }
+          50% {
+            border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+            transform: rotate(180deg) scale(0.9);
+          }
+          75% {
+            border-radius: 70% 30% 50% 50% / 30% 50% 50% 70%;
+            transform: rotate(270deg) scale(1.05);
+          }
+        }
+
+        .blob {
+          animation: morphBlob 20s ease-in-out infinite;
+        }
+
+        /* Diagonal section divider */
+        .diagonal-top {
+          clip-path: polygon(0 0, 100% 0, 100% calc(100% - 80px), 0 100%);
+        }
+
+        .diagonal-bottom {
+          clip-path: polygon(0 80px, 100% 0, 100% 100%, 0 100%);
+        }
+
+        /* Floating animation */
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          33% {
+            transform: translateY(-20px) rotate(2deg);
+          }
+          66% {
+            transform: translateY(-10px) rotate(-2deg);
+          }
+        }
+
+        .float {
+          animation: float 6s ease-in-out infinite;
+        }
+
+        /* Staggered fade in */
         @keyframes fadeInUp {
           from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(40px);
           }
           to {
             opacity: 1;
@@ -71,171 +137,151 @@ export function LandingPage() {
           }
         }
 
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-20px);
-          }
-        }
-
-        @keyframes shimmer {
-          0% {
-            background-position: -1000px 0;
-          }
-          100% {
-            background-position: 1000px 0;
-          }
-        }
-
-        .animate-fade-in-up {
+        .fade-in-up {
           animation: fadeInUp 0.8s ease-out forwards;
         }
 
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
+        .delay-100 { animation-delay: 0.1s; opacity: 0; }
+        .delay-200 { animation-delay: 0.2s; opacity: 0; }
+        .delay-300 { animation-delay: 0.3s; opacity: 0; }
+        .delay-400 { animation-delay: 0.4s; opacity: 0; }
 
-        /* Premium button transitions */
-        .btn-primary {
+        /* Magnetic hover effect */
+        .magnetic-button {
           position: relative;
-          overflow: hidden;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .btn-primary::before {
+        .magnetic-button:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 20px 60px rgba(46, 98, 255, 0.4);
+        }
+
+        .magnetic-button::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          padding: 2px;
+          background: linear-gradient(135deg, #2E62FF, #06B6D4);
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          opacity: 0;
+          transition: opacity 0.3s;
+        }
+
+        .magnetic-button:hover::before {
+          opacity: 1;
+        }
+
+        /* Card tilt effect */
+        .card-3d {
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-3d:hover {
+          transform: translateY(-12px) rotateX(2deg);
+          box-shadow:
+            0 30px 80px rgba(46, 98, 255, 0.15),
+            0 10px 30px rgba(6, 182, 212, 0.1);
+        }
+
+        /* Pulsing glow */
+        @keyframes pulse-glow {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(46, 98, 255, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 40px rgba(46, 98, 255, 0.8);
+          }
+        }
+
+        .pulse-glow {
+          animation: pulse-glow 3s ease-in-out infinite;
+        }
+
+        /* Text gradient */
+        .text-gradient {
+          background: linear-gradient(135deg, #2E62FF 0%, #06B6D4 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        /* Shine effect */
+        @keyframes shine {
+          0% {
+            left: -100%;
+          }
+          100% {
+            left: 100%;
+          }
+        }
+
+        .shine-effect {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .shine-effect::after {
           content: '';
           position: absolute;
           top: 0;
           left: -100%;
           width: 100%;
           height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-          transition: left 0.5s;
-        }
-
-        .btn-primary:hover::before {
-          left: 100%;
-        }
-
-        .btn-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 40px rgba(10, 22, 40, 0.2);
-        }
-
-        /* Card hover effects */
-        .card-hover {
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .card-hover:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 60px rgba(10, 22, 40, 0.12);
-        }
-
-        /* Gradient mesh background */
-        .gradient-mesh {
-          background:
-            radial-gradient(at 0% 0%, rgba(184, 150, 95, 0.08) 0px, transparent 50%),
-            radial-gradient(at 100% 0%, rgba(10, 22, 40, 0.05) 0px, transparent 50%),
-            radial-gradient(at 100% 100%, rgba(184, 150, 95, 0.06) 0px, transparent 50%),
-            radial-gradient(at 0% 100%, rgba(10, 22, 40, 0.03) 0px, transparent 50%);
-        }
-
-        /* Premium underline effect */
-        .link-underline {
-          position: relative;
-        }
-
-        .link-underline::after {
-          content: '';
-          position: absolute;
-          bottom: -4px;
-          left: 0;
-          width: 0;
-          height: 2px;
-          background: var(--gold);
-          transition: width 0.3s ease;
-        }
-
-        .link-underline:hover::after {
-          width: 100%;
-        }
-
-        /* Scroll indicator */
-        .scroll-indicator {
-          animation: float 2s ease-in-out infinite;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          animation: shine 3s ease-in-out infinite;
         }
       `}</style>
 
       {/* NAVIGATION */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'bg-white/95 backdrop-blur-lg shadow-sm' : 'bg-transparent'
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled
+            ? 'bg-white/90 backdrop-blur-xl shadow-lg border-b border-slate-200'
+            : 'bg-transparent'
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center justify-between h-24">
+          <div className="flex items-center justify-between h-20">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-gradient-to-br from-[var(--navy)] to-[var(--navy-light)] rounded-xl flex items-center justify-center shadow-lg">
-                <svg
-                  className="w-6 h-6 text-[var(--gold)]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                  />
-                </svg>
+            <div className="flex items-center gap-3 group cursor-pointer">
+              <div className="w-10 h-10 gradient-animate rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <span className="text-2xl font-bold heading-font text-[var(--navy)]">Finixar</span>
+              <span className="text-2xl font-bold clash text-slate-900">Finixar</span>
             </div>
 
             {/* Center Links - Desktop */}
-            <div className="hidden lg:flex items-center gap-10">
-              <a
-                href="#fonctionnalites"
-                className="text-[var(--slate)] hover:text-[var(--navy)] font-medium transition-colors link-underline"
-              >
-                Fonctionnalités
-              </a>
-              <a
-                href="#securite"
-                className="text-[var(--slate)] hover:text-[var(--navy)] font-medium transition-colors link-underline"
-              >
-                Sécurité
-              </a>
-              <a
-                href="#modules"
-                className="text-[var(--slate)] hover:text-[var(--navy)] font-medium transition-colors link-underline"
-              >
-                Modules
-              </a>
-              <a
-                href="#tarifs"
-                className="text-[var(--slate)] hover:text-[var(--navy)] font-medium transition-colors link-underline"
-              >
-                Tarifs
-              </a>
+            <div className="hidden lg:flex items-center gap-8">
+              {['Fonctionnalités', 'Sécurité', 'Modules', 'Tarifs'].map((item, i) => (
+                <a
+                  key={i}
+                  href={`#${item
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')}`}
+                  className="text-slate-700 hover:text-[var(--finixar-blue)] font-medium transition-all relative group"
+                >
+                  {item}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[var(--finixar-blue)] to-[var(--cyan)] transition-all group-hover:w-full"></span>
+                </a>
+              ))}
             </div>
 
             {/* Right Buttons - Desktop */}
             <div className="hidden lg:flex items-center gap-4">
               <a
                 href="https://app.finixar.com"
-                className="px-6 py-2.5 text-[var(--navy)] hover:text-[var(--gold)] font-semibold transition-colors"
+                className="px-5 py-2 text-slate-700 hover:text-slate-900 font-semibold transition-colors"
               >
                 Connexion
               </a>
               <a
                 href="mailto:contact@finixar.com?subject=Demande de démonstration"
-                className="btn-primary px-7 py-3 bg-[var(--navy)] hover:bg-[var(--navy-light)] text-white font-semibold rounded-xl"
+                className="magnetic-button px-6 py-3 gradient-animate text-white font-semibold rounded-xl"
               >
                 Demander une démo
               </a>
@@ -244,7 +290,7 @@ export function LandingPage() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-[var(--navy)]"
+              className="lg:hidden p-2 text-slate-900"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -252,26 +298,26 @@ export function LandingPage() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="lg:hidden py-6 border-t border-[var(--border)] bg-white">
+            <div className="lg:hidden py-6 border-t border-slate-200">
               <div className="flex flex-col gap-5">
-                <a href="#fonctionnalites" className="text-[var(--slate)] font-medium">
-                  Fonctionnalités
-                </a>
-                <a href="#securite" className="text-[var(--slate)] font-medium">
-                  Sécurité
-                </a>
-                <a href="#modules" className="text-[var(--slate)] font-medium">
-                  Modules
-                </a>
-                <a href="#tarifs" className="text-[var(--slate)] font-medium">
-                  Tarifs
-                </a>
-                <a href="https://app.finixar.com" className="text-[var(--navy)] font-semibold">
+                {['Fonctionnalités', 'Sécurité', 'Modules', 'Tarifs'].map((item, i) => (
+                  <a
+                    key={i}
+                    href={`#${item
+                      .toLowerCase()
+                      .normalize('NFD')
+                      .replace(/[\u0300-\u036f]/g, '')}`}
+                    className="text-slate-700 font-medium"
+                  >
+                    {item}
+                  </a>
+                ))}
+                <a href="https://app.finixar.com" className="text-slate-900 font-semibold">
                   Connexion
                 </a>
                 <a
                   href="mailto:contact@finixar.com?subject=Demande de démonstration"
-                  className="px-7 py-3 bg-[var(--navy)] text-white font-semibold rounded-xl text-center"
+                  className="px-6 py-3 gradient-animate text-white font-semibold rounded-xl text-center"
                 >
                   Demander une démo
                 </a>
@@ -282,76 +328,81 @@ export function LandingPage() {
       </nav>
 
       {/* HERO SECTION */}
-      <section className="pt-40 pb-24 px-6 lg:px-8 gradient-mesh relative overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-gradient-to-br from-[var(--gold)]/10 to-transparent rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-[var(--navy)]/5 to-transparent rounded-full blur-3xl"></div>
+      <section className="relative min-h-screen flex items-center pt-20 pb-32 px-6 lg:px-8 overflow-hidden">
+        {/* Animated background blobs */}
+        <div className="absolute inset-0 -z-10">
+          <div className="blob absolute top-20 right-0 w-[600px] h-[600px] bg-gradient-to-br from-[var(--finixar-blue)]/20 to-[var(--cyan)]/10 blur-3xl"></div>
+          <div
+            className="blob absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-[var(--electric-blue)]/15 to-transparent blur-3xl"
+            style={{ animationDelay: '-10s' }}
+          ></div>
+        </div>
 
-        <div className="max-w-7xl mx-auto relative z-10">
+        <div className="max-w-7xl mx-auto w-full relative z-10">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Left - Text */}
-            <div className="animate-fade-in-up">
+            <div>
               {/* Trust badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-[var(--border)] rounded-full mb-8 shadow-sm">
-                <Shield className="w-4 h-4 text-[var(--gold)]" />
-                <span className="text-sm font-medium text-[var(--slate)]">
+              <div className="fade-in-up inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full mb-8">
+                <Shield className="w-4 h-4 text-[var(--finixar-blue)]" />
+                <span className="text-sm font-semibold text-[var(--finixar-blue)]">
                   Conforme RGPD • Hébergé en France
                 </span>
               </div>
 
-              <h1 className="text-5xl lg:text-7xl font-bold heading-font text-[var(--navy)] mb-8 leading-[1.1]">
-                Récupérez
-                <br />
-                <span className="text-[var(--gold)]">15 heures</span>
+              <h1 className="fade-in-up delay-100 text-6xl lg:text-8xl font-bold clash text-slate-900 mb-8 leading-[0.95]">
+                Récupérez <span className="text-gradient shine-effect inline-block">15 heures</span>
                 <br />
                 par semaine
               </h1>
 
-              <p className="text-xl text-[var(--slate)] mb-10 leading-relaxed max-w-xl">
+              <p className="fade-in-up delay-200 text-xl text-slate-600 mb-12 leading-relaxed max-w-xl font-medium">
                 Finixar élimine les tâches manuelles de gestion d'actifs. Automatisez vos échéances,
-                centralisez vos données et restez conforme en permanence.
+                centralisez vos données et restez conforme.
               </p>
 
               {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-12">
+              <div className="fade-in-up delay-300 flex flex-col sm:flex-row gap-4 mb-16">
                 <a
                   href="mailto:contact@finixar.com?subject=Demande de démonstration"
-                  className="btn-primary inline-flex items-center justify-center gap-2 px-8 py-4 bg-[var(--navy)] text-white font-semibold rounded-xl"
+                  className="magnetic-button inline-flex items-center justify-center gap-3 px-8 py-5 gradient-animate text-white font-bold rounded-2xl text-lg group"
                 >
                   Voir une démo
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
                 </a>
                 <a
                   href="#fonctionnalites"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-[var(--border)] text-[var(--navy)] font-semibold rounded-xl hover:border-[var(--gold)] transition-colors"
+                  className="inline-flex items-center justify-center gap-3 px-8 py-5 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold rounded-2xl text-lg transition-all"
                 >
                   En savoir plus
                 </a>
               </div>
 
-              {/* Stats */}
-              <div className="flex items-center gap-8 text-sm">
-                <div>
-                  <div className="text-2xl font-bold heading-font text-[var(--navy)]">98%</div>
-                  <div className="text-[var(--slate)]">moins d'erreurs</div>
-                </div>
-                <div className="w-px h-12 bg-[var(--border)]"></div>
-                <div>
-                  <div className="text-2xl font-bold heading-font text-[var(--navy)]">100%</div>
-                  <div className="text-[var(--slate)]">conforme</div>
-                </div>
-                <div className="w-px h-12 bg-[var(--border)]"></div>
-                <div>
-                  <div className="text-2xl font-bold heading-font text-[var(--navy)]">15h</div>
-                  <div className="text-[var(--slate)]">économisées/sem.</div>
-                </div>
+              {/* Stats with visual emphasis */}
+              <div className="fade-in-up delay-400 grid grid-cols-3 gap-6">
+                {[
+                  { value: '98%', label: "moins d'erreurs" },
+                  { value: '100%', label: 'conforme' },
+                  { value: '15h', label: 'gagnées/sem.' },
+                ].map((stat, i) => (
+                  <div key={i} className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-[var(--finixar-blue)]/10 to-transparent rounded-2xl blur-xl"></div>
+                    <div className="relative bg-white border-2 border-slate-100 rounded-2xl p-4 hover:border-[var(--finixar-blue)] transition-all">
+                      <div className="text-3xl font-bold clash text-gradient">{stat.value}</div>
+                      <div className="text-sm text-slate-600 font-medium">{stat.label}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Right - Product Visual */}
             <div className="relative">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-[var(--border)] bg-white animate-float">
-                <div className="aspect-[16/10] bg-gradient-to-br from-slate-50 to-slate-100">
+              {/* Glowing ring */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--finixar-blue)] to-[var(--cyan)] rounded-3xl blur-3xl opacity-20 animate-pulse"></div>
+
+              <div className="relative float rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white">
+                <div className="aspect-[16/10]">
                   <img
                     src="/images/dashboard.png"
                     alt="Tableau de bord Finixar"
@@ -359,202 +410,214 @@ export function LandingPage() {
                   />
                 </div>
               </div>
-              {/* Decorative accent */}
-              <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-[var(--gold)] rounded-2xl -z-10 opacity-20"></div>
-            </div>
-          </div>
 
-          {/* Scroll indicator */}
-          <div className="flex justify-center mt-20">
-            <a
-              href="#problemes"
-              className="scroll-indicator flex flex-col items-center gap-2 text-[var(--slate)] hover:text-[var(--gold)] transition-colors"
-            >
-              <span className="text-sm font-medium">Découvrir</span>
-              <ChevronDown className="w-5 h-5" />
-            </a>
+              {/* Floating decorative elements */}
+              <div
+                className="absolute -top-8 -right-8 w-32 h-32 gradient-animate rounded-3xl blur-2xl opacity-60 float"
+                style={{ animationDelay: '-2s' }}
+              ></div>
+              <div
+                className="absolute -bottom-8 -left-8 w-40 h-40 bg-gradient-to-br from-[var(--cyan)] to-transparent rounded-full blur-2xl opacity-40 float"
+                style={{ animationDelay: '-4s' }}
+              ></div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* PROBLEMS SECTION */}
-      <section id="problemes" className="py-24 px-6 lg:px-8 bg-white">
+      {/* PROBLEMS SECTION - Diagonal split */}
+      <section className="relative py-32 px-6 lg:px-8 bg-slate-50 diagonal-top diagonal-bottom">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
-            <span className="inline-block px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-600 rounded-full text-sm font-bold mb-6">
+              <AlertCircle className="w-4 h-4" />
               Le problème Excel
-            </span>
-            <h2 className="text-4xl lg:text-5xl font-bold heading-font text-[var(--navy)] mb-6">
-              Excel vous expose à des risques
+            </div>
+            <h2 className="text-5xl lg:text-6xl font-bold clash text-slate-900 mb-6">
+              Excel vous expose à des <span className="text-gradient">risques majeurs</span>
             </h2>
-            <p className="text-xl text-[var(--slate)] max-w-3xl mx-auto">
-              Les fichiers Excel créent des vulnérabilités opérationnelles, réglementaires et
-              financières majeures.
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto font-medium">
+              Les fichiers Excel créent des vulnérabilités opérationnelles et réglementaires
+              critiques.
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-10 max-w-6xl mx-auto">
-            {/* Left - Avec Excel */}
-            <div className="relative rounded-2xl p-10 bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-100">
-              <div className="absolute top-8 right-8">
-                <AlertCircle className="w-8 h-8 text-red-400" />
+          <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            {/* Left - Problems */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-orange-500 rounded-3xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+              <div className="relative bg-white rounded-3xl p-10 border-2 border-red-100 shadow-xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center">
+                    <X className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold clash text-slate-900">Avec Excel uniquement</h3>
+                </div>
+                <ul className="space-y-5">
+                  {[
+                    'Aucune traçabilité : conformité impossible à prouver',
+                    'Erreurs de calcul fréquentes et saisies manuelles',
+                    "Risques RGPD : jusqu'à 4% du CA en sanctions",
+                    'Données dispersées, versions multiples',
+                    'Échéances oubliées, rappels manuels',
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-start gap-4">
+                      <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <X className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-slate-700 font-medium leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <h3 className="text-2xl font-bold heading-font text-[var(--navy)] mb-8">
-                Avec Excel uniquement
-              </h3>
-              <ul className="space-y-5">
-                {[
-                  'Aucune traçabilité : prouver votre conformité devient impossible',
-                  'Saisie manuelle répétitive avec erreurs de calcul fréquentes',
-                  "Risques RGPD : sanctions jusqu'à 4% du CA annuel",
-                  'Données dispersées entre fichiers et versions multiples',
-                  "Rappels d'échéances manuels souvent oubliés",
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-4">
-                    <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                      <X className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-[var(--slate)] leading-relaxed">{item}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
 
-            {/* Right - Avec Finixar */}
-            <div className="relative rounded-2xl p-10 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-100">
-              <div className="absolute top-8 right-8">
-                <CheckCircle className="w-8 h-8 text-emerald-500" />
+            {/* Right - Solution */}
+            <div className="relative group">
+              <div className="absolute inset-0 gradient-animate rounded-3xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+              <div className="relative bg-white rounded-3xl p-10 border-2 border-blue-100 shadow-xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-12 h-12 gradient-animate rounded-2xl flex items-center justify-center pulse-glow">
+                    <CheckCircle className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold clash text-slate-900">Avec Finixar</h3>
+                </div>
+                <ul className="space-y-5">
+                  {[
+                    'Traçabilité complète et audit automatique',
+                    'Zéro erreur : automatisation intelligente',
+                    'Conformité RGPD garantie par design',
+                    'Source de vérité unique et centralisée',
+                    'Alertes automatiques (J-30, J-7) par email',
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-start gap-4">
+                      <div className="w-6 h-6 gradient-animate rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <CheckCircle className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-slate-700 font-medium leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <h3 className="text-2xl font-bold heading-font text-[var(--navy)] mb-8">
-                Avec Finixar
-              </h3>
-              <ul className="space-y-5">
-                {[
-                  'Historique complet et traçabilité totale de toutes les opérations',
-                  'Automatisation complète : zéro saisie manuelle, zéro erreur',
-                  'Conformité RGPD garantie avec chiffrement des données',
-                  'Base de données centralisée : une seule source de vérité',
-                  'Alertes automatiques intelligentes (J-30, J-7) par email',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-4">
-                    <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-[var(--slate)] leading-relaxed">{item}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* BENEFITS METRICS */}
-      <section className="py-24 px-6 lg:px-8 bg-[var(--navy)] text-white relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[var(--gold)] rounded-full blur-3xl"></div>
+      {/* METRICS SECTION - Bold dark section */}
+      <section className="relative py-32 px-6 lg:px-8 bg-gradient-to-br from-[var(--dark-navy)] via-slate-900 to-[var(--dark-navy)] text-white overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="blob absolute top-0 left-1/4 w-96 h-96 bg-[var(--finixar-blue)] blur-3xl"></div>
+          <div
+            className="blob absolute bottom-0 right-1/4 w-96 h-96 bg-[var(--cyan)] blur-3xl"
+            style={{ animationDelay: '-10s' }}
+          ></div>
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold heading-font mb-6">
-              Des résultats mesurables
+          <div className="text-center mb-20">
+            <h2 className="text-5xl lg:text-6xl font-bold clash mb-6">
+              Résultats <span className="text-gradient">mesurables</span>
             </h2>
-            <p className="text-xl text-blue-100">
-              Impact quantifiable sur votre productivité et votre conformité
+            <p className="text-xl text-slate-300 font-medium">
+              Impact quantifiable sur votre productivité
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 icon: Clock,
-                metric: '15h par semaine',
+                metric: '15h/sem',
                 label: 'Gain de temps',
-                desc: 'Automatisation complète des tâches répétitives',
+                desc: 'Automatisation totale',
               },
               {
                 icon: CheckCircle,
                 metric: '98%',
                 label: "Moins d'erreurs",
-                desc: 'Calculs automatiques et vérifications intégrées',
+                desc: 'Zéro saisie manuelle',
               },
               {
                 icon: Shield,
                 metric: '100%',
                 label: 'Conformité',
-                desc: 'Audit-ready avec traçabilité complète',
+                desc: 'Audit-ready garanti',
               },
               {
-                icon: TrendingUp,
-                metric: 'ROI immédiat',
-                label: 'Retour sur investissement',
-                desc: "Rentabilisé dès le premier mois d'utilisation",
+                icon: Zap,
+                metric: 'J1',
+                label: 'ROI immédiat',
+                desc: 'Rentable dès le départ',
               },
             ].map((item, i) => (
               <div
                 key={i}
-                className="card-hover bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10"
+                className="card-3d bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 hover:border-[var(--finixar-blue)] transition-all"
               >
-                <div className="w-14 h-14 bg-[var(--gold)]/20 rounded-xl flex items-center justify-center mb-6">
-                  <item.icon className="w-7 h-7 text-[var(--gold)]" />
+                <div className="w-16 h-16 gradient-animate rounded-2xl flex items-center justify-center mb-6">
+                  <item.icon className="w-8 h-8 text-white" />
                 </div>
-                <div className="text-3xl font-bold heading-font mb-2">{item.metric}</div>
-                <div className="text-sm font-semibold text-[var(--gold)] mb-3">{item.label}</div>
-                <p className="text-blue-100 text-sm leading-relaxed">{item.desc}</p>
+                <div className="text-4xl font-bold clash mb-2">{item.metric}</div>
+                <div className="text-sm font-bold text-[var(--cyan)] mb-3 uppercase tracking-wider">
+                  {item.label}
+                </div>
+                <p className="text-slate-400 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FEATURES - Zig-Zag */}
-      <section id="fonctionnalites" className="py-24 px-6 lg:px-8 bg-[#FAFBFC]">
+      {/* FEATURES - Asymmetric layout */}
+      <section id="fonctionnalites" className="py-32 px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
-            <span className="inline-block px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-[var(--finixar-blue)] rounded-full text-sm font-bold mb-6">
+              <Sparkles className="w-4 h-4" />
               Fonctionnalités
-            </span>
-            <h2 className="text-4xl lg:text-5xl font-bold heading-font text-[var(--navy)] mb-6">
-              Une plateforme complète
+            </div>
+            <h2 className="text-5xl lg:text-6xl font-bold clash text-slate-900 mb-6">
+              Plateforme <span className="text-gradient">tout-en-un</span>
             </h2>
           </div>
 
-          {/* Feature 1 - Project Management */}
-          <div className="grid lg:grid-cols-2 gap-20 items-center mb-32">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-full text-sm font-semibold mb-6">
-                <TrendingUp className="w-4 h-4" />
-                Gestion de projets
+          {/* Feature blocks with alternating layouts */}
+          <div className="space-y-32">
+            {/* Feature 1 */}
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-[var(--finixar-blue)] rounded-full text-sm font-bold mb-6">
+                  <TrendingUp className="w-4 h-4" />
+                  Gestion de projets
+                </div>
+                <h3 className="text-4xl font-bold clash text-slate-900 mb-6">
+                  Pilotez vos levées de fonds
+                </h3>
+                <p className="text-lg text-slate-600 mb-8 leading-relaxed font-medium">
+                  Vision complète sur vos tranches d'investissement. Montants, dates, états
+                  d'avancement en temps réel.
+                </p>
+                <ul className="space-y-4">
+                  {[
+                    'Suivi temps réel des tranches',
+                    'Alertes automatiques critiques',
+                    'Historique complet',
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-center gap-3">
+                      <div className="w-8 h-8 gradient-animate rounded-xl flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-slate-700 font-semibold">{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <h3 className="text-3xl lg:text-4xl font-bold heading-font text-[var(--navy)] mb-6">
-                Pilotez vos levées de fonds avec précision
-              </h3>
-              <p className="text-lg text-[var(--slate)] leading-relaxed mb-8">
-                Suivez chaque tranche d'investissement. Visualisez les montants engagés, les dates
-                limites et l'état d'avancement en temps réel.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  'Suivi en temps réel de toutes les tranches',
-                  'Alertes automatiques sur les échéances critiques',
-                  'Historique complet des modifications',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-[var(--gold)]/20 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-4 h-4 text-[var(--gold)]" />
-                    </div>
-                    <span className="text-[var(--slate)]">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
 
-            <div className="relative">
-              <div className="rounded-2xl overflow-hidden shadow-xl border border-[var(--border)] bg-white">
-                <div className="aspect-[16/10] bg-gradient-to-br from-slate-50 to-slate-100">
+              <div className="relative group">
+                <div className="absolute inset-0 gradient-animate rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
                   <img
                     src="/images/project-detail.png"
                     alt="Gestion de projets"
@@ -562,15 +625,13 @@ export function LandingPage() {
                   />
                 </div>
               </div>
-              <div className="absolute -bottom-6 -right-6 w-40 h-40 bg-blue-500 rounded-2xl -z-10 opacity-10"></div>
             </div>
-          </div>
 
-          {/* Feature 2 - Investor CRM - Reversed */}
-          <div className="grid lg:grid-cols-2 gap-20 items-center mb-32">
-            <div className="order-2 lg:order-1 relative">
-              <div className="rounded-2xl overflow-hidden shadow-xl border border-[var(--border)] bg-white">
-                <div className="aspect-[16/10] bg-gradient-to-br from-slate-50 to-slate-100">
+            {/* Feature 2 - Reversed */}
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div className="order-2 lg:order-1 relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--cyan)] to-[var(--finixar-blue)] rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
                   <img
                     src="/images/investors-table.png"
                     alt="CRM Investisseurs"
@@ -578,71 +639,66 @@ export function LandingPage() {
                   />
                 </div>
               </div>
-              <div className="absolute -bottom-6 -left-6 w-40 h-40 bg-emerald-500 rounded-2xl -z-10 opacity-10"></div>
-            </div>
 
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-sm font-semibold mb-6">
-                <Users className="w-4 h-4" />
-                Relations investisseurs
+              <div className="order-1 lg:order-2">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-50 text-cyan-600 rounded-full text-sm font-bold mb-6">
+                  <Users className="w-4 h-4" />
+                  Relations investisseurs
+                </div>
+                <h3 className="text-4xl font-bold clash text-slate-900 mb-6">
+                  CRM sécurisé et conforme
+                </h3>
+                <p className="text-lg text-slate-600 mb-8 leading-relaxed font-medium">
+                  Centralisez vos données investisseurs. RIB et documents chiffrés, conformité RGPD
+                  garantie.
+                </p>
+                <ul className="space-y-4">
+                  {['Base centralisée sécurisée', 'Chiffrement des RIB', 'RGPD by design'].map(
+                    (item, i) => (
+                      <li key={i} className="flex items-center gap-3">
+                        <div className="w-8 h-8 gradient-animate rounded-xl flex items-center justify-center">
+                          <CheckCircle className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-slate-700 font-semibold">{item}</span>
+                      </li>
+                    )
+                  )}
+                </ul>
               </div>
-              <h3 className="text-3xl lg:text-4xl font-bold heading-font text-[var(--navy)] mb-6">
-                Un CRM investisseurs sécurisé
-              </h3>
-              <p className="text-lg text-[var(--slate)] leading-relaxed mb-8">
-                Centralisez les données de vos investisseurs. Stockez les RIB et documents sensibles
-                dans un environnement chiffré et conforme RGPD.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  'Base de données centralisée et sécurisée',
-                  'Chiffrement des données sensibles (RIB, documents)',
-                  'Conformité RGPD garantie par design',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-[var(--gold)]/20 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-4 h-4 text-[var(--gold)]" />
-                    </div>
-                    <span className="text-[var(--slate)]">{item}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
-          </div>
 
-          {/* Feature 3 - Automation */}
-          <div className="grid lg:grid-cols-2 gap-20 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-full text-sm font-semibold mb-6">
-                <Zap className="w-4 h-4" />
-                Automatisation
+            {/* Feature 3 */}
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-full text-sm font-bold mb-6">
+                  <Zap className="w-4 h-4" />
+                  Automatisation
+                </div>
+                <h3 className="text-4xl font-bold clash text-slate-900 mb-6">
+                  Zéro oubli, zéro stress
+                </h3>
+                <p className="text-lg text-slate-600 mb-8 leading-relaxed font-medium">
+                  Calcul automatique des échéances. Rappels intelligents garantissent vos paiements.
+                </p>
+                <ul className="space-y-4">
+                  {[
+                    'Rappels automatiques (J-30, J-7)',
+                    'Import/Export Excel instantané',
+                    'Statuts temps réel',
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-center gap-3">
+                      <div className="w-8 h-8 gradient-animate rounded-xl flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-slate-700 font-semibold">{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <h3 className="text-3xl lg:text-4xl font-bold heading-font text-[var(--navy)] mb-6">
-                Automatisation des coupons et échéances
-              </h3>
-              <p className="text-lg text-[var(--slate)] leading-relaxed mb-8">
-                Finissez-en avec les oublis. Finixar calcule les échéances et envoie des rappels
-                automatiques pour garantir vos paiements.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  'Rappels automatiques intelligents (J-30, J-7)',
-                  'Import/export Excel en un clic',
-                  'Suivi des statuts de paiement en temps réel',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-[var(--gold)]/20 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-4 h-4 text-[var(--gold)]" />
-                    </div>
-                    <span className="text-[var(--slate)]">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
 
-            <div className="relative">
-              <div className="rounded-2xl overflow-hidden shadow-xl border border-[var(--border)] bg-white">
-                <div className="aspect-[16/10] bg-gradient-to-br from-slate-50 to-slate-100">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-[var(--finixar-blue)] rounded-3xl blur-2xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
                   <img
                     src="/images/echeancier.png"
                     alt="Automatisation"
@@ -650,165 +706,118 @@ export function LandingPage() {
                   />
                 </div>
               </div>
-              <div className="absolute -bottom-6 -right-6 w-40 h-40 bg-purple-500 rounded-2xl -z-10 opacity-10"></div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* MODULES GRID */}
-      <section id="modules" className="py-24 px-6 lg:px-8 bg-white">
+      {/* MODULES GRID - Bold cards */}
+      <section id="modules" className="py-32 px-6 lg:px-8 bg-slate-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
-            <span className="inline-block px-4 py-2 bg-[var(--gold)]/10 text-[var(--gold)] rounded-full text-sm font-semibold mb-6">
-              Modules
-            </span>
-            <h2 className="text-4xl lg:text-5xl font-bold heading-font text-[var(--navy)] mb-6">
-              Une solution complète pour votre équipe
+            <h2 className="text-5xl lg:text-6xl font-bold clash text-slate-900 mb-6">
+              Solution <span className="text-gradient">complète</span>
             </h2>
-            <p className="text-xl text-[var(--slate)] max-w-3xl mx-auto">
-              Finixar couvre l'ensemble de vos besoins en gestion d'actifs
+            <p className="text-xl text-slate-600 font-medium">
+              Tous vos besoins en gestion d'actifs
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              {
-                icon: TrendingUp,
-                title: 'Gestion de projets',
-                desc: 'Suivez vos levées de fonds de A à Z',
-              },
-              {
-                icon: Users,
-                title: 'Relations investisseurs',
-                desc: 'CRM dédié avec données sécurisées',
-              },
-              {
-                icon: FileText,
-                title: 'Échéancier & coupons',
-                desc: 'Automatisez les rappels et paiements',
-              },
-              { icon: BarChart3, title: 'Reporting & export', desc: 'Rapports Excel en un clic' },
-              { icon: Shield, title: 'Conformité & audit', desc: 'Traçabilité complète garantie' },
-              {
-                icon: Database,
-                title: "Gestion d'équipe",
-                desc: 'Collaboration temps réel multi-utilisateurs',
-              },
+              { icon: TrendingUp, title: 'Gestion de projets', color: 'blue' },
+              { icon: Users, title: 'Relations investisseurs', color: 'cyan' },
+              { icon: FileText, title: 'Échéancier & coupons', color: 'purple' },
+              { icon: BarChart3, title: 'Reporting & export', color: 'indigo' },
+              { icon: Shield, title: 'Conformité & audit', color: 'green' },
+              { icon: Database, title: "Gestion d'équipe", color: 'orange' },
             ].map((module, i) => (
               <div
                 key={i}
-                className="card-hover bg-white rounded-2xl p-8 border-2 border-[var(--border)]"
+                className="card-3d group bg-white rounded-3xl p-8 border-2 border-slate-200 hover:border-[var(--finixar-blue)] transition-all cursor-pointer"
               >
-                <div className="w-14 h-14 bg-gradient-to-br from-[var(--navy)]/10 to-[var(--gold)]/10 rounded-xl flex items-center justify-center mb-6">
-                  <module.icon className="w-7 h-7 text-[var(--navy)]" />
+                <div className="w-16 h-16 gradient-animate rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <module.icon className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold heading-font text-[var(--navy)] mb-3">
+                <h3 className="text-xl font-bold clash text-slate-900 mb-3 group-hover:text-[var(--finixar-blue)] transition-colors">
                   {module.title}
                 </h3>
-                <p className="text-[var(--slate)] leading-relaxed">{module.desc}</p>
+                <ChevronRight className="w-6 h-6 text-slate-400 group-hover:text-[var(--finixar-blue)] group-hover:translate-x-2 transition-all" />
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* SECURITY SECTION */}
+      {/* SECURITY - Dramatic dark section */}
       <section
         id="securite"
-        className="py-24 px-6 lg:px-8 bg-gradient-to-br from-[var(--navy)] via-[var(--navy-light)] to-[var(--navy)] text-white relative overflow-hidden"
+        className="relative py-32 px-6 lg:px-8 bg-gradient-to-br from-[var(--dark-navy)] via-slate-900 to-[var(--dark-navy)] text-white overflow-hidden"
       >
-        {/* Decorative elements */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-[var(--gold)] rounded-full blur-3xl"></div>
+          <div className="blob absolute top-20 left-20 w-96 h-96 bg-[var(--finixar-blue)] blur-3xl"></div>
+          <div
+            className="blob absolute bottom-20 right-20 w-96 h-96 bg-[var(--cyan)] blur-3xl"
+            style={{ animationDelay: '-10s' }}
+          ></div>
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
-            <span className="inline-block px-4 py-2 bg-white/10 text-white rounded-full text-sm font-semibold mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full text-sm font-bold mb-6 backdrop-blur-xl">
+              <Lock className="w-4 h-4" />
               Sécurité & Conformité
-            </span>
-            <h2 className="text-4xl lg:text-5xl font-bold heading-font mb-6">
-              Une technologie de confiance
+            </div>
+            <h2 className="text-5xl lg:text-6xl font-bold clash mb-6">
+              Technologie de <span className="text-gradient">confiance</span>
             </h2>
-            <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-              Standards de sécurité conformes aux exigences des institutions financières
-            </p>
+            <p className="text-xl text-slate-300 font-medium">Standards bancaires européens</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              {
-                icon: Shield,
-                title: 'Hébergement souverain',
-                desc: 'Données hébergées en France (Paris)',
-              },
-              {
-                icon: Lock,
-                title: 'Chiffrement des données',
-                desc: 'SSL/TLS et Row-Level Security',
-              },
-              {
-                icon: CheckCircle,
-                title: 'Audit-ready',
-                desc: 'Historique complet des modifications',
-              },
-              {
-                icon: Database,
-                title: 'Haute disponibilité',
-                desc: 'Infrastructure redondante avec backups',
-              },
-              {
-                icon: Users,
-                title: 'Auth. Microsoft',
-                desc: 'Connexion via comptes professionnels',
-              },
-              {
-                icon: Zap,
-                title: 'Mises à jour continues',
-                desc: 'Patches de sécurité automatiques',
-              },
+              { icon: Shield, title: 'Hébergement FR', desc: 'Paris - Souveraineté totale' },
+              { icon: Lock, title: 'Chiffrement', desc: 'SSL/TLS + RLS database' },
+              { icon: CheckCircle, title: 'Audit-ready', desc: 'Traçabilité complète' },
+              { icon: Database, title: 'Disponibilité', desc: 'Infrastructure redondante' },
+              { icon: Users, title: 'Auth. Microsoft', desc: 'Comptes professionnels' },
+              { icon: Zap, title: 'MAJ continues', desc: 'Patches automatiques' },
             ].map((feature, i) => (
               <div
                 key={i}
-                className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20"
+                className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 hover:border-white/30 transition-all"
               >
-                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-                  <feature.icon className="w-7 h-7 text-white" />
+                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
+                  <feature.icon className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-lg font-bold heading-font mb-3">{feature.title}</h3>
-                <p className="text-blue-100 leading-relaxed">{feature.desc}</p>
+                <h3 className="text-lg font-bold clash mb-3">{feature.title}</h3>
+                <p className="text-slate-400">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* PRICING */}
-      <section id="tarifs" className="py-24 px-6 lg:px-8 bg-[#FAFBFC]">
+      {/* PRICING - Clean CTA */}
+      <section id="tarifs" className="py-32 px-6 lg:px-8 bg-white">
         <div className="max-w-4xl mx-auto text-center">
-          <span className="inline-block px-4 py-2 bg-[var(--gold)]/10 text-[var(--gold)] rounded-full text-sm font-semibold mb-6">
-            Tarifs
-          </span>
-          <h2 className="text-4xl lg:text-5xl font-bold heading-font text-[var(--navy)] mb-6">
-            Tarifs sur mesure
+          <h2 className="text-5xl lg:text-6xl font-bold clash text-slate-900 mb-6">
+            Tarifs <span className="text-gradient">sur mesure</span>
           </h2>
-          <p className="text-xl text-[var(--slate)] mb-12 max-w-2xl mx-auto">
-            Nos tarifs s'adaptent à la taille de votre structure et au nombre d'utilisateurs.
-            Contactez-nous pour un devis personnalisé.
+          <p className="text-xl text-slate-600 mb-12 font-medium">
+            Adaptés à votre structure. Contactez-nous pour un devis personnalisé.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href="mailto:contact@finixar.com?subject=Demande de démonstration"
-              className="btn-primary inline-flex items-center gap-2 px-8 py-4 bg-[var(--navy)] text-white font-semibold rounded-xl"
+              className="magnetic-button inline-flex items-center gap-3 px-10 py-5 gradient-animate text-white font-bold rounded-2xl text-lg group"
             >
               Demander une démo
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
             </a>
             <a
               href="mailto:contact@finixar.com?subject=Demande de tarifs"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-white border-2 border-[var(--border)] text-[var(--navy)] font-semibold rounded-xl hover:border-[var(--gold)] transition-colors"
+              className="inline-flex items-center gap-3 px-10 py-5 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold rounded-2xl text-lg transition-all"
             >
               Demander un devis
             </a>
@@ -817,98 +826,63 @@ export function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-[var(--navy)] text-white py-20 px-6 lg:px-8">
+      <footer className="bg-[var(--dark-navy)] text-white py-20 px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-12 mb-16">
-            {/* Column 1 */}
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-11 h-11 bg-[var(--gold)] rounded-xl flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                    />
-                  </svg>
+                <div className="w-11 h-11 gradient-animate rounded-xl flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-2xl font-bold heading-font">Finixar</span>
+                <span className="text-2xl font-bold clash">Finixar</span>
               </div>
-              <p className="text-blue-200 leading-relaxed">
-                La plateforme de référence pour les gestionnaires d'actifs
+              <p className="text-slate-400 leading-relaxed">
+                Plateforme de référence pour gestionnaires d'actifs
               </p>
             </div>
 
-            {/* Column 2 */}
             <div>
-              <h4 className="font-bold heading-font text-white mb-6">Produit</h4>
+              <h4 className="font-bold clash text-white mb-6">Produit</h4>
               <ul className="space-y-3">
-                <li>
-                  <a
-                    href="#fonctionnalites"
-                    className="text-blue-200 hover:text-white transition-colors"
-                  >
-                    Fonctionnalités
-                  </a>
-                </li>
-                <li>
-                  <a href="#securite" className="text-blue-200 hover:text-white transition-colors">
-                    Sécurité
-                  </a>
-                </li>
-                <li>
-                  <a href="#modules" className="text-blue-200 hover:text-white transition-colors">
-                    Modules
-                  </a>
-                </li>
+                {['Fonctionnalités', 'Sécurité', 'Modules'].map((item, i) => (
+                  <li key={i}>
+                    <a
+                      href={`#${item
+                        .toLowerCase()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')}`}
+                      className="text-slate-400 hover:text-white transition-colors"
+                    >
+                      {item}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Column 3 */}
             <div>
-              <h4 className="font-bold heading-font text-white mb-6">Légal</h4>
+              <h4 className="font-bold clash text-white mb-6">Légal</h4>
               <ul className="space-y-3">
-                <li>
-                  <a
-                    href="mailto:contact@finixar.com?subject=Mentions légales"
-                    className="text-blue-200 hover:text-white transition-colors"
-                  >
-                    Mentions légales
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="mailto:contact@finixar.com?subject=Politique RGPD"
-                    className="text-blue-200 hover:text-white transition-colors"
-                  >
-                    Politique RGPD
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="mailto:contact@finixar.com?subject=CGU"
-                    className="text-blue-200 hover:text-white transition-colors"
-                  >
-                    CGU
-                  </a>
-                </li>
+                {['Mentions légales', 'Politique RGPD', 'CGU'].map((item, i) => (
+                  <li key={i}>
+                    <a
+                      href={`mailto:contact@finixar.com?subject=${item}`}
+                      className="text-slate-400 hover:text-white transition-colors"
+                    >
+                      {item}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Column 4 */}
             <div>
-              <h4 className="font-bold heading-font text-white mb-6">Contact</h4>
+              <h4 className="font-bold clash text-white mb-6">Contact</h4>
               <ul className="space-y-3">
                 <li>
                   <a
                     href="mailto:contact@finixar.com"
-                    className="text-blue-200 hover:text-white transition-colors"
+                    className="text-slate-400 hover:text-white transition-colors"
                   >
                     Support client
                   </a>
@@ -916,22 +890,21 @@ export function LandingPage() {
                 <li>
                   <a
                     href="mailto:contact@finixar.com?subject=Contact"
-                    className="text-blue-200 hover:text-white transition-colors"
+                    className="text-slate-400 hover:text-white transition-colors"
                   >
                     Nous contacter
                   </a>
                 </li>
-                <li className="text-blue-200">Paris, France</li>
+                <li className="text-slate-400">Paris, France</li>
               </ul>
             </div>
           </div>
 
-          {/* Bottom bar */}
           <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-blue-200 text-sm">© 2026 Finixar. Tous droits réservés.</p>
+            <p className="text-slate-400 text-sm">© 2026 Finixar. Tous droits réservés.</p>
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[var(--gold)]" />
-              <span className="text-blue-200 text-sm">Conforme RGPD • Hébergé en France</span>
+              <Shield className="w-4 h-4 text-[var(--cyan)]" />
+              <span className="text-slate-400 text-sm">Conforme RGPD • Hébergé en France</span>
             </div>
           </div>
         </div>
