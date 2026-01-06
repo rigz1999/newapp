@@ -4,40 +4,12 @@ import { useState } from 'react';
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitStatus('idle');
-
-    try {
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          access_key: 'ab974726-3370-4cf6-87d9-86fd1b48f519',
-          email: email,
-          subject: 'Nouvelle demande de démonstration',
-          message: `Demande de démonstration depuis le site web. Email: ${email}`,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSubmitStatus('success');
-        setEmail('');
-      } else {
-        setSubmitStatus('error');
-      }
-    } catch (error) {
-      setSubmitStatus('error');
-    } finally {
-      setIsSubmitting(false);
+    if (email) {
+      // Redirect to demo page with email pre-filled
+      window.location.href = `/demo?email=${encodeURIComponent(email)}`;
     }
   };
 
@@ -135,7 +107,7 @@ export function LandingPage() {
                 Connexion
               </a>
               <a
-                href="mailto:contact@finixar.com?subject=Demande de démonstration"
+                href="/demo"
                 className="btn-transition px-6 py-2.5 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg"
               >
                 Demander une démo
@@ -161,7 +133,7 @@ export function LandingPage() {
                 <a href="#tarifs" className="text-slate-700 font-medium">Tarifs</a>
                 <a href="https://app.finixar.com" className="text-slate-700 font-semibold">Connexion</a>
                 <a
-                  href="mailto:contact@finixar.com?subject=Demande de démonstration"
+                  href="/demo"
                   className="px-6 py-2.5 bg-[#2E62FF] text-white font-semibold rounded-lg text-center"
                 >
                   Demander une démo
@@ -187,60 +159,22 @@ export function LandingPage() {
               </p>
 
               {/* Email CTA Form */}
-              <form onSubmit={handleEmailSubmit} className="mb-8">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="votre@email.com"
-                    className="flex-1 px-6 py-4 bg-white border-2 border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2E62FF] transition-colors"
-                    required
-                    disabled={isSubmitting}
-                  />
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="btn-transition inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Envoi en cours...
-                      </>
-                    ) : (
-                      <>
-                        Voir une démo
-                        <ArrowRight className="w-5 h-5" />
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Success Message */}
-                {submitStatus === 'success' && (
-                  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-green-800 font-semibold">Demande envoyée avec succès !</p>
-                      <p className="text-green-700 text-sm mt-1">Nous vous contacterons dans les plus brefs délais.</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Error Message */}
-                {submitStatus === 'error' && (
-                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-red-800 font-semibold">Une erreur est survenue</p>
-                      <p className="text-red-700 text-sm mt-1">Veuillez réessayer ou nous contacter à support@finixar.com</p>
-                    </div>
-                  </div>
-                )}
+              <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-3 mb-8">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="votre@email.com"
+                  className="flex-1 px-6 py-4 bg-white border-2 border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2E62FF] transition-colors"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="btn-transition inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg whitespace-nowrap"
+                >
+                  Voir une démo
+                  <ArrowRight className="w-5 h-5" />
+                </button>
               </form>
 
               {/* Trust Badge */}
@@ -791,14 +725,14 @@ export function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="mailto:contact@finixar.com?subject=Demande de tarifs"
+              href="/demo"
               className="btn-transition inline-flex items-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg"
             >
               Demander un devis
               <ArrowRight className="w-5 h-5" />
             </a>
             <a
-              href="mailto:contact@finixar.com?subject=Demande de démonstration"
+              href="/demo"
               className="btn-transition inline-flex items-center gap-2 px-8 py-4 bg-white hover:bg-slate-50 text-slate-900 font-semibold rounded-lg border-2 border-slate-200"
             >
               Voir une démo

@@ -12,6 +12,7 @@ import { DashboardSkeleton } from './components/common/Skeleton';
 import { ThemeProvider } from './context/ThemeContext';
 import { DiagnosticPage } from './pages/DiagnosticPage';
 import { LandingPage } from './components/landing/LandingPage';
+import { DemoRequest } from './components/landing/DemoRequest';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
@@ -47,10 +48,14 @@ function App() {
 
   // Show landing page on main domain, app on subdomain or localhost
   if (isMainDomain) {
+    // Simple router for main domain
+    const pathname = window.location.pathname;
+    const isDemoPage = pathname === '/demo' || pathname === '/demo/';
+
     return (
       <ThemeProvider>
         <ErrorBoundary>
-          <LandingPage />
+          {isDemoPage ? <DemoRequest /> : <LandingPage />}
         </ErrorBoundary>
       </ThemeProvider>
     );
