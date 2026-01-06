@@ -35,12 +35,20 @@ export function DemoRequest() {
         body: JSON.stringify(formData),
       });
 
+      // Handle 401/404 - function not deployed yet
+      if (response.status === 401 || response.status === 404) {
+        console.error('Edge function not deployed. Please deploy send-demo-request function.');
+        setSubmitStatus('error');
+        return;
+      }
+
       const data = await response.json();
 
       if (response.ok && data.success) {
         setSubmitStatus('success');
         setFormData({ name: '', email: '', company: '', role: '' });
       } else {
+        console.error('Demo request failed:', data);
         setSubmitStatus('error');
       }
     } catch (error) {
@@ -150,10 +158,10 @@ export function DemoRequest() {
           /* Form State */
           <>
             <div className="text-center mb-12">
-              <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
-                Demandez une démonstration
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
+                Demandez une démo
               </h1>
-              <p className="text-xl text-slate-600">
+              <p className="text-lg sm:text-xl text-slate-600">
                 Découvrez comment Finixar peut transformer votre gestion d'actifs
               </p>
             </div>
@@ -181,7 +189,7 @@ export function DemoRequest() {
                 {/* Email Field */}
                 <div>
                   <label htmlFor="email" className="block text-sm font-semibold text-slate-900 mb-2">
-                    Email professionnel *
+                    E-mail professionnel *
                   </label>
                   <input
                     type="email"
@@ -260,7 +268,12 @@ export function DemoRequest() {
                     <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-red-800 font-semibold">Une erreur est survenue</p>
-                      <p className="text-red-700 text-sm mt-1">Veuillez réessayer ou nous contacter à support@finixar.com</p>
+                      <p className="text-red-700 text-sm mt-1">
+                        Veuillez réessayer dans quelques instants ou nous contacter directement à{' '}
+                        <a href="mailto:support@finixar.com" className="underline font-semibold">
+                          support@finixar.com
+                        </a>
+                      </p>
                     </div>
                   </div>
                 )}
