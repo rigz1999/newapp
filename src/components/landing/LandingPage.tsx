@@ -83,7 +83,7 @@ export function LandingPage() {
             </div>
 
             {/* Center Links - Desktop */}
-            <div className="hidden md:flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-8" aria-label="Navigation principale">
               <a href="#fonctionnalites" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
                 Fonctionnalités
               </a>
@@ -96,7 +96,7 @@ export function LandingPage() {
               <a href="#tarifs" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
                 Tarifs
               </a>
-            </div>
+            </nav>
 
             {/* Right Buttons - Desktop */}
             <div className="hidden md:flex items-center gap-3">
@@ -118,6 +118,9 @@ export function LandingPage() {
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-slate-700"
+              aria-label="Menu de navigation"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -125,8 +128,8 @@ export function LandingPage() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden py-4 border-t border-slate-200">
-              <div className="flex flex-col gap-4">
+            <div id="mobile-menu" className="md:hidden py-4 border-t border-slate-200">
+              <nav className="flex flex-col gap-4" aria-label="Navigation mobile">
                 <a href="#fonctionnalites" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Fonctionnalités</a>
                 <a href="#securite" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Sécurité</a>
                 <a href="#modules" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Modules</a>
@@ -138,7 +141,7 @@ export function LandingPage() {
                 >
                   Demander une démo
                 </a>
-              </div>
+              </nav>
             </div>
           )}
         </div>
