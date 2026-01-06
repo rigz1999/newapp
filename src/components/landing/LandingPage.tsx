@@ -127,10 +127,10 @@ export function LandingPage() {
           {mobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-slate-200">
               <div className="flex flex-col gap-4">
-                <a href="#fonctionnalites" className="text-slate-700 font-medium">Fonctionnalités</a>
-                <a href="#securite" className="text-slate-700 font-medium">Sécurité</a>
-                <a href="#modules" className="text-slate-700 font-medium">Modules</a>
-                <a href="#tarifs" className="text-slate-700 font-medium">Tarifs</a>
+                <a href="#fonctionnalites" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Fonctionnalités</a>
+                <a href="#securite" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Sécurité</a>
+                <a href="#modules" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Modules</a>
+                <a href="#tarifs" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Tarifs</a>
                 <a href="https://app.finixar.com" className="text-slate-700 font-semibold">Connexion</a>
                 <a
                   href="/demo"
