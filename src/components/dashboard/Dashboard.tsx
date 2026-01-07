@@ -118,7 +118,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
 
   // Chart state + cache of raw subs for local filtering
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
-  const [selectedYear, setSelectedYear] = useState(2025);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [startMonth, setStartMonth] = useState(0);
   const [endMonth, setEndMonth] = useState(11);
   const [viewMode, setViewMode] = useState<'monthly' | 'cumulative'>('monthly');
@@ -756,9 +756,11 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
                   onChange={e => setSelectedYear(parseInt(e.target.value, 10))}
                   className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
                 >
-                  <option value={2024}>2024</option>
-                  <option value={2025}>2025</option>
-                  <option value={2026}>2026</option>
+                  {Array.from({ length: 11 }, (_, i) => 2020 + i).map(year => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
                 </select>
                 <select
                   aria-label="Plage de mois"
