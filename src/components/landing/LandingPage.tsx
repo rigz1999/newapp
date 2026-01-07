@@ -62,8 +62,8 @@ export function LandingPage() {
         .mockup-container img {
           width: 100%;
           height: 100%;
-          object-fit: cover;
-          object-position: center top;
+          object-fit: contain;
+          object-position: center;
         }
       `}</style>
 
@@ -175,7 +175,7 @@ export function LandingPage() {
                   type="submit"
                   className="btn-transition inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg whitespace-nowrap"
                 >
-                  Voir une démo
+                  Demander une démo
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </form>
@@ -276,7 +276,7 @@ export function LandingPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-slate-700">Alertes automatiques par email (J-30, J-7) pour toutes vos échéances.</span>
+                  <span className="text-slate-700">Alertes automatiques par e-mail (J-30, J-7) pour toutes vos échéances.</span>
                 </li>
               </ul>
             </div>
@@ -385,38 +385,38 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Block B: Investor CRM - Reversed */}
+          {/* Block B: Coupon Management - Reversed */}
           <div className="grid lg:grid-cols-2 gap-16 items-center mb-32">
             {/* Image Side */}
             <div className="order-2 lg:order-1">
               <div className="mockup-container shadow-xl">
-                <img src="/images/investors-table.png" alt="Table des investisseurs" />
+                <img src="/images/coupons.png" alt="Tableau de bord de gestion des coupons" />
               </div>
             </div>
 
             {/* Text Side */}
             <div className="order-1 lg:order-2">
               <div className="inline-block px-4 py-2 bg-green-50 text-green-700 rounded-full text-sm font-semibold mb-6">
-                Relations investisseurs
+                Gestion des coupons
               </div>
               <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
-                Un CRM investisseurs sécurisé.
+                Centralisez vos coupons et échéances.
               </h2>
               <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                Centralisez les données de vos investisseurs (personnes physiques et morales). Stockez les RIB et documents sensibles dans un environnement chiffré et conforme.
+                Visualisez tous vos coupons en un coup d'œil. Suivez les statuts (En Attente, Payés, En Retard), les montants et les échéances pour garantir un suivi parfait de vos paiements.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Base de données centralisée et sécurisée</span>
+                  <span className="text-slate-700">Vue d'ensemble complète de tous vos coupons</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Chiffrement des données sensibles (RIB, documents)</span>
+                  <span className="text-slate-700">Suivi des statuts en temps réel (En Attente, Payés, En Retard)</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Conformité RGPD garantie</span>
+                  <span className="text-slate-700">Filtres et recherche avancée par projet, tranche ou investisseur</span>
                 </li>
               </ul>
             </div>
@@ -438,7 +438,7 @@ export function LandingPage() {
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Rappels automatiques par email (J-30, J-7)</span>
+                  <span className="text-slate-700">Rappels automatiques par e-mail (J-30, J-7)</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
@@ -455,6 +455,53 @@ export function LandingPage() {
             <div>
               <div className="mockup-container shadow-xl">
                 <img src="/images/echeancier.png" alt="Échéancier des paiements" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4.5. PAYMENT REMINDERS AUTOMATION */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Text Side */}
+            <div>
+              <div className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-6">
+                Automatisation des rappels
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
+                Rappels de paiement automatiques.
+              </h2>
+              <p className="text-lg text-slate-600 leading-relaxed mb-6">
+                Finissez-en avec les relances manuelles. Configurez vos rappels en un clic et recevez des e-mails automatiques à 7, 14 et 30 jours avant chaque échéance. Envoi quotidien à 7h00, zéro effort manuel.
+              </p>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
+                  <span className="text-slate-700">E-mails automatiques à J-7, J-14 et J-30</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
+                  <span className="text-slate-700">Envoi quotidien à 7h00, aucune intervention requise</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
+                  <span className="text-slate-700">Configuration simple par cases à cocher</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
+                  <span className="text-slate-700">Garantit zéro oubli de paiement</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Image Side - Centered Modal */}
+            <div className="flex items-center justify-center">
+              <div className="relative">
+                <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 max-w-md">
+                  <img src="/images/reminders.png" alt="Configuration des rappels de paiement" className="w-full rounded-xl" />
+                </div>
               </div>
             </div>
           </div>
@@ -703,17 +750,6 @@ export function LandingPage() {
               </p>
             </div>
           </div>
-
-          {/* CTA in Security Section */}
-          <div className="mt-16 text-center">
-            <a
-              href="mailto:contact@finixar.com?subject=Question sécurité"
-              className="inline-flex items-center gap-2 text-white hover:text-blue-200 font-semibold transition-colors"
-            >
-              Questions sur la sécurité ?
-              <ChevronRight className="w-5 h-5" />
-            </a>
-          </div>
         </div>
       </section>
 
@@ -726,19 +762,13 @@ export function LandingPage() {
           <p className="text-xl text-slate-600 mb-12">
             Nos tarifs s'adaptent à la taille de votre structure et au nombre d'utilisateurs. Contactez-nous pour obtenir un devis personnalisé.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex items-center justify-center">
             <a
               href="/demo"
               className="btn-transition inline-flex items-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg"
             >
               Demander un devis
               <ArrowRight className="w-5 h-5" />
-            </a>
-            <a
-              href="/demo"
-              className="btn-transition inline-flex items-center gap-2 px-8 py-4 bg-white hover:bg-slate-50 text-slate-900 font-semibold rounded-lg border-2 border-slate-200"
-            >
-              Voir une démo
             </a>
           </div>
         </div>
