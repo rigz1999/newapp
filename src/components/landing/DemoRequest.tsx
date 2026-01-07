@@ -75,13 +75,12 @@ export function DemoRequest() {
       <nav className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            <a href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-[#2E62FF] rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
-              <span className="text-xl font-bold text-slate-900">Finixar</span>
+            <a href="/" className="flex items-center">
+              <img
+                src="/branding/logo/logo-full-blue.png"
+                alt="Finixar"
+                className="h-8"
+              />
             </a>
             <a
               href="https://app.finixar.com"

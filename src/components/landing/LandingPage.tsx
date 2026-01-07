@@ -73,14 +73,11 @@ export function LandingPage() {
           <div className="flex items-center justify-between h-20">
             {/* Logo Area - 200px dedicated space */}
             <div className="w-[200px] flex items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-[#2E62FF] rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-                <span className="text-xl font-bold text-slate-900">Finixar</span>
-              </div>
+              <img
+                src="/branding/logo/logo-full-blue.png"
+                alt="Finixar"
+                className="h-8"
+              />
             </div>
 
             {/* Center Links - Desktop */}
@@ -751,13 +748,12 @@ export function LandingPage() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             {/* Column 1 - Logo & Description */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-[#2E62FF] rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-                <span className="text-xl font-bold">Finixar</span>
+              <div className="mb-4">
+                <img
+                  src="/branding/logo/logo-full-white.png"
+                  alt="Finixar"
+                  className="h-8"
+                />
               </div>
               <p className="text-slate-400 text-sm leading-relaxed">
                 La plateforme de référence pour les gestionnaires d'actifs.
