@@ -62,7 +62,7 @@ export function LandingPage() {
         .mockup-container img {
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
         }
       `}</style>
 
@@ -87,11 +87,11 @@ export function LandingPage() {
               <a href="#fonctionnalites" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
                 Fonctionnalités
               </a>
-              <a href="#securite" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
-                Sécurité
-              </a>
               <a href="#modules" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
                 Modules
+              </a>
+              <a href="#securite" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
+                Sécurité
               </a>
               <a href="#tarifs" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
                 Tarifs
@@ -131,8 +131,8 @@ export function LandingPage() {
             <div id="mobile-menu" className="md:hidden py-4 border-t border-slate-200">
               <nav className="flex flex-col gap-4" aria-label="Navigation mobile">
                 <a href="#fonctionnalites" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Fonctionnalités</a>
-                <a href="#securite" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Sécurité</a>
                 <a href="#modules" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Modules</a>
+                <a href="#securite" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Sécurité</a>
                 <a href="#tarifs" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Tarifs</a>
                 <a href="https://app.finixar.com" className="text-slate-700 font-semibold">Connexion</a>
                 <a
