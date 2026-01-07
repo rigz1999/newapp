@@ -93,56 +93,13 @@ INSERT INTO souscriptions (id, id_souscription, projet_id, tranche_id, investiss
 ('d0000000-0000-0000-0000-000000000015', 'SOUS-004-03', 'b0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000006', 450000, 450, '2026-01-03', '2026-01-10', NOW()),
 ('d0000000-0000-0000-0000-000000000016', 'SOUS-004-04', 'b0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000007', 300000, 300, '2026-01-06', '2026-01-12', NOW());
 
--- Generate coupons for active projects to show "Prochain Coupon" data
--- Project 1: Semestrielle coupons (every 6 months from 2024-01-15)
--- Last coupon: 2025-07-15, Next: 2026-01-15
-INSERT INTO coupons_echeances (id, souscription_id, date_echeance, montant_coupon, statut, created_at) VALUES
--- Souscription 1 (Sophie Martin - 350k): 7.2% / 2 = 3.6% per semester = 12,600€
-('e0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', '2024-07-15', 12600, 'payé', NOW()),
-('e0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000001', '2025-01-15', 12600, 'payé', NOW()),
-('e0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000001', '2025-07-15', 12600, 'payé', NOW()),
-('e0000000-0000-0000-0000-000000000004', 'd0000000-0000-0000-0000-000000000001', '2026-01-15', 12600, 'en_attente', NOW()),
--- Souscription 2 (François Dubois - 400k): 14,400€ per semester
-('e0000000-0000-0000-0000-000000000005', 'd0000000-0000-0000-0000-000000000002', '2024-07-15', 14400, 'payé', NOW()),
-('e0000000-0000-0000-0000-000000000006', 'd0000000-0000-0000-0000-000000000002', '2025-01-15', 14400, 'payé', NOW()),
-('e0000000-0000-0000-0000-000000000007', 'd0000000-0000-0000-0000-000000000002', '2025-07-15', 14400, 'payé', NOW()),
-('e0000000-0000-0000-0000-000000000008', 'd0000000-0000-0000-0000-000000000002', '2026-01-15', 14400, 'en_attente', NOW()),
--- Souscription 3 (Claire Bernard - 250k): 9,000€ per semester
-('e0000000-0000-0000-0000-000000000009', 'd0000000-0000-0000-0000-000000000003', '2024-07-15', 9000, 'payé', NOW()),
-('e0000000-0000-0000-0000-00000000000a', 'd0000000-0000-0000-0000-000000000003', '2025-01-15', 9000, 'payé', NOW()),
-('e0000000-0000-0000-0000-00000000000b', 'd0000000-0000-0000-0000-000000000003', '2025-07-15', 9000, 'payé', NOW()),
-('e0000000-0000-0000-0000-00000000000c', 'd0000000-0000-0000-0000-000000000003', '2026-01-15', 9000, 'en_attente', NOW()),
--- Souscription 4 (Jean-Luc Petit - 200k): 7,200€ per semester
-('e0000000-0000-0000-0000-00000000000d', 'd0000000-0000-0000-0000-000000000004', '2024-07-15', 7200, 'payé', NOW()),
-('e0000000-0000-0000-0000-00000000000e', 'd0000000-0000-0000-0000-000000000004', '2025-01-15', 7200, 'payé', NOW()),
-('e0000000-0000-0000-0000-00000000000f', 'd0000000-0000-0000-0000-000000000004', '2025-07-15', 7200, 'payé', NOW()),
-('e0000000-0000-0000-0000-000000000010', 'd0000000-0000-0000-0000-000000000004', '2026-01-15', 7200, 'en_attente', NOW());
-
--- Project 2: Trimestrielle coupons (every 3 months from 2025-09-01)
--- Next coupon: 2026-03-01
--- Souscription 8 (Alain Fournier - 800k): 8.5% / 4 = 2.125% per quarter = 17,000€
-INSERT INTO coupons_echeances (id, souscription_id, date_echeance, montant_coupon, statut, created_at) VALUES
-('e0000000-0000-0000-0000-000000000011', 'd0000000-0000-0000-0000-000000000008', '2025-12-01', 17000, 'payé', NOW()),
-('e0000000-0000-0000-0000-000000000012', 'd0000000-0000-0000-0000-000000000008', '2026-03-01', 17000, 'en_attente', NOW());
-
--- Project 3: Annuelle coupons (every 12 months from 2023-09-01)
--- Next coupon: 2026-09-01
--- Souscription 13 (Sylvie Fontaine - 500k): 6.8% = 34,000€ per year
-INSERT INTO coupons_echeances (id, souscription_id, date_echeance, montant_coupon, statut, created_at) VALUES
-('e0000000-0000-0000-0000-000000000013', 'd0000000-0000-0000-0000-00000000000d', '2024-09-01', 34000, 'payé', NOW()),
-('e0000000-0000-0000-0000-000000000014', 'd0000000-0000-0000-0000-00000000000d', '2025-09-01', 34000, 'payé', NOW()),
-('e0000000-0000-0000-0000-000000000015', 'd0000000-0000-0000-0000-00000000000d', '2026-09-01', 34000, 'en_attente', NOW());
-
--- Project 4: Semestrielle coupons (every 6 months from 2025-11-01)
--- Next coupon: 2026-05-01
--- Souscription 15 (Philippe Laurent - 450k): 7.0% / 2 = 3.5% per semester = 15,750€
-INSERT INTO coupons_echeances (id, souscription_id, date_echeance, montant_coupon, statut, created_at) VALUES
-('e0000000-0000-0000-0000-000000000016', 'd0000000-0000-0000-0000-000000000015', '2026-05-01', 15750, 'en_attente', NOW());
-
 -- Summary:
--- Project 1: €2,000,000 (€1,200,000 + €800,000) - Complete info, coupons on 2026-01-15
--- Project 2: €3,500,000 - Complete info, RECENT Jan 2026 subscription, coupons on 2026-03-01
--- Project 3: €2,800,000 - Complete info, coupons on 2026-09-01
--- Project 4: €1,500,000 - Complete info, RECENT Jan 2026 subscriptions, coupons on 2026-05-01
+-- Project 1: €2,000,000 (€1,200,000 + €800,000) - Complete info with representative
+-- Project 2: €3,500,000 - Complete info, RECENT Jan 2026 subscription
+-- Project 3: €2,800,000 - Complete info
+-- Project 4: €1,500,000 - Complete info, RECENT Jan 2026 subscriptions
 -- TOTAL: €9,800,000 in projects with matching subscription amounts
+-- 15 realistic French investors
+-- 22 subscriptions across 4 projects
 -- Recent activity in January 2026 for dashboard KPIs
+-- Coupons will be auto-generated by the system when you change periodicite
