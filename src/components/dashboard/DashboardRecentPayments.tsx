@@ -17,7 +17,7 @@ export function DashboardRecentPayments({
 }: DashboardRecentPaymentsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex flex-col h-full">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-slate-900">Derniers paiements</h2>
           <button
@@ -69,7 +69,7 @@ export function DashboardRecentPayments({
         )}
       </div>
 
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex flex-col h-full">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-slate-900">Coupons à venir</h2>
           <button
