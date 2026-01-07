@@ -73,11 +73,13 @@ export function LandingPage() {
           <div className="flex items-center justify-between h-20">
             {/* Logo Area - 200px dedicated space */}
             <div className="w-[200px] flex items-center">
-              <img
-                src="/branding/logo/logo-full-blue.png"
-                alt="Finixar"
-                className="h-12"
-              />
+              <a href="https://finixar.com" className="flex items-center">
+                <img
+                  src="/branding/logo/logo-full-blue.png"
+                  alt="Finixar"
+                  className="h-10"
+                />
+              </a>
             </div>
 
             {/* Center Links - Desktop */}
@@ -752,7 +754,7 @@ export function LandingPage() {
                 <img
                   src="/branding/logo/logo-full-white.png"
                   alt="Finixar"
-                  className="h-10"
+                  className="h-8"
                 />
               </div>
               <p className="text-slate-400 text-sm leading-relaxed">

@@ -113,7 +113,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps) {
             <img
               src="/branding/logo/logo-full-white.png"
               alt="Finixar"
-              className="h-10"
+              className="h-8"
             />
           </div>
 
