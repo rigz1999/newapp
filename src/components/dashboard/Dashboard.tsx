@@ -298,8 +298,9 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       const trancheIds = tranches.map((t: { id: string }) => t.id);
 
       // Helper pour calculer le pourcentage de croissance
-      const calculateGrowth = (current: number, previous: number): number | undefined => {
-        if (previous === 0) return undefined;
+      const calculateGrowth = (current: number, previous: number): number => {
+        if (previous === 0 && current === 0) return 0; // Pas de changement, 0 partout
+        if (previous === 0) return 100; // De 0 à quelque chose = +100% minimum
         return ((current - previous) / previous) * 100;
       };
 
