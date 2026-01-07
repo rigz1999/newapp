@@ -44,15 +44,23 @@ function GrowthBadge({ percentage, label }: { percentage?: number; label: string
 }
 
 export function DashboardStats({ stats }: DashboardStatsProps) {
+  // Format current month in French
+  const currentMonth = new Date().toLocaleDateString('fr-FR', {
+    month: 'long',
+    year: 'numeric'
+  });
+  const formattedMonth = currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-2">
+            <span className="text-slate-600 text-sm font-medium block mb-1">
               Montant total collecté
             </span>
-            <p className="text-3xl font-bold text-slate-900 mb-2">
+            <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
+            <p className="text-3xl font-bold text-slate-900 mb-3">
               {formatCurrency(stats.totalInvested)}
             </p>
             <div className="flex items-center gap-3 text-xs">
@@ -69,10 +77,11 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-2">
+            <span className="text-slate-600 text-sm font-medium block mb-1">
               Coupons versés
             </span>
-            <p className="text-3xl font-bold text-slate-900 mb-2">
+            <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
+            <p className="text-3xl font-bold text-slate-900 mb-3">
               {formatCurrency(stats.couponsPaidThisMonth)}
             </p>
             <div className="flex items-center gap-3 text-xs">
@@ -89,10 +98,11 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-2">
+            <span className="text-slate-600 text-sm font-medium block mb-1">
               Projets actifs
             </span>
-            <p className="text-3xl font-bold text-slate-900 mb-2">{stats.activeProjects}</p>
+            <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
+            <p className="text-3xl font-bold text-slate-900 mb-3">{stats.activeProjects}</p>
             <div className="flex items-center gap-3 text-xs">
               <GrowthBadge percentage={stats.activeProjectsMoM} label="MoM" />
               <GrowthBadge percentage={stats.activeProjectsYoY} label="YoY" />
@@ -107,10 +117,11 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-2">
+            <span className="text-slate-600 text-sm font-medium block mb-1">
               Coupons à venir
             </span>
-            <p className="text-3xl font-bold text-slate-900 mb-2">
+            <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
+            <p className="text-3xl font-bold text-slate-900 mb-3">
               {stats.upcomingCoupons}
             </p>
             <div className="flex items-center gap-3 text-xs">
