@@ -15,6 +15,9 @@ export interface Payment {
   tranche?: {
     tranche_name: string;
     projet_id: string;
+    projet?: {
+      projet: string;
+    };
   };
 }
 
