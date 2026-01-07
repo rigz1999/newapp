@@ -52,7 +52,7 @@ export function LandingPage() {
 
         /* Mockup aspect ratio */
         .mockup-container {
-          aspect-ratio: 16 / 9;
+          aspect-ratio: 16 / 10;
           background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
           border-radius: 12px;
           border: 1px solid #e2e8f0;
@@ -62,7 +62,8 @@ export function LandingPage() {
         .mockup-container img {
           width: 100%;
           height: 100%;
-          object-fit: contain;
+          object-fit: cover;
+          object-position: center top;
         }
       `}</style>
 
