@@ -373,7 +373,11 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             .select(
               `
               id, id_paiement, montant, date_paiement, statut, type, tranche_id,
-              tranche:tranches(tranche_name, projet_id)
+              tranche:tranches(
+                tranche_name,
+                projet_id,
+                projet:projets(projet)
+              )
             `
             )
             .in('tranche_id', trancheIds)

@@ -31,40 +31,60 @@ export function DashboardRecentPayments({
           <p className="text-slate-500 text-center py-8">Aucun paiement récent</p>
         ) : (
           <div className="space-y-3">
-            {recentPayments.map(payment => (
-              <div
-                key={payment.id}
-                className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-              >
-                <div className="flex-1">
-                  <p className="font-medium text-slate-900 text-sm">
-                    {payment.tranche?.tranche_name || 'Tranche'}
-                  </p>
-                  <p className="text-xs text-slate-600">
-                    {formatDate(payment.date_paiement)} • {payment.type || 'Coupon'}
-                  </p>
+            {recentPayments.map(payment => {
+              const daysAgo = Math.floor(
+                (new Date().getTime() - new Date(payment.date_paiement).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              );
+
+              return (
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-bold text-slate-900">
+                        {formatCurrency(payment.montant)}
+                      </p>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          payment.statut?.toLowerCase() === 'payé' ||
+                          payment.statut?.toLowerCase() === 'paid'
+                            ? 'bg-green-100 text-green-700'
+                            : payment.statut?.toLowerCase() === 'en attente'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : payment.statut?.toLowerCase() === 'en retard'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {payment.statut}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 mt-1">
+                      {payment.tranche?.projet?.projet || 'Projet'} •{' '}
+                      {payment.tranche?.tranche_name || 'Tranche'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {payment.type || 'Coupon'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-slate-700">
+                      {formatDate(payment.date_paiement)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {daysAgo === 0
+                        ? "Aujourd'hui"
+                        : daysAgo === 1
+                          ? 'Hier'
+                          : `Il y a ${daysAgo} jours`}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-slate-900 text-sm">
-                    {formatCurrency(payment.montant)}
-                  </p>
-                  <span
-                    className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                      payment.statut?.toLowerCase() === 'payé' ||
-                      payment.statut?.toLowerCase() === 'paid'
-                        ? 'bg-green-100 text-green-700'
-                        : payment.statut?.toLowerCase() === 'en attente'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : payment.statut?.toLowerCase() === 'en retard'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {payment.statut}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
