@@ -88,7 +88,8 @@ export function DashboardRecentPayments({
                 (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) /
                   (1000 * 60 * 60 * 24)
               );
-              const isUrgent = daysUntil <= 7;
+              const isOverdue = daysUntil < 0;
+              const isUrgent = daysUntil >= 0 && daysUntil <= 7;
 
               return (
                 <div
@@ -100,12 +101,17 @@ export function DashboardRecentPayments({
                       <p className="font-bold text-slate-900">
                         {formatCurrency(parseFloat(coupon.coupon_brut.toString()))}
                       </p>
-                      {isUrgent && (
+                      {isOverdue ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                          <AlertCircle className="w-3 h-3" />
+                          En retard
+                        </span>
+                      ) : isUrgent ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
                           <AlertCircle className="w-3 h-3" />
                           Urgent
                         </span>
-                      )}
+                      ) : null}
                     </div>
                     <p className="text-xs text-slate-600 mt-1">
                       {coupon.tranche?.projet?.projet || 'Projet'} •{' '}
@@ -113,15 +119,19 @@ export function DashboardRecentPayments({
                     </p>
                     <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
                       <Users className="w-3 h-3" />
-                      {coupon.investisseur?.nom_raison_sociale}
+                      {coupon.investor_count || 0} investisseur{(coupon.investor_count || 0) > 1 ? 's' : ''}
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-semibold text-slate-700">
                       {formatDate(coupon.prochaine_date_coupon)}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {daysUntil === 0 ? "Aujourd'hui" : `Dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''}`}
+                    <p className={`text-xs mt-1 ${isOverdue ? 'text-red-600 font-semibold' : 'text-slate-500'}`}>
+                      {daysUntil === 0
+                        ? "Aujourd'hui"
+                        : isOverdue
+                          ? `Retard de ${Math.abs(daysUntil)} jour${Math.abs(daysUntil) > 1 ? 's' : ''}`
+                          : `Dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''}`}
                     </p>
                   </div>
                 </div>
