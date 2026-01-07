@@ -79,7 +79,7 @@ export function DemoRequest() {
               <img
                 src="/branding/logo/logo-full-blue.png"
                 alt="Finixar"
-                className="h-12"
+                className="h-10"
               />
             </a>
             <a
