@@ -439,8 +439,9 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         recentPaymentsData = paymentsRes2.data || [];
         allCouponsForAlerts = allCouponsRes.data || [];
 
-        // Group coupons by échéance (tranche + date) and sum amounts
+        // Group coupons by échéance (tranche + date) and calculate unpaid amounts
         // Show échéances with at least 1 unpaid coupon (even if partially paid)
+        // Display only the unpaid portion of the échéance
         const echeanceMap = new Map<string, any>();
 
         (upcomingCouponsRes.data || []).forEach((coupon: any) => {
@@ -454,6 +455,8 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
               date_echeance: dateEcheance,
               prochaine_date_coupon: dateEcheance,
               montant_total: 0,
+              montant_paye: 0,
+              montant_impaye: 0,
               unpaid_count: 0,
               investor_count: 0,
               tranche: coupon.souscription?.tranche,
@@ -461,10 +464,15 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           }
 
           const echeance = echeanceMap.get(key);
-          echeance.montant_total += parseFloat(coupon.montant_coupon || 0);
+          const montantCoupon = parseFloat(coupon.montant_coupon || 0);
+          echeance.montant_total += montantCoupon;
           echeance.investor_count += 1;
-          if (coupon.statut !== 'payé') {
+
+          if (coupon.statut === 'payé') {
+            echeance.montant_paye += montantCoupon;
+          } else {
             echeance.unpaid_count += 1;
+            echeance.montant_impaye += montantCoupon;
           }
         });
 
@@ -478,8 +486,8 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             id: echeance.id,
             date_echeance: echeance.date_echeance,
             prochaine_date_coupon: echeance.date_echeance,
-            montant_coupon: echeance.montant_total,
-            coupon_brut: echeance.montant_total,
+            montant_coupon: echeance.montant_impaye, // Show only unpaid amount
+            coupon_brut: echeance.montant_impaye, // Show only unpaid amount
             investor_count: echeance.investor_count,
             tranche: echeance.tranche,
           })) as UpcomingCoupon[];
