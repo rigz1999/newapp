@@ -22,15 +22,22 @@ interface DashboardStatsProps {
 }
 
 function GrowthBadge({ percentage, label }: { percentage?: number; label: string }) {
-  if (percentage === undefined || percentage === null || isNaN(percentage)) return null;
+  if (percentage === undefined || percentage === null || isNaN(percentage)) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-xs font-medium text-slate-400">
+        — <span className="font-normal ml-1">{label}</span>
+      </span>
+    );
+  }
 
-  const isPositive = percentage >= 0;
+  const isPositive = percentage > 0;
+  const isNeutral = percentage === 0;
   const Icon = isPositive ? ArrowUp : ArrowDown;
-  const colorClass = isPositive ? 'text-emerald-600' : 'text-red-600';
+  const colorClass = isNeutral ? 'text-slate-500' : (isPositive ? 'text-emerald-600' : 'text-red-600');
 
   return (
     <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${colorClass}`}>
-      <Icon className="w-3 h-3" />
+      {!isNeutral && <Icon className="w-3 h-3" />}
       {Math.abs(percentage).toFixed(1)}% <span className="text-slate-400 font-normal ml-1">{label}</span>
     </span>
   );
