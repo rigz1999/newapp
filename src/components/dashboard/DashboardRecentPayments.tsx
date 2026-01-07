@@ -59,7 +59,7 @@ export function DashboardRecentPayments({
                                 : 'bg-gray-100 text-gray-700'
                         }`}
                       >
-                        {payment.statut}
+                        {payment.statut?.charAt(0).toUpperCase() + payment.statut?.slice(1).toLowerCase()}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600 mt-1">
