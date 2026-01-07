@@ -193,7 +193,27 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       const in90Days = new Date();
       in90Days.setDate(today.getDate() + 90);
 
-      const [projectsRes, tranchesRes, subscriptionsRes, monthSubscriptionsRes, monthPaymentsRes] = await Promise.all([
+      // Dates pour comparaisons MoM et YoY
+      const firstOfLastMonth = new Date(firstOfMonth);
+      firstOfLastMonth.setMonth(firstOfLastMonth.getMonth() - 1);
+      const firstOfThisMonthLastYear = new Date(firstOfMonth);
+      firstOfThisMonthLastYear.setFullYear(firstOfThisMonthLastYear.getFullYear() - 1);
+      const firstOfNextMonthLastYear = new Date(firstOfThisMonthLastYear);
+      firstOfNextMonthLastYear.setMonth(firstOfNextMonthLastYear.getMonth() + 1);
+
+      const [
+        projectsRes,
+        tranchesRes,
+        subscriptionsRes,
+        monthSubscriptionsRes,
+        monthPaymentsRes,
+        lastMonthSubscriptionsRes,
+        lastMonthPaymentsRes,
+        lastYearSubscriptionsRes,
+        lastYearPaymentsRes,
+        lastMonthProjectsRes,
+        lastYearProjectsRes,
+      ] = await Promise.all([
         supabase.from('projets').select('id'),
         supabase.from('tranches').select('id, projet_id'),
         supabase
@@ -208,6 +228,34 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           .select('montant, statut')
           .eq('statut', 'payé')
           .gte('date_paiement', firstOfMonth.toISOString().split('T')[0]),
+        // Mois dernier
+        supabase
+          .from('souscriptions')
+          .select('montant_investi')
+          .gte('date_souscription', firstOfLastMonth.toISOString().split('T')[0])
+          .lt('date_souscription', firstOfMonth.toISOString().split('T')[0]),
+        supabase
+          .from('paiements')
+          .select('montant, statut')
+          .eq('statut', 'payé')
+          .gte('date_paiement', firstOfLastMonth.toISOString().split('T')[0])
+          .lt('date_paiement', firstOfMonth.toISOString().split('T')[0]),
+        // Même mois année dernière
+        supabase
+          .from('souscriptions')
+          .select('montant_investi')
+          .gte('date_souscription', firstOfThisMonthLastYear.toISOString().split('T')[0])
+          .lt('date_souscription', firstOfNextMonthLastYear.toISOString().split('T')[0]),
+        supabase
+          .from('paiements')
+          .select('montant, statut')
+          .eq('statut', 'payé')
+          .gte('date_paiement', firstOfThisMonthLastYear.toISOString().split('T')[0])
+          .lt('date_paiement', firstOfNextMonthLastYear.toISOString().split('T')[0]),
+        // Projets actifs mois dernier (on prend ceux créés avant le mois en cours)
+        supabase.from('projets').select('id').lt('created_at', firstOfMonth.toISOString()),
+        // Projets actifs même mois année dernière
+        supabase.from('projets').select('id').lt('created_at', firstOfThisMonthLastYear.toISOString()),
       ]);
 
       // Check for critical errors
@@ -239,8 +287,23 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       const monthPayments = monthPaymentsRes.data || [];
       const chartSubscriptions = subscriptions;
 
+      // Données pour comparaisons
+      const lastMonthSubscriptions = lastMonthSubscriptionsRes.data || [];
+      const lastMonthPayments = lastMonthPaymentsRes.data || [];
+      const lastYearSubscriptions = lastYearSubscriptionsRes.data || [];
+      const lastYearPayments = lastYearPaymentsRes.data || [];
+      const lastMonthProjects = lastMonthProjectsRes.data || [];
+      const lastYearProjects = lastYearProjectsRes.data || [];
+
       const trancheIds = tranches.map((t: { id: string }) => t.id);
 
+      // Helper pour calculer le pourcentage de croissance
+      const calculateGrowth = (current: number, previous: number): number | undefined => {
+        if (previous === 0) return undefined;
+        return ((current - previous) / previous) * 100;
+      };
+
+      // Montants ce mois
       const totalInvested = monthSubscriptions.reduce(
         (sum: number, s: { montant_investi?: number | string }) =>
           sum + parseFloat(s.montant_investi?.toString() || '0'),
@@ -258,11 +321,43 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           s.prochaine_date_coupon <= in90Days.toISOString().split('T')[0]
       ).length;
 
+      // Montants mois dernier
+      const totalInvestedLastMonth = lastMonthSubscriptions.reduce(
+        (sum: number, s: { montant_investi?: number | string }) =>
+          sum + parseFloat(s.montant_investi?.toString() || '0'),
+        0
+      );
+      const couponsPaidLastMonth = lastMonthPayments.reduce(
+        (sum: number, p: { montant?: number | string }) =>
+          sum + parseFloat(p.montant?.toString() || '0'),
+        0
+      );
+
+      // Montants année dernière (même mois)
+      const totalInvestedLastYear = lastYearSubscriptions.reduce(
+        (sum: number, s: { montant_investi?: number | string }) =>
+          sum + parseFloat(s.montant_investi?.toString() || '0'),
+        0
+      );
+      const couponsPaidLastYear = lastYearPayments.reduce(
+        (sum: number, p: { montant?: number | string }) =>
+          sum + parseFloat(p.montant?.toString() || '0'),
+        0
+      );
+
       setStats({
         totalInvested,
+        totalInvestedMoM: calculateGrowth(totalInvested, totalInvestedLastMonth),
+        totalInvestedYoY: calculateGrowth(totalInvested, totalInvestedLastYear),
         couponsPaidThisMonth,
+        couponsPaidMoM: calculateGrowth(couponsPaidThisMonth, couponsPaidLastMonth),
+        couponsPaidYoY: calculateGrowth(couponsPaidThisMonth, couponsPaidLastYear),
         activeProjects: projects.length,
+        activeProjectsMoM: calculateGrowth(projects.length, lastMonthProjects.length),
+        activeProjectsYoY: calculateGrowth(projects.length, lastYearProjects.length),
         upcomingCoupons: upcomingCount,
+        upcomingCouponsMoM: undefined, // Difficile à calculer sans historique
+        upcomingCouponsYoY: undefined, // Difficile à calculer sans historique
         nextCouponDays: 90,
       });
 
@@ -387,9 +482,17 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       const cacheData = {
         stats: {
           totalInvested,
+          totalInvestedMoM: calculateGrowth(totalInvested, totalInvestedLastMonth),
+          totalInvestedYoY: calculateGrowth(totalInvested, totalInvestedLastYear),
           couponsPaidThisMonth,
+          couponsPaidMoM: calculateGrowth(couponsPaidThisMonth, couponsPaidLastMonth),
+          couponsPaidYoY: calculateGrowth(couponsPaidThisMonth, couponsPaidLastYear),
           activeProjects: projects.length,
+          activeProjectsMoM: calculateGrowth(projects.length, lastMonthProjects.length),
+          activeProjectsYoY: calculateGrowth(projects.length, lastYearProjects.length),
           upcomingCoupons: upcomingCount,
+          upcomingCouponsMoM: undefined,
+          upcomingCouponsYoY: undefined,
           nextCouponDays: 90,
         },
         recentPayments: recentPaymentsData,
@@ -488,9 +591,17 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       mounted = false;
       setStats({
         totalInvested: 0,
+        totalInvestedMoM: undefined,
+        totalInvestedYoY: undefined,
         couponsPaidThisMonth: 0,
+        couponsPaidMoM: undefined,
+        couponsPaidYoY: undefined,
         activeProjects: 0,
+        activeProjectsMoM: undefined,
+        activeProjectsYoY: undefined,
         upcomingCoupons: 0,
+        upcomingCouponsMoM: undefined,
+        upcomingCouponsYoY: undefined,
         nextCouponDays: 90,
       });
       setRecentPayments([]);

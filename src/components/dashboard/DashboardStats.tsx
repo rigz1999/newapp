@@ -1,16 +1,39 @@
-import { TrendingUp, CheckCircle2, Folder, Clock } from 'lucide-react';
+import { TrendingUp, CheckCircle2, Folder, Clock, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
 interface Stats {
   totalInvested: number;
+  totalInvestedMoM?: number;
+  totalInvestedYoY?: number;
   couponsPaidThisMonth: number;
+  couponsPaidMoM?: number;
+  couponsPaidYoY?: number;
   activeProjects: number;
+  activeProjectsMoM?: number;
+  activeProjectsYoY?: number;
   upcomingCoupons: number;
+  upcomingCouponsMoM?: number;
+  upcomingCouponsYoY?: number;
   nextCouponDays: number;
 }
 
 interface DashboardStatsProps {
   stats: Stats;
+}
+
+function GrowthBadge({ percentage, label }: { percentage?: number; label: string }) {
+  if (percentage === undefined || percentage === null || isNaN(percentage)) return null;
+
+  const isPositive = percentage >= 0;
+  const Icon = isPositive ? ArrowUp : ArrowDown;
+  const colorClass = isPositive ? 'text-emerald-600' : 'text-red-600';
+
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${colorClass}`}>
+      <Icon className="w-3 h-3" />
+      {Math.abs(percentage).toFixed(1)}% <span className="text-slate-400 font-normal ml-1">{label}</span>
+    </span>
+  );
 }
 
 export function DashboardStats({ stats }: DashboardStatsProps) {
@@ -22,12 +45,13 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
             <span className="text-slate-600 text-sm font-medium block mb-2">
               Montant total collecté
             </span>
-            <p className="text-3xl font-bold text-slate-900 mb-1">
+            <p className="text-3xl font-bold text-slate-900 mb-2">
               {formatCurrency(stats.totalInvested)}
             </p>
-            <span className="text-xs text-slate-500">
-              Ce mois-ci
-            </span>
+            <div className="flex items-center gap-3 text-xs">
+              <GrowthBadge percentage={stats.totalInvestedMoM} label="MoM" />
+              <GrowthBadge percentage={stats.totalInvestedYoY} label="YoY" />
+            </div>
           </div>
           <div className="bg-blue-100 p-3 rounded-xl">
             <TrendingUp className="w-6 h-6 text-finixar-brand-blue" />
@@ -41,12 +65,13 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
             <span className="text-slate-600 text-sm font-medium block mb-2">
               Coupons versés
             </span>
-            <p className="text-3xl font-bold text-slate-900 mb-1">
+            <p className="text-3xl font-bold text-slate-900 mb-2">
               {formatCurrency(stats.couponsPaidThisMonth)}
             </p>
-            <span className="text-xs text-slate-500">
-              Ce mois-ci
-            </span>
+            <div className="flex items-center gap-3 text-xs">
+              <GrowthBadge percentage={stats.couponsPaidMoM} label="MoM" />
+              <GrowthBadge percentage={stats.couponsPaidYoY} label="YoY" />
+            </div>
           </div>
           <div className="bg-emerald-100 p-3 rounded-xl">
             <CheckCircle2 className="w-6 h-6 text-finixar-action-create" />
@@ -60,7 +85,11 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
             <span className="text-slate-600 text-sm font-medium block mb-2">
               Projets actifs
             </span>
-            <p className="text-3xl font-bold text-slate-900 mb-1">{stats.activeProjects}</p>
+            <p className="text-3xl font-bold text-slate-900 mb-2">{stats.activeProjects}</p>
+            <div className="flex items-center gap-3 text-xs">
+              <GrowthBadge percentage={stats.activeProjectsMoM} label="MoM" />
+              <GrowthBadge percentage={stats.activeProjectsYoY} label="YoY" />
+            </div>
           </div>
           <div className="bg-purple-100 p-3 rounded-xl">
             <Folder className="w-6 h-6 text-purple-600" />
@@ -74,12 +103,13 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
             <span className="text-slate-600 text-sm font-medium block mb-2">
               Coupons à venir
             </span>
-            <p className="text-3xl font-bold text-slate-900 mb-1">
+            <p className="text-3xl font-bold text-slate-900 mb-2">
               {stats.upcomingCoupons}
             </p>
-            <span className="text-xs text-slate-500">
-              Dans les 90 prochains jours
-            </span>
+            <div className="flex items-center gap-3 text-xs">
+              <GrowthBadge percentage={stats.upcomingCouponsMoM} label="MoM" />
+              <GrowthBadge percentage={stats.upcomingCouponsYoY} label="YoY" />
+            </div>
           </div>
           <div className="bg-amber-100 p-3 rounded-xl">
             <Clock className="w-6 h-6 text-amber-600" />
