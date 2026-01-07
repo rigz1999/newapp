@@ -379,8 +379,8 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             .in('tranche_id', trancheIds)
             .order('date_paiement', { ascending: false })
             .limit(5),
-          // Fetch ALL UNPAID coupons (max 5) for the "Coupons à venir" card
-          // Including overdue coupons (not just future ones)
+          // Fetch ALL coupons_echeances (paid and unpaid) for grouping by échéance
+          // We'll filter after grouping to show échéances with at least 1 unpaid coupon
           supabase
             .from('coupons_echeances')
             .select(
@@ -401,9 +401,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             `
             )
             .in('souscription.tranche_id', trancheIds)
-            .neq('statut', 'payé')
-            .order('date_echeance', { ascending: true })
-            .limit(5),
+            .order('date_echeance', { ascending: true }),
           // Fetch ALL écheances (including overdue) for alert generation
           // Using coupons_echeances instead of souscriptions to match Coupons page count
           supabase
@@ -441,17 +439,58 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         recentPaymentsData = paymentsRes2.data || [];
         allCouponsForAlerts = allCouponsRes.data || [];
 
-        // Transform upcoming coupons data to match expected format
-        groupedCoupons = (upcomingCouponsRes.data || []).map((echeance: any) => ({
-          id: echeance.id,
-          date_echeance: echeance.date_echeance,
-          prochaine_date_coupon: echeance.date_echeance, // For backward compatibility
-          montant_coupon: echeance.montant_coupon,
-          coupon_brut: echeance.montant_coupon, // For backward compatibility
-          statut: echeance.statut,
-          investisseur: echeance.souscription?.investisseur,
-          tranche: echeance.souscription?.tranche,
-        })) as UpcomingCoupon[];
+        // Group coupons by échéance (tranche + date) and calculate unpaid amounts
+        // Show échéances with at least 1 unpaid coupon (even if partially paid)
+        // Display only the unpaid portion of the échéance
+        const echeanceMap = new Map<string, any>();
+
+        (upcomingCouponsRes.data || []).forEach((coupon: any) => {
+          const trancheId = coupon.souscription?.tranche_id;
+          const dateEcheance = coupon.date_echeance;
+          const key = `${trancheId}-${dateEcheance}`;
+
+          if (!echeanceMap.has(key)) {
+            echeanceMap.set(key, {
+              id: key,
+              date_echeance: dateEcheance,
+              prochaine_date_coupon: dateEcheance,
+              montant_total: 0,
+              montant_paye: 0,
+              montant_impaye: 0,
+              unpaid_count: 0,
+              investor_count: 0,
+              tranche: coupon.souscription?.tranche,
+            });
+          }
+
+          const echeance = echeanceMap.get(key);
+          const montantCoupon = parseFloat(coupon.montant_coupon || 0);
+          echeance.montant_total += montantCoupon;
+          echeance.investor_count += 1;
+
+          if (coupon.statut === 'payé') {
+            echeance.montant_paye += montantCoupon;
+          } else {
+            echeance.unpaid_count += 1;
+            echeance.montant_impaye += montantCoupon;
+          }
+        });
+
+        // Filter to keep only échéances with at least 1 unpaid coupon
+        // Sort by date and limit to 5
+        groupedCoupons = Array.from(echeanceMap.values())
+          .filter((echeance: any) => echeance.unpaid_count > 0)
+          .sort((a: any, b: any) => a.date_echeance.localeCompare(b.date_echeance))
+          .slice(0, 5)
+          .map((echeance: any) => ({
+            id: echeance.id,
+            date_echeance: echeance.date_echeance,
+            prochaine_date_coupon: echeance.date_echeance,
+            montant_coupon: echeance.montant_impaye, // Show only unpaid amount
+            coupon_brut: echeance.montant_impaye, // Show only unpaid amount
+            investor_count: echeance.investor_count,
+            tranche: echeance.tranche,
+          })) as UpcomingCoupon[];
       }
 
       // Precompute monthly data locally from cached chartSubscriptions
