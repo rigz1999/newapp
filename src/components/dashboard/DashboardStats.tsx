@@ -120,7 +120,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
             <span className="text-slate-600 text-sm font-medium block mb-1">
               Coupons à venir
             </span>
-            <span className="text-xs text-slate-400 block mb-3">30 prochains jours</span>
+            <span className="text-xs text-slate-400 block mb-3">90 prochains jours</span>
             <p className="text-3xl font-bold text-slate-900 mb-3">
               {stats.upcomingCoupons}
             </p>
