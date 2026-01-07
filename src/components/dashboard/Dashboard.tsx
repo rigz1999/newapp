@@ -367,7 +367,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       let allCouponsForAlerts: UpcomingCoupon[] = [];
 
       if (trancheIds.length > 0) {
-        const [paymentsRes2, couponsRes, allCouponsRes] = await Promise.all([
+        const [paymentsRes2, upcomingCouponsRes, allCouponsRes] = await Promise.all([
           supabase
             .from('paiements')
             .select(
@@ -379,21 +379,31 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             .in('tranche_id', trancheIds)
             .order('date_paiement', { ascending: false })
             .limit(5),
+          // Fetch ALL UNPAID coupons (max 5) for the "Coupons à venir" card
+          // Including overdue coupons (not just future ones)
           supabase
-            .from('souscriptions')
+            .from('coupons_echeances')
             .select(
               `
-              id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
-              tranche:tranches(
-                tranche_name, projet_id,
-                projet:projets(projet)
+              id,
+              date_echeance,
+              montant_coupon,
+              statut,
+              souscription:souscriptions!inner(
+                tranche_id,
+                investisseur:investisseurs(nom_raison_sociale),
+                tranche:tranches(
+                  tranche_name,
+                  projet_id,
+                  projet:projets(projet)
+                )
               )
             `
             )
-            .in('tranche_id', trancheIds)
-            .gte('prochaine_date_coupon', today.toISOString().split('T')[0])
-            .order('prochaine_date_coupon', { ascending: true })
-            .limit(10),
+            .in('souscription.tranche_id', trancheIds)
+            .neq('statut', 'payé')
+            .order('date_echeance', { ascending: true })
+            .limit(5),
           // Fetch ALL écheances (including overdue) for alert generation
           // Using coupons_echeances instead of souscriptions to match Coupons page count
           supabase
@@ -421,8 +431,8 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         if (paymentsRes2.error) {
           logger.warn('Supabase error paiements 2:', paymentsRes2.error);
         }
-        if (couponsRes.error) {
-          logger.warn('Supabase error coupons:', couponsRes.error);
+        if (upcomingCouponsRes.error) {
+          logger.warn('Supabase error upcoming coupons:', upcomingCouponsRes.error);
         }
         if (allCouponsRes.error) {
           logger.warn('Supabase error all coupons:', allCouponsRes.error);
@@ -431,28 +441,17 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         recentPaymentsData = paymentsRes2.data || [];
         allCouponsForAlerts = allCouponsRes.data || [];
 
-        interface CouponData {
-          tranche_id: string;
-          prochaine_date_coupon: string;
-          coupon_brut: number;
-          investor_count?: number;
-          [key: string]: unknown;
-        }
-
-        groupedCoupons = (couponsRes.data || []).reduce((acc: CouponData[], coupon: CouponData) => {
-          const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
-          const existing = acc.find(c => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
-
-          if (existing) {
-            existing.investor_count = (existing.investor_count || 0) + 1;
-            existing.coupon_brut = new Decimal(existing.coupon_brut)
-              .plus(new Decimal(coupon.coupon_brut))
-              .toNumber();
-          } else {
-            acc.push({ ...coupon, investor_count: 1 });
-          }
-          return acc;
-        }, []) as UpcomingCoupon[];
+        // Transform upcoming coupons data to match expected format
+        groupedCoupons = (upcomingCouponsRes.data || []).map((echeance: any) => ({
+          id: echeance.id,
+          date_echeance: echeance.date_echeance,
+          prochaine_date_coupon: echeance.date_echeance, // For backward compatibility
+          montant_coupon: echeance.montant_coupon,
+          coupon_brut: echeance.montant_coupon, // For backward compatibility
+          statut: echeance.statut,
+          investisseur: echeance.souscription?.investisseur,
+          tranche: echeance.souscription?.tranche,
+        })) as UpcomingCoupon[];
       }
 
       // Precompute monthly data locally from cached chartSubscriptions

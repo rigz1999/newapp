@@ -28,6 +28,9 @@ export interface UpcomingCoupon {
   investisseur_id?: string;
   tranche_id?: string;
   investor_count?: number; // For grouped coupons
+  investisseur?: {
+    nom_raison_sociale: string;
+  };
   souscription?: {
     tranche_id: string;
     tranche?: {
