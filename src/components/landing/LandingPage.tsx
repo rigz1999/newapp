@@ -76,7 +76,7 @@ export function LandingPage() {
               <img
                 src="/branding/logo/logo-full-blue.png"
                 alt="Finixar"
-                className="h-8"
+                className="h-12"
               />
             </div>
 
@@ -752,7 +752,7 @@ export function LandingPage() {
                 <img
                   src="/branding/logo/logo-full-white.png"
                   alt="Finixar"
-                  className="h-8"
+                  className="h-10"
                 />
               </div>
               <p className="text-slate-400 text-sm leading-relaxed">
