@@ -148,9 +148,9 @@ export function TrancheWizard({
       return;
     }
 
-    // CRITICAL: Check if date_emission is being changed and if there are any payments
+    // CRITICAL: Check if date_emission is being changed and if there are PAID payments
     if (dateEmission !== editingTranche.date_emission) {
-      // Check for existing payments via souscriptions
+      // Check for existing PAID payments via souscriptions
       const { data: souscriptions } = await supabase
         .from('souscriptions')
         .select('id')
@@ -163,14 +163,14 @@ export function TrancheWizard({
           .from('coupons_echeances')
           .select('id, statut, date_paiement')
           .in('souscription_id', subscriptionIds)
-          .not('statut', 'is', null);
+          .eq('statut', 'payé');
 
         if (paidEcheances && paidEcheances.length > 0) {
           setError(
             `ATTENTION: Impossible de modifier la date d'émission.\n\n` +
-            `Cette tranche a ${paidEcheances.length} paiement(s) déjà enregistré(s).\n` +
-            `Modifier la date d'émission supprimerait tous les échéanciers existants et les paiements seraient perdus.\n\n` +
-            `Pour modifier la date d'émission, veuillez d'abord annuler tous les paiements enregistrés.`
+            `Cette tranche a ${paidEcheances.length} paiement(s) réellement effectué(s).\n` +
+            `Modifier la date d'émission supprimerait tous les échéanciers existants et les paiements effectués seraient perdus.\n\n` +
+            `Pour modifier la date d'émission, veuillez d'abord annuler les paiements effectués depuis l'écran de gestion des paiements.`
           );
           return;
         }
