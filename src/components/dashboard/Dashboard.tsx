@@ -379,7 +379,8 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             .in('tranche_id', trancheIds)
             .order('date_paiement', { ascending: false })
             .limit(5),
-          // Fetch upcoming UNPAID coupons (max 5) for the "Coupons à venir" card
+          // Fetch ALL UNPAID coupons (max 5) for the "Coupons à venir" card
+          // Including overdue coupons (not just future ones)
           supabase
             .from('coupons_echeances')
             .select(
@@ -401,7 +402,6 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             )
             .in('souscription.tranche_id', trancheIds)
             .neq('statut', 'payé')
-            .gte('date_echeance', today.toISOString().split('T')[0])
             .order('date_echeance', { ascending: true })
             .limit(5),
           // Fetch ALL écheances (including overdue) for alert generation
