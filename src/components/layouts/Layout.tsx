@@ -177,11 +177,11 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
     const linkContent = (
       <Link to={to} className={`${baseClasses} ${isCollapsed ? 'justify-center' : ''}`}>
         <Icon className="w-4 h-4 flex-shrink-0" />
-        <span className={`transition-opacity duration-200 whitespace-nowrap overflow-hidden ${
-          isCollapsed ? 'opacity-0 w-0' : 'opacity-100 delay-100'
-        }`}>
-          {label}
-        </span>
+        {!isCollapsed && (
+          <span className="transition-opacity duration-150 delay-75 whitespace-nowrap">
+            {label}
+          </span>
+        )}
       </Link>
     );
 
@@ -252,9 +252,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
               className="w-full flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-colors text-slate-400 hover:text-white"
             >
               <Search className="w-4 h-4 flex-shrink-0" />
-              <span className={`text-sm transition-opacity duration-200 whitespace-nowrap overflow-hidden ${
-                isCollapsed ? 'opacity-0' : 'opacity-100 delay-100'
-              }`}>
+              <span className="text-sm whitespace-nowrap">
                 Rechercher...
               </span>
             </button>
@@ -312,16 +310,16 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                 </div>
               </Tooltip>
 
-              <div className={`flex-1 min-w-0 transition-opacity duration-200 overflow-hidden ${
-                isCollapsed ? 'opacity-0 w-0 h-0' : 'opacity-100 delay-100'
-              }`}>
-                <p className="font-medium truncate text-sm whitespace-nowrap">
-                  {userProfile?.full_name || 'Utilisateur'}
-                </p>
-                <p className="text-xs text-slate-400 capitalize whitespace-nowrap">
-                  {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : 'Membre'}
-                </p>
-              </div>
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate text-sm whitespace-nowrap">
+                    {userProfile?.full_name || 'Utilisateur'}
+                  </p>
+                  <p className="text-xs text-slate-400 capitalize whitespace-nowrap">
+                    {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : 'Membre'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Logout Button */}
@@ -333,11 +331,11 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                 }`}
               >
                 <LogOut className="w-4 h-4 flex-shrink-0" />
-                <span className={`transition-opacity duration-200 whitespace-nowrap overflow-hidden ${
-                  isCollapsed ? 'opacity-0 w-0' : 'opacity-100 delay-100'
-                }`}>
-                  Se déconnecter
-                </span>
+                {!isCollapsed && (
+                  <span className="whitespace-nowrap">
+                    Se déconnecter
+                  </span>
+                )}
               </button>
             </Tooltip>
           </div>
