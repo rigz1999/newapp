@@ -208,7 +208,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                 <img src="/branding/icon/icon-white-192.png" alt="Finixar" className="w-8 h-8" />
               </div>
             ) : (
-              <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="h-8" />
+              <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="h-8 object-contain max-w-[140px]" />
             )}
 
             {/* Toggle Button */}
