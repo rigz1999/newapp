@@ -213,6 +213,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         lastYearPaymentsRes,
         lastMonthProjectsRes,
         lastYearProjectsRes,
+        upcomingCouponsCountRes,
       ] = await Promise.all([
         supabase.from('projets').select('id'),
         supabase.from('tranches').select('id, projet_id'),
@@ -256,6 +257,13 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         supabase.from('projets').select('id').lt('created_at', firstOfMonth.toISOString()),
         // Projets actifs même mois année dernière
         supabase.from('projets').select('id').lt('created_at', firstOfThisMonthLastYear.toISOString()),
+        // Upcoming coupons count from coupons_echeances
+        supabase
+          .from('coupons_echeances')
+          .select('id', { count: 'exact', head: true })
+          .gte('date_echeance', today.toISOString().split('T')[0])
+          .lte('date_echeance', in90Days.toISOString().split('T')[0])
+          .neq('statut', 'payé'),
       ]);
 
       // Check for critical errors
@@ -315,12 +323,9 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           sum + parseFloat(p.montant?.toString() || '0'),
         0
       );
-      const upcomingCount = subscriptions.filter(
-        (s: { prochaine_date_coupon?: string }) =>
-          s.prochaine_date_coupon &&
-          s.prochaine_date_coupon >= today.toISOString().split('T')[0] &&
-          s.prochaine_date_coupon <= in90Days.toISOString().split('T')[0]
-      ).length;
+
+      // Get upcoming coupons count from coupons_echeances table (not from subscriptions)
+      const upcomingCount = upcomingCouponsCountRes.count || 0;
 
       // Montants mois dernier
       const totalInvestedLastMonth = lastMonthSubscriptions.reduce(
