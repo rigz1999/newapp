@@ -54,6 +54,7 @@ export function Projects({ organization }: ProjectsProps) {
     periodicite_coupon: '',
     maturite_mois: '',
     base_interet: '360',
+    apply_flat_tax: true,
     emetteur: '',
     siren_emetteur: '',
     nom_representant: '',
@@ -275,6 +276,7 @@ export function Projects({ organization }: ProjectsProps) {
         maturite_mois: maturite,
         duree_mois: maturite,
         base_interet: baseInteret,
+        apply_flat_tax: newProjectData.apply_flat_tax ?? true,
       };
 
       // Determine org_id based on user type
@@ -321,6 +323,7 @@ export function Projects({ organization }: ProjectsProps) {
       periodicite_coupon: '',
       maturite_mois: '',
       base_interet: '360',
+      apply_flat_tax: true,
       emetteur: '',
       siren_emetteur: '',
       nom_representant: '',
@@ -646,6 +649,28 @@ export function Projects({ organization }: ProjectsProps) {
                       </select>
                       <p className="mt-1 text-xs text-slate-600">💡 Standard: 360 jours</p>
                     </div>
+                  </div>
+
+                  {/* Flat Tax Toggle */}
+                  <div className="flex items-center justify-between py-4 px-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex-1">
+                      <label htmlFor="apply_flat_tax" className="block text-sm font-medium text-slate-900 mb-1">
+                        Appliquer le PFU (30%)
+                      </label>
+                      <p className="text-sm text-slate-600">
+                        Activer le prélèvement forfaitaire unique de 30% pour les personnes physiques
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer ml-4">
+                      <input
+                        id="apply_flat_tax"
+                        type="checkbox"
+                        checked={newProjectData.apply_flat_tax ?? true}
+                        onChange={(e) => setNewProjectData({ ...newProjectData, apply_flat_tax: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

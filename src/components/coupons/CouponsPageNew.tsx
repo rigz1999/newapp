@@ -8,6 +8,7 @@ import { TableSkeleton } from '../common/Skeleton';
 import { Pagination } from '../common/Pagination';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { DateRangePicker } from '../filters/DateRangePicker';
+import { TaxInfoTooltip } from '../common/TaxInfoTooltip';
 import {
   Receipt,
   Search,
@@ -585,7 +586,14 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-600">Montant Net</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-slate-600">Montant Net</p>
+                    <TaxInfoTooltip
+                      couponBrut={selectedCoupon.montant_brut}
+                      couponNet={selectedCoupon.montant_net}
+                      investorType={selectedCoupon.investisseur_type || 'physique'}
+                    />
+                  </div>
                   <p className="text-sm font-medium text-finixar-green">
                     {formatCurrency(selectedCoupon.montant_net)}
                   </p>
