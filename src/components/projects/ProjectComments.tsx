@@ -1,9 +1,19 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, Send, Edit2, Trash2, Eye, Bold, Italic, Link as LinkIcon } from 'lucide-react';
+import {
+  MessageSquare,
+  Send,
+  Edit2,
+  Trash2,
+  Eye,
+  Bold,
+  Italic,
+  Link as LinkIcon,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { sanitizeHTML } from '../../utils/sanitizer';
 
 interface Comment {
   id: string;
@@ -41,7 +51,9 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
   }, [projectId]);
 
   const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       setCurrentUserId(user.id);
     }
@@ -61,7 +73,8 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
       // Get latest 5 comments
       const { data, error } = await supabase
         .from('project_comments')
-        .select(`
+        .select(
+          `
           id,
           comment_text,
           created_at,
@@ -69,12 +82,15 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
           is_edited,
           user_id,
           user:profiles(full_name)
-        `)
+        `
+        )
         .eq('projet_id', projectId)
         .order('created_at', { ascending: false })
         .limit(5);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       setComments(data || []);
     } catch (error) {
       console.error('Error fetching comments:', error);
@@ -85,20 +101,22 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || submitting) return;
+    if (!newComment.trim() || submitting) {
+      return;
+    }
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('project_comments')
-        .insert({
-          projet_id: projectId,
-          org_id: orgId,
-          comment_text: newComment.trim(),
-          user_id: currentUserId,
-        });
+      const { error } = await supabase.from('project_comments').insert({
+        projet_id: projectId,
+        org_id: orgId,
+        comment_text: newComment.trim(),
+        user_id: currentUserId,
+      });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setNewComment('');
       await fetchComments();
@@ -111,7 +129,9 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
   };
 
   const handleEdit = async (commentId: string) => {
-    if (!editText.trim()) return;
+    if (!editText.trim()) {
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -121,7 +141,9 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
         })
         .eq('id', commentId);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setEditingId(null);
       setEditText('');
@@ -133,15 +155,16 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
   };
 
   const handleDelete = async () => {
-    if (!commentToDelete) return;
+    if (!commentToDelete) {
+      return;
+    }
 
     try {
-      const { error } = await supabase
-        .from('project_comments')
-        .delete()
-        .eq('id', commentToDelete);
+      const { error } = await supabase.from('project_comments').delete().eq('id', commentToDelete);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       setDeleteConfirmOpen(false);
       setCommentToDelete(null);
       await fetchComments();
@@ -151,7 +174,11 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
     }
   };
 
-  const insertFormatting = (format: 'bold' | 'italic' | 'link', text: string, setText: (text: string) => void) => {
+  const insertFormatting = (
+    format: 'bold' | 'italic' | 'link',
+    text: string,
+    setText: (text: string) => void
+  ) => {
     const textarea = document.activeElement as HTMLTextAreaElement;
     const start = textarea?.selectionStart || text.length;
     const end = textarea?.selectionEnd || text.length;
@@ -187,13 +214,19 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
 
   const renderMarkdown = (text: string) => {
     // Simple markdown renderer
-    let html = text
+    const html = text
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>') // Links
+      .replace(
+        /\[(.*?)\]\((.*?)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">$1</a>'
+      ) // Links
       .replace(/\n/g, '<br/>'); // Line breaks
 
-    return <div dangerouslySetInnerHTML={{ __html: html }} />;
+    // Sanitize HTML to prevent XSS attacks
+    const sanitized = sanitizeHTML(html);
+
+    return <div dangerouslySetInnerHTML={{ __html: sanitized }} />;
   };
 
   const getRelativeTime = (dateString: string) => {
@@ -270,7 +303,7 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
           </div>
           <textarea
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
+            onChange={e => setNewComment(e.target.value)}
             placeholder="Ajouter un commentaire..."
             className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             rows={3}
@@ -296,7 +329,7 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
         </div>
       ) : (
         <div className="space-y-4">
-          {comments.map((comment) => (
+          {comments.map(comment => (
             <div key={comment.id} className="border border-slate-200 rounded-lg p-4">
               {editingId === comment.id ? (
                 <div>
@@ -325,7 +358,7 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
                   </div>
                   <textarea
                     value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
+                    onChange={e => setEditText(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 resize-none"
                     rows={3}
                   />
@@ -401,7 +434,9 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-bold text-slate-900 mb-2">Supprimer le commentaire</h3>
-            <p className="text-slate-600 mb-6">Êtes-vous sûr de vouloir supprimer ce commentaire ? Cette action est irréversible.</p>
+            <p className="text-slate-600 mb-6">
+              Êtes-vous sûr de vouloir supprimer ce commentaire ? Cette action est irréversible.
+            </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => {
