@@ -89,7 +89,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
     } else if (alertId === 'late-payments') {
       navigate('/paiements');
     } else if (alertId === 'upcoming-week') {
-      navigate('/paiements');
+      navigate('/coupons');
     } else if (alertId === 'missing-ribs') {
       navigate('/investisseurs');
     } else if (alertId.startsWith('deadline-')) {
