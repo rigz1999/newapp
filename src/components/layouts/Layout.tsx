@@ -10,8 +10,8 @@ import {
   UserCog,
   Settings,
   Search,
-  ChevronLeft,
-  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   LucideIcon,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -213,7 +213,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                 className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-colors"
                 aria-label="Collapse sidebar"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronsLeft className="w-5 h-5" />
               </button>
             )}
           </div>
@@ -226,7 +226,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                 className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-colors"
                 aria-label="Expand sidebar"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronsRight className="w-5 h-5" />
               </button>
             </div>
           )}
