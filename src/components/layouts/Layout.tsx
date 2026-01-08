@@ -208,7 +208,19 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                 <img src="/branding/icon/icon-white-192.png" alt="Finixar" className="w-8 h-8" />
               </div>
             ) : (
-              <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="object-cover" style={{ width: '90px', height: '20px' }} />
+              <div className="overflow-hidden" style={{ width: '100px', height: '28px' }}>
+                <img
+                  src="/branding/logo/logo-full-white.png"
+                  alt="Finixar"
+                  className="object-contain"
+                  style={{
+                    width: '200px',
+                    height: '28px',
+                    marginLeft: '-50px',
+                    marginRight: '-50px'
+                  }}
+                />
+              </div>
             )}
 
             {/* Toggle Button */}
