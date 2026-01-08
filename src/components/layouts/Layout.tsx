@@ -208,7 +208,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                 <img src="/branding/icon/icon-white-192.png" alt="Finixar" className="w-8 h-8" />
               </div>
             ) : (
-              <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="h-4 w-auto object-contain" style={{ maxWidth: '70px' }} />
+              <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="object-cover" style={{ width: '90px', height: '20px' }} />
             )}
 
             {/* Toggle Button */}
