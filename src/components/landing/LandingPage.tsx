@@ -50,20 +50,21 @@ export function LandingPage() {
           box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
         }
 
-        /* Mockup aspect ratio */
+        /* Mockup container */
         .mockup-container {
-          aspect-ratio: 16 / 10;
           background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
           border-radius: 12px;
           border: 1px solid #e2e8f0;
           overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .mockup-container img {
           width: 100%;
-          height: 100%;
-          object-fit: contain;
-          object-position: center;
+          height: auto;
+          display: block;
         }
       `}</style>
 
@@ -430,15 +431,15 @@ export function LandingPage() {
                 Automatisation
               </div>
               <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
-                Automatisation des coupons et échéances.
+                Échéancier automatisé et calculs précis.
               </h2>
               <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                Finissez-en avec les oublis. Finixar calcule les échéances et vous envoie des rappels automatiques (J-30, J-7) pour garantir vos paiements. Importez et exportez vos données vers Excel en un clic.
+                Finixar calcule automatiquement toutes vos échéances de coupons. Visualisez votre calendrier de paiements, importez et exportez vos données vers Excel en un clic.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Rappels automatiques par e-mail (J-30, J-7)</span>
+                  <span className="text-slate-700">Calcul automatique de toutes les échéances</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
@@ -446,7 +447,7 @@ export function LandingPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Suivi des statuts de paiement en temps réel</span>
+                  <span className="text-slate-700">Calendrier visuel des paiements à venir</span>
                 </li>
               </ul>
             </div>
@@ -461,46 +462,70 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* 4.5. PAYMENT REMINDERS AUTOMATION */}
+      {/* 4.5. PAYMENT REMINDERS AUTOMATION - Centered Card Style */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Text Side */}
-            <div>
-              <div className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-6">
-                Automatisation des rappels
+        <div className="max-w-6xl mx-auto">
+          {/* Header - Centered */}
+          <div className="text-center mb-12">
+            <div className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-6">
+              Automatisation des rappels
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
+              Rappels de paiement automatiques.
+            </h2>
+            <p className="text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto">
+              Finissez-en avec les relances manuelles. Configurez vos rappels en un clic et recevez des e-mails automatiques à 7, 14 et 30 jours avant chaque échéance. Envoi quotidien à 7h00, zéro effort manuel.
+            </p>
+          </div>
+
+          {/* Content - Side by Side */}
+          <div className="grid md:grid-cols-2 gap-8 items-start">
+            {/* Left - Image */}
+            <div className="flex justify-center md:justify-end">
+              <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 w-full max-w-md">
+                <img src="/images/reminders.png" alt="Configuration des rappels de paiement" className="w-full rounded-xl" />
               </div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
-                Rappels de paiement automatiques.
-              </h2>
-              <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                Finissez-en avec les relances manuelles. Configurez vos rappels en un clic et recevez des e-mails automatiques à 7, 14 et 30 jours avant chaque échéance. Envoi quotidien à 7h00, zéro effort manuel.
-              </p>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">E-mails automatiques à J-7, J-14 et J-30</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Envoi quotidien à 7h00, aucune intervention requise</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Configuration simple par cases à cocher</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Garantit zéro oubli de paiement</span>
-                </li>
-              </ul>
             </div>
 
-            {/* Image Side - Centered Modal */}
-            <div className="flex items-center justify-center">
-              <div className="relative">
-                <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 max-w-md">
-                  <img src="/images/reminders.png" alt="Configuration des rappels de paiement" className="w-full rounded-xl" />
+            {/* Right - Features */}
+            <div className="flex flex-col justify-center space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckCircle className="w-4 h-4 text-[#2E62FF]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900 mb-1">E-mails automatiques à J-7, J-14 et J-30</h3>
+                  <p className="text-sm text-slate-600">Vos investisseurs reçoivent des rappels avant chaque échéance</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckCircle className="w-4 h-4 text-[#2E62FF]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900 mb-1">Envoi quotidien à 7h00</h3>
+                  <p className="text-sm text-slate-600">Aucune intervention requise, tout est automatisé</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckCircle className="w-4 h-4 text-[#2E62FF]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900 mb-1">Configuration simple</h3>
+                  <p className="text-sm text-slate-600">Activez ou désactivez les périodes de rappel par cases à cocher</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckCircle className="w-4 h-4 text-[#2E62FF]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900 mb-1">Zéro oubli de paiement</h3>
+                  <p className="text-sm text-slate-600">Garantit que tous vos coupons sont payés à temps</p>
                 </div>
               </div>
             </div>
@@ -610,7 +635,7 @@ export function LandingPage() {
               Concentrez-vous sur ce qui compte vraiment.
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Finixar s'occupe des tâches administratives. Vous vous concentrez sur la stratégie d'investissement et la croissance de vos fonds.
+              Finixar s'occupe des tâches administratives. Vous vous concentrez sur le sourcing de projets et la relation avec vos investisseurs.
             </p>
           </div>
 
