@@ -12,6 +12,7 @@ import {
   Search,
   ChevronsLeft,
   ChevronsRight,
+  LogOut,
   LucideIcon,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -306,7 +307,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                   onClick={handleLogout}
                   className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-white hover:bg-finixar-brand-blue rounded-lg transition-colors"
                 >
-                  <span className="text-lg">→</span>
+                  <LogOut className="w-4 h-4" />
                 </button>
               </Tooltip>
             </div>
