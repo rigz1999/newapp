@@ -841,7 +841,7 @@ Deno.serve(async (req: Request) => {
             const montant = Number(sub.montant_investi);
             const couponAnnuel = (montant * finalTauxNominal) / 100;
             const couponBrut = couponAnnuel * periodRatio;
-            const investorType = (sub.investisseurs as any)?.type;
+            const investorType = (sub.investisseurs as { type?: string } | null)?.type;
             const couponNet = investorType?.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
 
             const { error: updateError } = await supabase

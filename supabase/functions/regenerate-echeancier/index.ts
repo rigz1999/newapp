@@ -83,7 +83,7 @@ Deno.serve(async req => {
     }
 
     // Inherit from project if tranche values are null
-    const project = tranche.projets as any;
+    const project = tranche.projets as { taux_nominal?: number | null; periodicite_coupons?: string | null; duree_mois?: number | null; base_interet?: number | null } | null;
     const tauxNominal = tranche.taux_nominal ?? project?.taux_nominal;
     // IMPORTANT: periodicite ALWAYS comes from project, never from tranche
     const periodiciteCoupons = project?.periodicite_coupons;
@@ -155,7 +155,7 @@ Deno.serve(async req => {
       const montant = Number(sub.montant_investi);
       const couponAnnuel = (montant * tauxNominal) / 100;
       const couponBrut = couponAnnuel * periodRatio;
-      const investorType = (sub.investisseurs as any)?.type;
+      const investorType = (sub.investisseurs as { type?: string } | null)?.type;
       // Case-insensitive comparison to handle both 'physique' and 'Physique'
       const couponNet = investorType?.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
 

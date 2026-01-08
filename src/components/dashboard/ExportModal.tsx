@@ -1106,7 +1106,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
     }
 
       // Add footer with page numbers
-      const pageCount = (doc as any).internal.getNumberOfPages();
+      const pageCount = doc.internal.getNumberOfPages();
       doc.setFontSize(9);
       doc.setTextColor(148, 163, 184); // slate-400
 
