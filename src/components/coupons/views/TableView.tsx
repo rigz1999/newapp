@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Coupon } from '../../../hooks/coupons/useCoupons';
+import { TaxInfoTooltip } from '../../common/TaxInfoTooltip';
 import { Building2, User, Upload, AlertCircle, Calendar, ChevronDown, ChevronRight, CheckCircle2, Clock, XCircle, MoreVertical, FileText } from 'lucide-react';
 
 interface TableViewProps {
@@ -347,8 +348,15 @@ export function TableView({
                           </td>
                           <td className="px-4 py-3 text-right align-middle">
                             <div className="flex flex-col items-end gap-1">
-                              <div className="text-sm font-bold text-finixar-green leading-tight">
-                                {formatCurrency(coupon.montant_net)}
+                              <div className="flex items-center gap-2">
+                                <TaxInfoTooltip
+                                  couponBrut={coupon.montant_brut}
+                                  couponNet={coupon.montant_net}
+                                  investorType={coupon.investisseur_type || 'physique'}
+                                />
+                                <div className="text-sm font-bold text-finixar-green leading-tight">
+                                  {formatCurrency(coupon.montant_net)}
+                                </div>
                               </div>
                               <div className="text-xs text-slate-500 leading-tight">
                                 Brut: {formatCurrency(coupon.montant_brut)}

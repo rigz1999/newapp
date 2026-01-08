@@ -1358,6 +1358,65 @@ function Investors({ organization: _organization }: InvestorsProps) {
                       />
                     </div>
                   </div>
+
+                  {/* Tax Regime Fields - Only for Personne Physique */}
+                  {!isMorale(editFormData.type) && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h5 className="font-semibold text-slate-900 mb-3">Régime Fiscal</h5>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="edit-tax-regime" className="block text-sm font-medium text-slate-700 mb-2">
+                            Régime fiscal
+                          </label>
+                          <select
+                            id="edit-tax-regime"
+                            value={editFormData.tax_regime || 'default'}
+                            onChange={(e) => setEditFormData({
+                              ...editFormData,
+                              tax_regime: e.target.value,
+                              // Clear custom rate if switching away from custom
+                              ...(e.target.value !== 'custom' && { custom_tax_rate: null })
+                            })}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="default">Par défaut (PFU 30%)</option>
+                            <option value="pea">PEA (exonération)</option>
+                            <option value="assurance_vie">Assurance vie</option>
+                            <option value="custom">Taux personnalisé</option>
+                          </select>
+                          <p className="text-xs text-slate-600 mt-1">
+                            Définit le régime fiscal applicable aux coupons
+                          </p>
+                        </div>
+
+                        {/* Custom Tax Rate - Only show if custom regime selected */}
+                        {editFormData.tax_regime === 'custom' && (
+                          <div>
+                            <label htmlFor="edit-custom-tax-rate" className="block text-sm font-medium text-slate-700 mb-2">
+                              Taux de Prélèvement (%)
+                            </label>
+                            <input
+                              id="edit-custom-tax-rate"
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              value={editFormData.custom_tax_rate ?? ''}
+                              onChange={(e) => setEditFormData({
+                                ...editFormData,
+                                custom_tax_rate: e.target.value ? parseFloat(e.target.value) : null
+                              })}
+                              placeholder="Ex: 12.8"
+                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <p className="text-xs text-slate-600 mt-1">
+                              Taux entre 0 et 100%
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-slate-200 pt-4">
