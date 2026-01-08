@@ -1,19 +1,54 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface TooltipProps {
   content: string;
   children: ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
+  disabled?: boolean;
 }
 
-export function Tooltip({ content, children, position = 'top' }: TooltipProps) {
+export function Tooltip({ content, children, position = 'top', disabled = false }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isVisible && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const tooltipOffset = 8;
+
+      let top = 0;
+      let left = 0;
+
+      switch (position) {
+        case 'top':
+          top = rect.top - tooltipOffset;
+          left = rect.left + rect.width / 2;
+          break;
+        case 'bottom':
+          top = rect.bottom + tooltipOffset;
+          left = rect.left + rect.width / 2;
+          break;
+        case 'left':
+          top = rect.top + rect.height / 2;
+          left = rect.left - tooltipOffset;
+          break;
+        case 'right':
+          top = rect.top + rect.height / 2;
+          left = rect.right + tooltipOffset;
+          break;
+      }
+
+      setCoords({ top, left });
+    }
+  }, [isVisible, position]);
 
   const positionClasses = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+    top: '-translate-x-1/2 -translate-y-full',
+    bottom: '-translate-x-1/2',
+    left: '-translate-x-full -translate-y-1/2',
+    right: '-translate-y-1/2',
   };
 
   const arrowClasses = {
@@ -23,17 +58,27 @@ export function Tooltip({ content, children, position = 'top' }: TooltipProps) {
     right: 'right-full top-1/2 -translate-y-1/2 border-r-slate-800',
   };
 
+  if (disabled) {
+    return <>{children}</>;
+  }
+
   return (
-    <div className="relative inline-block">
+    <>
       <div
+        ref={triggerRef}
+        className="relative inline-block"
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
       >
         {children}
       </div>
-      {isVisible && content && (
+      {isVisible && content && createPortal(
         <div
-          className={`absolute z-[100] ${positionClasses[position]} pointer-events-none animate-fade-in`}
+          className={`fixed z-[9999] ${positionClasses[position]} pointer-events-none animate-fade-in`}
+          style={{
+            top: `${coords.top}px`,
+            left: `${coords.left}px`,
+          }}
         >
           <div className="bg-slate-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap max-w-xs">
             {content}
@@ -41,8 +86,9 @@ export function Tooltip({ content, children, position = 'top' }: TooltipProps) {
           <div
             className={`absolute w-0 h-0 border-4 border-transparent ${arrowClasses[position]}`}
           />
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
