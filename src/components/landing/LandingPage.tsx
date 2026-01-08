@@ -59,6 +59,8 @@ export function LandingPage() {
           display: flex;
           align-items: center;
           justify-content: center;
+          max-width: 900px;
+          margin: 0 auto;
         }
 
         .mockup-container img {
@@ -286,7 +288,7 @@ export function LandingPage() {
       </section>
 
       {/* 3. BENEFITS SECTION - HiBob style */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="pt-12 pb-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
@@ -466,20 +468,20 @@ export function LandingPage() {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-6xl mx-auto">
           {/* Header - Centered */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-10">
             <div className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-6">
               Automatisation des rappels
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
               Rappels de paiement automatiques.
             </h2>
-            <p className="text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto">
-              Finissez-en avec les relances manuelles. Configurez vos rappels en un clic et recevez des e-mails automatiques à 7, 14 et 30 jours avant chaque échéance. Envoi quotidien à 7h00, zéro effort manuel.
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Configurez vos rappels en un clic. E-mails automatiques à J-7, J-14 et J-30.
             </p>
           </div>
 
           {/* Content - Side by Side */}
-          <div className="grid md:grid-cols-2 gap-8 items-start">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left - Image */}
             <div className="flex justify-center md:justify-end">
               <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 w-full max-w-md">
@@ -488,9 +490,9 @@ export function LandingPage() {
             </div>
 
             {/* Right - Features */}
-            <div className="flex flex-col justify-center space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="flex flex-col justify-center space-y-5">
+              <div className="flex items-start gap-4">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                   <CheckCircle className="w-4 h-4 text-[#2E62FF]" />
                 </div>
                 <div>
@@ -499,8 +501,8 @@ export function LandingPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="flex items-start gap-4">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                   <CheckCircle className="w-4 h-4 text-[#2E62FF]" />
                 </div>
                 <div>
@@ -509,8 +511,8 @@ export function LandingPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="flex items-start gap-4">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                   <CheckCircle className="w-4 h-4 text-[#2E62FF]" />
                 </div>
                 <div>
@@ -519,8 +521,8 @@ export function LandingPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="flex items-start gap-4">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                   <CheckCircle className="w-4 h-4 text-[#2E62FF]" />
                 </div>
                 <div>
