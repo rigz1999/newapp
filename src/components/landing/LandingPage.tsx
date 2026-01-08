@@ -1,14 +1,109 @@
-import { AlertTriangle, Clock, Shield, Lock, CheckCircle, ArrowRight, Menu, X, ChevronRight, Upload, TrendingUp, Users, FileText, BarChart3, UserCheck, Zap, Database } from 'lucide-react';
-import { useState } from 'react';
+import { AlertTriangle, Clock, Shield, Lock, CheckCircle, ArrowRight, Menu, X, ChevronRight, Upload, TrendingUp, Users, FileText, BarChart3, UserCheck, Zap, Database, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  // Add SEO meta tags and structured data
+  useEffect(() => {
+    // Set page title
+    document.title = 'Finixar - Plateforme de Gestion d\'Actifs | Automatisez votre Gestion';
+
+    // Add meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Finixar automatise la gestion de vos actifs financiers. Récupérez 15h par semaine, éliminez 98% des erreurs. Gestion de projets, coupons et investisseurs en toute conformité RGPD.');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = 'Finixar automatise la gestion de vos actifs financiers. Récupérez 15h par semaine, éliminez 98% des erreurs. Gestion de projets, coupons et investisseurs en toute conformité RGPD.';
+      document.head.appendChild(meta);
+    }
+
+    // Add OpenGraph meta tags
+    const ogTags = [
+      { property: 'og:title', content: 'Finixar - Plateforme de Gestion d\'Actifs' },
+      { property: 'og:description', content: 'Récupérez 15h par semaine et éliminez 98% des erreurs de gestion avec Finixar. Automatisation complète pour gestionnaires d\'actifs.' },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:url', content: 'https://app.finixar.com' },
+      { property: 'og:image', content: 'https://app.finixar.com/images/dashboard.png' },
+      { property: 'og:locale', content: 'fr_FR' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: 'Finixar - Plateforme de Gestion d\'Actifs' },
+      { name: 'twitter:description', content: 'Récupérez 15h par semaine et éliminez 98% des erreurs de gestion avec Finixar.' },
+      { name: 'twitter:image', content: 'https://app.finixar.com/images/dashboard.png' },
+    ];
+
+    ogTags.forEach(tag => {
+      const existing = document.querySelector(`meta[${tag.property ? 'property' : 'name'}="${tag.property || tag.name}"]`);
+      if (existing) {
+        existing.setAttribute('content', tag.content);
+      } else {
+        const meta = document.createElement('meta');
+        if (tag.property) {
+          meta.setAttribute('property', tag.property);
+        } else if (tag.name) {
+          meta.setAttribute('name', tag.name);
+        }
+        meta.content = tag.content;
+        document.head.appendChild(meta);
+      }
+    });
+
+    // Add structured data (Schema.org JSON-LD)
+    const structuredData = {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      'name': 'Finixar',
+      'applicationCategory': 'BusinessApplication',
+      'description': 'Plateforme de gestion d\'actifs financiers pour automatiser vos échéances, centraliser vos données investisseurs et rester conforme RGPD.',
+      'offers': {
+        '@type': 'Offer',
+        'price': '0',
+        'priceCurrency': 'EUR',
+        'description': 'Tarifs sur mesure selon la taille de votre structure'
+      },
+      'operatingSystem': 'Web',
+      'aggregateRating': {
+        '@type': 'AggregateRating',
+        'ratingValue': '4.9',
+        'ratingCount': '50'
+      },
+      'featureList': [
+        'Gestion de projets et tranches',
+        'Automatisation des coupons et échéances',
+        'CRM investisseurs',
+        'Conformité RGPD',
+        'Rappels automatiques',
+        'Import/Export Excel'
+      ]
+    };
+
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(structuredData);
+    document.head.appendChild(script);
+
+    // Cleanup function
+    return () => {
+      // Remove the script on unmount to avoid duplicates
+      const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+      scripts.forEach(s => {
+        if (s.textContent?.includes('Finixar')) {
+          s.remove();
+        }
+      });
+    };
+  }, []);
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
-      // Redirect to demo page with email pre-filled
+      setIsSubmitting(true);
+      // Simulate a short delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 500));
       window.location.href = `/demo?email=${encodeURIComponent(email)}`;
     }
   };
@@ -76,11 +171,13 @@ export function LandingPage() {
           <div className="flex items-center justify-between h-20">
             {/* Logo Area - 200px dedicated space */}
             <div className="w-[200px] flex items-center">
-              <a href="https://finixar.com" className="flex items-center">
+              <a href="https://finixar.com" className="flex items-center" aria-label="Retour à la page d'accueil Finixar">
                 <img
                   src="/branding/logo/logo-full-blue.png"
-                  alt="Finixar"
+                  alt="Logo Finixar - Plateforme de gestion d'actifs"
                   className="h-10"
+                  width="160"
+                  height="40"
                 />
               </a>
             </div>
@@ -173,13 +270,27 @@ export function LandingPage() {
                   placeholder="votre@email.com"
                   className="flex-1 px-6 py-4 bg-white border-2 border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2E62FF] transition-colors"
                   required
+                  disabled={isSubmitting}
+                  aria-label="Adresse email pour demander une démo"
+                  aria-required="true"
                 />
                 <button
                   type="submit"
-                  className="btn-transition inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg whitespace-nowrap"
+                  disabled={isSubmitting}
+                  className="btn-transition inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#2E62FF] hover:bg-[#2558DD] text-white font-semibold rounded-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Soumettre le formulaire de demande de démo"
                 >
-                  Demander une démo
-                  <ArrowRight className="w-5 h-5" />
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Envoi en cours...
+                    </>
+                  ) : (
+                    <>
+                      Demander une démo
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
                 </button>
               </form>
 
@@ -200,7 +311,13 @@ export function LandingPage() {
             {/* Right - Product Mockup */}
             <div>
               <div className="mockup-container shadow-2xl">
-                <img src="/images/dashboard.png" alt="Tableau de bord Finixar" />
+                <img
+                  src="/images/dashboard.png"
+                  alt="Tableau de bord Finixar montrant les statistiques d'investissement en temps réel, graphiques de performance et alertes de paiement"
+                  loading="eager"
+                  width="900"
+                  height="600"
+                />
               </div>
             </div>
           </div>
@@ -383,7 +500,13 @@ export function LandingPage() {
             {/* Image Side */}
             <div>
               <div className="mockup-container shadow-xl">
-                <img src="/images/project-detail.png" alt="Détails du projet avec timeline des tranches" />
+                <img
+                  src="/images/project-detail.png"
+                  alt="Interface de détails du projet Finixar affichant la timeline des tranches d'investissement, montants engagés et dates limites"
+                  loading="lazy"
+                  width="900"
+                  height="600"
+                />
               </div>
             </div>
           </div>
@@ -393,7 +516,13 @@ export function LandingPage() {
             {/* Image Side */}
             <div className="order-2 lg:order-1">
               <div className="mockup-container shadow-xl">
-                <img src="/images/coupons.png" alt="Tableau de bord de gestion des coupons" />
+                <img
+                  src="/images/coupons.png"
+                  alt="Tableau de gestion des coupons Finixar avec filtres par statut (En Attente, Payés, En Retard), montants détaillés et recherche avancée"
+                  loading="lazy"
+                  width="900"
+                  height="600"
+                />
               </div>
             </div>
 
@@ -457,7 +586,13 @@ export function LandingPage() {
             {/* Image Side */}
             <div>
               <div className="mockup-container shadow-xl">
-                <img src="/images/echeancier.png" alt="Échéancier des paiements" />
+                <img
+                  src="/images/echeancier.png"
+                  alt="Calendrier d'échéancier Finixar affichant les paiements à venir avec calculs automatiques et export Excel"
+                  loading="lazy"
+                  width="900"
+                  height="600"
+                />
               </div>
             </div>
           </div>
@@ -485,7 +620,14 @@ export function LandingPage() {
             {/* Left - Image */}
             <div className="flex justify-center md:justify-end">
               <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-1 w-full max-w-md">
-                <img src="/images/reminders.png" alt="Configuration des rappels de paiement" className="w-full rounded-xl" />
+                <img
+                  src="/images/reminders.png"
+                  alt="Interface de configuration des rappels automatiques de paiement avec sélection des périodes J-7, J-14 et J-30"
+                  className="w-full rounded-xl"
+                  loading="lazy"
+                  width="500"
+                  height="400"
+                />
               </div>
             </div>
 
@@ -810,8 +952,11 @@ export function LandingPage() {
               <div className="mb-4">
                 <img
                   src="/branding/logo/logo-full-white.png"
-                  alt="Finixar"
+                  alt="Logo Finixar - Plateforme de gestion d'actifs"
                   className="h-8"
+                  loading="lazy"
+                  width="128"
+                  height="32"
                 />
               </div>
               <p className="text-slate-400 text-sm leading-relaxed">
