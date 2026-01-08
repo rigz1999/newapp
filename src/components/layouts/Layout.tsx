@@ -200,9 +200,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
             {/* Logo */}
             {isCollapsed ? (
               <div className="w-full flex justify-center">
-                <div className="w-8 h-8 bg-finixar-brand-blue rounded-lg flex items-center justify-center font-bold text-white text-lg">
-                  F
-                </div>
+                <img src="/branding/icon/icon-white-192.png" alt="Finixar" className="w-8 h-8" />
               </div>
             ) : (
               <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="h-8" />
