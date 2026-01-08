@@ -176,8 +176,12 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
 
     const linkContent = (
       <Link to={to} className={`${baseClasses} ${isCollapsed ? 'justify-center' : ''}`}>
-        <Icon className="w-4 h-4" />
-        {!isCollapsed && <span>{label}</span>}
+        <Icon className="w-4 h-4 flex-shrink-0" />
+        <span className={`transition-opacity duration-200 whitespace-nowrap overflow-hidden ${
+          isCollapsed ? 'opacity-0 w-0' : 'opacity-100 delay-100'
+        }`}>
+          {label}
+        </span>
       </Link>
     );
 
@@ -193,44 +197,58 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
   return (
     <div className="h-screen bg-finixar-background flex overflow-hidden">
       <aside
-        className={`${isCollapsed ? 'w-20' : 'w-64'} bg-finixar-deep-blue text-white flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out`}
+        className={`${isCollapsed ? 'w-20' : 'w-64'} bg-finixar-deep-blue text-white flex flex-col flex-shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none`}
       >
         {/* Header - Compact */}
         <div className="p-4 flex-shrink-0">
           <div className="mb-3 flex items-center justify-between">
-            {/* Logo */}
-            {isCollapsed ? (
-              <div className="w-full flex justify-center">
+            {/* Logo with Crossfade */}
+            <div className="relative h-8 flex-1">
+              {/* Collapsed Icon */}
+              <div
+                className={`absolute inset-0 flex justify-center transition-opacity duration-200 ${
+                  isCollapsed ? 'opacity-100 delay-100' : 'opacity-0'
+                }`}
+              >
                 <img src="/branding/icon/icon-white-192.png" alt="Finixar" className="w-8 h-8" />
               </div>
-            ) : (
-              <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="h-8" />
-            )}
+
+              {/* Expanded Full Logo */}
+              <div
+                className={`absolute inset-0 flex items-center transition-opacity duration-200 ${
+                  isCollapsed ? 'opacity-0' : 'opacity-100 delay-100'
+                }`}
+              >
+                <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="h-8" />
+              </div>
+            </div>
 
             {/* Toggle Button */}
-            {!isCollapsed && (
-              <button
-                onClick={toggleSidebar}
-                className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-colors"
-                aria-label="Collapse sidebar"
-              >
-                <ChevronsLeft className="w-5 h-5" />
-              </button>
-            )}
+            <button
+              onClick={toggleSidebar}
+              className={`text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-all ml-2 ${
+                isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100 delay-100'
+              }`}
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              tabIndex={isCollapsed ? -1 : 0}
+            >
+              <ChevronsLeft className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Expand button when collapsed */}
-          {isCollapsed && (
-            <div className="mb-3 flex justify-center">
-              <button
-                onClick={toggleSidebar}
-                className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-colors"
-                aria-label="Expand sidebar"
-              >
-                <ChevronsRight className="w-5 h-5" />
-              </button>
-            </div>
-          )}
+          <div className={`mb-3 flex justify-center transition-opacity duration-200 ${
+            isCollapsed ? 'opacity-100 delay-100' : 'opacity-0 pointer-events-none h-0'
+          }`}>
+            <button
+              onClick={toggleSidebar}
+              className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-colors"
+              aria-label="Expand sidebar"
+              tabIndex={isCollapsed ? 0 : -1}
+            >
+              <ChevronsRight className="w-5 h-5" />
+            </button>
+          </div>
 
           {/* Global Search Button */}
           {isCollapsed ? (
@@ -247,8 +265,12 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
               onClick={() => setIsSearchOpen(true)}
               className="w-full flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-colors text-slate-400 hover:text-white"
             >
-              <Search className="w-4 h-4" />
-              <span className="text-sm">Rechercher...</span>
+              <Search className="w-4 h-4 flex-shrink-0" />
+              <span className={`text-sm transition-opacity duration-200 whitespace-nowrap overflow-hidden ${
+                isCollapsed ? 'opacity-0' : 'opacity-100 delay-100'
+              }`}>
+                Rechercher...
+              </span>
             </button>
           )}
         </div>
@@ -287,11 +309,12 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
 
         {/* Footer - Compact */}
         <div className="flex-shrink-0 p-4 border-t border-slate-800">
-          {isCollapsed ? (
-            <div className="flex flex-col items-center gap-2">
-              <Tooltip content={userProfile?.full_name || 'Utilisateur'} position="right">
+          <div className={`flex ${isCollapsed ? 'flex-col items-center gap-2' : 'flex-col'}`}>
+            {/* User Avatar and Info */}
+            <div className={`flex items-center ${isCollapsed ? 'flex-col gap-2' : 'gap-2 mb-2'}`}>
+              <Tooltip content={userProfile?.full_name || 'Utilisateur'} position="right" disabled={!isCollapsed}>
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm flex-shrink-0 ${
                     isSuperAdminUser
                       ? 'bg-finixar-action-process'
                       : isOrgAdmin
@@ -302,46 +325,36 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                   {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
                 </div>
               </Tooltip>
-              <Tooltip content="Se déconnecter" position="right">
-                <button
-                  onClick={handleLogout}
-                  className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-white hover:bg-finixar-brand-blue rounded-lg transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </Tooltip>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-2 mb-2">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                    isSuperAdminUser
-                      ? 'bg-finixar-action-process'
-                      : isOrgAdmin
-                        ? 'bg-finixar-brand-blue'
-                        : 'bg-finixar-text-secondary'
-                  }`}
-                >
-                  {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate text-sm">
-                    {userProfile?.full_name || 'Utilisateur'}
-                  </p>
-                  <p className="text-xs text-slate-400 capitalize">
-                    {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : 'Membre'}
-                  </p>
-                </div>
+
+              <div className={`flex-1 min-w-0 transition-opacity duration-200 overflow-hidden ${
+                isCollapsed ? 'opacity-0 w-0 h-0' : 'opacity-100 delay-100'
+              }`}>
+                <p className="font-medium truncate text-sm whitespace-nowrap">
+                  {userProfile?.full_name || 'Utilisateur'}
+                </p>
+                <p className="text-xs text-slate-400 capitalize whitespace-nowrap">
+                  {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : 'Membre'}
+                </p>
               </div>
+            </div>
+
+            {/* Logout Button */}
+            <Tooltip content="Se déconnecter" position="right" disabled={!isCollapsed}>
               <button
                 onClick={handleLogout}
-                className="w-full px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-finixar-brand-blue rounded-lg transition-colors"
+                className={`flex items-center justify-center text-slate-300 hover:text-white hover:bg-finixar-brand-blue rounded-lg transition-colors ${
+                  isCollapsed ? 'w-8 h-8' : 'w-full px-3 py-1.5 text-xs gap-2'
+                }`}
               >
-                Se déconnecter
+                <LogOut className="w-4 h-4 flex-shrink-0" />
+                <span className={`transition-opacity duration-200 whitespace-nowrap overflow-hidden ${
+                  isCollapsed ? 'opacity-0 w-0' : 'opacity-100 delay-100'
+                }`}>
+                  Se déconnecter
+                </span>
               </button>
-            </>
-          )}
+            </Tooltip>
+          </div>
         </div>
       </aside>
 
