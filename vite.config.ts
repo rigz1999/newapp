@@ -5,8 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    exclude: ['lucide-react'],
-    include: ['jspdf', 'jspdf-autotable'],
+    exclude: ['lucide-react', 'jspdf', 'jspdf-autotable', 'exceljs'],
   },
   build: {
     rollupOptions: {
@@ -16,16 +15,14 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           // UI libraries
           'vendor-ui': ['lucide-react'],
-          // PDF generation
-          'vendor-pdf': ['jspdf', 'jspdf-autotable', 'pdfjs-dist'],
-          // Excel export
-          'vendor-excel': ['exceljs'],
           // Supabase
           'vendor-supabase': ['@supabase/supabase-js'],
           // Sentry monitoring
           'vendor-sentry': ['@sentry/react'],
           // Utilities
           'vendor-utils': ['decimal.js', 'dompurify'],
+          // Note: jspdf, jspdf-autotable, pdfjs-dist, and exceljs are now lazy-loaded
+          // via dynamic imports in ExportModal.tsx for better performance
         },
       },
     },
