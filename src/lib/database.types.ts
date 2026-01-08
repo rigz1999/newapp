@@ -6,6 +6,9 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+// Tax regime types for investor tax calculation
+export type TaxRegime = 'default' | 'pea' | 'assurance_vie' | 'custom';
+
 export interface Database {
   public: {
     Tables: {
@@ -138,6 +141,7 @@ export interface Database {
           date_emission: string | null
           duree_mois: number | null
           montant_global: number | null
+          apply_flat_tax: boolean | null
           created_at: string
         }
         Insert: {
@@ -162,6 +166,7 @@ export interface Database {
           date_emission?: string | null
           duree_mois?: number | null
           montant_global?: number | null
+          apply_flat_tax?: boolean | null
           created_at?: string
         }
         Update: {
@@ -186,6 +191,7 @@ export interface Database {
           date_emission?: string | null
           duree_mois?: number | null
           montant_global?: number | null
+          apply_flat_tax?: boolean | null
           created_at?: string
         }
       }
@@ -256,6 +262,8 @@ export interface Database {
           rib_file_path: string | null
           rib_uploaded_at: string | null
           rib_status: string | null
+          tax_regime: string | null
+          custom_tax_rate: number | null
           created_at: string
         }
         Insert: {
@@ -277,6 +285,8 @@ export interface Database {
           rib_file_path?: string | null
           rib_uploaded_at?: string | null
           rib_status?: string | null
+          tax_regime?: string | null
+          custom_tax_rate?: number | null
           created_at?: string
         }
         Update: {
@@ -298,6 +308,8 @@ export interface Database {
           rib_file_path?: string | null
           rib_uploaded_at?: string | null
           rib_status?: string | null
+          tax_regime?: string | null
+          custom_tax_rate?: number | null
           created_at?: string
         }
       }
