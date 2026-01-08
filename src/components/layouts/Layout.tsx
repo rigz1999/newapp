@@ -1,5 +1,19 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Receipt, FolderOpen, Users, FileText, Euro, Shield, UserCog, Settings, Search } from 'lucide-react';
+import {
+  Home,
+  Receipt,
+  FolderOpen,
+  Users,
+  FileText,
+  Euro,
+  Shield,
+  UserCog,
+  Settings,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  LucideIcon,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
@@ -7,21 +21,44 @@ import { GlobalSearch } from '../dashboard/GlobalSearch';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { logger } from '../../utils/logger';
 import { DashboardSkeleton } from '../common/Skeleton';
+import { Tooltip } from '../common/Tooltip';
 
 interface LayoutProps {
   organization: { id: string; name: string; role: string };
   isLoading?: boolean;
 }
 
-export function Layout({ organization, isLoading = false }: LayoutProps) {
+export function Layout({ organization, isLoading = false }: LayoutProps): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isOrgAdmin, isSuperAdmin, user } = useAuth();
 
+  // Sidebar collapse state with localStorage persistence
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // Check if mobile on initial load
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      return true;
+    }
+
+    // Otherwise, check localStorage
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved === 'true';
+  });
+
   // Check if user is super admin (fallback to organization role)
   const isSuperAdminUser = isSuperAdmin || organization.role === 'super_admin';
+
+  // Toggle sidebar function
+  const toggleSidebar = (): void => {
+    setIsCollapsed((prev: boolean): boolean => {
+      const newState = !prev;
+      localStorage.setItem('sidebarCollapsed', String(newState));
+      return newState;
+    });
+  };
 
   // Keyboard shortcuts
   useKeyboardShortcuts([
@@ -29,20 +66,35 @@ export function Layout({ organization, isLoading = false }: LayoutProps) {
       key: 'k',
       metaKey: true,
       callback: () => setIsSearchOpen(true),
-      description: 'Open search'
+      description: 'Open search',
     },
     {
       key: ',',
       metaKey: true,
       callback: () => navigate('/parametres'),
-      description: 'Open settings'
-    }
+      description: 'Open settings',
+    },
   ]);
+
+  // Handle responsive behavior - auto-collapse on mobile
+  useEffect(() => {
+    const handleResize = (): void => {
+      const isMobile = window.innerWidth < 768;
+      if (isMobile && !isCollapsed) {
+        setIsCollapsed(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return (): void => window.removeEventListener('resize', handleResize);
+  }, [isCollapsed]);
 
   // Fetch user profile and listen for changes
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
+    const fetchUserProfile = async (): Promise<void> => {
+      if (!user) {
+        return;
+      }
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -67,9 +119,9 @@ export function Layout({ organization, isLoading = false }: LayoutProps) {
             event: 'UPDATE',
             schema: 'public',
             table: 'profiles',
-            filter: `id=eq.${user.id}`
+            filter: `id=eq.${user.id}`,
           },
-          (payload) => {
+          payload => {
             if (payload.new && 'full_name' in payload.new) {
               setUserProfile({ full_name: payload.new.full_name as string });
             }
@@ -83,7 +135,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps) {
     }
   }, [user]);
 
-  const handleLogout = async () => {
+  const handleLogout = async (): Promise<void> => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
@@ -97,119 +149,130 @@ export function Layout({ organization, isLoading = false }: LayoutProps) {
     }
   };
 
-  const isActive = (path: string) => {
+  const isActive = (path: string): boolean => {
     if (path === '/') {
       return location.pathname === '/' && !location.pathname.startsWith('/admin');
     }
     return location.pathname.startsWith(path);
   };
 
+  // Helper component for navigation items
+  const NavItem = ({
+    to,
+    icon: Icon,
+    label,
+  }: {
+    to: string;
+    icon: LucideIcon;
+    label: string;
+  }): JSX.Element => {
+    const active = isActive(to);
+    const baseClasses = `w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+      active
+        ? 'bg-finixar-brand-blue text-white'
+        : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
+    }`;
+
+    const linkContent = (
+      <Link to={to} className={`${baseClasses} ${isCollapsed ? 'justify-center' : ''}`}>
+        <Icon className="w-4 h-4" />
+        {!isCollapsed && <span>{label}</span>}
+      </Link>
+    );
+
+    return isCollapsed ? (
+      <Tooltip content={label} position="right">
+        {linkContent}
+      </Tooltip>
+    ) : (
+      linkContent
+    );
+  };
+
   return (
     <div className="h-screen bg-finixar-background flex overflow-hidden">
-      <aside className="w-64 bg-finixar-deep-blue text-white flex flex-col flex-shrink-0">
+      <aside
+        className={`${isCollapsed ? 'w-20' : 'w-64'} bg-finixar-deep-blue text-white flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out`}
+      >
         {/* Header - Compact */}
         <div className="p-4 flex-shrink-0">
-          <div className="mb-3">
-            <img
-              src="/branding/logo/logo-full-white.png"
-              alt="Finixar"
-              className="h-8"
-            />
+          <div className="mb-3 flex items-center justify-between">
+            {/* Logo */}
+            {isCollapsed ? (
+              <div className="w-full flex justify-center">
+                <div className="w-8 h-8 bg-finixar-brand-blue rounded-lg flex items-center justify-center font-bold text-white text-lg">
+                  F
+                </div>
+              </div>
+            ) : (
+              <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="h-8" />
+            )}
+
+            {/* Toggle Button */}
+            {!isCollapsed && (
+              <button
+                onClick={toggleSidebar}
+                className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-colors"
+                aria-label="Collapse sidebar"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
+          {/* Expand button when collapsed */}
+          {isCollapsed && (
+            <div className="mb-3 flex justify-center">
+              <button
+                onClick={toggleSidebar}
+                className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-colors"
+                aria-label="Expand sidebar"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
           {/* Global Search Button */}
-          <button
-            onClick={() => setIsSearchOpen(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-colors text-slate-400 hover:text-white"
-          >
-            <Search className="w-4 h-4" />
-            <span className="text-sm">Rechercher...</span>
-          </button>
+          {isCollapsed ? (
+            <Tooltip content="Rechercher..." position="right">
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="w-full flex items-center justify-center px-3 py-2 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-colors text-slate-400 hover:text-white"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            </Tooltip>
+          ) : (
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="w-full flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-colors text-slate-400 hover:text-white"
+            >
+              <Search className="w-4 h-4" />
+              <span className="text-sm">Rechercher...</span>
+            </button>
+          )}
         </div>
 
         {/* Navigation - No scroll */}
         <div className="flex-1 px-4">
           <nav className="space-y-1">
-            <Link
-              to="/"
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                isActive('/') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
-              }`}
-            >
-              <Home className="w-4 h-4" />
-              <span>Tableau de bord</span>
-            </Link>
-            <Link
-              to="/coupons"
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                isActive('/coupons') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
-              }`}
-            >
-              <Receipt className="w-4 h-4" />
-              <span>Coupons</span>
-            </Link>
-            <Link
-              to="/projets"
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                isActive('/projets') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
-              }`}
-            >
-              <FolderOpen className="w-4 h-4" />
-              <span>Projets</span>
-            </Link>
-            <Link
-              to="/investisseurs"
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                isActive('/investisseurs') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Investisseurs</span>
-            </Link>
-            <Link
-              to="/souscriptions"
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                isActive('/souscriptions') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              <span>Souscriptions</span>
-            </Link>
-            <Link
-              to="/paiements"
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                isActive('/paiements') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
-              }`}
-            >
-              <Euro className="w-4 h-4" />
-              <span>Paiements</span>
-            </Link>
+            <NavItem to="/" icon={Home} label="Tableau de bord" />
+            <NavItem to="/coupons" icon={Receipt} label="Coupons" />
+            <NavItem to="/projets" icon={FolderOpen} label="Projets" />
+            <NavItem to="/investisseurs" icon={Users} label="Investisseurs" />
+            <NavItem to="/souscriptions" icon={FileText} label="Souscriptions" />
+            <NavItem to="/paiements" icon={Euro} label="Paiements" />
 
             {/* Settings Link */}
             <div className="border-t border-slate-700 my-2"></div>
-            <Link
-              to="/parametres"
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                isActive('/parametres') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              <span>Paramètres</span>
-            </Link>
+            <NavItem to="/parametres" icon={Settings} label="Paramètres" />
 
             {/* Members Management Link - Only for Organization Admins */}
             {isOrgAdmin && !isSuperAdminUser && (
               <>
                 <div className="border-t border-slate-700 my-2"></div>
-                <Link
-                  to="/membres"
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                    isActive('/membres') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
-                  }`}
-                >
-                  <UserCog className="w-4 h-4" />
-                  <span>Gestion Membres</span>
-                </Link>
+                <NavItem to="/membres" icon={UserCog} label="Gestion Membres" />
               </>
             )}
 
@@ -217,15 +280,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps) {
             {isSuperAdminUser && (
               <>
                 <div className="border-t border-slate-700 my-2"></div>
-                <Link
-                  to="/admin"
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
-                    isActive('/admin') ? 'bg-finixar-brand-blue text-white' : 'text-slate-300 hover:bg-finixar-brand-blue hover:text-white'
-                  }`}
-                >
-                  <Shield className="w-4 h-4" />
-                  <span>Admin Panel</span>
-                </Link>
+                <NavItem to="/admin" icon={Shield} label="Admin Panel" />
               </>
             )}
           </nav>
@@ -233,27 +288,61 @@ export function Layout({ organization, isLoading = false }: LayoutProps) {
 
         {/* Footer - Compact */}
         <div className="flex-shrink-0 p-4 border-t border-slate-800">
-          <div className="flex items-center gap-2 mb-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-              isSuperAdminUser ? 'bg-finixar-action-process' : isOrgAdmin ? 'bg-finixar-brand-blue' : 'bg-finixar-text-secondary'
-            }`}>
-              {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
+          {isCollapsed ? (
+            <div className="flex flex-col items-center gap-2">
+              <Tooltip content={userProfile?.full_name || 'Utilisateur'} position="right">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                    isSuperAdminUser
+                      ? 'bg-finixar-action-process'
+                      : isOrgAdmin
+                        ? 'bg-finixar-brand-blue'
+                        : 'bg-finixar-text-secondary'
+                  }`}
+                >
+                  {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
+                </div>
+              </Tooltip>
+              <Tooltip content="Se déconnecter" position="right">
+                <button
+                  onClick={handleLogout}
+                  className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-white hover:bg-finixar-brand-blue rounded-lg transition-colors"
+                >
+                  <span className="text-lg">→</span>
+                </button>
+              </Tooltip>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate text-sm">
-                {userProfile?.full_name || 'Utilisateur'}
-              </p>
-              <p className="text-xs text-slate-400 capitalize">
-                {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : 'Membre'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-finixar-brand-blue rounded-lg transition-colors"
-          >
-            Se déconnecter
-          </button>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 mb-2">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                    isSuperAdminUser
+                      ? 'bg-finixar-action-process'
+                      : isOrgAdmin
+                        ? 'bg-finixar-brand-blue'
+                        : 'bg-finixar-text-secondary'
+                  }`}
+                >
+                  {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate text-sm">
+                    {userProfile?.full_name || 'Utilisateur'}
+                  </p>
+                  <p className="text-xs text-slate-400 capitalize">
+                    {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : 'Membre'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-finixar-brand-blue rounded-lg transition-colors"
+              >
+                Se déconnecter
+              </button>
+            </>
+          )}
         </div>
       </aside>
 
@@ -268,10 +357,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps) {
 
       {/* Global Search Modal */}
       {isSearchOpen && (
-        <GlobalSearch
-          orgId={organization.id}
-          onClose={() => setIsSearchOpen(false)}
-        />
+        <GlobalSearch orgId={organization.id} onClose={() => setIsSearchOpen(false)} />
       )}
     </div>
   );
