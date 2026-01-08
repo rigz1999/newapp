@@ -202,53 +202,39 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
         {/* Header - Compact */}
         <div className="p-4 flex-shrink-0">
           <div className="mb-3 flex items-center justify-between">
-            {/* Logo with Crossfade */}
-            <div className="relative h-8 flex-1">
-              {/* Collapsed Icon */}
-              <div
-                className={`absolute inset-0 flex justify-center transition-opacity duration-200 ${
-                  isCollapsed ? 'opacity-100 delay-100' : 'opacity-0'
-                }`}
-              >
+            {/* Logo */}
+            {isCollapsed ? (
+              <div className="w-full flex justify-center">
                 <img src="/branding/icon/icon-white-192.png" alt="Finixar" className="w-8 h-8" />
               </div>
-
-              {/* Expanded Full Logo */}
-              <div
-                className={`absolute inset-0 flex items-center transition-opacity duration-200 ${
-                  isCollapsed ? 'opacity-0' : 'opacity-100 delay-100'
-                }`}
-              >
-                <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="h-8" />
-              </div>
-            </div>
+            ) : (
+              <img src="/branding/logo/logo-full-white.png" alt="Finixar" className="h-8" />
+            )}
 
             {/* Toggle Button */}
-            <button
-              onClick={toggleSidebar}
-              className={`text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-all ml-2 ${
-                isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100 delay-100'
-              }`}
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              tabIndex={isCollapsed ? -1 : 0}
-            >
-              <ChevronsLeft className="w-5 h-5" />
-            </button>
+            {!isCollapsed && (
+              <button
+                onClick={toggleSidebar}
+                className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-colors"
+                aria-label="Collapse sidebar"
+              >
+                <ChevronsLeft className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
           {/* Expand button when collapsed */}
-          <div className={`mb-3 flex justify-center transition-opacity duration-200 ${
-            isCollapsed ? 'opacity-100 delay-100' : 'opacity-0 pointer-events-none h-0'
-          }`}>
-            <button
-              onClick={toggleSidebar}
-              className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-colors"
-              aria-label="Expand sidebar"
-              tabIndex={isCollapsed ? 0 : -1}
-            >
-              <ChevronsRight className="w-5 h-5" />
-            </button>
-          </div>
+          {isCollapsed && (
+            <div className="mb-3 flex justify-center">
+              <button
+                onClick={toggleSidebar}
+                className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg p-1 transition-colors"
+                aria-label="Expand sidebar"
+              >
+                <ChevronsRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
 
           {/* Global Search Button */}
           {isCollapsed ? (
