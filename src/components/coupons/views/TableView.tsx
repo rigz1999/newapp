@@ -8,6 +8,7 @@ interface TableViewProps {
   onQuickPay: (coupon: Coupon) => void;
   onViewDetails: (coupon: Coupon) => void;
   onMarkAsUnpaid?: (coupon: Coupon) => void;
+  onMarkGroupAsUnpaid?: (date: string, coupons: Coupon[]) => void;
   markingUnpaid?: string | null;
   selectedCoupons: Set<string>;
   onToggleSelect: (couponId: string) => void;
@@ -32,6 +33,7 @@ export function TableView({
   onQuickPay,
   onViewDetails,
   onMarkAsUnpaid,
+  onMarkGroupAsUnpaid,
   markingUnpaid,
 }: TableViewProps) {
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
@@ -302,6 +304,21 @@ export function TableView({
                           >
                             <Upload className="w-4 h-4 flex-shrink-0" />
                             Payer
+                          </button>
+                        )}
+                        {group.paidCount > 0 && onMarkGroupAsUnpaid && (
+                          <button
+                            onClick={() => {
+                              const paidCoupons = group.coupons.filter(c => c.statut_calculated === 'paye');
+                              if (confirm(`Voulez-vous vraiment annuler tous les paiements de cette échéance (${paidCoupons.length} coupon${paidCoupons.length > 1 ? 's' : ''}) ?`)) {
+                                onMarkGroupAsUnpaid(group.date, paidCoupons);
+                              }
+                            }}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all shadow-sm hover:shadow-md"
+                            title="Annuler tous les paiements de cette échéance"
+                          >
+                            <XCircle className="w-4 h-4 flex-shrink-0" />
+                            Annuler
                           </button>
                         )}
                       </div>

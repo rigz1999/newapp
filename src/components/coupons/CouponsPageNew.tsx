@@ -212,6 +212,126 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
     }
   };
 
+  const handleMarkGroupAsUnpaid = async (date: string, paidCoupons: Coupon[]) => {
+    if (markingUnpaid) return;
+
+    setMarkingUnpaid('bulk');
+    try {
+      let successCount = 0;
+      let failCount = 0;
+
+      // Process each paid coupon
+      for (const coupon of paidCoupons) {
+        try {
+          // Get the paiement_id from the coupon's echeance
+          const { data: echeanceData, error: echeanceQueryError } = await supabase
+            .from('coupons_echeances')
+            .select('paiement_id')
+            .eq('id', coupon.id)
+            .single();
+
+          if (echeanceQueryError) throw echeanceQueryError;
+
+          const paiementId = echeanceData?.paiement_id;
+
+          if (paiementId) {
+            // 1. Get all payment proofs for this payment
+            const { data: proofs, error: proofsError } = await supabase
+              .from('payment_proofs')
+              .select('id, file_url')
+              .eq('paiement_id', paiementId);
+
+            if (proofsError) throw proofsError;
+
+            // 2. For each proof, check if it's used by other payments
+            const filesToDelete: string[] = [];
+
+            if (proofs && proofs.length > 0) {
+              for (const proof of proofs) {
+                const { data: otherProofs, error: countError } = await supabase
+                  .from('payment_proofs')
+                  .select('id')
+                  .eq('file_url', proof.file_url)
+                  .neq('paiement_id', paiementId);
+
+                if (countError) throw countError;
+
+                if (!otherProofs || otherProofs.length === 0) {
+                  const url = new URL(proof.file_url);
+                  const pathParts = url.pathname.split('/');
+                  const fileName = pathParts[pathParts.length - 1];
+                  filesToDelete.push(fileName);
+                }
+              }
+
+              // 3. Delete payment_proofs records
+              const { error: deleteProofsError } = await supabase
+                .from('payment_proofs')
+                .delete()
+                .eq('paiement_id', paiementId);
+
+              if (deleteProofsError) throw deleteProofsError;
+
+              // 4. Delete storage files
+              if (filesToDelete.length > 0) {
+                const { error: storageError } = await supabase.storage
+                  .from('payment-proofs')
+                  .remove(filesToDelete);
+
+                if (storageError) {
+                  console.error('Error deleting storage files:', storageError);
+                }
+              }
+            }
+
+            // 5. Delete the paiements record
+            const { error: deletePaiementError } = await supabase
+              .from('paiements')
+              .delete()
+              .eq('id', paiementId);
+
+            if (deletePaiementError) throw deletePaiementError;
+          }
+
+          // 6. Update the echeance to remove payment link and reset to unpaid state
+          const { error: echeanceUpdateError } = await supabase
+            .from('coupons_echeances')
+            .update({
+              paiement_id: null,
+              statut: 'en_attente',
+              date_paiement: null,
+              montant_paye: null
+            } as never)
+            .eq('id', coupon.id);
+
+          if (echeanceUpdateError) throw echeanceUpdateError;
+
+          successCount++;
+        } catch (err) {
+          console.error('Error unmarking coupon:', coupon.id, err);
+          failCount++;
+        }
+      }
+
+      // Refresh the coupons list
+      await refresh();
+
+      // Invalidate dashboard cache
+      triggerCacheInvalidation();
+
+      if (failCount === 0) {
+        toast.success(`Tous les paiements de l'échéance (${successCount} coupon${successCount > 1 ? 's' : ''}) ont été annulés avec succès.`);
+      } else {
+        toast.warning(`${successCount} coupon${successCount > 1 ? 's annulés' : ' annulé'}, ${failCount} erreur${failCount > 1 ? 's' : ''}.`);
+      }
+    } catch (err: any) {
+      console.error('Error in bulk unmark:', err);
+      toast.error('Erreur lors de l\'annulation: ' + err.message);
+    } finally {
+      setMarkingUnpaid(null);
+    }
+  };
+
   const handleExportExcel = async () => {
     if (coupons.length === 0) {
       toast.warning('Aucun coupon à exporter');
@@ -511,6 +631,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         onQuickPay={handleQuickPay}
         onViewDetails={handleViewDetails}
         onMarkAsUnpaid={handleMarkAsUnpaid}
+        onMarkGroupAsUnpaid={handleMarkGroupAsUnpaid}
         markingUnpaid={markingUnpaid}
         selectedCoupons={selectedCoupons}
         onToggleSelect={handleToggleSelect}
