@@ -23,6 +23,7 @@ import * as ExcelJS from 'exceljs';
 import { QuickPaymentModal } from './QuickPaymentModal';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { AlertModal } from '../common/Modals';
+import { triggerCacheInvalidation } from '../../utils/cacheManager';
 
 interface Echeance {
   id: string;
@@ -510,6 +511,9 @@ export function EcheancierPage() {
 
       // Refresh the echeances list
       await fetchEcheances();
+
+      // Invalidate dashboard cache to reflect status change
+      triggerCacheInvalidation();
 
       setAlertModalConfig({
         title: 'Succès',
