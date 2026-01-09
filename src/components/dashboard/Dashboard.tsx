@@ -108,6 +108,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
   const [recentPayments, setRecentPayments] = useState<Payment[]>([]);
   const [upcomingCoupons, setUpcomingCoupons] = useState<UpcomingCoupon[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [alertsDismissed, setAlertsDismissed] = useState(false);
   // Check if we have cached data to avoid showing skeleton on return
   const [loading, setLoading] = useState(() => {
     const cached = checkCachedData();
@@ -552,6 +553,10 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       setRecentPayments(recentPaymentsData);
       setUpcomingCoupons(groupedCoupons.slice(0, 5));
       setAlerts(dynamicAlerts);
+      // Reset dismissed state when new alerts are loaded
+      if (dynamicAlerts.length > 0) {
+        setAlertsDismissed(false);
+      }
       setCachedData(cacheData);
 
       setLoading(false);
@@ -730,7 +735,11 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           <DashboardAlerts
             alerts={alerts}
             onAlertClick={handleAlertClick}
-            onDismiss={() => setAlerts([])}
+            onDismiss={() => {
+              setAlerts([]);
+              setAlertsDismissed(true);
+            }}
+            dismissed={alertsDismissed}
           />
 
           <DashboardQuickActions

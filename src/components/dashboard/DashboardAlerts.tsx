@@ -5,16 +5,21 @@ interface DashboardAlertsProps {
   alerts: Alert[];
   onAlertClick: (alertId: string) => void;
   onDismiss: () => void;
+  dismissed?: boolean;
 }
 
 export function DashboardAlerts({
   alerts,
   onAlertClick,
   onDismiss,
+  dismissed = false,
 }: DashboardAlertsProps): JSX.Element | null {
-  // Reserve space even when no alerts to prevent layout shift
-  // Using min-height to match the typical alert card height (~160px for 1 alert)
+  // If user explicitly dismissed alerts, don't show placeholder
+  // Otherwise, reserve space when no alerts to prevent layout shift during loading
   if (alerts.length === 0) {
+    if (dismissed) {
+      return null;
+    }
     return <div className="mb-6 mt-6 min-h-[160px]" aria-hidden="true" />;
   }
 
