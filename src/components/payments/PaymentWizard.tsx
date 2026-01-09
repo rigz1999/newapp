@@ -19,6 +19,7 @@ import {
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { isValidAmount } from '../../utils/validators';
 import { logger } from '../../utils/logger';
+import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { PaymentWizardHeader } from './wizard/PaymentWizardHeader';
 import { PaymentProjectSelect } from './wizard/PaymentProjectSelect';
 import { PaymentFileUpload } from './wizard/PaymentFileUpload';
@@ -1876,6 +1877,8 @@ export function PaymentWizard({
             <button
               onClick={() => {
                 setShowSuccessModal(false);
+                // Invalidate dashboard cache to refresh upcoming coupons
+                triggerCacheInvalidation();
                 onSuccess();
                 onClose();
               }}

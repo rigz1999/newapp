@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Upload, Calendar, FileText, AlertCircle, ArrowLeft, FolderOpen, BarChart3, Lock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
+import { triggerCacheInvalidation } from '../../utils/cacheManager';
 
 interface QuickPaymentModalProps {
   preselectedProjectId?: string;
@@ -628,6 +629,12 @@ export function QuickPaymentModal({
       toast.success(
         `${selectedInvestorsList.length} paiement${selectedInvestorsList.length > 1 ? 's' : ''} enregistré${selectedInvestorsList.length > 1 ? 's' : ''} avec succès`
       );
+
+      // Invalidate dashboard cache to refresh upcoming coupons
+      if (selectedEcheanceData?.org_id) {
+        triggerCacheInvalidation(selectedEcheanceData.org_id);
+      }
+
       onSuccess();
       onClose();
     } catch (err: any) {
