@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload, Eye, FileText, XCircle, Mail, Loader2, CreditCard } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import ExcelJS from 'exceljs';
+import * as ExcelJS from 'exceljs';
 import { PaymentWizard } from '../payments/PaymentWizard';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { AlertModal } from '../common/Modals';

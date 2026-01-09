@@ -20,8 +20,8 @@ export async function loadExcelJS(): Promise<typeof ExcelJS> {
   }
 
   const module = await import('exceljs');
-  excelJSCache = module.default;
-  return module.default;
+  excelJSCache = module;
+  return module;
 }
 
 /**

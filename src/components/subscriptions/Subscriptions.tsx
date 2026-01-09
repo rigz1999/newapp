@@ -9,7 +9,7 @@ import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { DateRangePicker } from '../filters/DateRangePicker';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
-import ExcelJS from 'exceljs';
+import * as ExcelJS from 'exceljs';
 
 interface Subscription {
   id: string;

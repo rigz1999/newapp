@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Calendar, AlertCircle, Download } from 'lucide-react';
-import ExcelJS from 'exceljs';
 
 interface Echeance {
   date_echeance: string;
@@ -131,8 +130,11 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
   };
 
   const handleDownloadSynthese = async () => {
+    // Lazy load ExcelJS for better performance
+    const ExcelJS = await import('exceljs');
+
     const allEcheances: any[] = [];
-    
+
     for (const tranche of tranches) {
       try {
         const { data: souscriptions } = await supabase

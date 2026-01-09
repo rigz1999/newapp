@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import ExcelJS from 'exceljs';
+import * as ExcelJS from 'exceljs';
 import { ConfirmModal, AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
 import { toast } from '../../utils/toast';
