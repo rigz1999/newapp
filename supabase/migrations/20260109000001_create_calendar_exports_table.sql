@@ -30,12 +30,6 @@ CREATE INDEX idx_calendar_exports_project_id ON calendar_exports(project_id) WHE
 CREATE INDEX idx_calendar_exports_tranche_id ON calendar_exports(tranche_id) WHERE tranche_id IS NOT NULL;
 CREATE INDEX idx_calendar_exports_is_outdated ON calendar_exports(is_outdated) WHERE is_outdated = true;
 
--- Add updated_at trigger
-CREATE TRIGGER set_updated_at
-  BEFORE UPDATE ON calendar_exports
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
 -- Enable Row Level Security
 ALTER TABLE calendar_exports ENABLE ROW LEVEL SECURITY;
 
