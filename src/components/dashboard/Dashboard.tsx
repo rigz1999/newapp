@@ -268,7 +268,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           .select('id', { count: 'exact', head: true })
           .gte('date_echeance', today.toISOString().split('T')[0])
           .lte('date_echeance', in90Days.toISOString().split('T')[0])
-          .neq('statut', 'payé'),
+          .neq('statut', 'paye'),
       ]);
 
       // Check for critical errors
@@ -505,7 +505,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             echeance.montant_total += montantCoupon;
             echeance.investor_count += 1;
 
-            if (coupon.statut === 'payé') {
+            if (coupon.statut === 'paye') {
               echeance.montant_paye += montantCoupon;
             } else {
               echeance.unpaid_count += 1;
