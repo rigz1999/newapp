@@ -6,6 +6,7 @@ import { QuickPaymentModal } from './QuickPaymentModal';
 import PaymentRemindersModal from './PaymentRemindersModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination } from '../common/Pagination';
+import { ConfirmModal } from '../common/Modals';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { DateRangePicker } from '../filters/DateRangePicker';
 import { TaxInfoTooltip } from '../common/TaxInfoTooltip';
@@ -39,10 +40,11 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   const filterState = useCouponFilters();
 
   // Data fetching
-  const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats } = useCoupons({
-    pageSize: 50,
-    filters: filterState.filters,
-  });
+  const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats } =
+    useCoupons({
+      pageSize: 50,
+      filters: filterState.filters,
+    });
 
   // Selection state
   const [selectedCoupons, setSelectedCoupons] = useState<Set<string>>(new Set());
@@ -60,22 +62,26 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   // Mark as unpaid state
   const [markingUnpaid, setMarkingUnpaid] = useState<string | null>(null);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  // Bulk unmark confirmation modal
+  const [showBulkUnmarkConfirm, setShowBulkUnmarkConfirm] = useState(false);
+  const [bulkUnmarkData, setBulkUnmarkData] = useState<{ date: string; coupons: Coupon[] } | null>(
+    null
+  );
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
-  };
 
   const handleQuickPay = (coupon: Coupon) => {
     setSelectedCouponForQuickPay(coupon);
@@ -106,7 +112,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   };
 
   const handleMarkAsUnpaid = async (coupon: Coupon) => {
-    if (markingUnpaid) return;
+    if (markingUnpaid) {
+      return;
+    }
 
     setMarkingUnpaid(coupon.id);
     try {
@@ -117,7 +125,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         .eq('id', coupon.id)
         .single();
 
-      if (echeanceQueryError) throw echeanceQueryError;
+      if (echeanceQueryError) {
+        throw echeanceQueryError;
+      }
 
       const paiementId = echeanceData?.paiement_id;
 
@@ -128,7 +138,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           .select('id, file_url')
           .eq('paiement_id', paiementId);
 
-        if (proofsError) throw proofsError;
+        if (proofsError) {
+          throw proofsError;
+        }
 
         // 2. For each proof, check if it's used by other payments (reference counting)
         const filesToDelete: string[] = [];
@@ -142,7 +154,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               .eq('file_url', proof.file_url)
               .neq('paiement_id', paiementId);
 
-            if (countError) throw countError;
+            if (countError) {
+              throw countError;
+            }
 
             // Only delete file if no other payments reference it
             if (!otherProofs || otherProofs.length === 0) {
@@ -160,7 +174,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
             .delete()
             .eq('paiement_id', paiementId);
 
-          if (deleteProofsError) throw deleteProofsError;
+          if (deleteProofsError) {
+            throw deleteProofsError;
+          }
 
           // 4. Delete storage files (only those not referenced by other payments)
           if (filesToDelete.length > 0) {
@@ -181,7 +197,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           .delete()
           .eq('id', paiementId);
 
-        if (deletePaiementError) throw deletePaiementError;
+        if (deletePaiementError) {
+          throw deletePaiementError;
+        }
       }
 
       // 6. Update the echeance to remove payment link and reset to unpaid state
@@ -191,11 +209,13 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           paiement_id: null,
           statut: 'en_attente',
           date_paiement: null,
-          montant_paye: null
+          montant_paye: null,
         } as never)
         .eq('id', coupon.id);
 
-      if (echeanceUpdateError) throw echeanceUpdateError;
+      if (echeanceUpdateError) {
+        throw echeanceUpdateError;
+      }
 
       // Refresh the coupons list
       await refresh();
@@ -203,18 +223,29 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       // Invalidate dashboard cache to reflect status change
       triggerCacheInvalidation();
 
-      toast.success('Le coupon a été marqué comme non payé et tous les enregistrements associés ont été supprimés.');
-    } catch (err: any) {
+      toast.success(
+        'Le coupon a été marqué comme non payé et tous les enregistrements associés ont été supprimés.'
+      );
+    } catch (err: unknown) {
       console.error('Error marking as unpaid:', err);
-      toast.error('Erreur lors de la mise à jour: ' + err.message);
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
+      toast.error(`Erreur lors de la mise à jour: ${errorMessage}`);
     } finally {
       setMarkingUnpaid(null);
     }
   };
 
-  const handleMarkGroupAsUnpaid = async (date: string, paidCoupons: Coupon[]) => {
-    if (markingUnpaid) return;
+  const handleBulkUnmarkRequest = (date: string, paidCoupons: Coupon[]) => {
+    setBulkUnmarkData({ date, coupons: paidCoupons });
+    setShowBulkUnmarkConfirm(true);
+  };
 
+  const handleMarkGroupAsUnpaid = async () => {
+    if (!bulkUnmarkData || markingUnpaid) {
+      return;
+    }
+
+    const { coupons: paidCoupons } = bulkUnmarkData;
     setMarkingUnpaid('bulk');
     try {
       let successCount = 0;
@@ -230,7 +261,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
             .eq('id', coupon.id)
             .single();
 
-          if (echeanceQueryError) throw echeanceQueryError;
+          if (echeanceQueryError) {
+            throw echeanceQueryError;
+          }
 
           const paiementId = echeanceData?.paiement_id;
 
@@ -241,7 +274,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               .select('id, file_url')
               .eq('paiement_id', paiementId);
 
-            if (proofsError) throw proofsError;
+            if (proofsError) {
+              throw proofsError;
+            }
 
             // 2. For each proof, check if it's used by other payments
             const filesToDelete: string[] = [];
@@ -254,7 +289,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                   .eq('file_url', proof.file_url)
                   .neq('paiement_id', paiementId);
 
-                if (countError) throw countError;
+                if (countError) {
+                  throw countError;
+                }
 
                 if (!otherProofs || otherProofs.length === 0) {
                   const url = new URL(proof.file_url);
@@ -270,7 +307,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                 .delete()
                 .eq('paiement_id', paiementId);
 
-              if (deleteProofsError) throw deleteProofsError;
+              if (deleteProofsError) {
+                throw deleteProofsError;
+              }
 
               // 4. Delete storage files
               if (filesToDelete.length > 0) {
@@ -290,7 +329,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               .delete()
               .eq('id', paiementId);
 
-            if (deletePaiementError) throw deletePaiementError;
+            if (deletePaiementError) {
+              throw deletePaiementError;
+            }
           }
 
           // 6. Update the echeance to remove payment link and reset to unpaid state
@@ -300,11 +341,13 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               paiement_id: null,
               statut: 'en_attente',
               date_paiement: null,
-              montant_paye: null
+              montant_paye: null,
             } as never)
             .eq('id', coupon.id);
 
-          if (echeanceUpdateError) throw echeanceUpdateError;
+          if (echeanceUpdateError) {
+            throw echeanceUpdateError;
+          }
 
           successCount++;
         } catch (err) {
@@ -320,13 +363,18 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       triggerCacheInvalidation();
 
       if (failCount === 0) {
-        toast.success(`Tous les coupons de l'échéance (${successCount} coupon${successCount > 1 ? 's' : ''}) ont été marqués comme impayés avec succès.`);
+        toast.success(
+          `Tous les coupons de l'échéance (${successCount} coupon${successCount > 1 ? 's' : ''}) ont été marqués comme impayés avec succès.`
+        );
       } else {
-        toast.warning(`${successCount} coupon${successCount > 1 ? 's marqués impayés' : ' marqué impayé'}, ${failCount} erreur${failCount > 1 ? 's' : ''}.`);
+        toast.warning(
+          `${successCount} coupon${successCount > 1 ? 's marqués impayés' : ' marqué impayé'}, ${failCount} erreur${failCount > 1 ? 's' : ''}.`
+        );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error in bulk unmark:', err);
-      toast.error('Erreur lors de la mise à jour: ' + err.message);
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
+      toast.error(`Erreur lors de la mise à jour: ${errorMessage}`);
     } finally {
       setMarkingUnpaid(null);
     }
@@ -342,13 +390,13 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
     try {
       const exportData = coupons.map(c => ({
         'Date Échéance': formatDate(c.date_echeance),
-        'Projet': c.projet_nom,
-        'Tranche': c.tranche_nom,
-        'Investisseur': c.investisseur_nom,
-        'CGP': c.investisseur_cgp || '',
+        Projet: c.projet_nom,
+        Tranche: c.tranche_nom,
+        Investisseur: c.investisseur_nom,
+        CGP: c.investisseur_cgp || '',
         'Montant Brut': c.montant_brut,
         'Montant Net': c.montant_net,
-        'Statut': c.statut_calculated,
+        Statut: c.statut_calculated,
         'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
       }));
 
@@ -377,7 +425,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       toast.success(`${coupons.length} coupons exportés`);
     } catch (error) {
       console.error('Error exporting Excel:', error);
-      toast.error('Erreur lors de l\'export');
+      toast.error("Erreur lors de l'export");
     } finally {
       setExportingExcel(false);
     }
@@ -385,12 +433,18 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
   // Extract unique values for filters
   const uniqueProjets = useMemo(
-    () => Array.from(new Set(coupons.map(c => c.projet_nom))).sort().map(p => ({ value: p, label: p })),
+    () =>
+      Array.from(new Set(coupons.map(c => c.projet_nom)))
+        .sort()
+        .map(p => ({ value: p, label: p })),
     [coupons]
   );
 
   const uniqueTranches = useMemo(
-    () => Array.from(new Set(coupons.map(c => c.tranche_nom))).sort().map(t => ({ value: t, label: t })),
+    () =>
+      Array.from(new Set(coupons.map(c => c.tranche_nom)))
+        .sort()
+        .map(t => ({ value: t, label: t })),
     [coupons]
   );
 
@@ -473,7 +527,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               En Attente
             </span>
           </div>
-          <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enAttente.total)}</h3>
+          <h3 className="text-2xl font-bold text-slate-900">
+            {formatCurrency(stats.enAttente.total)}
+          </h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enAttente.count} coupons</p>
         </button>
 
@@ -507,7 +563,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               En Retard
             </span>
           </div>
-          <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enRetard.total)}</h3>
+          <h3 className="text-2xl font-bold text-slate-900">
+            {formatCurrency(stats.enRetard.total)}
+          </h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enRetard.count} coupons</p>
         </button>
       </div>
@@ -555,8 +613,12 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               label="Période d'échéance"
               startDate={filterState.filters.dateStart}
               endDate={filterState.filters.dateEnd}
-              onStartDateChange={date => filterState.setDateRange(date, filterState.filters.dateEnd)}
-              onEndDateChange={date => filterState.setDateRange(filterState.filters.dateStart, date)}
+              onStartDateChange={date =>
+                filterState.setDateRange(date, filterState.filters.dateEnd)
+              }
+              onEndDateChange={date =>
+                filterState.setDateRange(filterState.filters.dateStart, date)
+              }
             />
 
             {/* Multi-select Filters */}
@@ -565,7 +627,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                 label="Statut"
                 options={uniqueStatuts}
                 selectedValues={filterState.filters.statut || []}
-                onAdd={value => filterState.setStatut([...(filterState.filters.statut || []), value])}
+                onAdd={value =>
+                  filterState.setStatut([...(filterState.filters.statut || []), value])
+                }
                 onRemove={value =>
                   filterState.setStatut((filterState.filters.statut || []).filter(v => v !== value))
                 }
@@ -577,9 +641,13 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                 label="Projets"
                 options={uniqueProjets}
                 selectedValues={filterState.filters.projets || []}
-                onAdd={value => filterState.setProjets([...(filterState.filters.projets || []), value])}
+                onAdd={value =>
+                  filterState.setProjets([...(filterState.filters.projets || []), value])
+                }
                 onRemove={value =>
-                  filterState.setProjets((filterState.filters.projets || []).filter(v => v !== value))
+                  filterState.setProjets(
+                    (filterState.filters.projets || []).filter(v => v !== value)
+                  )
                 }
                 onClear={() => filterState.setProjets([])}
                 placeholder="Sélectionner des projets..."
@@ -589,9 +657,13 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                 label="Tranches"
                 options={uniqueTranches}
                 selectedValues={filterState.filters.tranches || []}
-                onAdd={value => filterState.setTranches([...(filterState.filters.tranches || []), value])}
+                onAdd={value =>
+                  filterState.setTranches([...(filterState.filters.tranches || []), value])
+                }
                 onRemove={value =>
-                  filterState.setTranches((filterState.filters.tranches || []).filter(v => v !== value))
+                  filterState.setTranches(
+                    (filterState.filters.tranches || []).filter(v => v !== value)
+                  )
                 }
                 onClear={() => filterState.setTranches([])}
                 placeholder="Sélectionner des tranches..."
@@ -631,7 +703,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         onQuickPay={handleQuickPay}
         onViewDetails={handleViewDetails}
         onMarkAsUnpaid={handleMarkAsUnpaid}
-        onMarkGroupAsUnpaid={handleMarkGroupAsUnpaid}
+        onMarkGroupAsUnpaid={handleBulkUnmarkRequest}
         markingUnpaid={markingUnpaid}
         selectedCoupons={selectedCoupons}
         onToggleSelect={handleToggleSelect}
@@ -682,7 +754,10 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           >
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-xl font-bold text-slate-900">Détail du Coupon</h3>
-              <button onClick={() => setShowDetailsModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -698,11 +773,15 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                 </div>
                 <div>
                   <p className="text-xs text-slate-600">Investisseur</p>
-                  <p className="text-sm font-medium text-slate-900">{selectedCoupon.investisseur_nom}</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {selectedCoupon.investisseur_nom}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600">Date Échéance</p>
-                  <p className="text-sm font-medium text-slate-900">{formatDate(selectedCoupon.date_echeance)}</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {formatDate(selectedCoupon.date_echeance)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600">Montant Brut</p>
@@ -730,7 +809,8 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                     Payé le {formatDate(selectedCoupon.date_paiement)}
                   </p>
                   <p className="text-xs text-green-700 mt-1">
-                    Montant: {formatCurrency(selectedCoupon.montant_paye || selectedCoupon.montant_net)}
+                    Montant:{' '}
+                    {formatCurrency(selectedCoupon.montant_paye || selectedCoupon.montant_net)}
                   </p>
                 </div>
               )}
@@ -746,6 +826,22 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         onSettingsUpdated={() => {
           // Optionally refresh data or show success message
         }}
+      />
+
+      {/* Bulk Unmark Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showBulkUnmarkConfirm}
+        onClose={() => {
+          setShowBulkUnmarkConfirm(false);
+          setBulkUnmarkData(null);
+        }}
+        onConfirm={handleMarkGroupAsUnpaid}
+        title="Marquer comme impayé"
+        message={`Voulez-vous vraiment marquer tous les coupons de cette échéance comme impayés (${bulkUnmarkData?.coupons.length || 0} coupon${(bulkUnmarkData?.coupons.length || 0) > 1 ? 's' : ''}) ?`}
+        confirmText="Marquer impayé"
+        cancelText="Annuler"
+        type="danger"
+        isLoading={markingUnpaid === 'bulk'}
       />
     </div>
   );

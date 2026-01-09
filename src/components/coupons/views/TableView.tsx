@@ -1,7 +1,19 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Coupon } from '../../../hooks/coupons/useCoupons';
 import { TaxInfoTooltip } from '../../common/TaxInfoTooltip';
-import { Building2, User, Upload, AlertCircle, Calendar, ChevronDown, ChevronRight, CheckCircle2, Clock, XCircle, MoreVertical, FileText } from 'lucide-react';
+import {
+  Building2,
+  User,
+  Upload,
+  AlertCircle,
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  XCircle,
+  MoreVertical,
+  FileText,
+} from 'lucide-react';
 
 interface TableViewProps {
   coupons: Coupon[];
@@ -48,22 +60,20 @@ export function TableView({
     }
   }, [openDropdown]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
-  };
 
   const getDaysUntil = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -89,9 +99,11 @@ export function TableView({
   const groupedData = useMemo<GroupedData[]>(() => {
     const grouped: { [date: string]: Coupon[] } = {};
 
-    coupons.forEach((coupon) => {
+    coupons.forEach(coupon => {
       const date = coupon.date_echeance;
-      if (!grouped[date]) grouped[date] = [];
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
       grouped[date].push(coupon);
     });
 
@@ -211,7 +223,7 @@ export function TableView({
             </tr>
           </thead>
           <tbody>
-            {groupedData.map((group) => {
+            {groupedData.map(group => {
               const isExpanded = expandedDates.has(group.date);
               const daysUntil = getDaysUntil(group.date);
               const statusDisplay = getEcheanceStatusDisplay(group);
@@ -222,10 +234,13 @@ export function TableView({
                   <tr
                     key={`date-${group.date}`}
                     className={`border-b-2 border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors ${
-                      group.status === 'all_paid' ? 'bg-green-50/30' :
-                      group.status === 'all_late' ? 'bg-red-50/30' :
-                      group.status === 'partial' ? 'bg-orange-50/30' :
-                      'bg-white'
+                      group.status === 'all_paid'
+                        ? 'bg-green-50/30'
+                        : group.status === 'all_late'
+                          ? 'bg-red-50/30'
+                          : group.status === 'partial'
+                            ? 'bg-orange-50/30'
+                            : 'bg-white'
                     }`}
                     onClick={() => toggleDate(group.date)}
                   >
@@ -238,13 +253,18 @@ export function TableView({
                     </td>
                     <td className="px-4 py-4 align-middle">
                       <div className="flex flex-col gap-1">
-                        <div className="font-bold text-base text-slate-900 leading-tight">{formatDate(group.date)}</div>
+                        <div className="font-bold text-base text-slate-900 leading-tight">
+                          {formatDate(group.date)}
+                        </div>
                         {group.status !== 'all_paid' && (
                           <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
                             {daysUntil < 0 ? (
                               <>
                                 <AlertCircle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
-                                <span>En retard de {Math.abs(daysUntil)} jour{Math.abs(daysUntil) > 1 ? 's' : ''}</span>
+                                <span>
+                                  En retard de {Math.abs(daysUntil)} jour
+                                  {Math.abs(daysUntil) > 1 ? 's' : ''}
+                                </span>
                               </>
                             ) : daysUntil === 0 ? (
                               <>
@@ -254,7 +274,9 @@ export function TableView({
                             ) : (
                               <>
                                 <Clock className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-                                <span>Dans {daysUntil} jour{daysUntil > 1 ? 's' : ''}</span>
+                                <span>
+                                  Dans {daysUntil} jour{daysUntil > 1 ? 's' : ''}
+                                </span>
                               </>
                             )}
                           </div>
@@ -263,13 +285,17 @@ export function TableView({
                     </td>
                     <td className="px-4 py-4 align-middle">
                       <div className="flex flex-col gap-1">
-                        <div className="font-medium text-sm text-slate-900 leading-tight">{group.projectName}</div>
+                        <div className="font-medium text-sm text-slate-900 leading-tight">
+                          {group.projectName}
+                        </div>
                         <div className="text-xs text-slate-600">{group.trancheName}</div>
                       </div>
                     </td>
                     <td className="px-4 py-4 align-middle">
                       <div className="flex flex-col gap-1">
-                        <span className={`inline-block px-2.5 py-1 rounded-md border font-semibold text-xs leading-tight ${statusDisplay.className} w-fit`}>
+                        <span
+                          className={`inline-block px-2.5 py-1 rounded-md border font-semibold text-xs leading-tight ${statusDisplay.className} w-fit`}
+                        >
                           {statusDisplay.text}
                         </span>
                         <div className="text-xs font-medium text-slate-700">
@@ -290,7 +316,7 @@ export function TableView({
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4 align-middle" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-4 align-middle" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
                         {group.hasUnpaid && (
                           <button
@@ -309,10 +335,10 @@ export function TableView({
                         {group.paidCount > 0 && onMarkGroupAsUnpaid && (
                           <button
                             onClick={() => {
-                              const paidCoupons = group.coupons.filter(c => c.statut_calculated === 'paye');
-                              if (confirm(`Voulez-vous vraiment marquer tous les coupons de cette échéance comme impayés (${paidCoupons.length} coupon${paidCoupons.length > 1 ? 's' : ''}) ?`)) {
-                                onMarkGroupAsUnpaid(group.date, paidCoupons);
-                              }
+                              const paidCoupons = group.coupons.filter(
+                                c => c.statut_calculated === 'paye'
+                              );
+                              onMarkGroupAsUnpaid(group.date, paidCoupons);
                             }}
                             className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all shadow-sm hover:shadow-md"
                             title="Marquer tous les coupons de cette échéance comme impayés"
@@ -383,7 +409,7 @@ export function TableView({
                           <td className="px-4 py-3 align-middle">
                             <div className="flex items-center justify-end relative">
                               <button
-                                onClick={(e) => {
+                                onClick={e => {
                                   e.stopPropagation();
                                   setOpenDropdown(openDropdown === coupon.id ? null : coupon.id);
                                 }}
@@ -396,10 +422,10 @@ export function TableView({
                               {openDropdown === coupon.id && (
                                 <div
                                   className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
-                                  onClick={(e) => e.stopPropagation()}
+                                  onClick={e => e.stopPropagation()}
                                 >
                                   <button
-                                    onClick={(e) => {
+                                    onClick={e => {
                                       e.stopPropagation();
                                       setOpenDropdown(null);
                                       onViewDetails(coupon);
@@ -412,7 +438,7 @@ export function TableView({
 
                                   {coupon.statut_calculated === 'paye' && onMarkAsUnpaid && (
                                     <button
-                                      onClick={(e) => {
+                                      onClick={e => {
                                         e.stopPropagation();
                                         setOpenDropdown(null);
                                         onMarkAsUnpaid(coupon);
@@ -420,14 +446,16 @@ export function TableView({
                                       disabled={markingUnpaid === coupon.id}
                                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
                                     >
-                                      <XCircle className={`w-4 h-4 text-finixar-red flex-shrink-0 ${markingUnpaid === coupon.id ? 'animate-pulse' : ''}`} />
+                                      <XCircle
+                                        className={`w-4 h-4 text-finixar-red flex-shrink-0 ${markingUnpaid === coupon.id ? 'animate-pulse' : ''}`}
+                                      />
                                       <span>Marquer impayé</span>
                                     </button>
                                   )}
 
                                   {coupon.statut_calculated !== 'paye' && (
                                     <button
-                                      onClick={(e) => {
+                                      onClick={e => {
                                         e.stopPropagation();
                                         setOpenDropdown(null);
                                         onQuickPay(coupon);
