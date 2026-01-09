@@ -121,7 +121,7 @@ async function exchangeMicrosoftCode(code: string) {
     code,
     redirect_uri: redirectUri,
     grant_type: 'authorization_code',
-    scope: 'https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/User.Read offline_access',
+    scope: 'https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/User.Read offline_access',
   });
 
   const tokenResponse = await fetch(tokenUrl, {

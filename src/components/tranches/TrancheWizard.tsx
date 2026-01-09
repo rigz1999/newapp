@@ -223,6 +223,13 @@ export function TrancheWizard({
 
         if (regenerateResult.success) {
           logger.info("Écheancier régénéré avec succès");
+
+          // Mark calendar exports as outdated for this tranche
+          await supabase
+            .from('calendar_exports')
+            .update({ is_outdated: true })
+            .eq('tranche_id', editingTranche.id);
+
           const successMsg =
             `Tranche mise à jour avec succès!\n` +
             `Souscriptions recalculées: ${regenerateResult.updated_souscriptions}\n` +

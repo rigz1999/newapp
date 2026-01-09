@@ -16,6 +16,7 @@ import { Copy } from 'lucide-react';
 import { EcheancierModal } from '../coupons/EcheancierModal';
 import { PaymentsModal } from '../payments/PaymentsModal';  // ✅ AJOUT
 import { ProjectComments } from './ProjectComments';  // ✅ AJOUT - Comments feature
+import { CalendarExportModal } from '../calendar/CalendarExportModal';
 import {
   ArrowLeft,
   Edit,
@@ -130,6 +131,14 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false);
   const [showTranchesModal, setShowTranchesModal] = useState(false);
   const [showPaymentsModal, setShowPaymentsModal] = useState(false);  // ✅ AJOUT
+  const [showCalendarExport, setShowCalendarExport] = useState(false);
+  const [calendarExportScope, setCalendarExportScope] = useState<{
+    projectId?: string;
+    trancheId?: string;
+    projectName?: string;
+    trancheName?: string;
+  }>({});
+  const [hasOutdatedExport, setHasOutdatedExport] = useState(false);
 
   // 1) AJOUTÉ : état pour tranches développées
   const [expandedTrancheIds, setExpandedTrancheIds] = useState<Set<string>>(new Set());
@@ -168,7 +177,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     setLoading(true);
 
     try {
-      const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
+      const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes, calendarExportsRes] = await Promise.all([
         supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
         supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }),
         supabase.from('souscriptions').select(`
@@ -178,7 +187,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           tranche:tranches(tranche_name, date_emission)
         `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
         supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }),
-        supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut')
+        supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut'),
+        supabase.from('calendar_exports').select('is_outdated').eq('project_id', projectId).eq('is_outdated', true).maybeSingle()
       ]);
 
       // Vérifier les erreurs
@@ -213,6 +223,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       setTranches(tranchesData);
       setSubscriptions(subscriptionsWithCoupons);
       setPayments(paymentsData);
+      setHasOutdatedExport(!!calendarExportsRes.data);
 
       if (subscriptionsWithCoupons.length > 0) {
         const totalLeve = subscriptionsWithCoupons.reduce((sum, sub) => sum + Number(sub.montant_investi || 0), 0);
@@ -473,6 +484,13 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
             if (regenerateResult.success) {
               logger.info(`Tranche ${tranche.tranche_name} régénérée`);
+
+              // Mark calendar exports as outdated for this tranche and project
+              await supabase
+                .from('calendar_exports')
+                .update({ is_outdated: true })
+                .or(`tranche_id.eq.${tranche.id},project_id.eq.${projectId}`);
+
               return {
                 success: true,
                 tranche: tranche.tranche_name,
@@ -670,21 +688,64 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </div>
           </div>
 
-          <button
-            onClick={() => {
-              setEditedProject({
-                ...project,
-                periodicite_coupons: normalizePeriodicite(project.periodicite_coupons)
-              });
-              setShowEditProject(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-            aria-label="Modifier le projet"
-          >
-            <Edit className="w-4 h-4" aria-hidden="true" />
-            Modifier
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setCalendarExportScope({
+                  projectId: project.id,
+                  projectName: project.projet,
+                });
+                setShowCalendarExport(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-finixar-brand-blue bg-white border border-finixar-brand-blue rounded-lg hover:bg-blue-50 transition-colors shadow-sm"
+              aria-label="Exporter au calendrier"
+            >
+              <Calendar className="w-4 h-4" aria-hidden="true" />
+              Calendrier
+            </button>
+            <button
+              onClick={() => {
+                setEditedProject({
+                  ...project,
+                  periodicite_coupons: normalizePeriodicite(project.periodicite_coupons)
+                });
+                setShowEditProject(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              aria-label="Modifier le projet"
+            >
+              <Edit className="w-4 h-4" aria-hidden="true" />
+              Modifier
+            </button>
+          </div>
         </div>
+
+        {/* Outdated Export Warning Banner */}
+        {hasOutdatedExport && (
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4">
+            <div className="flex items-start">
+              <AlertTriangle className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
+              <div className="ml-3 flex-1">
+                <p className="text-sm text-amber-700">
+                  L'échéancier a été modifié depuis votre dernier export au calendrier.
+                  {' '}
+                  <button
+                    onClick={() => {
+                      setCalendarExportScope({
+                        projectId: project?.id,
+                        projectName: project?.projet,
+                      });
+                      setShowCalendarExport(true);
+                    }}
+                    className="font-medium underline hover:text-amber-800 transition-colors"
+                  >
+                    Re-exporter au calendrier
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -863,6 +924,22 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           </span>
                         </div>
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCalendarExportScope({
+                                trancheId: tranche.id,
+                                projectName: project?.projet,
+                                trancheName: tranche.tranche_name,
+                              });
+                              setShowCalendarExport(true);
+                            }}
+                            className="p-1.5 text-finixar-brand-blue hover:bg-blue-50 rounded"
+                            title="Exporter au calendrier"
+                            aria-label={`Exporter la tranche ${tranche.tranche_name} au calendrier`}
+                          >
+                            <Calendar className="w-4 h-4" aria-hidden="true" />
+                          </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1453,6 +1530,23 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             onClose={() => setShowPaymentsModal(false)}
             formatCurrency={formatCurrency}
             formatDate={formatDate}
+          />
+        )}
+
+        {/* Calendar Export Modal */}
+        {showCalendarExport && (
+          <CalendarExportModal
+            isOpen={showCalendarExport}
+            onClose={() => {
+              setShowCalendarExport(false);
+              setCalendarExportScope({});
+              // Refresh project data to update outdated flag if needed
+              fetchProjectData();
+            }}
+            projectId={calendarExportScope.projectId}
+            trancheId={calendarExportScope.trancheId}
+            projectName={calendarExportScope.projectName}
+            trancheName={calendarExportScope.trancheName}
           />
         )}
       </div>
