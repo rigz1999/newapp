@@ -224,11 +224,16 @@ export function TrancheWizard({
         if (regenerateResult.success) {
           logger.info("Écheancier régénéré avec succès");
 
-          // Mark calendar exports as outdated for this tranche
-          await supabase
-            .from('calendar_exports')
-            .update({ is_outdated: true })
-            .eq('tranche_id', editingTranche.id);
+          // Mark calendar exports as outdated for this tranche (safe - table might not exist yet)
+          try {
+            await supabase
+              .from('calendar_exports')
+              .update({ is_outdated: true })
+              .eq('tranche_id', editingTranche.id);
+          } catch (err) {
+            // Ignore error if table doesn't exist yet
+            logger.debug('Calendar exports table not available yet', { error: err });
+          }
 
           const successMsg =
             `Tranche mise à jour avec succès!\n` +
