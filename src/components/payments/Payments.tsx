@@ -13,7 +13,7 @@ import { FilterPresets } from '../filters/FilterPresets';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { logger } from '../../utils/logger';
 import { formatErrorMessage } from '../../utils/errorMessages';
-import ExcelJS from 'exceljs';
+import * as ExcelJS from 'exceljs';
 
 interface PaymentsProps {
   organization: { id: string; name: string; role: string };

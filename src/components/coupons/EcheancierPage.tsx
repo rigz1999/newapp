@@ -19,7 +19,7 @@ import {
   MoreVertical,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import ExcelJS from 'exceljs';
+import * as ExcelJS from 'exceljs';
 import { QuickPaymentModal } from './QuickPaymentModal';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { AlertModal } from '../common/Modals';

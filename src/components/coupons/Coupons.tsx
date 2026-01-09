@@ -20,7 +20,7 @@ import {
   Upload,
   Receipt
 } from 'lucide-react';
-import ExcelJS from 'exceljs';
+import * as ExcelJS from 'exceljs';
 import { QuickPaymentModal } from './QuickPaymentModal';
 import { TableSkeleton } from '../common/Skeleton';
 import { Pagination, paginate } from '../common/Pagination';

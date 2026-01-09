@@ -22,7 +22,7 @@ import {
   X,
   Bell,
 } from 'lucide-react';
-import ExcelJS from 'exceljs';
+import * as ExcelJS from 'exceljs';
 import { toast } from '../../utils/toast';
 import { supabase } from '../../lib/supabase';
 
