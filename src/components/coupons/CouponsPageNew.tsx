@@ -320,13 +320,13 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       triggerCacheInvalidation();
 
       if (failCount === 0) {
-        toast.success(`Tous les paiements de l'échéance (${successCount} coupon${successCount > 1 ? 's' : ''}) ont été annulés avec succès.`);
+        toast.success(`Tous les coupons de l'échéance (${successCount} coupon${successCount > 1 ? 's' : ''}) ont été marqués comme impayés avec succès.`);
       } else {
-        toast.warning(`${successCount} coupon${successCount > 1 ? 's annulés' : ' annulé'}, ${failCount} erreur${failCount > 1 ? 's' : ''}.`);
+        toast.warning(`${successCount} coupon${successCount > 1 ? 's marqués impayés' : ' marqué impayé'}, ${failCount} erreur${failCount > 1 ? 's' : ''}.`);
       }
     } catch (err: any) {
       console.error('Error in bulk unmark:', err);
-      toast.error('Erreur lors de l\'annulation: ' + err.message);
+      toast.error('Erreur lors de la mise à jour: ' + err.message);
     } finally {
       setMarkingUnpaid(null);
     }

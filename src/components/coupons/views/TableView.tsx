@@ -310,15 +310,15 @@ export function TableView({
                           <button
                             onClick={() => {
                               const paidCoupons = group.coupons.filter(c => c.statut_calculated === 'paye');
-                              if (confirm(`Voulez-vous vraiment annuler tous les paiements de cette échéance (${paidCoupons.length} coupon${paidCoupons.length > 1 ? 's' : ''}) ?`)) {
+                              if (confirm(`Voulez-vous vraiment marquer tous les coupons de cette échéance comme impayés (${paidCoupons.length} coupon${paidCoupons.length > 1 ? 's' : ''}) ?`)) {
                                 onMarkGroupAsUnpaid(group.date, paidCoupons);
                               }
                             }}
                             className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all shadow-sm hover:shadow-md"
-                            title="Annuler tous les paiements de cette échéance"
+                            title="Marquer tous les coupons de cette échéance comme impayés"
                           >
                             <XCircle className="w-4 h-4 flex-shrink-0" />
-                            Annuler
+                            Marquer impayé
                           </button>
                         )}
                       </div>
