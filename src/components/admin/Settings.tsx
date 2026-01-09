@@ -336,7 +336,7 @@ export default function Settings() {
 
       const tenantId = import.meta.env.VITE_MICROSOFT_TENANT_ID || 'common';
       const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
-      const scope = encodeURIComponent('https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/User.Read offline_access');
+      const scope = encodeURIComponent('https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/User.Read offline_access');
 
       const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
         `client_id=${clientId}` +
