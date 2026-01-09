@@ -440,7 +440,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
     setExportProgress(10);
 
     try {
-      const ExcelJS = (await import('exceljs')).default;
+      const ExcelJS = await import('exceljs');
       setExportProgress(20);
 
       const { payments, coupons } = await fetchFilteredData();
