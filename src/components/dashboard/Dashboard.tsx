@@ -11,9 +11,7 @@ import { DashboardStats } from './DashboardStats';
 import { DashboardAlerts } from './DashboardAlerts';
 import { DashboardQuickActions } from './DashboardQuickActions';
 import { DashboardRecentPayments } from './DashboardRecentPayments';
-import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
-import Decimal from 'decimal.js';
-import { isValidSIREN } from '../../utils/validators';
+import { formatCurrency } from '../../utils/formatters';
 import { logger } from '../../utils/logger';
 import {
   generateAlerts,
@@ -133,7 +131,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
 
   // Alert modal state
   const [showAlertModal, setShowAlertModal] = useState(false);
-  const [alertModalConfig, setAlertModalConfig] = useState<{
+  const [alertModalConfig, _setAlertModalConfig] = useState<{
     title: string;
     message: string;
     type?: 'success' | 'error' | 'warning' | 'info';
@@ -164,10 +162,13 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
   // Listen for cache invalidation events from other components
   useEffect(() => {
     const cleanup = onCacheInvalidated(() => {
-      handleRefresh();
+      // Clear cache and refetch data when cache is invalidated
+      localStorage.removeItem(CACHE_KEY);
+      fetchData();
     });
     return cleanup;
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [CACHE_KEY]);
 
   const fetchData = async (): Promise<void> => {
     const isRefresh = !loading;
@@ -257,14 +258,17 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         // Projets actifs mois dernier (on prend ceux créés avant le mois en cours)
         supabase.from('projets').select('id').lt('created_at', firstOfMonth.toISOString()),
         // Projets actifs même mois année dernière
-        supabase.from('projets').select('id').lt('created_at', firstOfThisMonthLastYear.toISOString()),
+        supabase
+          .from('projets')
+          .select('id')
+          .lt('created_at', firstOfThisMonthLastYear.toISOString()),
         // Upcoming coupons count from coupons_echeances
         supabase
           .from('coupons_echeances')
           .select('id', { count: 'exact', head: true })
           .gte('date_echeance', today.toISOString().split('T')[0])
           .lte('date_echeance', in90Days.toISOString().split('T')[0])
-          .neq('statut', 'payé'),
+          .neq('statut', 'paye'),
       ]);
 
       // Check for critical errors
@@ -308,8 +312,12 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
 
       // Helper pour calculer le pourcentage de croissance
       const calculateGrowth = (current: number, previous: number): number => {
-        if (previous === 0 && current === 0) return 0; // Pas de changement, 0 partout
-        if (previous === 0) return 100; // De 0 à quelque chose = +100% minimum
+        if (previous === 0 && current === 0) {
+          return 0;
+        } // Pas de changement, 0 partout
+        if (previous === 0) {
+          return 100;
+        } // De 0 à quelque chose = +100% minimum
         return ((current - previous) / previous) * 100;
       };
 
@@ -452,47 +460,67 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         // Group coupons by échéance (tranche + date) and calculate unpaid amounts
         // Show échéances with at least 1 unpaid coupon (even if partially paid)
         // Display only the unpaid portion of the échéance
-        const echeanceMap = new Map<string, any>();
-
-        (upcomingCouponsRes.data || []).forEach((coupon: any) => {
-          const trancheId = coupon.souscription?.tranche_id;
-          const dateEcheance = coupon.date_echeance;
-          const key = `${trancheId}-${dateEcheance}`;
-
-          if (!echeanceMap.has(key)) {
-            echeanceMap.set(key, {
-              id: key,
-              date_echeance: dateEcheance,
-              prochaine_date_coupon: dateEcheance,
-              montant_total: 0,
-              montant_paye: 0,
-              montant_impaye: 0,
-              unpaid_count: 0,
-              investor_count: 0,
-              tranche: coupon.souscription?.tranche,
-            });
+        const echeanceMap = new Map<
+          string,
+          {
+            id: string;
+            date_echeance: string;
+            prochaine_date_coupon: string;
+            montant_total: number;
+            montant_paye: number;
+            montant_impaye: number;
+            unpaid_count: number;
+            investor_count: number;
+            tranche: unknown;
           }
+        >();
 
-          const echeance = echeanceMap.get(key);
-          const montantCoupon = parseFloat(coupon.montant_coupon || 0);
-          echeance.montant_total += montantCoupon;
-          echeance.investor_count += 1;
+        (upcomingCouponsRes.data || []).forEach(
+          (coupon: {
+            souscription?: { tranche_id: string; tranche: unknown };
+            date_echeance: string;
+            montant_coupon: string | number;
+            statut: string;
+          }) => {
+            const trancheId = coupon.souscription?.tranche_id;
+            const dateEcheance = coupon.date_echeance;
+            const key = `${trancheId}-${dateEcheance}`;
 
-          if (coupon.statut === 'payé') {
-            echeance.montant_paye += montantCoupon;
-          } else {
-            echeance.unpaid_count += 1;
-            echeance.montant_impaye += montantCoupon;
+            if (!echeanceMap.has(key)) {
+              echeanceMap.set(key, {
+                id: key,
+                date_echeance: dateEcheance,
+                prochaine_date_coupon: dateEcheance,
+                montant_total: 0,
+                montant_paye: 0,
+                montant_impaye: 0,
+                unpaid_count: 0,
+                investor_count: 0,
+                tranche: coupon.souscription?.tranche,
+              });
+            }
+
+            const echeance = echeanceMap.get(key);
+            const montantCoupon = parseFloat(coupon.montant_coupon || 0);
+            echeance.montant_total += montantCoupon;
+            echeance.investor_count += 1;
+
+            if (coupon.statut === 'paye') {
+              echeance.montant_paye += montantCoupon;
+            } else {
+              echeance.unpaid_count += 1;
+              echeance.montant_impaye += montantCoupon;
+            }
           }
-        });
+        );
 
         // Filter to keep only échéances with at least 1 unpaid coupon
         // Sort by date and limit to 5
         groupedCoupons = Array.from(echeanceMap.values())
-          .filter((echeance: any) => echeance.unpaid_count > 0)
-          .sort((a: any, b: any) => a.date_echeance.localeCompare(b.date_echeance))
+          .filter(echeance => echeance.unpaid_count > 0)
+          .sort((a, b) => a.date_echeance.localeCompare(b.date_echeance))
           .slice(0, 5)
-          .map((echeance: any) => ({
+          .map(echeance => ({
             id: echeance.id,
             date_echeance: echeance.date_echeance,
             prochaine_date_coupon: echeance.date_echeance,
@@ -665,7 +693,11 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organization.id]);
 
-  const handleRefresh = (): void => window.location.reload();
+  const handleRefresh = (): void => {
+    // Clear cache and refetch data instead of full page reload
+    localStorage.removeItem(CACHE_KEY);
+    fetchData();
+  };
 
   // Recompute monthly data locally when year/range changes
   useEffect(() => {
@@ -683,7 +715,6 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       1
     );
   }, [monthlyData, viewMode]);
-
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
