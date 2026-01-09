@@ -25,6 +25,7 @@ import {
 import * as ExcelJS from 'exceljs';
 import { toast } from '../../utils/toast';
 import { supabase } from '../../lib/supabase';
+import { triggerCacheInvalidation } from '../../utils/cacheManager';
 
 interface CouponsPageNewProps {
   organization?: { id: string; name: string; role: string };
@@ -198,6 +199,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
       // Refresh the coupons list
       await refresh();
+
+      // Invalidate dashboard cache to reflect status change
+      triggerCacheInvalidation();
 
       toast.success('Le coupon a été marqué comme non payé et tous les enregistrements associés ont été supprimés.');
     } catch (err: any) {

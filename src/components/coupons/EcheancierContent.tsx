@@ -7,6 +7,7 @@ import { PaymentWizard } from '../payments/PaymentWizard';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { AlertModal } from '../common/Modals';
 import { QuickPaymentModal } from './QuickPaymentModal';
+import { triggerCacheInvalidation } from '../../utils/cacheManager';
 
 interface EcheancierContentProps {
   projectId: string;
@@ -413,6 +414,9 @@ export function EcheancierContent({
 
       // Refresh the echeances list
       await fetchEcheances();
+
+      // Invalidate dashboard cache to reflect status change
+      triggerCacheInvalidation();
 
       setAlertModalConfig({
         title: 'Succès',

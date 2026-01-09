@@ -630,10 +630,9 @@ export function QuickPaymentModal({
         `${selectedInvestorsList.length} paiement${selectedInvestorsList.length > 1 ? 's' : ''} enregistré${selectedInvestorsList.length > 1 ? 's' : ''} avec succès`
       );
 
-      // Invalidate dashboard cache to refresh upcoming coupons
-      if (selectedEcheanceData?.org_id) {
-        triggerCacheInvalidation(selectedEcheanceData.org_id);
-      }
+      // Invalidate all dashboard caches to force refresh
+      // This ensures the dashboard shows updated coupon status
+      triggerCacheInvalidation();
 
       onSuccess();
       onClose();
