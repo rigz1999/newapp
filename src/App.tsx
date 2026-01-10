@@ -33,17 +33,18 @@ const PaymentDetailPage = lazy(() =>
   import('./components/payments/PaymentDetailPage').then(m => ({ default: m.PaymentDetailPage }))
 );
 const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
+const FormatProfiles = lazy(() => import('./components/admin/FormatProfiles'));
 const Members = lazy(() => import('./components/admin/Members'));
 const Settings = lazy(() => import('./components/admin/Settings'));
 
 // Default organization for super admin users
 const DEFAULT_ORG = { id: 'admin', name: 'Admin', role: 'admin' } as const;
 
-function App() {
+function App(): JSX.Element {
   const { user, loading: authLoading, isAdmin, isOrgAdmin } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
 
-  const LoadingFallback = () => <DashboardSkeleton />;
+  const LoadingFallback = (): JSX.Element => <DashboardSkeleton />;
 
   // Check if we're on the main domain (finixar.com) or app subdomain (app.finixar.com)
   const hostname = window.location.hostname;
@@ -57,9 +58,7 @@ function App() {
 
     return (
       <ThemeProvider>
-        <ErrorBoundary>
-          {isDemoPage ? <DemoRequest /> : <LandingPage />}
-        </ErrorBoundary>
+        <ErrorBoundary>{isDemoPage ? <DemoRequest /> : <LandingPage />}</ErrorBoundary>
       </ThemeProvider>
     );
   }
@@ -277,6 +276,22 @@ function App() {
                     <ErrorBoundary>
                       <Suspense fallback={<LoadingFallback />}>
                         <AdminPanel />
+                      </Suspense>
+                    </ErrorBoundary>
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                }
+              />
+
+              {/* Format Profiles - For Super Admins */}
+              <Route
+                path="admin/profils-format"
+                element={
+                  isAdmin ? (
+                    <ErrorBoundary>
+                      <Suspense fallback={<LoadingFallback />}>
+                        <FormatProfiles />
                       </Suspense>
                     </ErrorBoundary>
                   ) : (
