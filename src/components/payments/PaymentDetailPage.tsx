@@ -261,7 +261,7 @@ export function PaymentDetailPage() {
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Date de paiement</p>
                   <p className="text-sm font-medium text-slate-900">
-                    {formatDate(payment.date_paiement)}
+                    {payment.date_paiement ? formatDate(payment.date_paiement) : '-'}
                   </p>
                 </div>
               </div>
@@ -395,16 +395,18 @@ export function PaymentDetailPage() {
             <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <h2 className="text-lg font-bold text-slate-900 mb-4">Historique</h2>
               <div className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-2 h-2 bg-finixar-brand-blue rounded-full mt-2"></div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Paiement créé</p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {formatDate(payment.created_at)}
-                    </p>
+                {payment.created_at && (
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-2 h-2 bg-finixar-brand-blue rounded-full mt-2"></div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">Paiement créé</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {formatDate(payment.created_at)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                {payment.created_at !== payment.updated_at && (
+                )}
+                {payment.created_at && payment.updated_at && payment.created_at !== payment.updated_at && (
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 w-2 h-2 bg-slate-300 rounded-full mt-2"></div>
                     <div>
