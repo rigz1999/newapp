@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { X, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
 
 interface CalendarExportModalProps {
   isOpen: boolean;
@@ -20,7 +19,6 @@ export function CalendarExportModal({
   projectName,
   trancheName,
 }: CalendarExportModalProps) {
-  const { session } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{
@@ -50,6 +48,8 @@ export function CalendarExportModal({
     setSuccess(null);
 
     try {
+      // Get current session
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('Session non trouvée');
       }
