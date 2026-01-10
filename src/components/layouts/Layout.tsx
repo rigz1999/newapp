@@ -197,7 +197,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
   return (
     <div className="h-screen bg-finixar-background flex overflow-hidden">
       <aside
-        className={`${isCollapsed ? 'w-20' : 'w-64'} bg-finixar-deep-blue text-white flex flex-col flex-shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none`}
+        className={`${isCollapsed ? 'w-20' : 'w-72'} bg-finixar-deep-blue text-white flex flex-col flex-shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none`}
       >
         {/* Header - Compact */}
         <div className="p-4 flex-shrink-0">
@@ -205,18 +205,27 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
             {/* Logo */}
             {isCollapsed ? (
               <div className="w-full flex justify-center">
-                <img src="/branding/icon/icon-white-192.png" alt="Finixar" className="w-8 h-8" />
+                <img src="/branding/icon/icon-white-192.png" alt="Finixar" className="w-12 h-12" />
               </div>
             ) : (
-              <div style={{ width: '80px', height: '24px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div
+                style={{
+                  width: '160px',
+                  height: '48px',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <img
                   src="/branding/logo/logo-full-white.png"
                   alt="Finixar"
                   style={{
-                    height: '24px',
+                    height: '48px',
                     width: 'auto',
-                    transform: 'scale(0.6)',
-                    transformOrigin: 'center'
+                    transform: 'scale(1)',
+                    transformOrigin: 'center',
                   }}
                 />
               </div>
@@ -263,9 +272,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
               className="w-full flex items-center gap-2 px-3 py-2 bg-slate-800/50 hover:bg-finixar-brand-blue rounded-lg transition-colors text-slate-400 hover:text-white"
             >
               <Search className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm whitespace-nowrap">
-                Rechercher...
-              </span>
+              <span className="text-sm whitespace-nowrap">Rechercher...</span>
             </button>
           )}
         </div>
@@ -307,7 +314,11 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
           <div className={`flex ${isCollapsed ? 'flex-col items-center gap-2' : 'flex-col'}`}>
             {/* User Avatar and Info */}
             <div className={`flex items-center ${isCollapsed ? 'flex-col gap-2' : 'gap-2 mb-2'}`}>
-              <Tooltip content={userProfile?.full_name || 'Utilisateur'} position="right" disabled={!isCollapsed}>
+              <Tooltip
+                content={userProfile?.full_name || 'Utilisateur'}
+                position="right"
+                disabled={!isCollapsed}
+              >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm flex-shrink-0 ${
                     isSuperAdminUser
@@ -342,11 +353,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                 }`}
               >
                 <LogOut className="w-4 h-4 flex-shrink-0" />
-                {!isCollapsed && (
-                  <span className="whitespace-nowrap">
-                    Se déconnecter
-                  </span>
-                )}
+                {!isCollapsed && <span className="whitespace-nowrap">Se déconnecter</span>}
               </button>
             </Tooltip>
           </div>

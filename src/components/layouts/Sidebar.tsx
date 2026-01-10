@@ -9,11 +9,11 @@ interface SidebarProps {
 
 export function Sidebar({ organization, activePage, onNavigate, onLogout }: SidebarProps) {
   return (
-    <aside className="w-64 bg-finixar-navy text-white flex flex-col fixed h-screen">
+    <aside className="w-72 bg-finixar-navy text-white flex flex-col fixed h-screen">
       <div className="p-6">
         <div className="flex items-center gap-4 mb-8">
           <div className="bg-finixar-teal p-4 rounded-xl">
-            <TrendingUp className="w-12 h-12" />
+            <TrendingUp className="w-14 h-14" />
           </div>
           <span className="text-4xl font-bold">Finixar</span>
         </div>
