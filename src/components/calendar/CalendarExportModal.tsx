@@ -58,48 +58,67 @@ export function CalendarExportModal({
         throw new Error('Session non trouvée');
       }
 
-      const { data, error: invokeError } = await supabase.functions.invoke(
-        'export-echeances-to-calendar',
+      // Use fetch directly like email reminders do - better error handling
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/export-echeances-to-calendar`,
         {
-          body: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
             projectId: projectId || null,
             trancheId: trancheId || null,
             settings,
-          },
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          }),
         }
       );
 
-      if (invokeError) {
-        throw invokeError;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to export to calendar');
       }
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
+      const data = await response.json();
       setSuccess(data.summary);
     } catch (err) {
       console.error('Error exporting to calendar:', err);
 
       // Check for specific error messages
-      const errorMessage = err instanceof Error ? err.message : String(err);
+      let errorMessage = '';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        errorMessage = JSON.stringify(err);
+      } else {
+        errorMessage = String(err);
+      }
 
-      if (errorMessage.includes('No email connection found') ||
-          errorMessage.includes('connect your email')) {
+      console.log('Parsed error message:', errorMessage);
+
+      // Normalize error message for comparison (lowercase)
+      const normalizedError = errorMessage.toLowerCase();
+
+      if (normalizedError.includes('no email connection') ||
+          normalizedError.includes('connect your email') ||
+          normalizedError.includes('email connection found')) {
         setIsConnectionError(true);
         setError(
           'Aucune connexion e-mail trouvée. Veuillez connecter votre compte Outlook dans les Paramètres pour activer l\'export vers le calendrier.'
         );
-      } else if (errorMessage.includes('Calendar export is only supported for Microsoft')) {
+      } else if (normalizedError.includes('calendar export is only supported') ||
+                 normalizedError.includes('microsoft outlook') ||
+                 normalizedError.includes('only supported for microsoft')) {
         setIsConnectionError(true);
         setError(
           'L\'export calendrier n\'est disponible que pour les comptes Microsoft Outlook. Veuillez reconnecter votre e-mail avec un compte Microsoft.'
         );
-      } else if (errorMessage.includes('Failed to refresh access token') ||
-                 errorMessage.includes('reconnect your email')) {
+      } else if (normalizedError.includes('failed to refresh') ||
+                 normalizedError.includes('access token') ||
+                 normalizedError.includes('reconnect your email') ||
+                 normalizedError.includes('token expired') ||
+                 normalizedError.includes('token expires')) {
         setIsConnectionError(true);
         setError(
           'Votre connexion e-mail a expiré. Veuillez reconnecter votre compte Outlook dans les Paramètres pour continuer.'
@@ -228,8 +247,8 @@ export function CalendarExportModal({
                   {isConnectionError && (
                     <button
                       onClick={() => {
-                        navigate('/settings');
                         onClose();
+                        navigate('/settings#email-connection');
                       }}
                       className="mt-2 flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
                     >
