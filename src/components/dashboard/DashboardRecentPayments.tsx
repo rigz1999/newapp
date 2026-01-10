@@ -1,4 +1,5 @@
 import { ArrowRight, AlertCircle, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import type { Payment, UpcomingCoupon } from '../../utils/dashboardAlerts';
 
@@ -15,6 +16,7 @@ export function DashboardRecentPayments({
   onViewAllPayments,
   onViewAllCoupons,
 }: DashboardRecentPaymentsProps) {
+  const navigate = useNavigate();
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-stretch">
       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex flex-col min-h-[400px]">
@@ -40,7 +42,8 @@ export function DashboardRecentPayments({
               return (
                 <div
                   key={payment.id}
-                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                  onClick={() => navigate('/paiements')}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -114,7 +117,13 @@ export function DashboardRecentPayments({
               return (
                 <div
                   key={coupon.id}
-                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                  onClick={() => {
+                    const projetId = coupon.tranche?.projet_id || coupon.souscription?.tranche?.projet_id;
+                    if (projetId) {
+                      navigate(`/projets/${projetId}/echeancier`);
+                    }
+                  }}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
