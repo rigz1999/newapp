@@ -27,20 +27,18 @@ CREATE TABLE IF NOT EXISTS company_format_profiles (
 
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-
-  -- Un seul profil standard possible
-  CONSTRAINT unique_standard_profile CHECK (
-    NOT is_standard OR (
-      SELECT COUNT(*) FROM company_format_profiles WHERE is_standard = true
-    ) <= 1
-  )
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 -- Index pour recherche rapide
 CREATE INDEX idx_company_format_profiles_company_id ON company_format_profiles(company_id);
 CREATE INDEX idx_company_format_profiles_is_standard ON company_format_profiles(is_standard) WHERE is_standard = true;
 CREATE INDEX idx_company_format_profiles_is_active ON company_format_profiles(is_active) WHERE is_active = true;
+
+-- Un seul profil standard autorisé (index unique partiel)
+CREATE UNIQUE INDEX idx_unique_standard_profile
+  ON company_format_profiles(is_standard)
+  WHERE is_standard = true;
 
 -- Un seul profil actif par société (index unique partiel)
 CREATE UNIQUE INDEX idx_unique_active_company_profile
