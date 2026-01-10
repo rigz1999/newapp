@@ -8,10 +8,25 @@ import { supabase } from '../../lib/supabase';
 import { logger } from '../../utils/logger';
 import { useAuth } from '../../hooks/useAuth';
 import {
-  Users, Building2, UserPlus, Shield,
-  Trash2, Plus, AlertCircle,
-  Search, ChevronDown, ChevronUp, Edit2, Clock, Eye, X, Mail, Calendar,
-  Send, RefreshCw
+  Users,
+  Building2,
+  UserPlus,
+  Shield,
+  Trash2,
+  Plus,
+  AlertCircle,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Edit2,
+  Clock,
+  Eye,
+  X,
+  Mail,
+  Calendar,
+  Send,
+  RefreshCw,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
@@ -67,7 +82,7 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [loadingInvitations, setLoadingInvitations] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Modals state
   const [showNewOrgModal, setShowNewOrgModal] = useState(false);
   const [showEditOrgModal, setShowEditOrgModal] = useState(false);
@@ -79,12 +94,18 @@ export default function AdminPanel() {
   const [successEmail, setSuccessEmail] = useState('');
 
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
-  const [deletingItem, setDeletingItem] = useState<{ type: 'org' | 'user' | 'pending_user'; id: string; name: string } | null>(null);
+  const [deletingItem, setDeletingItem] = useState<{
+    type: 'org' | 'user' | 'pending_user';
+    id: string;
+    name: string;
+  } | null>(null);
   const [selectedUserDetail, setSelectedUserDetail] = useState<UserDetail | null>(null);
   const [newOrgName, setNewOrgName] = useState('');
   const [creating, setCreating] = useState(false);
   const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['invitations', 'pending', 'super-admins', 'organizations']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(['invitations', 'pending', 'super-admins', 'organizations'])
+  );
 
   // Alert modal state
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -102,12 +123,14 @@ export default function AdminPanel() {
     setLoadingInvitations(true);
     const { data, error } = await supabase
       .from('invitations')
-      .select(`
+      .select(
+        `
         *,
         organizations (
           name
         )
-      `)
+      `
+      )
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
@@ -117,8 +140,8 @@ export default function AdminPanel() {
       logger.error(new Error('Error fetching invitations'), { error });
       setAlertModalConfig({
         title: 'Erreur',
-        message: 'Erreur lors du chargement des invitations: ' + error.message,
-        type: 'error'
+        message: `Erreur lors du chargement des invitations: ${error.message}`,
+        type: 'error',
       });
       setShowAlertModal(true);
     } else {
@@ -146,7 +169,8 @@ export default function AdminPanel() {
 
     const { data: membershipData, error: membershipsError } = await supabase
       .from('memberships')
-      .select(`
+      .select(
+        `
         *,
         organizations (
           name
@@ -155,7 +179,8 @@ export default function AdminPanel() {
           email,
           full_name
         )
-      `)
+      `
+      )
       .order('created_at', { ascending: false });
 
     if (membershipsError) {
@@ -165,38 +190,27 @@ export default function AdminPanel() {
       setMemberships((membershipData || []) as Membership[]);
     }
 
-    const { data: profilesData, error: profilesError } = await supabase
+    // Profiles data is loaded but not used here - could be used for additional user info if needed
+    const { error: profilesError } = await supabase
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (profilesError) {
       // Error is silently ignored - user can still see other data
-    } else {
-      // Trouver tous les user_ids qui ont un membership avec une organisation
-      const memberships = (membershipData || []) as Membership[];
-      const userIdsWithOrg = new Set(
-        memberships
-          .filter((m: Membership) => m.org_id !== null)
-          .map((m: Membership) => m.user_id)
-      );
-
     }
 
     setLoading(false);
   };
 
   const handleCancelInvitation = async (invitationId: string) => {
-    const { error } = await supabase
-      .from('invitations')
-      .delete()
-      .eq('id', invitationId);
+    const { error } = await supabase.from('invitations').delete().eq('id', invitationId);
 
     if (error) {
       setAlertModalConfig({
         title: 'Erreur',
-        message: 'Erreur lors de l\'annulation de l\'invitation: ' + error.message,
-        type: 'error'
+        message: `Erreur lors de l'annulation de l'invitation: ${error.message}`,
+        type: 'error',
       });
       setShowAlertModal(true);
     } else {
@@ -211,17 +225,15 @@ export default function AdminPanel() {
 
     setCreating(true);
 
-    const { error } = await supabase
-      .from('organizations')
-      .insert({
-        name: newOrgName.trim()
-      });
+    const { error } = await supabase.from('organizations').insert({
+      name: newOrgName.trim(),
+    });
 
     if (error) {
       setAlertModalConfig({
         title: 'Erreur',
-        message: 'Erreur: ' + error.message,
-        type: 'error'
+        message: `Erreur: ${error.message}`,
+        type: 'error',
       });
       setShowAlertModal(true);
     } else {
@@ -248,8 +260,8 @@ export default function AdminPanel() {
     if (error) {
       setAlertModalConfig({
         title: 'Erreur',
-        message: 'Erreur: ' + error.message,
-        type: 'error'
+        message: `Erreur: ${error.message}`,
+        type: 'error',
       });
       setShowAlertModal(true);
     } else {
@@ -264,12 +276,12 @@ export default function AdminPanel() {
 
   const confirmDeleteOrganization = (orgId: string, orgName: string) => {
     const hasMemberships = memberships.some(m => m.org_id === orgId);
-    
+
     if (hasMemberships) {
       setAlertModalConfig({
         title: 'Suppression impossible',
         message: 'Impossible de supprimer cette organisation car elle contient des utilisateurs.',
-        type: 'warning'
+        type: 'warning',
       });
       setShowAlertModal(true);
       return;
@@ -280,18 +292,17 @@ export default function AdminPanel() {
   };
 
   const handleDeleteOrganization = async () => {
-    if (!deletingItem || deletingItem.type !== 'org') return;
+    if (!deletingItem || deletingItem.type !== 'org') {
+      return;
+    }
 
-    const { error } = await supabase
-      .from('organizations')
-      .delete()
-      .eq('id', deletingItem.id);
+    const { error } = await supabase.from('organizations').delete().eq('id', deletingItem.id);
 
     if (error) {
       setAlertModalConfig({
         title: 'Erreur',
-        message: 'Erreur: ' + error.message,
-        type: 'error'
+        message: `Erreur: ${error.message}`,
+        type: 'error',
       });
       setShowAlertModal(true);
     } else {
@@ -307,17 +318,23 @@ export default function AdminPanel() {
   };
 
   const handleRemoveMember = async () => {
-    if (!deletingItem || deletingItem.type !== 'user') return;
+    if (!deletingItem || deletingItem.type !== 'user') {
+      return;
+    }
 
     logger.info('Attempting to remove member', { item: deletingItem });
 
     try {
       const { data, error: funcError } = await supabase.functions.invoke('delete-pending-user', {
-        body: { userId: deletingItem.name }
+        body: { userId: deletingItem.name },
       });
 
-      if (funcError) throw funcError;
-      if (data?.error) throw new Error(data.error);
+      if (funcError) {
+        throw funcError;
+      }
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       logger.info('Member and user account deleted successfully');
       setShowRemoveUserModal(false);
@@ -327,7 +344,7 @@ export default function AdminPanel() {
       setAlertModalConfig({
         title: 'Membre supprimé',
         message: 'Le membre et son compte ont été supprimés avec succès.',
-        type: 'success'
+        type: 'success',
       });
       setShowAlertModal(true);
     } catch (error) {
@@ -335,7 +352,7 @@ export default function AdminPanel() {
       setAlertModalConfig({
         title: 'Erreur de suppression',
         message: `Impossible de supprimer ce membre: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
-        type: 'error'
+        type: 'error',
       });
       setShowAlertModal(true);
     }
@@ -359,7 +376,7 @@ export default function AdminPanel() {
         created_at: profile?.created_at || membership.created_at,
         org_name: org?.name,
         role: membership.role,
-        is_superadmin: profile?.is_superadmin || false
+        is_superadmin: profile?.is_superadmin || false,
       });
       setShowUserDetailModal(true);
     }
@@ -489,19 +506,43 @@ export default function AdminPanel() {
             <p className="text-2xl font-bold text-blue-600">{invitations.length}</p>
           </div>
         </div>
+
+        {/* Quick Actions for Super Admin */}
+        {isSuperAdmin && (
+          <div className="mt-6">
+            <p className="text-sm font-semibold text-slate-700 mb-3">Outils avancés</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <a
+                href="/admin/profils-format"
+                className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group"
+              >
+                <FileSpreadsheet className="w-5 h-5 text-blue-600 group-hover:text-blue-700" />
+                <div>
+                  <p className="font-medium text-slate-900">Profils de Format</p>
+                  <p className="text-xs text-slate-600">Gérer les formats d'import par société</p>
+                </div>
+              </a>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Search */}
       <div className="mb-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" aria-hidden="true" />
-          <label htmlFor="org-search" className="sr-only">Rechercher une organisation</label>
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5"
+            aria-hidden="true"
+          />
+          <label htmlFor="org-search" className="sr-only">
+            Rechercher une organisation
+          </label>
           <input
             id="org-search"
             type="text"
             placeholder="Rechercher une organisation..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
             aria-label="Rechercher une organisation"
           />
@@ -528,7 +569,7 @@ export default function AdminPanel() {
             </h2>
           </button>
           <button
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               fetchInvitations();
             }}
@@ -537,7 +578,10 @@ export default function AdminPanel() {
             aria-label="Rafraîchir les invitations"
             disabled={loadingInvitations}
           >
-            <RefreshCw className={`w-4 h-4 ${loadingInvitations ? 'animate-spin' : ''}`} aria-hidden="true" />
+            <RefreshCw
+              className={`w-4 h-4 ${loadingInvitations ? 'animate-spin' : ''}`}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
@@ -575,9 +619,13 @@ export default function AdminPanel() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                        invitation.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                      }`}>
+                      <span
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                          invitation.role === 'admin'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}
+                      >
                         {invitation.role === 'admin' ? 'Administrateur' : 'Membre'}
                       </span>
                       <button
@@ -617,13 +665,16 @@ export default function AdminPanel() {
             </h2>
           </div>
         </button>
-        
+
         {expandedSections.has('super-admins') && (
           <div className="divide-y divide-slate-200">
             <div className="p-6 bg-purple-50/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center" aria-hidden="true">
+                  <div
+                    className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center"
+                    aria-hidden="true"
+                  >
                     <Shield className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
@@ -701,7 +752,7 @@ export default function AdminPanel() {
       </div>
 
       {/* Modals */}
-      <NewOrgModal 
+      <NewOrgModal
         isOpen={showNewOrgModal}
         onClose={() => {
           setShowNewOrgModal(false);
@@ -790,18 +841,17 @@ export default function AdminPanel() {
   );
 }
 
-
 // Organization Row Component
-function OrganizationRow({ 
-  organization, 
+function OrganizationRow({
+  organization,
   memberships,
   isExpanded,
   onToggle,
   onEdit,
   onDelete,
   onRemoveMember,
-  onViewUser
-}: { 
+  onViewUser,
+}: {
   organization: Organization;
   memberships: Membership[];
   isExpanded: boolean;
@@ -830,13 +880,17 @@ function OrganizationRow({
                 <ChevronDown className="w-5 h-5 text-slate-600" aria-hidden="true" />
               )}
             </button>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center" aria-hidden="true">
+            <div
+              className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center"
+              aria-hidden="true"
+            >
               <Building2 className="w-6 h-6 text-blue-600" />
             </div>
             <div className="flex-1">
               <p className="font-medium text-slate-900 text-lg">{organization.name}</p>
               <p className="text-sm text-slate-600">
-                {memberCount} utilisateur{memberCount !== 1 ? 's' : ''} • Créée le {new Date(organization.created_at).toLocaleDateString('fr-FR')}
+                {memberCount} utilisateur{memberCount !== 1 ? 's' : ''} • Créée le{' '}
+                {new Date(organization.created_at).toLocaleDateString('fr-FR')}
               </p>
             </div>
           </div>
@@ -877,9 +931,15 @@ function OrganizationRow({
           ) : (
             <div className="divide-y divide-slate-200">
               {memberships.map(membership => (
-                <div key={membership.id} className="p-4 pl-20 flex items-center justify-between hover:bg-slate-100 transition-colors">
+                <div
+                  key={membership.id}
+                  className="p-4 pl-20 flex items-center justify-between hover:bg-slate-100 transition-colors"
+                >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center" aria-hidden="true">
+                    <div
+                      className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center"
+                      aria-hidden="true"
+                    >
                       <Users className="w-4 h-4 text-finixar-green" />
                     </div>
                     <div>
@@ -887,7 +947,7 @@ function OrganizationRow({
                         {membership.profiles?.full_name || 'Utilisateur'}
                       </p>
                       <p className="text-xs text-slate-600">
-                        {membership.profiles?.email || membership.user_id.substring(0, 20) + '...'}
+                        {membership.profiles?.email || `${membership.user_id.substring(0, 20)}...`}
                       </p>
                       <p className="text-xs text-slate-500">
                         Rôle: <span className="font-medium capitalize">{membership.role}</span> •
@@ -924,15 +984,48 @@ function OrganizationRow({
 }
 
 // Modal Components
-function NewOrgModal({ isOpen, onClose, orgName, setOrgName, onCreate, creating }: any) {
-  if (!isOpen) return null;
+interface NewOrgModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  orgName: string;
+  setOrgName: (name: string) => void;
+  onCreate: () => void | Promise<void>;
+  creating: boolean;
+}
+
+function NewOrgModal({
+  isOpen,
+  onClose,
+  orgName,
+  setOrgName,
+  onCreate,
+  creating,
+}: NewOrgModalProps): JSX.Element | null {
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="new-org-modal-title">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="new-org-modal-title"
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h3 id="new-org-modal-title" className="text-xl font-bold text-slate-900">Nouvelle organisation</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors" aria-label="Fermer la fenêtre">
+          <h3 id="new-org-modal-title" className="text-xl font-bold text-slate-900">
+            Nouvelle organisation
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-slate-100 rounded transition-colors"
+            aria-label="Fermer la fenêtre"
+          >
             <X className="w-5 h-5 text-slate-600" aria-hidden="true" />
           </button>
         </div>
@@ -944,7 +1037,7 @@ function NewOrgModal({ isOpen, onClose, orgName, setOrgName, onCreate, creating 
             id="new-org-name"
             type="text"
             value={orgName}
-            onChange={(e) => setOrgName(e.target.value)}
+            onChange={e => setOrgName(e.target.value)}
             className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
             placeholder="Acme Corp"
             autoFocus
@@ -970,15 +1063,48 @@ function NewOrgModal({ isOpen, onClose, orgName, setOrgName, onCreate, creating 
   );
 }
 
-function EditOrgModal({ isOpen, onClose, orgName, setOrgName, onEdit, creating }: any) {
-  if (!isOpen) return null;
+interface EditOrgModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  orgName: string;
+  setOrgName: (name: string) => void;
+  onEdit: () => void | Promise<void>;
+  creating: boolean;
+}
+
+function EditOrgModal({
+  isOpen,
+  onClose,
+  orgName,
+  setOrgName,
+  onEdit,
+  creating,
+}: EditOrgModalProps): JSX.Element | null {
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="edit-org-modal-title">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-org-modal-title"
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h3 id="edit-org-modal-title" className="text-xl font-bold text-slate-900">Modifier l'Organisation</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors" aria-label="Fermer la fenêtre">
+          <h3 id="edit-org-modal-title" className="text-xl font-bold text-slate-900">
+            Modifier l'Organisation
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-slate-100 rounded transition-colors"
+            aria-label="Fermer la fenêtre"
+          >
             <X className="w-5 h-5 text-slate-600" aria-hidden="true" />
           </button>
         </div>
@@ -990,7 +1116,7 @@ function EditOrgModal({ isOpen, onClose, orgName, setOrgName, onEdit, creating }
             id="edit-org-name"
             type="text"
             value={orgName}
-            onChange={(e) => setOrgName(e.target.value)}
+            onChange={e => setOrgName(e.target.value)}
             className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
             placeholder="Acme Corp"
             autoFocus
@@ -1016,18 +1142,48 @@ function EditOrgModal({ isOpen, onClose, orgName, setOrgName, onEdit, creating }
   );
 }
 
-function DeleteConfirmModal({ isOpen, onClose, onConfirm, title, message }: any) {
-  if (!isOpen) return null;
+interface DeleteConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void | Promise<void>;
+  title: string;
+  message: string;
+}
+
+function DeleteConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+}: DeleteConfirmModalProps): JSX.Element | null {
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="delete-confirm-modal-title">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-confirm-modal-title"
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0" aria-hidden="true">
+          <div
+            className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0"
+            aria-hidden="true"
+          >
             <AlertCircle className="w-6 h-6 text-finixar-red" />
           </div>
           <div className="flex-1">
-            <h3 id="delete-confirm-modal-title" className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
+            <h3 id="delete-confirm-modal-title" className="text-xl font-bold text-slate-900 mb-2">
+              {title}
+            </h3>
             <p className="text-slate-600">{message}</p>
           </div>
         </div>
@@ -1050,8 +1206,18 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, title, message }: any)
   );
 }
 
-function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: () => void; user: UserDetail | null }) {
-  if (!isOpen || !user) return null;
+function UserDetailModal({
+  isOpen,
+  onClose,
+  user,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  user: UserDetail | null;
+}) {
+  if (!isOpen || !user) {
+    return null;
+  }
 
   // Déterminer le statut de l'utilisateur
   const isSuperAdmin = user.is_superadmin || false;
@@ -1059,11 +1225,26 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
   const isPending = !hasOrganization && !isSuperAdmin;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="user-detail-modal-title">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="user-detail-modal-title"
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-6">
-          <h3 id="user-detail-modal-title" className="text-xl font-bold text-slate-900">Détails de l'utilisateur</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors" aria-label="Fermer la fenêtre">
+          <h3 id="user-detail-modal-title" className="text-xl font-bold text-slate-900">
+            Détails de l'utilisateur
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-slate-100 rounded transition-colors"
+            aria-label="Fermer la fenêtre"
+          >
             <X className="w-5 h-5 text-slate-600" aria-hidden="true" />
           </button>
         </div>
@@ -1071,19 +1252,27 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
         <div className="space-y-4">
           {/* Avatar */}
           <div className="flex items-center gap-4 pb-4 border-b">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold ${
-              isSuperAdmin ? 'bg-gradient-to-br from-purple-500 to-pink-600' : 
-              hasOrganization ? 'bg-gradient-to-br from-blue-500 to-cyan-600' : 
-              'bg-gradient-to-br from-yellow-500 to-orange-600'
-            }`}>
+            <div
+              className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold ${
+                isSuperAdmin
+                  ? 'bg-gradient-to-br from-purple-500 to-pink-600'
+                  : hasOrganization
+                    ? 'bg-gradient-to-br from-blue-500 to-cyan-600'
+                    : 'bg-gradient-to-br from-yellow-500 to-orange-600'
+              }`}
+            >
               {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-lg font-semibold text-slate-900 truncate">{user.full_name || 'Utilisateur'}</h4>
+              <h4 className="text-lg font-semibold text-slate-900 truncate">
+                {user.full_name || 'Utilisateur'}
+              </h4>
               <p className="text-sm text-slate-600">
-                {isSuperAdmin ? 'Super Admin' : 
-                 user.role ? `Rôle: ${user.role}` : 
-                 'En attente d\'approbation'}
+                {isSuperAdmin
+                  ? 'Super Admin'
+                  : user.role
+                    ? `Rôle: ${user.role}`
+                    : "En attente d'approbation"}
               </p>
             </div>
           </div>
@@ -1099,14 +1288,17 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
             </div>
 
             <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+              <Calendar
+                className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0"
+                aria-hidden="true"
+              />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 mb-1">Date d'inscription</p>
                 <p className="text-sm font-medium text-slate-900">
                   {new Date(user.created_at).toLocaleDateString('fr-FR', {
                     day: 'numeric',
                     month: 'long',
-                    year: 'numeric'
+                    year: 'numeric',
                   })}
                 </p>
               </div>
@@ -1114,7 +1306,10 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
 
             {hasOrganization && (
               <div className="flex items-start gap-3">
-                <Building2 className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                <Building2
+                  className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0"
+                  aria-hidden="true"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-slate-500 mb-1">Organisation</p>
                   <p className="text-sm font-medium text-slate-900 truncate">{user.org_name}</p>
@@ -1133,19 +1328,30 @@ function UserDetailModal({ isOpen, onClose, user }: { isOpen: boolean; onClose: 
 
           {/* Status Badge */}
           {isPending && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2" role="status">
-              <Clock className="w-5 h-5 text-finixar-amber flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <div
+              className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2"
+              role="status"
+            >
+              <Clock
+                className="w-5 h-5 text-finixar-amber flex-shrink-0 mt-0.5"
+                aria-hidden="true"
+              />
               <p className="text-sm text-yellow-800">
-                <strong>En attente :</strong> Cet utilisateur n'a pas encore été assigné à une organisation.
+                <strong>En attente :</strong> Cet utilisateur n'a pas encore été assigné à une
+                organisation.
               </p>
             </div>
           )}
 
           {isSuperAdmin && (
-            <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-start gap-2" role="status">
+            <div
+              className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-start gap-2"
+              role="status"
+            >
               <Shield className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
               <p className="text-sm text-purple-800">
-                <strong>Super Admin :</strong> Accès complet à toutes les organisations et fonctionnalités.
+                <strong>Super Admin :</strong> Accès complet à toutes les organisations et
+                fonctionnalités.
               </p>
             </div>
           )}
@@ -1169,7 +1375,7 @@ function InviteMemberModal({
   isOpen,
   onClose,
   organizations,
-  onSuccess
+  onSuccess,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -1191,14 +1397,16 @@ function InviteMemberModal({
     type?: 'success' | 'error' | 'warning' | 'info';
   }>({ title: '', message: '', type: 'info' });
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleSendInvitation = async () => {
     if (!email || !firstName || !lastName || !selectedOrgId) {
       setAlertConfig({
         title: 'Champs manquants',
         message: 'Veuillez remplir tous les champs',
-        type: 'warning'
+        type: 'warning',
       });
       setShowAlert(true);
       return;
@@ -1210,7 +1418,7 @@ function InviteMemberModal({
       setAlertConfig({
         title: 'Email invalide',
         message: 'Veuillez entrer une adresse email valide',
-        type: 'error'
+        type: 'error',
       });
       setShowAlert(true);
       return;
@@ -1219,7 +1427,9 @@ function InviteMemberModal({
     setSending(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (!session) {
         throw new Error('Session expirée');
@@ -1233,7 +1443,7 @@ function InviteMemberModal({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             email,
@@ -1249,7 +1459,7 @@ function InviteMemberModal({
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erreur lors de l\'envoi de l\'invitation');
+        throw new Error(result.error || "Erreur lors de l'envoi de l'invitation");
       }
 
       // Success - reset form and trigger success modal
@@ -1260,11 +1470,13 @@ function InviteMemberModal({
       setSelectedOrgId('');
       setRole('member');
       onSuccess(invitedEmail);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Erreur lors de l'envoi de l'invitation";
       setAlertConfig({
         title: 'Erreur',
-        message: error.message || 'Erreur lors de l\'envoi de l\'invitation',
-        type: 'error'
+        message: errorMessage,
+        type: 'error',
       });
       setShowAlert(true);
     } finally {
@@ -1274,83 +1486,115 @@ function InviteMemberModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="invite-member-modal-title">
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="invite-member-modal-title"
+      >
+        <div
+          className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+          onClick={e => e.stopPropagation()}
+        >
           <div className="flex items-center justify-between mb-4">
-            <h3 id="invite-member-modal-title" className="text-xl font-bold text-slate-900">Inviter un membre</h3>
-            <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded transition-colors" aria-label="Fermer la fenêtre">
+            <h3 id="invite-member-modal-title" className="text-xl font-bold text-slate-900">
+              Inviter un membre
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-slate-100 rounded transition-colors"
+              aria-label="Fermer la fenêtre"
+            >
               <X className="w-5 h-5 text-slate-600" aria-hidden="true" />
             </button>
           </div>
 
           <div className="space-y-4 mb-6">
             <div>
-              <label htmlFor="invite-org-select" className="block text-sm font-medium text-slate-700 mb-2">
+              <label
+                htmlFor="invite-org-select"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
                 Organisation *
               </label>
               <select
                 id="invite-org-select"
                 value={selectedOrgId}
-                onChange={(e) => setSelectedOrgId(e.target.value)}
+                onChange={e => setSelectedOrgId(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
               >
                 <option value="">Sélectionner une organisation</option>
                 {organizations.map(org => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label htmlFor="invite-email" className="block text-sm font-medium text-slate-700 mb-2">
+              <label
+                htmlFor="invite-email"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
                 Email *
               </label>
               <input
                 id="invite-email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                 placeholder="exemple@email.com"
               />
             </div>
 
             <div>
-              <label htmlFor="invite-first-name" className="block text-sm font-medium text-slate-700 mb-2">
+              <label
+                htmlFor="invite-first-name"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
                 Prénom *
               </label>
               <input
                 id="invite-first-name"
                 type="text"
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                onChange={e => setFirstName(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                 placeholder="Jean"
               />
             </div>
 
             <div>
-              <label htmlFor="invite-last-name" className="block text-sm font-medium text-slate-700 mb-2">
+              <label
+                htmlFor="invite-last-name"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
                 Nom *
               </label>
               <input
                 id="invite-last-name"
                 type="text"
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={e => setLastName(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                 placeholder="Dupont"
               />
             </div>
 
             <div>
-              <label htmlFor="invite-role" className="block text-sm font-medium text-slate-700 mb-2">
+              <label
+                htmlFor="invite-role"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
                 Rôle *
               </label>
               <select
                 id="invite-role"
                 value={role}
-                onChange={(e) => setRole(e.target.value as 'member' | 'admin')}
+                onChange={e => setRole(e.target.value as 'member' | 'admin')}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
               >
                 <option value="member">Membre</option>
@@ -1359,7 +1603,7 @@ function InviteMemberModal({
               <p className="text-xs text-slate-500 mt-2">
                 {role === 'admin'
                   ? 'Peut gérer les membres et accéder à toutes les données'
-                  : 'Peut accéder et modifier les données de l\'organisation'}
+                  : "Peut accéder et modifier les données de l'organisation"}
               </p>
             </div>
           </div>
@@ -1408,22 +1652,46 @@ function InviteMemberModal({
 function SuccessModal({
   isOpen,
   onClose,
-  email
+  email,
 }: {
   isOpen: boolean;
   onClose: () => void;
   email: string;
 }) {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="success-modal-title">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="success-modal-title"
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="text-center">
           {/* Success Icon */}
-          <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30" aria-hidden="true">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          <div
+            className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30"
+            aria-hidden="true"
+          >
+            <svg
+              className="w-10 h-10 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={3}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
 
@@ -1433,12 +1701,8 @@ function SuccessModal({
           </h3>
 
           {/* Message */}
-          <p className="text-slate-600 mb-2">
-            Un email d'invitation a été envoyé à
-          </p>
-          <p className="text-lg font-semibold text-blue-600 mb-6">
-            {email}
-          </p>
+          <p className="text-slate-600 mb-2">Un email d'invitation a été envoyé à</p>
+          <p className="text-lg font-semibold text-blue-600 mb-6">{email}</p>
 
           {/* Info Box */}
           <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6 text-left">
@@ -1448,7 +1712,9 @@ function SuccessModal({
                 Prochaines étapes :
               </strong>
               <span className="block ml-7">• L'utilisateur recevra un email d'invitation</span>
-              <span className="block ml-7">• Il pourra créer son compte en cliquant sur le lien</span>
+              <span className="block ml-7">
+                • Il pourra créer son compte en cliquant sur le lien
+              </span>
               <span className="block ml-7">• L'invitation expire dans 7 jours</span>
             </p>
           </div>
