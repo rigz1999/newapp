@@ -42,7 +42,7 @@ export function DashboardRecentPayments({
               return (
                 <div
                   key={payment.id}
-                  onClick={() => navigate('/paiements')}
+                  onClick={() => navigate(`/paiements/${payment.id}`)}
                   className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex-1">

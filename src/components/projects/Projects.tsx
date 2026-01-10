@@ -9,6 +9,7 @@ import { toast } from '../../utils/toast';
 import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
+import { slugify } from '../../utils/slugify';
 
 interface ProjectWithStats {
   id: string;
@@ -305,7 +306,7 @@ export function Projects({ organization }: ProjectsProps) {
 
       // Navigate to the project detail page
       if (data) {
-        navigate(`/projets/${data.id}`);
+        navigate(`/projets/${slugify(data.projet)}`);
       }
     } catch (err: any) {
       toast.error('Erreur lors de la création du projet: ' + err.message);
@@ -470,7 +471,7 @@ export function Projects({ organization }: ProjectsProps) {
 
               <div className="bg-slate-50 px-6 py-3 flex gap-2 border-t border-slate-200">
                 <button
-                  onClick={() => navigate(`/projets/${project.id}`)}
+                  onClick={() => navigate(`/projets/${slugify(project.projet)}`)}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-finixar-action-view text-white text-sm font-medium rounded-lg hover:bg-finixar-action-view-hover transition-colors"
                 >
                   <Eye className="w-4 h-4" />

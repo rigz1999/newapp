@@ -29,6 +29,9 @@ const Coupons = lazy(() => import('./components/coupons/CouponsPageNew'));
 const Investors = lazy(() => import('./components/investors/Investors'));
 const Subscriptions = lazy(() => import('./components/subscriptions/Subscriptions'));
 const Payments = lazy(() => import('./components/payments/Payments'));
+const PaymentDetailPage = lazy(() =>
+  import('./components/payments/PaymentDetailPage').then(m => ({ default: m.PaymentDetailPage }))
+);
 const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
 const Members = lazy(() => import('./components/admin/Members'));
 const Settings = lazy(() => import('./components/admin/Settings'));
@@ -223,6 +226,16 @@ function App() {
                   <ErrorBoundary>
                     <Suspense fallback={<LoadingFallback />}>
                       <Payments organization={organization || DEFAULT_ORG} />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="paiements/:paymentId"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <PaymentDetailPage />
                     </Suspense>
                   </ErrorBoundary>
                 }
