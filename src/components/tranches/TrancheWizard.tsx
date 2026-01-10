@@ -1,11 +1,18 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase";
-import { X, CheckCircle, AlertCircle, Loader, Edit, Trash2 } from "lucide-react";
-import { FileUpload } from "../investors/FileUpload";
-import { Tooltip } from "../common/Tooltip";
-import { isValidDateRange } from "../../utils/validators";
-import { logger } from "../../utils/logger";
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import {
+  X,
+  CheckCircle,
+  AlertCircle,
+  Loader,
+  Edit,
+  Trash2,
+  Download,
+  FileSpreadsheet,
+} from 'lucide-react';
+import { FileUpload } from '../investors/FileUpload';
+import { Tooltip } from '../common/Tooltip';
+import { logger } from '../../utils/logger';
 
 interface Project {
   id: string;
@@ -36,43 +43,43 @@ export function TrancheWizard({
   preselectedProjectId,
   editingTranche,
   isEditMode = false,
-}: TrancheWizardProps) {
-  const navigate = useNavigate();
+}: TrancheWizardProps): JSX.Element {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isProcessingOnServer, setIsProcessingOnServer] = useState(false);
 
-  const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [trancheName, setTrancheName] = useState("");
-  const [suggestedName, setSuggestedName] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [trancheName, setTrancheName] = useState('');
+  const [suggestedName, setSuggestedName] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [error, setError] = useState('');
 
-  const [tauxNominal, setTauxNominal] = useState<string>("");
-  const [dateEmission, setDateEmission] = useState("");
-  const [dureeMois, setDureeMois] = useState<string>("");
-  const [periodiciteCoupons, setPeriodiciteCoupons] = useState<string>("");
+  const [tauxNominal, setTauxNominal] = useState<string>('');
+  const [dateEmission, setDateEmission] = useState('');
+  const [dureeMois, setDureeMois] = useState<string>('');
+  const [periodiciteCoupons, setPeriodiciteCoupons] = useState<string>('');
 
   useEffect(() => {
     fetchProjects();
   }, []);
 
   useEffect(() => {
-    if (preselectedProjectId) setSelectedProjectId(preselectedProjectId);
+    if (preselectedProjectId) {
+      setSelectedProjectId(preselectedProjectId);
+    }
   }, [preselectedProjectId]);
 
   useEffect(() => {
     if (editingTranche && isEditMode) {
-      logger.debug("Mode édition activé avec:", editingTranche);
+      logger.debug('Mode édition activé avec:', editingTranche);
       setSelectedProjectId(editingTranche.projet_id);
       setTrancheName(editingTranche.tranche_name);
-      setTauxNominal(editingTranche.taux_nominal?.toString() || "");
-      setDateEmission(editingTranche.date_emission || "");
-      setDureeMois(editingTranche.duree_mois?.toString() || "");
-      setPeriodiciteCoupons(editingTranche.periodicite_coupons || "");
+      setTauxNominal(editingTranche.taux_nominal?.toString() || '');
+      setDateEmission(editingTranche.date_emission || '');
+      setDureeMois(editingTranche.duree_mois?.toString() || '');
+      setPeriodiciteCoupons(editingTranche.periodicite_coupons || '');
     }
   }, [editingTranche, isEditMode]);
 
@@ -91,27 +98,27 @@ export function TrancheWizard({
   const fetchProjects = async () => {
     setLoading(true);
     const { data } = await supabase
-      .from("projets")
-      .select("id, projet")
-      .order("created_at", { ascending: false });
+      .from('projets')
+      .select('id, projet')
+      .order('created_at', { ascending: false });
     setProjects(data || []);
     setLoading(false);
   };
 
   const getSuggestedTrancheName = async (projectId: string) => {
     const { data: project } = await supabase
-      .from("projets")
-      .select("projet")
-      .eq("id", projectId)
+      .from('projets')
+      .select('projet')
+      .eq('id', projectId)
       .single();
 
     const { count } = await supabase
-      .from("tranches")
-      .select("id", { count: "exact", head: true })
-      .eq("projet_id", projectId);
+      .from('tranches')
+      .select('id', { count: 'exact', head: true })
+      .eq('projet_id', projectId);
 
     const trancheNumber = (count || 0) + 1;
-    const projectName = project?.projet || "";
+    const projectName = project?.projet || '';
     return `${projectName} - T${trancheNumber}`;
   };
 
@@ -124,27 +131,31 @@ export function TrancheWizard({
 
       // Fetch project financial data to auto-populate tranche fields
       const { data: project } = await supabase
-        .from("projets")
-        .select("taux_nominal, duree_mois")
-        .eq("id", projectId)
+        .from('projets')
+        .select('taux_nominal, duree_mois')
+        .eq('id', projectId)
         .single();
 
       if (project) {
-        logger.debug("Auto-populating from project:", project);
-        if (project.taux_nominal) setTauxNominal(project.taux_nominal.toString());
-        if (project.duree_mois) setDureeMois(project.duree_mois.toString());
+        logger.debug('Auto-populating from project:', project);
+        if (project.taux_nominal) {
+          setTauxNominal(project.taux_nominal.toString());
+        }
+        if (project.duree_mois) {
+          setDureeMois(project.duree_mois.toString());
+        }
       }
     }
   };
 
   const handleRemoveFile = () => {
     setCsvFile(null);
-    setError("");
+    setError('');
   };
 
   const handleUpdateTranche = async () => {
     if (!editingTranche || !trancheName) {
-      setError("Veuillez remplir le nom de la tranche");
+      setError('Veuillez remplir le nom de la tranche');
       return;
     }
 
@@ -168,9 +179,9 @@ export function TrancheWizard({
         if (paidEcheances && paidEcheances.length > 0) {
           setError(
             `ATTENTION: Impossible de modifier la date d'émission.\n\n` +
-            `Cette tranche a ${paidEcheances.length} paiement(s) réellement effectué(s).\n` +
-            `Modifier la date d'émission supprimerait tous les échéanciers existants et les paiements effectués seraient perdus.\n\n` +
-            `Pour modifier la date d'émission, veuillez d'abord annuler les paiements effectués depuis l'écran de gestion des paiements.`
+              `Cette tranche a ${paidEcheances.length} paiement(s) réellement effectué(s).\n` +
+              `Modifier la date d'émission supprimerait tous les échéanciers existants et les paiements effectués seraient perdus.\n\n` +
+              `Pour modifier la date d'émission, veuillez d'abord annuler les paiements effectués depuis l'écran de gestion des paiements.`
           );
           return;
         }
@@ -178,20 +189,23 @@ export function TrancheWizard({
     }
 
     setProcessing(true);
-    setError("");
-    setSuccessMessage("");
+    setError('');
+    setSuccessMessage('');
 
     try {
-      logger.info("Mise à jour tranche", { trancheId: editingTranche.id, data: {
-        tranche_name: trancheName,
-        taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
-        date_emission: dateEmission || null,
-        duree_mois: dureeMois ? parseInt(dureeMois) : null,
-        periodicite_coupons: periodiciteCoupons || null,
-      }});
+      logger.info('Mise à jour tranche', {
+        trancheId: editingTranche.id,
+        data: {
+          tranche_name: trancheName,
+          taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
+          date_emission: dateEmission || null,
+          duree_mois: dureeMois ? parseInt(dureeMois) : null,
+          periodicite_coupons: periodiciteCoupons || null,
+        },
+      });
 
-      const { error: updateError} = await supabase
-        .from("tranches")
+      const { error: updateError } = await supabase
+        .from('tranches')
         .update({
           tranche_name: trancheName,
           taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
@@ -199,14 +213,16 @@ export function TrancheWizard({
           duree_mois: dureeMois ? parseInt(dureeMois) : null,
           periodicite_coupons: periodiciteCoupons || null,
         } as never)
-        .eq("id", editingTranche.id);
+        .eq('id', editingTranche.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
 
-      logger.info("Tranche mise à jour avec succès");
+      logger.info('Tranche mise à jour avec succès');
 
       // Call regenerate-echeancier to update payment schedule
-      logger.info("Appel de regenerate-echeancier");
+      logger.info('Appel de regenerate-echeancier');
       try {
         // Use supabase.functions.invoke() for proper authentication handling
         const { data: regenerateResult, error: invokeError } = await supabase.functions.invoke(
@@ -217,12 +233,14 @@ export function TrancheWizard({
         );
 
         if (invokeError) {
-          logger.error(new Error("Erreur lors de l'invocation de regenerate-echeancier"), { error: invokeError });
+          logger.error(new Error("Erreur lors de l'invocation de regenerate-echeancier"), {
+            error: invokeError,
+          });
           throw invokeError;
         }
 
         if (regenerateResult.success) {
-          logger.info("Écheancier régénéré avec succès");
+          logger.info('Écheancier régénéré avec succès');
 
           // Mark calendar exports as outdated for this tranche (safe - table might not exist yet)
           try {
@@ -243,16 +261,16 @@ export function TrancheWizard({
           onClose();
           onSuccess(successMsg);
         } else {
-          logger.warn("Écheancier non régénéré:", regenerateResult.error);
+          logger.warn('Écheancier non régénéré:', regenerateResult.error);
           const successMsg =
             `Tranche mise à jour avec succès!\n` +
-            `Note: ${regenerateResult.error || "Écheancier non généré (paramètres manquants)"}`;
+            `Note: ${regenerateResult.error || 'Écheancier non généré (paramètres manquants)'}`;
 
           onClose();
           onSuccess(successMsg);
         }
-      } catch (regenerateError: any) {
-        logger.error(new Error("Erreur régénération écheancier"), { error: regenerateError });
+      } catch (regenerateError: unknown) {
+        logger.error(new Error('Erreur régénération écheancier'), { error: regenerateError });
         const successMsg =
           `Tranche mise à jour avec succès!\n` +
           `Note: Impossible de régénérer l'écheancier automatiquement.`;
@@ -260,130 +278,141 @@ export function TrancheWizard({
         onClose();
         onSuccess(successMsg);
       }
-
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la mise à jour';
       logger.error(err instanceof Error ? err : new Error(String(err)));
-      setError(err.message || "Erreur lors de la mise à jour");
+      setError(errorMessage);
     } finally {
       setProcessing(false);
     }
   };
 
-  const handleSubmit = async () => {
-  if (isEditMode && editingTranche) {
-    await handleUpdateTranche();
-    return;
-  }
-
-  if (!selectedProjectId || !trancheName || !csvFile) {
-    setError("Veuillez remplir tous les champs requis");
-    return;
-  }
-
-  setProcessing(true);
-  setError("");
-  setSuccessMessage("");
-  setProgress(0);
-  setIsProcessingOnServer(false);
-
-  try {
-    logger.info("Début import", { projectId: selectedProjectId, trancheName, fileName: csvFile.name });
-
-    const form = new FormData();
-    form.append("projet_id", selectedProjectId);
-    form.append("tranche_name", trancheName);
-    form.append("file", csvFile, csvFile.name);
-
-    // Add tranche metadata
-    if (tauxNominal) form.append("taux_nominal", tauxNominal);
-    if (dateEmission) form.append("date_emission", dateEmission);
-    if (dureeMois) form.append("duree_mois", dureeMois);
-
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
-    logger.debug("URL Edge Function:", url);
-
-    // Get the current session token for authorization
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw new Error("No active session. Please log in again.");
+  const handleSubmit = async (): Promise<void> => {
+    if (isEditMode && editingTranche) {
+      await handleUpdateTranche();
+      return;
     }
 
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", url, true);
-    xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+    if (!selectedProjectId || !trancheName || !csvFile) {
+      setError('Veuillez remplir tous les champs requis');
+      return;
+    }
 
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        const p = Math.round((event.loaded / event.total) * 100);
-        setProgress(p);
-        if (p === 100) {
-          setIsProcessingOnServer(true);
-        }
+    setProcessing(true);
+    setError('');
+    setSuccessMessage('');
+    setProgress(0);
+    setIsProcessingOnServer(false);
+
+    try {
+      logger.info('Début import', {
+        projectId: selectedProjectId,
+        trancheName,
+        fileName: csvFile.name,
+      });
+
+      const form = new FormData();
+      form.append('projet_id', selectedProjectId);
+      form.append('tranche_name', trancheName);
+      form.append('file', csvFile, csvFile.name);
+
+      // Add tranche metadata
+      if (tauxNominal) {
+        form.append('taux_nominal', tauxNominal);
       }
-    };
+      if (dateEmission) {
+        form.append('date_emission', dateEmission);
+      }
+      if (dureeMois) {
+        form.append('duree_mois', dureeMois);
+      }
 
-    xhr.onload = () => {
-      setProcessing(false);
-      logger.debug("Réponse serveur", { status: xhr.status });
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
+      logger.debug('URL Edge Function:', url);
 
-      try {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const result = JSON.parse(xhr.responseText);
-          logger.info("Import terminé", { result });
-          
-          if (result.success && result.createdSouscriptions > 0) {
-            const successMsg =
-              `Import terminé!\n` +
-              `${result.createdSouscriptions || 0} souscriptions créées\n` +
-              `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
-              `${result.updatedInvestisseurs || 0} investisseurs mis à jour`;
+      // Get the current session token for authorization
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session. Please log in again.');
+      }
 
-            onClose();
-            onSuccess(successMsg);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
 
-            if (result.errors && result.errors.length > 0) {
-              logger.warn("Erreurs d'import", { errors: result.errors });
-            }
-          } else if (result.success && result.createdSouscriptions === 0) {
-            setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
-            logger.error(new Error("Import terminé mais 0 souscriptions créées"), { result });
-          } else {
-            setError(result.error || "Erreur lors de l'import");
+      xhr.upload.onprogress = event => {
+        if (event.lengthComputable) {
+          const p = Math.round((event.loaded / event.total) * 100);
+          setProgress(p);
+          if (p === 100) {
+            setIsProcessingOnServer(true);
           }
-        } else {
-          logger.error(new Error(`Erreur HTTP ${xhr.status}`), { response: xhr.responseText });
-          setError(`Erreur serveur (${xhr.status}): Voir la console pour plus de détails`);
         }
-      } catch (parseErr) {
-        logger.error(new Error("Erreur de parsing de la réponse"), { error: parseErr });
-        setError("Réponse invalide du serveur");
-      }
-    };
+      };
 
-    xhr.onerror = () => {
+      xhr.onload = () => {
+        setProcessing(false);
+        logger.debug('Réponse serveur', { status: xhr.status });
+
+        try {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const result = JSON.parse(xhr.responseText);
+            logger.info('Import terminé', { result });
+
+            if (result.success && result.createdSouscriptions > 0) {
+              const successMsg =
+                `Import terminé!\n` +
+                `${result.createdSouscriptions || 0} souscriptions créées\n` +
+                `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
+                `${result.updatedInvestisseurs || 0} investisseurs mis à jour`;
+
+              onClose();
+              onSuccess(successMsg);
+
+              if (result.errors && result.errors.length > 0) {
+                logger.warn("Erreurs d'import", { errors: result.errors });
+              }
+            } else if (result.success && result.createdSouscriptions === 0) {
+              setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
+              logger.error(new Error('Import terminé mais 0 souscriptions créées'), { result });
+            } else {
+              setError(result.error || "Erreur lors de l'import");
+            }
+          } else {
+            logger.error(new Error(`Erreur HTTP ${xhr.status}`), { response: xhr.responseText });
+            setError(`Erreur serveur (${xhr.status}): Voir la console pour plus de détails`);
+          }
+        } catch (parseErr) {
+          logger.error(new Error('Erreur de parsing de la réponse'), { error: parseErr });
+          setError('Réponse invalide du serveur');
+        }
+      };
+
+      xhr.onerror = () => {
+        setProcessing(false);
+        logger.error(new Error('Erreur réseau XHR'));
+        setError("Erreur réseau pendant l'upload");
+      };
+
+      xhr.send(form);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Erreur lors de l'import";
+      logger.error(err instanceof Error ? err : new Error(String(err)));
+      setError(errorMessage);
       setProcessing(false);
-      logger.error(new Error("Erreur réseau XHR"));
-      setError("Erreur réseau pendant l'upload");
-    };
-
-    xhr.send(form);
-
-  } catch (err: any) {
-    logger.error(err instanceof Error ? err : new Error(String(err)));
-    setError(err.message || "Erreur lors de l'import");
-    setProcessing(false);
-  }
-};
-
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto">
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
         onClick={() => !processing && onClose()}
       />
-      
+
       {/* Conteneur centré */}
       <div className="flex min-h-full items-center justify-center p-4">
         {/* Modal content */}
@@ -393,12 +422,12 @@ export function TrancheWizard({
             <div className="flex items-center gap-2">
               {isEditMode && <Edit className="w-5 h-5 text-blue-600" />}
               <h3 className="text-xl font-bold text-slate-900">
-                {isEditMode ? "Modifier la tranche" : "Nouvelle tranche"}
+                {isEditMode ? 'Modifier la tranche' : 'Nouvelle tranche'}
               </h3>
             </div>
-            <button 
-              onClick={onClose} 
-              className="text-slate-400 hover:text-slate-600" 
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-600"
               disabled={processing}
             >
               <X className="w-6 h-6" />
@@ -419,12 +448,12 @@ export function TrancheWizard({
               ) : (
                 <select
                   value={selectedProjectId}
-                  onChange={(e) => handleProjectSelect(e.target.value)}
+                  onChange={e => handleProjectSelect(e.target.value)}
                   disabled={processing || isEditMode}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue bg-white disabled:opacity-50 disabled:bg-slate-50"
                 >
                   <option value="">Sélectionnez un projet</option>
-                  {projects.map((project) => (
+                  {projects.map(project => (
                     <option key={project.id} value={project.id}>
                       {project.projet}
                     </option>
@@ -446,7 +475,7 @@ export function TrancheWizard({
               <input
                 type="text"
                 value={trancheName}
-                onChange={(e) => setTrancheName(e.target.value)}
+                onChange={e => setTrancheName(e.target.value)}
                 disabled={processing}
                 placeholder="Ex: T1, Tranche A..."
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
@@ -464,7 +493,7 @@ export function TrancheWizard({
                     type="number"
                     step="0.01"
                     value={tauxNominal}
-                    onChange={(e) => setTauxNominal(e.target.value)}
+                    onChange={e => setTauxNominal(e.target.value)}
                     disabled={processing}
                     placeholder="Ex: 5.5"
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
@@ -478,7 +507,7 @@ export function TrancheWizard({
                   <input
                     type="date"
                     value={dateEmission}
-                    onChange={(e) => setDateEmission(e.target.value)}
+                    onChange={e => setDateEmission(e.target.value)}
                     disabled={processing}
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
                   />
@@ -491,7 +520,7 @@ export function TrancheWizard({
                   <input
                     type="number"
                     value={dureeMois}
-                    onChange={(e) => setDureeMois(e.target.value)}
+                    onChange={e => setDureeMois(e.target.value)}
                     disabled={processing}
                     placeholder="Ex: 24"
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
@@ -504,7 +533,7 @@ export function TrancheWizard({
                   </label>
                   <select
                     value={periodiciteCoupons}
-                    onChange={(e) => setPeriodiciteCoupons(e.target.value)}
+                    onChange={e => setPeriodiciteCoupons(e.target.value)}
                     disabled={processing}
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
                   >
@@ -524,12 +553,47 @@ export function TrancheWizard({
                 <label className="block text-sm font-semibold text-slate-900 mb-2">
                   Fichier du registre <span className="text-finixar-red">*</span>
                 </label>
+
+                {/* Télécharger le modèle */}
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <FileSpreadsheet className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-900 mb-1">
+                        Format standard disponible
+                      </p>
+                      <p className="text-sm text-blue-700 mb-3">
+                        Téléchargez notre modèle Excel pré-formaté avec validation intégrée pour
+                        garantir un import sans erreur.
+                      </p>
+                      <div className="flex gap-3">
+                        <a
+                          href="/templates/Modele_Registre_Titres.xlsx"
+                          download="Modele_Registre_Titres.xlsx"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                          <Download className="w-4 h-4" />
+                          Télécharger le modèle Excel
+                        </a>
+                        <a
+                          href="/templates/Documentation_Format_Standard.md"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium"
+                        >
+                          📖 Documentation
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <FileUpload
                   accept=".csv,.xlsx,.xls"
-                  onFileSelect={(files) => {
+                  onFileSelect={files => {
                     if (files && files.length > 0) {
                       setCsvFile(files[0]);
-                      setError("");
+                      setError('');
                     }
                   }}
                   label="Sélectionner le fichier (CSV ou Excel)"
@@ -592,7 +656,7 @@ export function TrancheWizard({
                     <p className="text-sm text-red-700 mb-2">{error}</p>
                     <button
                       onClick={() => {
-                        setError("");
+                        setError('');
                         handleSubmit();
                       }}
                       className="text-sm font-medium text-red-700 hover:text-red-800 underline"
@@ -617,12 +681,12 @@ export function TrancheWizard({
             <Tooltip
               content={
                 !trancheName
-                  ? "Le nom de la tranche est requis"
+                  ? 'Le nom de la tranche est requis'
                   : !isEditMode && !selectedProjectId
-                  ? "Veuillez sélectionner un projet"
-                  : !isEditMode && !csvFile
-                  ? "Veuillez sélectionner un fichier CSV/Excel"
-                  : ""
+                    ? 'Veuillez sélectionner un projet'
+                    : !isEditMode && !csvFile
+                      ? 'Veuillez sélectionner un fichier CSV/Excel'
+                      : ''
               }
             >
               <button
@@ -630,17 +694,19 @@ export function TrancheWizard({
                 disabled={
                   processing ||
                   !trancheName ||
-                  (isEditMode ? false : (!selectedProjectId || !csvFile))
+                  (isEditMode ? false : !selectedProjectId || !csvFile)
                 }
                 className="flex-1 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {processing ? (
                   <>
                     <Loader className="w-5 h-5 animate-spin" />
-                    {isEditMode ? "Mise à jour..." : `Import... ${progress}%`}
+                    {isEditMode ? 'Mise à jour...' : `Import... ${progress}%`}
                   </>
+                ) : isEditMode ? (
+                  'Mettre à jour'
                 ) : (
-                  isEditMode ? "Mettre à jour" : "Créer et importer"
+                  'Créer et importer'
                 )}
               </button>
             </Tooltip>

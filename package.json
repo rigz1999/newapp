@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "generate:template": "node scripts/generate-excel-template.js",
     "prepare": "husky"
   },
   "dependencies": {

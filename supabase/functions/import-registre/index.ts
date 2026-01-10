@@ -1,7 +1,14 @@
 // supabase/functions/import-registre/index.ts
 // Deno Edge Function: Parse CSV "Registre des titres" with dual sections (Physiques/Morales)
+// Supporte les profils de format personnalisés par société
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  getFormatProfile,
+  parseCSVWithProfile,
+  validateData,
+  type FormatProfile,
+} from './profile-parser.ts';
 
 /* ---------------- CORS ---------------- */
 const corsHeaders = {
@@ -335,10 +342,42 @@ Deno.serve(async (req: Request) => {
     const lineCount = text.split(/\r?\n/).length;
     console.log('Nombre de lignes:', lineCount);
 
-    // Parse CSV
-    const rows = parseCSV(text);
+    // Récupérer le profil de format pour cette société
+    console.log('\n=== PROFIL DE FORMAT ===');
+    const formatProfile = await getFormatProfile(supabase, projetId);
+    console.log('Profil utilisé:', formatProfile.profile_name);
+
+    // Parse CSV avec le profil de format
+    const rows = parseCSVWithProfile(text, formatProfile);
 
     console.log(`✅ Parsed ${rows.length} rows from CSV`);
+
+    // Valider les données selon le profil
+    console.log('\n=== VALIDATION DES DONNÉES ===');
+    const validationErrors = validateData(rows, formatProfile);
+
+    if (validationErrors.length > 0) {
+      console.error(`❌ ${validationErrors.length} erreur(s) de validation détectée(s):`);
+      validationErrors.slice(0, 10).forEach(err => {
+        console.error(`  Ligne ${err.row}, champ "${err.field}": ${err.error}`);
+        if (err.value) console.error(`    Valeur: "${err.value}"`);
+      });
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Erreurs de validation détectées',
+          validation_errors: validationErrors.slice(0, 20), // Limiter à 20 erreurs
+          total_errors: validationErrors.length,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'content-type': 'application/json' },
+        }
+      );
+    }
+
+    console.log('✅ Validation réussie!');
 
     if (rows.length > 0) {
       const firstRow = rows[0];
@@ -464,14 +503,14 @@ Deno.serve(async (req: Request) => {
             continue;
           }
 
-          const email = cleanString(r['Email'])?.toLowerCase() || null;
-          console.log('Email:', email);
+          const email = cleanString(r['E-mail'])?.toLowerCase() || null;
+          console.log('E-mail:', email);
 
           const dateNaissance = parseDate(r['Né(e) le']);
 
           // Extract CGP information
           const cgpNom = cleanString(r['CGP']) || null;
-          const cgpEmail = cleanString(r['Email du CGP'])?.toLowerCase() || null;
+          const cgpEmail = cleanString(r['E-mail du CGP'])?.toLowerCase() || null;
 
           // Try to find existing investor by email
           let existing = null;
@@ -580,12 +619,12 @@ Deno.serve(async (req: Request) => {
           console.log('SIREN:', siren);
 
           const emailRepLegal =
-            cleanString(r['Email du représentant légal'])?.toLowerCase() || null;
-          console.log('Email rep legal:', emailRepLegal);
+            cleanString(r['E-mail du représentant légal'])?.toLowerCase() || null;
+          console.log('E-mail rep legal:', emailRepLegal);
 
           // Extract CGP information
           const cgpNomMorale = cleanString(r['CGP']) || null;
-          const cgpEmailMorale = cleanString(r['Email du CGP'])?.toLowerCase() || null;
+          const cgpEmailMorale = cleanString(r['E-mail du CGP'])?.toLowerCase() || null;
 
           // Try to find by SIREN or email
           let existing = null;
@@ -715,7 +754,7 @@ Deno.serve(async (req: Request) => {
 
         // Extract CGP info for subscription - handle encoding issues
         const cgp = cleanString(getColumn(r, 'CGP'));
-        const emailCgp = cleanString(getColumn(r, 'Email du CGP'));
+        const emailCgp = cleanString(getColumn(r, 'E-mail du CGP'));
         const codeCgp = cleanString(getColumn(r, 'Code du CGP'));
         const sirenCgpStr = cleanString(getColumn(r, 'Siren du CGP'));
         const sirenCgp = sirenCgpStr ? parseInt(sirenCgpStr.replace(/\D/g, '')) : null;
@@ -806,7 +845,12 @@ Deno.serve(async (req: Request) => {
       console.log('Generating écheancier for tranche_id:', trancheId);
 
       // Validate required parameters
-      if (finalTauxNominal === null || !finalPeriodiciteCoupons || !finalDateEmission || finalDureeMois === null) {
+      if (
+        finalTauxNominal === null ||
+        !finalPeriodiciteCoupons ||
+        !finalDateEmission ||
+        finalDureeMois === null
+      ) {
         const missing = [];
         if (finalTauxNominal === null) missing.push('taux_nominal');
         if (!finalPeriodiciteCoupons) missing.push('periodicite_coupons');
@@ -814,7 +858,9 @@ Deno.serve(async (req: Request) => {
         if (finalDureeMois === null) missing.push('duree_mois');
 
         console.warn('⚠️ Missing required parameters:', missing.join(', '));
-        console.warn('   💡 Vous pouvez modifier la tranche plus tard pour ajouter ces informations.');
+        console.warn(
+          '   💡 Vous pouvez modifier la tranche plus tard pour ajouter ces informations.'
+        );
       } else {
         // Step 1: Get all souscriptions for this tranche
         const { data: trancheSouscriptions, error: souscriptionsError } = await supabase
@@ -834,7 +880,9 @@ Deno.serve(async (req: Request) => {
 
           // Step 2: Recalculate coupon_brut and coupon_net for each souscription
           const periodRatio = getPeriodRatio(finalPeriodiciteCoupons, baseInteret);
-          console.log(`Period ratio: ${periodRatio} (${finalPeriodiciteCoupons}, base ${baseInteret})`);
+          console.log(
+            `Period ratio: ${periodRatio} (${finalPeriodiciteCoupons}, base ${baseInteret})`
+          );
 
           let updatedSouscriptions = 0;
           for (const sub of trancheSouscriptions) {
@@ -842,7 +890,8 @@ Deno.serve(async (req: Request) => {
             const couponAnnuel = (montant * finalTauxNominal) / 100;
             const couponBrut = couponAnnuel * periodRatio;
             const investorType = (sub.investisseurs as { type?: string } | null)?.type;
-            const couponNet = investorType?.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
+            const couponNet =
+              investorType?.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
 
             const { error: updateError } = await supabase
               .from('souscriptions')
