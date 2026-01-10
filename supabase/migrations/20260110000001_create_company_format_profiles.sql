@@ -78,14 +78,14 @@ CREATE POLICY "Gestion des profils pour super admins uniquement"
     EXISTS (
       SELECT 1 FROM profiles
       WHERE profiles.id = auth.uid()
-      AND profiles.is_super_admin = true
+      AND profiles.is_superadmin = true
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM profiles
       WHERE profiles.id = auth.uid()
-      AND profiles.is_super_admin = true
+      AND profiles.is_superadmin = true
     )
   );
 
