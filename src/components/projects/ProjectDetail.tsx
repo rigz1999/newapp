@@ -177,7 +177,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     setLoading(true);
 
     try {
-      const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes, calendarExportsRes] = await Promise.all([
+      const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
         supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
         supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }),
         supabase.from('souscriptions').select(`
@@ -187,9 +187,22 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           tranche:tranches(tranche_name, date_emission)
         `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
         supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }),
-        supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut'),
-        supabase.from('calendar_exports').select('is_outdated').eq('project_id', projectId).eq('is_outdated', true).maybeSingle()
+        supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut')
       ]);
+
+      // Check for outdated calendar exports (safe check - table might not exist yet)
+      let calendarExportsRes = { data: null };
+      try {
+        calendarExportsRes = await supabase
+          .from('calendar_exports')
+          .select('is_outdated')
+          .eq('project_id', projectId)
+          .eq('is_outdated', true)
+          .maybeSingle();
+      } catch (err) {
+        // Ignore error if table doesn't exist yet
+        logger.debug('Calendar exports table not available yet', { error: err });
+      }
 
       // Vérifier les erreurs
       if (projectRes.error) throw projectRes.error;
@@ -485,11 +498,16 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             if (regenerateResult.success) {
               logger.info(`Tranche ${tranche.tranche_name} régénérée`);
 
-              // Mark calendar exports as outdated for this tranche and project
-              await supabase
-                .from('calendar_exports')
-                .update({ is_outdated: true })
-                .or(`tranche_id.eq.${tranche.id},project_id.eq.${projectId}`);
+              // Mark calendar exports as outdated for this tranche and project (safe - table might not exist yet)
+              try {
+                await supabase
+                  .from('calendar_exports')
+                  .update({ is_outdated: true })
+                  .or(`tranche_id.eq.${tranche.id},project_id.eq.${projectId}`);
+              } catch (err) {
+                // Ignore error if table doesn't exist yet
+                logger.debug('Calendar exports table not available yet', { error: err });
+              }
 
               return {
                 success: true,
