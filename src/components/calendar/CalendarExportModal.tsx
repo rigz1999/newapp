@@ -58,68 +58,29 @@ export function CalendarExportModal({
         throw new Error('Session non trouvée');
       }
 
-      const { data, error: invokeError } = await supabase.functions.invoke(
-        'export-echeances-to-calendar',
+      // Use fetch directly like email reminders do - better error handling
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/export-echeances-to-calendar`,
         {
-          body: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
             projectId: projectId || null,
             trancheId: trancheId || null,
             settings,
-          },
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          }),
         }
       );
 
-      console.log('Edge function response:', { data, invokeError });
-
-      // When edge function returns non-2xx, check both data and invokeError.context
-      if (invokeError) {
-        console.error('Invoke error:', invokeError);
-        console.error('Invoke error context:', (invokeError as any).context);
-        console.error('Error data:', data);
-
-        // Try to extract error from multiple possible locations
-        let errorMsg = null;
-
-        // 1. Check if data has error (some cases)
-        if (data && typeof data === 'object' && 'error' in data) {
-          errorMsg = data.error as string;
-        }
-        // 2. Check invokeError.context (Supabase stores response body here for FunctionsHttpError)
-        else if ((invokeError as any).context?.body) {
-          try {
-            const body = (invokeError as any).context.body;
-            if (typeof body === 'string') {
-              const parsed = JSON.parse(body);
-              errorMsg = parsed.error;
-            } else if (body.error) {
-              errorMsg = body.error;
-            }
-          } catch (e) {
-            console.error('Failed to parse error context:', e);
-          }
-        }
-
-        // If we found an error message, throw it
-        if (errorMsg) {
-          throw new Error(errorMsg);
-        }
-
-        // Fallback to generic message
-        throw new Error(invokeError.message || 'Erreur lors de l\'appel de la fonction');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to export to calendar');
       }
 
-      if (data?.error) {
-        console.error('Data error:', data.error);
-        throw new Error(data.error);
-      }
-
-      if (!data?.summary) {
-        throw new Error('Réponse invalide de la fonction d\'export');
-      }
-
+      const data = await response.json();
       setSuccess(data.summary);
     } catch (err) {
       console.error('Error exporting to calendar:', err);
