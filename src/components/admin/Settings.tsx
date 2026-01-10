@@ -843,10 +843,10 @@ export default function Settings() {
           <div className="p-6 border-b border-slate-200">
             <div className="flex items-center gap-2">
               <Mail className="w-5 h-5 text-slate-700" />
-              <h2 className="text-xl font-bold text-slate-900">Connexion Email</h2>
+              <h2 className="text-xl font-bold text-slate-900">Connexion E-mail</h2>
             </div>
             <p className="text-sm text-slate-600 mt-2">
-              Connectez votre compte email pour envoyer des rappels de paiement directement depuis votre boîte de réception
+              Connectez votre compte e-mail pour envoyer des rappels de paiement directement depuis votre boîte de réception
             </p>
           </div>
 
@@ -908,7 +908,7 @@ export default function Settings() {
                     <div className="flex-1">
                       <p className="font-semibold text-blue-900 mb-1">Connectez votre compte Microsoft Outlook</p>
                       <p className="text-sm text-blue-800">
-                        Utilisez votre compte Outlook/Microsoft 365 pour envoyer automatiquement des rappels de paiement
+                        Utilisez votre compte Outlook/Microsoft 365 pour envoyer automatiquement des rappels de paiement par e-mail
                       </p>
                     </div>
                   </div>
