@@ -262,10 +262,10 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           .from('projets')
           .select('id')
           .lt('created_at', firstOfThisMonthLastYear.toISOString()),
-        // Upcoming coupons count from coupons_echeances
+        // Upcoming échéances count - get distinct dates, not individual coupons
         supabase
           .from('coupons_echeances')
-          .select('id', { count: 'exact', head: true })
+          .select('date_echeance')
           .gte('date_echeance', today.toISOString().split('T')[0])
           .lte('date_echeance', in90Days.toISOString().split('T')[0])
           .neq('statut', 'paye'),
@@ -333,8 +333,11 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         0
       );
 
-      // Get upcoming coupons count from coupons_echeances table (not from subscriptions)
-      const upcomingCount = upcomingCouponsCountRes.count || 0;
+      // Count distinct échéance dates (not individual coupons)
+      const upcomingDates = new Set(
+        (upcomingCouponsCountRes.data || []).map((c: { date_echeance: string }) => c.date_echeance)
+      );
+      const upcomingCount = upcomingDates.size;
 
       // Montants mois dernier
       const totalInvestedLastMonth = lastMonthSubscriptions.reduce(
