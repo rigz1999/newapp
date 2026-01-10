@@ -74,8 +74,15 @@ export function CalendarExportModal({
 
       console.log('Edge function response:', { data, invokeError });
 
+      // When edge function returns non-2xx, the error is in the data field
       if (invokeError) {
         console.error('Invoke error:', invokeError);
+        console.error('Error data:', data);
+
+        // Extract the actual error message from the response
+        if (data && typeof data === 'object' && 'error' in data) {
+          throw new Error(data.error as string);
+        }
         throw new Error(invokeError.message || 'Erreur lors de l\'appel de la fonction');
       }
 
