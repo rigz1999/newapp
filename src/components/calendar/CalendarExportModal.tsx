@@ -74,21 +74,40 @@ export function CalendarExportModal({
 
       console.log('Edge function response:', { data, invokeError });
 
-      // When edge function returns non-2xx, the error is in the data field
+      // When edge function returns non-2xx, check both data and invokeError.context
       if (invokeError) {
         console.error('Invoke error:', invokeError);
+        console.error('Invoke error context:', (invokeError as any).context);
         console.error('Error data:', data);
 
-        // Extract the actual error message from the response
+        // Try to extract error from multiple possible locations
+        let errorMsg = null;
+
+        // 1. Check if data has error (some cases)
         if (data && typeof data === 'object' && 'error' in data) {
-          throw new Error(data.error as string);
+          errorMsg = data.error as string;
+        }
+        // 2. Check invokeError.context (Supabase stores response body here for FunctionsHttpError)
+        else if ((invokeError as any).context?.body) {
+          try {
+            const body = (invokeError as any).context.body;
+            if (typeof body === 'string') {
+              const parsed = JSON.parse(body);
+              errorMsg = parsed.error;
+            } else if (body.error) {
+              errorMsg = body.error;
+            }
+          } catch (e) {
+            console.error('Failed to parse error context:', e);
+          }
         }
 
-        // If data is null, the function might not be deployed or crashed
-        if (data === null) {
-          throw new Error('No email connection found. Please connect your email in settings.');
+        // If we found an error message, throw it
+        if (errorMsg) {
+          throw new Error(errorMsg);
         }
 
+        // Fallback to generic message
         throw new Error(invokeError.message || 'Erreur lors de l\'appel de la fonction');
       }
 
