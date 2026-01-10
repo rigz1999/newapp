@@ -69,6 +69,18 @@ export default function Settings() {
     }
   }, [user]);
 
+  // Scroll to email connection section if hash is present
+  useEffect(() => {
+    if (window.location.hash === '#email-connection' && !loading) {
+      setTimeout(() => {
+        const element = document.getElementById('email-connection');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300); // Small delay to ensure content is rendered
+    }
+  }, [loading]);
+
   // Scroll to error message when it appears
   useEffect(() => {
     if (errorMessage && errorMessageRef.current) {
@@ -827,7 +839,7 @@ export default function Settings() {
         </div>
 
         {/* Email Connection Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+        <div id="email-connection" className="bg-white rounded-xl shadow-sm border border-slate-200 scroll-mt-4">
           <div className="p-6 border-b border-slate-200">
             <div className="flex items-center gap-2">
               <Mail className="w-5 h-5 text-slate-700" />
