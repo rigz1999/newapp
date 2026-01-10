@@ -11,11 +11,11 @@ export function Sidebar({ organization, activePage, onNavigate, onLogout }: Side
   return (
     <aside className="w-64 bg-finixar-navy text-white flex flex-col fixed h-screen">
       <div className="p-6">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="bg-finixar-teal p-3 rounded-lg">
-            <TrendingUp className="w-8 h-8" />
+        <div className="flex items-center gap-4 mb-8">
+          <div className="bg-finixar-teal p-4 rounded-xl">
+            <TrendingUp className="w-12 h-12" />
           </div>
-          <span className="text-2xl font-bold">Finixar</span>
+          <span className="text-4xl font-bold">Finixar</span>
         </div>
 
         <nav className="space-y-2">
