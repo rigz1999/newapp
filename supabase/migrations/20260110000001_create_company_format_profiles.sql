@@ -34,17 +34,18 @@ CREATE TABLE IF NOT EXISTS company_format_profiles (
     NOT is_standard OR (
       SELECT COUNT(*) FROM company_format_profiles WHERE is_standard = true
     ) <= 1
-  ),
-
-  -- Un seul profil actif par société
-  CONSTRAINT unique_active_company_profile UNIQUE (company_id, is_active)
-    WHERE is_active = true AND company_id IS NOT NULL
+  )
 );
 
 -- Index pour recherche rapide
 CREATE INDEX idx_company_format_profiles_company_id ON company_format_profiles(company_id);
 CREATE INDEX idx_company_format_profiles_is_standard ON company_format_profiles(is_standard) WHERE is_standard = true;
 CREATE INDEX idx_company_format_profiles_is_active ON company_format_profiles(is_active) WHERE is_active = true;
+
+-- Un seul profil actif par société (index unique partiel)
+CREATE UNIQUE INDEX idx_unique_active_company_profile
+  ON company_format_profiles(company_id)
+  WHERE is_active = true AND company_id IS NOT NULL;
 
 -- Trigger pour updated_at
 CREATE OR REPLACE FUNCTION update_company_format_profiles_updated_at()
