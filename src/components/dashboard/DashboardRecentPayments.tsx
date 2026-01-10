@@ -21,79 +21,6 @@ export function DashboardRecentPayments({
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-stretch">
       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex flex-col min-h-[400px]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-slate-900">Derniers paiements</h2>
-          <button
-            onClick={onViewAllPayments}
-            className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
-          >
-            Voir tout <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-        {recentPayments.length === 0 ? (
-          <p className="text-slate-500 text-center py-8">Aucun paiement récent</p>
-        ) : (
-          <div className="space-y-3">
-            {recentPayments.map(payment => {
-              const daysAgo = Math.floor(
-                (new Date().getTime() - new Date(payment.date_paiement).getTime()) /
-                  (1000 * 60 * 60 * 24)
-              );
-
-              return (
-                <div
-                  key={payment.id}
-                  onClick={() => navigate(`/paiements/${payment.id}`)}
-                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-bold text-slate-900">
-                        {formatCurrency(payment.montant)}
-                      </p>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          payment.statut?.toLowerCase() === 'payé' ||
-                          payment.statut?.toLowerCase() === 'paid'
-                            ? 'bg-green-100 text-green-700'
-                            : payment.statut?.toLowerCase() === 'en attente'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : payment.statut?.toLowerCase() === 'en retard'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {payment.statut?.charAt(0).toUpperCase() + payment.statut?.slice(1).toLowerCase()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 mt-1">
-                      {payment.tranche?.projet?.projet || 'Projet'} •{' '}
-                      {payment.tranche?.tranche_name || 'Tranche'}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {payment.type || 'Coupon'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-semibold text-slate-700">
-                      {formatDate(payment.date_paiement)}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {daysAgo === 0
-                        ? "Aujourd'hui"
-                        : daysAgo === 1
-                          ? 'Hier'
-                          : `Il y a ${daysAgo} jours`}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex flex-col min-h-[400px]">
-        <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-slate-900">Coupons à venir</h2>
           <button
             onClick={onViewAllCoupons}
@@ -161,6 +88,79 @@ export function DashboardRecentPayments({
                         : isOverdue
                           ? `Retard de ${Math.abs(daysUntil)} jour${Math.abs(daysUntil) > 1 ? 's' : ''}`
                           : `Dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''}`}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex flex-col min-h-[400px]">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-slate-900">Derniers paiements</h2>
+          <button
+            onClick={onViewAllPayments}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+          >
+            Voir tout <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+        {recentPayments.length === 0 ? (
+          <p className="text-slate-500 text-center py-8">Aucun paiement récent</p>
+        ) : (
+          <div className="space-y-3">
+            {recentPayments.map(payment => {
+              const daysAgo = Math.floor(
+                (new Date().getTime() - new Date(payment.date_paiement).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              );
+
+              return (
+                <div
+                  key={payment.id}
+                  onClick={() => navigate(`/paiements/${payment.id}`)}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-bold text-slate-900">
+                        {formatCurrency(payment.montant)}
+                      </p>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          payment.statut?.toLowerCase() === 'payé' ||
+                          payment.statut?.toLowerCase() === 'paid'
+                            ? 'bg-green-100 text-green-700'
+                            : payment.statut?.toLowerCase() === 'en attente'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : payment.statut?.toLowerCase() === 'en retard'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {payment.statut?.charAt(0).toUpperCase() + payment.statut?.slice(1).toLowerCase()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 mt-1">
+                      {payment.tranche?.projet?.projet || 'Projet'} •{' '}
+                      {payment.tranche?.tranche_name || 'Tranche'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {payment.type || 'Coupon'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-slate-700">
+                      {formatDate(payment.date_paiement)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {daysAgo === 0
+                        ? "Aujourd'hui"
+                        : daysAgo === 1
+                          ? 'Hier'
+                          : `Il y a ${daysAgo} jours`}
                     </p>
                   </div>
                 </div>

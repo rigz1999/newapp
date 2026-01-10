@@ -33,12 +33,17 @@ function GrowthBadge({ percentage, label }: { percentage?: number; label: string
   const isPositive = percentage > 0;
   const isNeutral = percentage === 0;
   const Icon = isPositive ? ArrowUp : ArrowDown;
-  const colorClass = isNeutral ? 'text-slate-500' : (isPositive ? 'text-emerald-600' : 'text-red-600');
+  const colorClass = isNeutral
+    ? 'text-slate-500'
+    : isPositive
+      ? 'text-emerald-600'
+      : 'text-red-600';
 
   return (
     <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${colorClass}`}>
       {!isNeutral && <Icon className="w-3 h-3" />}
-      {Math.abs(percentage).toFixed(1)}% <span className="text-slate-400 font-normal ml-1">{label}</span>
+      {Math.abs(percentage).toFixed(1)}%{' '}
+      <span className="text-slate-400 font-normal ml-1">{label}</span>
     </span>
   );
 }
@@ -47,7 +52,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
   // Format current month in French
   const currentMonth = new Date().toLocaleDateString('fr-FR', {
     month: 'long',
-    year: 'numeric'
+    year: 'numeric',
   });
   const formattedMonth = currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1);
 
@@ -77,9 +82,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-1">
-              Coupons versés
-            </span>
+            <span className="text-slate-600 text-sm font-medium block mb-1">Coupons versés</span>
             <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
             <p className="text-3xl font-bold text-slate-900 mb-3">
               {formatCurrency(stats.couponsPaidThisMonth)}
@@ -98,9 +101,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-1">
-              Projets actifs
-            </span>
+            <span className="text-slate-600 text-sm font-medium block mb-1">Projets actifs</span>
             <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
             <p className="text-3xl font-bold text-slate-900 mb-3">{stats.activeProjects}</p>
             <div className="flex items-center gap-3 text-xs">
@@ -117,17 +118,9 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-1">
-              Coupons à venir
-            </span>
+            <span className="text-slate-600 text-sm font-medium block mb-1">Coupons à venir</span>
             <span className="text-xs text-slate-400 block mb-3">90 prochains jours</span>
-            <p className="text-3xl font-bold text-slate-900 mb-3">
-              {stats.upcomingCoupons}
-            </p>
-            <div className="flex items-center gap-3 text-xs">
-              <GrowthBadge percentage={stats.upcomingCouponsMoM} label="MoM" />
-              <GrowthBadge percentage={stats.upcomingCouponsYoY} label="YoY" />
-            </div>
+            <p className="text-3xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
           </div>
           <div className="bg-amber-100 p-3 rounded-xl">
             <Clock className="w-6 h-6 text-amber-600" />
