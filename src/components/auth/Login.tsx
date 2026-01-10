@@ -44,17 +44,13 @@ export function Login() {
     setError('');
 
     try {
-      // Call custom edge function to send password reset email via Resend
-      const { data, error } = await supabase.functions.invoke('send-password-reset', {
-        body: { email: email.toLowerCase().trim() },
+      // Use Supabase built-in password reset (temporary fallback)
+      const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) {
         throw error;
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
       }
 
       setResetEmailSent(true);
