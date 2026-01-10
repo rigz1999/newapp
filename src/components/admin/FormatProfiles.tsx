@@ -195,9 +195,6 @@ export default function FormatProfiles(): JSX.Element {
                         </div>
                         <div>
                           <p className="font-medium text-slate-900">{profile.profile_name}</p>
-                          {profile.description && (
-                            <p className="text-sm text-slate-600">{profile.description}</p>
-                          )}
                         </div>
                       </div>
                     </td>
