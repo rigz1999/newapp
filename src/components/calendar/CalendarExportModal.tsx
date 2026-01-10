@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { X, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, Calendar, AlertCircle, CheckCircle2, Settings } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface CalendarExportModalProps {
@@ -19,8 +20,10 @@ export function CalendarExportModal({
   projectName,
   trancheName,
 }: CalendarExportModalProps) {
+  const navigate = useNavigate();
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isConnectionError, setIsConnectionError] = useState(false);
   const [success, setSuccess] = useState<{
     total: number;
     created: number;
@@ -45,6 +48,7 @@ export function CalendarExportModal({
   const handleExport = async () => {
     setIsExporting(true);
     setError(null);
+    setIsConnectionError(false);
     setSuccess(null);
 
     try {
@@ -79,11 +83,32 @@ export function CalendarExportModal({
       setSuccess(data.summary);
     } catch (err) {
       console.error('Error exporting to calendar:', err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Une erreur est survenue lors de l\'export'
-      );
+
+      // Check for specific error messages
+      const errorMessage = err instanceof Error ? err.message : String(err);
+
+      if (errorMessage.includes('No email connection found') ||
+          errorMessage.includes('connect your email')) {
+        setIsConnectionError(true);
+        setError(
+          'Aucune connexion e-mail trouvée. Veuillez connecter votre compte Outlook dans les Paramètres pour activer l\'export vers le calendrier.'
+        );
+      } else if (errorMessage.includes('Calendar export is only supported for Microsoft')) {
+        setIsConnectionError(true);
+        setError(
+          'L\'export calendrier n\'est disponible que pour les comptes Microsoft Outlook. Veuillez reconnecter votre e-mail avec un compte Microsoft.'
+        );
+      } else if (errorMessage.includes('Failed to refresh access token') ||
+                 errorMessage.includes('reconnect your email')) {
+        setIsConnectionError(true);
+        setError(
+          'Votre connexion e-mail a expiré. Veuillez reconnecter votre compte Outlook dans les Paramètres pour continuer.'
+        );
+      } else {
+        setError(
+          errorMessage || 'Une erreur est survenue lors de l\'export'
+        );
+      }
     } finally {
       setIsExporting(false);
     }
@@ -195,9 +220,23 @@ export function CalendarExportModal({
 
               {/* Error message */}
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-400 flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-400">
+                  <div className="flex items-start gap-2 mb-2">
+                    <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                  {isConnectionError && (
+                    <button
+                      onClick={() => {
+                        navigate('/settings');
+                        onClose();
+                      }}
+                      className="mt-2 flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Aller aux Paramètres
+                    </button>
+                  )}
                 </div>
               )}
             </>
