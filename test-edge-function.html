@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Password Reset Function</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <h1>Test Password Reset Edge Function</h1>
+  <input type="email" id="email" placeholder="Enter email" />
+  <button onclick="testFunction()">Test Function</button>
+  <div id="result"></div>
+
+  <script>
+    // Replace with your actual values
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function testFunction() {
+      const email = document.getElementById('email').value;
+      const resultDiv = document.getElementById('result');
+
+      resultDiv.innerHTML = 'Testing...';
+      console.log('=== Testing edge function ===');
+      console.log('Email:', email);
+      console.log('Supabase URL:', SUPABASE_URL);
+
+      try {
+        const { data, error } = await supabase.functions.invoke('send-password-reset', {
+          body: { email }
+        });
+
+        console.log('Response data:', data);
+        console.log('Response error:', error);
+
+        if (error) {
+          resultDiv.innerHTML = `<pre style="color: red">ERROR:\n${JSON.stringify(error, null, 2)}</pre>`;
+        } else {
+          resultDiv.innerHTML = `<pre style="color: green">SUCCESS:\n${JSON.stringify(data, null, 2)}</pre>`;
+        }
+      } catch (err) {
+        console.error('Caught error:', err);
+        resultDiv.innerHTML = `<pre style="color: red">EXCEPTION:\n${err.message}</pre>`;
+      }
+    }
+  </script>
+</body>
+</html>
