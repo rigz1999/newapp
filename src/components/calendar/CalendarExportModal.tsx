@@ -83,6 +83,12 @@ export function CalendarExportModal({
         if (data && typeof data === 'object' && 'error' in data) {
           throw new Error(data.error as string);
         }
+
+        // If data is null, the function might not be deployed or crashed
+        if (data === null) {
+          throw new Error('No email connection found. Please connect your email in settings.');
+        }
+
         throw new Error(invokeError.message || 'Erreur lors de l\'appel de la fonction');
       }
 
