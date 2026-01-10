@@ -561,7 +561,7 @@ export function EcheancierPage() {
 
         // Redirect to settings after 2 seconds
         setTimeout(() => {
-          navigate('/parametres');
+          navigate('/parametres#email-connection');
         }, 2000);
         return;
       }
