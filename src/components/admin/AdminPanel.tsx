@@ -4,6 +4,7 @@
 // ============================================
 
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { logger } from '../../utils/logger';
 import { useAuth } from '../../hooks/useAuth';
@@ -512,8 +513,8 @@ export default function AdminPanel() {
           <div className="mt-6">
             <p className="text-sm font-semibold text-slate-700 mb-3">Outils avancés</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <a
-                href="/admin/profils-format"
+              <Link
+                to="/admin/profils-format"
                 className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group"
               >
                 <FileSpreadsheet className="w-5 h-5 text-blue-600 group-hover:text-blue-700" />
@@ -521,7 +522,7 @@ export default function AdminPanel() {
                   <p className="font-medium text-slate-900">Profils de Format</p>
                   <p className="text-xs text-slate-600">Gérer les formats d'import par société</p>
                 </div>
-              </a>
+              </Link>
             </div>
           </div>
         )}
