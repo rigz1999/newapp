@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Download, Search, Euro, CheckCircle2, Eye, Filter, X, AlertCircle, Trash2, FileDown, MoreVertical, FileText, XCircle, Upload, StickyNote } from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
@@ -42,6 +42,7 @@ type SortOrder = 'desc' | 'asc';
 
 export function Payments({ organization }: PaymentsProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -749,12 +750,17 @@ export function Payments({ organization }: PaymentsProps) {
                 </thead>
                 <tbody>
                   {paginate(filteredPayments, currentPage, itemsPerPage).map((payment) => (
-                    <tr key={payment.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <tr
+                      key={payment.id}
+                      onClick={() => navigate(`/paiements/${payment.id}`)}
+                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
                       <td className="px-2 md:px-4 py-3">
                         <input
                           type="checkbox"
                           checked={selectedPayments.has(payment.id)}
                           onChange={() => toggleSelectPayment(payment.id)}
+                          onClick={(e) => e.stopPropagation()}
                           className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                         />
                       </td>

@@ -119,10 +119,12 @@ export function EcheancierPage() {
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
+  const [shouldNavigateToEmailSettings, setShouldNavigateToEmailSettings] = useState(false);
   const [alertModalConfig, setAlertModalConfig] = useState<{
     title: string;
     message: string;
     type?: 'success' | 'error' | 'warning' | 'info';
+    buttonText?: string;
   }>({ title: '', message: '', type: 'info' });
 
   const formatCurrency = (amount: number) =>
@@ -555,14 +557,11 @@ export function EcheancierPage() {
           title: 'E-mail non connecté',
           message: 'Veuillez d\'abord connecter votre e-mail dans les paramètres pour envoyer des rappels.',
           type: 'warning',
+          buttonText: 'Connecter mon e-mail',
         });
+        setShouldNavigateToEmailSettings(true);
         setShowAlertModal(true);
         setSendingEmail(null);
-
-        // Redirect to settings after 2 seconds
-        setTimeout(() => {
-          navigate('/parametres#email-connection');
-        }, 2000);
         return;
       }
 
@@ -1306,10 +1305,17 @@ export function EcheancierPage() {
       {/* Alert Modal */}
       <AlertModal
         isOpen={showAlertModal}
-        onClose={() => setShowAlertModal(false)}
+        onClose={() => {
+          setShowAlertModal(false);
+          if (shouldNavigateToEmailSettings) {
+            setShouldNavigateToEmailSettings(false);
+            navigate('/parametres#email-connection');
+          }
+        }}
         title={alertModalConfig.title}
         message={alertModalConfig.message}
         type={alertModalConfig.type}
+        buttonText={alertModalConfig.buttonText}
       />
     </div>
   );

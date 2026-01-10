@@ -1,4 +1,5 @@
 import { ArrowRight, AlertCircle, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import type { Payment, UpcomingCoupon } from '../../utils/dashboardAlerts';
 
@@ -15,6 +16,7 @@ export function DashboardRecentPayments({
   onViewAllPayments,
   onViewAllCoupons,
 }: DashboardRecentPaymentsProps) {
+  const navigate = useNavigate();
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-stretch">
       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex flex-col min-h-[400px]">
@@ -42,7 +44,13 @@ export function DashboardRecentPayments({
               return (
                 <div
                   key={coupon.id}
-                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                  onClick={() => {
+                    const projetId = coupon.tranche?.projet_id || coupon.souscription?.tranche?.projet_id;
+                    if (projetId) {
+                      navigate(`/projets/${projetId}/echeancier`);
+                    }
+                  }}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -67,17 +75,14 @@ export function DashboardRecentPayments({
                     </p>
                     <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
                       <Users className="w-3 h-3" />
-                      {coupon.investor_count || 0} investisseur
-                      {(coupon.investor_count || 0) > 1 ? 's' : ''}
+                      {coupon.investor_count || 0} investisseur{(coupon.investor_count || 0) > 1 ? 's' : ''}
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-semibold text-slate-700">
                       {formatDate(coupon.prochaine_date_coupon)}
                     </p>
-                    <p
-                      className={`text-xs mt-1 ${isOverdue ? 'text-red-600 font-semibold' : 'text-slate-500'}`}
-                    >
+                    <p className={`text-xs mt-1 ${isOverdue ? 'text-red-600 font-semibold' : 'text-slate-500'}`}>
                       {daysUntil === 0
                         ? "Aujourd'hui"
                         : isOverdue
@@ -115,11 +120,14 @@ export function DashboardRecentPayments({
               return (
                 <div
                   key={payment.id}
-                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                  onClick={() => navigate(`/paiements/${payment.id}`)}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="font-bold text-slate-900">{formatCurrency(payment.montant)}</p>
+                      <p className="font-bold text-slate-900">
+                        {formatCurrency(payment.montant)}
+                      </p>
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                           payment.statut?.toLowerCase() === 'payé' ||
@@ -132,15 +140,16 @@ export function DashboardRecentPayments({
                                 : 'bg-gray-100 text-gray-700'
                         }`}
                       >
-                        {payment.statut?.charAt(0).toUpperCase() +
-                          payment.statut?.slice(1).toLowerCase()}
+                        {payment.statut?.charAt(0).toUpperCase() + payment.statut?.slice(1).toLowerCase()}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600 mt-1">
                       {payment.tranche?.projet?.projet || 'Projet'} •{' '}
                       {payment.tranche?.tranche_name || 'Tranche'}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">{payment.type || 'Coupon'}</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {payment.type || 'Coupon'}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-semibold text-slate-700">

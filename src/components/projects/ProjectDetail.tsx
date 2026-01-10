@@ -11,6 +11,7 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
 import { copyToClipboard } from '../../utils/clipboard';
+import { isUUID, slugify } from '../../utils/slugify';
 import { Tooltip } from '../common/Tooltip';
 import { Copy } from 'lucide-react';
 import { EcheancierModal } from '../coupons/EcheancierModal';
@@ -177,16 +178,36 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     setLoading(true);
 
     try {
+      // Determine if projectId is a UUID or a slug
+      let actualProjectId = projectId;
+
+      if (!isUUID(projectId)) {
+        // It's a slug, find the project by slugified name
+        const { data: allProjects } = await supabase
+          .from('projets')
+          .select('id, projet');
+
+        const matchingProject = allProjects?.find(
+          p => slugify(p.projet) === projectId
+        );
+
+        if (!matchingProject) {
+          throw new Error('Projet non trouvé');
+        }
+
+        actualProjectId = matchingProject.id;
+      }
+
       const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
-        supabase.from('projets').select('*').eq('id', projectId).maybeSingle(),
-        supabase.from('tranches').select('*').eq('projet_id', projectId).order('date_emission', { ascending: true }),
+        supabase.from('projets').select('*').eq('id', actualProjectId).maybeSingle(),
+        supabase.from('tranches').select('*').eq('projet_id', actualProjectId).order('date_emission', { ascending: true }),
         supabase.from('souscriptions').select(`
           id, id_souscription, date_souscription, nombre_obligations, montant_investi,
           coupon_net, investisseur_id, cgp,
           investisseur:investisseurs(nom_raison_sociale, cgp),
           tranche:tranches(tranche_name, date_emission)
-        `).eq('projet_id', projectId).order('date_souscription', { ascending: false }),
-        supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', projectId).order('date_paiement', { ascending: false }),
+        `).eq('projet_id', actualProjectId).order('date_souscription', { ascending: false }),
+        supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', actualProjectId).order('date_paiement', { ascending: false }),
         supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut')
       ]);
 
@@ -196,7 +217,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         calendarExportsRes = await supabase
           .from('calendar_exports')
           .select('is_outdated')
-          .eq('project_id', projectId)
+          .eq('project_id', actualProjectId)
           .eq('is_outdated', true)
           .maybeSingle();
       } catch (err) {
