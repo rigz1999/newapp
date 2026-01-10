@@ -23,6 +23,8 @@ serve(async req => {
   }
 
   try {
+    console.log('=== Password reset function invoked ===');
+
     // Create admin client for database operations
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
@@ -33,6 +35,8 @@ serve(async req => {
 
     // Parse request body
     const { email }: PasswordResetRequest = await req.json();
+
+    console.log('Processing password reset request for:', email);
 
     if (!email) {
       throw new Error('Email is required');
@@ -45,13 +49,18 @@ serve(async req => {
     }
 
     // Check if user exists with this email
-    const { data: users, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+    // Use getUserByEmail which is more efficient than listing all users
+    const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
 
-    if (userError) {
-      throw new Error('Failed to verify user');
-    }
+    // Log for debugging (will show in Supabase logs)
+    console.log('User lookup result:', {
+      email,
+      userFound: !!user,
+      errorCode: userError?.code,
+      errorMessage: userError?.message,
+    });
 
-    const userExists = users.users.some(user => user.email === email);
+    const userExists = !!user && !userError;
 
     // For security, we don't reveal if user exists or not
     // We always return success but only send email if user exists

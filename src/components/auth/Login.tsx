@@ -44,18 +44,26 @@ export function Login() {
     setError('');
 
     try {
-      // Use Supabase built-in password reset (temporary fallback)
-      const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+      // Call custom edge function to send password reset email via Resend
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email: email.toLowerCase().trim() },
       });
 
       if (error) {
+        console.error('Edge function invocation error:', error);
         throw error;
       }
 
+      if (data?.error) {
+        console.error('Edge function returned error:', data.error);
+        throw new Error(data.error);
+      }
+
+      console.log('Password reset request successful:', data);
       setResetEmailSent(true);
       setLoading(false);
     } catch (error) {
+      console.error('Password reset failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Une erreur est survenue';
       setError(errorMessage);
       setLoading(false);
