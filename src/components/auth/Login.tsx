@@ -83,15 +83,22 @@ export function Login() {
             </h1>
             <p className="text-center text-slate-600 mb-8">
               {resetEmailSent
-                ? 'Un email de réinitialisation a été envoyé'
-                : 'Entrez votre email pour réinitialiser votre mot de passe'}
+                ? 'Vérifiez votre boîte de réception'
+                : 'Entrez votre e-mail pour réinitialiser votre mot de passe'}
             </p>
 
             {resetEmailSent ? (
               <div>
-                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-6">
-                  Un email avec un lien de réinitialisation a été envoyé à <strong>{email}</strong>.
-                  Vérifiez votre boîte de réception.
+                <div className="bg-blue-50 border border-blue-200 text-blue-900 px-4 py-3 rounded-lg text-sm mb-6">
+                  <p className="font-medium mb-2">
+                    Un e-mail de réinitialisation a été envoyé si un compte existe avec cette adresse.
+                  </p>
+                  <p className="text-xs text-blue-800 mb-2">Vous ne recevez rien ?</p>
+                  <ul className="text-xs text-blue-800 space-y-1 ml-4 list-disc">
+                    <li>Vérifiez vos spams</li>
+                    <li>Assurez-vous d'avoir été invité par votre administrateur</li>
+                    <li>Contactez support@finixar.com pour vérifier votre compte</li>
+                  </ul>
                 </div>
                 <button
                   onClick={() => {
