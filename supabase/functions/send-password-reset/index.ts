@@ -331,12 +331,23 @@ serve(async req => {
 
       if (!emailResponse.ok) {
         const errorText = await emailResponse.text();
-        console.error('Resend API error:', errorText);
+        console.error('Resend API error:', {
+          status: emailResponse.status,
+          statusText: emailResponse.statusText,
+          error: errorText,
+          email: email,
+          hasApiKey: !!RESEND_API_KEY,
+        });
         throw new Error('Failed to send email');
       }
 
       const emailData = await emailResponse.json();
-      console.log('Password reset email sent successfully:', emailData.id);
+      console.log('Password reset email sent successfully:', {
+        emailId: emailData.id,
+        to: email,
+      });
+    } else {
+      console.log('Password reset requested for non-existent user:', email);
     }
 
     // Always return success (don't reveal if user exists)
