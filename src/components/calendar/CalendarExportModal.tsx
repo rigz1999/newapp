@@ -72,12 +72,20 @@ export function CalendarExportModal({
         }
       );
 
+      console.log('Edge function response:', { data, invokeError });
+
       if (invokeError) {
-        throw invokeError;
+        console.error('Invoke error:', invokeError);
+        throw new Error(invokeError.message || 'Erreur lors de l\'appel de la fonction');
       }
 
-      if (data.error) {
+      if (data?.error) {
+        console.error('Data error:', data.error);
         throw new Error(data.error);
+      }
+
+      if (!data?.summary) {
+        throw new Error('Réponse invalide de la fonction d\'export');
       }
 
       setSuccess(data.summary);
@@ -85,21 +93,39 @@ export function CalendarExportModal({
       console.error('Error exporting to calendar:', err);
 
       // Check for specific error messages
-      const errorMessage = err instanceof Error ? err.message : String(err);
+      let errorMessage = '';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        errorMessage = JSON.stringify(err);
+      } else {
+        errorMessage = String(err);
+      }
 
-      if (errorMessage.includes('No email connection found') ||
-          errorMessage.includes('connect your email')) {
+      console.log('Parsed error message:', errorMessage);
+
+      // Normalize error message for comparison (lowercase)
+      const normalizedError = errorMessage.toLowerCase();
+
+      if (normalizedError.includes('no email connection') ||
+          normalizedError.includes('connect your email') ||
+          normalizedError.includes('email connection found')) {
         setIsConnectionError(true);
         setError(
           'Aucune connexion e-mail trouvée. Veuillez connecter votre compte Outlook dans les Paramètres pour activer l\'export vers le calendrier.'
         );
-      } else if (errorMessage.includes('Calendar export is only supported for Microsoft')) {
+      } else if (normalizedError.includes('calendar export is only supported') ||
+                 normalizedError.includes('microsoft outlook') ||
+                 normalizedError.includes('only supported for microsoft')) {
         setIsConnectionError(true);
         setError(
           'L\'export calendrier n\'est disponible que pour les comptes Microsoft Outlook. Veuillez reconnecter votre e-mail avec un compte Microsoft.'
         );
-      } else if (errorMessage.includes('Failed to refresh access token') ||
-                 errorMessage.includes('reconnect your email')) {
+      } else if (normalizedError.includes('failed to refresh') ||
+                 normalizedError.includes('access token') ||
+                 normalizedError.includes('reconnect your email') ||
+                 normalizedError.includes('token expired') ||
+                 normalizedError.includes('token expires')) {
         setIsConnectionError(true);
         setError(
           'Votre connexion e-mail a expiré. Veuillez reconnecter votre compte Outlook dans les Paramètres pour continuer.'
