@@ -8,6 +8,7 @@ import { Spinner } from '../common/Spinner';
 interface InviteEmetteurModalProps {
   projectId: string;
   projectName: string;
+  projectEmetteur?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -15,6 +16,7 @@ interface InviteEmetteurModalProps {
 export default function InviteEmetteurModal({
   projectId,
   projectName,
+  projectEmetteur,
   onClose,
   onSuccess,
 }: InviteEmetteurModalProps) {
@@ -67,7 +69,12 @@ export default function InviteEmetteurModal({
       });
 
       if (error) throw error;
-      setAvailableEmetteurs(data.map((item: any) => item.emetteur_name) || []);
+      const emetteurs = data.map((item: any) => item.emetteur_name) || [];
+      setAvailableEmetteurs(emetteurs);
+
+      if (projectEmetteur && emetteurs.includes(projectEmetteur)) {
+        setSelectedEmetteur(projectEmetteur);
+      }
     } catch (error: any) {
       console.error('Error loading emetteurs:', error);
       toast.error('Erreur lors du chargement des émetteurs');
@@ -121,8 +128,8 @@ export default function InviteEmetteurModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-md w-full my-8 shadow-xl">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Inviter un émetteur</h2>
@@ -137,7 +144,7 @@ export default function InviteEmetteurModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[calc(90vh-8rem)] overflow-y-auto">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Émetteur

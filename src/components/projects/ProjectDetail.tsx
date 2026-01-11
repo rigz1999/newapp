@@ -37,6 +37,7 @@ import {
   ChevronDown,
   ChevronRight,
   Mail,
+  MoreVertical,
 } from 'lucide-react';
 import { DashboardSkeleton } from '../common/Skeleton';
 
@@ -145,6 +146,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     trancheName?: string;
   }>({});
   const [hasOutdatedExport, setHasOutdatedExport] = useState(false);
+  const [showActionsDropdown, setShowActionsDropdown] = useState(false);
 
   // 1) AJOUTÉ : état pour tranches développées
   const [expandedTrancheIds, setExpandedTrancheIds] = useState<Set<string>>(new Set());
@@ -176,6 +178,20 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   useEffect(() => {
     fetchProjectData();
   }, [projectId]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('[data-actions-dropdown]')) {
+        setShowActionsDropdown(false);
+      }
+    };
+
+    if (showActionsDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showActionsDropdown]);
 
   const fetchProjectData = async () => {
     if (!projectId) return;
@@ -732,45 +748,62 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {(isSuperAdmin || _organization.role === 'admin') && (
-              <button
-                onClick={() => setShowInviteEmetteur(true)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-700 bg-white border border-green-600 rounded-lg hover:bg-green-50 transition-colors shadow-sm"
-                aria-label="Inviter un émetteur"
-              >
-                <Mail className="w-4 h-4" aria-hidden="true" />
-                Inviter un émetteur
-              </button>
-            )}
+          <div className="relative" data-actions-dropdown>
             <button
-              onClick={() => {
-                setCalendarExportScope({
-                  projectId: project.id,
-                  projectName: project.projet,
-                });
-                setShowCalendarExport(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-finixar-brand-blue bg-white border border-finixar-brand-blue rounded-lg hover:bg-blue-50 transition-colors shadow-sm"
-              aria-label="Exporter au calendrier"
-            >
-              <Calendar className="w-4 h-4" aria-hidden="true" />
-              Calendrier
-            </button>
-            <button
-              onClick={() => {
-                setEditedProject({
-                  ...project,
-                  periodicite_coupons: normalizePeriodicite(project.periodicite_coupons)
-                });
-                setShowEditProject(true);
-              }}
+              onClick={() => setShowActionsDropdown(!showActionsDropdown)}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-              aria-label="Modifier le projet"
+              aria-label="Actions"
             >
-              <Edit className="w-4 h-4" aria-hidden="true" />
-              Modifier
+              Actions
+              <ChevronDown className="w-4 h-4" aria-hidden="true" />
             </button>
+
+            {showActionsDropdown && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 z-10 py-1">
+                <button
+                  onClick={() => {
+                    setEditedProject({
+                      ...project,
+                      periodicite_coupons: normalizePeriodicite(project.periodicite_coupons)
+                    });
+                    setShowEditProject(true);
+                    setShowActionsDropdown(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Modifier le projet
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCalendarExportScope({
+                      projectId: project.id,
+                      projectName: project.projet,
+                    });
+                    setShowCalendarExport(true);
+                    setShowActionsDropdown(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Exporter au calendrier
+                </button>
+
+                {(isSuperAdmin || _organization.role === 'admin') && (
+                  <button
+                    onClick={() => {
+                      setShowInviteEmetteur(true);
+                      setShowActionsDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Inviter un émetteur
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1609,6 +1642,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           <InviteEmetteurModal
             projectId={project.id}
             projectName={project.projet}
+            projectEmetteur={project.emetteur}
             onClose={() => setShowInviteEmetteur(false)}
             onSuccess={() => {
               setShowInviteEmetteur(false);
