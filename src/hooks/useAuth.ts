@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import { logger } from '../utils/logger';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -63,7 +64,8 @@ export function useAuth() {
       setIsAdmin(!!isSuperAdminUser); // Keep for backward compatibility
       setUserRole(orgMembership?.role || null);
       setLoading(false);
-    } catch {
+    } catch (error) {
+      logger.error('Failed to check admin status', error);
       setIsAdmin(false);
       setIsSuperAdmin(false);
       setIsOrgAdmin(false);

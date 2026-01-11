@@ -10,6 +10,7 @@ import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
 import { slugify } from '../../utils/slugify';
+import { logger } from '../../utils/logger';
 
 interface ProjectWithStats {
   id: string;
@@ -193,7 +194,9 @@ export function Projects({ organization }: ProjectsProps) {
       });
 
       setProjects(projectsWithStats);
-    } catch {
+    } catch (error) {
+      logger.error('Failed to fetch projects', error);
+      toast.error('Erreur lors du chargement des projets');
     } finally {
       setLoading(false);
     }
@@ -373,6 +376,7 @@ export function Projects({ organization }: ProjectsProps) {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
+          aria-label="Créer un nouveau projet"
           className="flex items-center gap-2 bg-finixar-action-create text-white px-4 py-2 rounded-lg hover:bg-finixar-action-create-hover transition-colors"
         >
           <Plus className="w-5 h-5" />

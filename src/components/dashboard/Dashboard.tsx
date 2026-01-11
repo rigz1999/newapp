@@ -11,6 +11,7 @@ import { DashboardStats } from './DashboardStats';
 import { DashboardAlerts } from './DashboardAlerts';
 import { DashboardQuickActions } from './DashboardQuickActions';
 import { DashboardRecentPayments } from './DashboardRecentPayments';
+import { DashboardChart } from './DashboardChart';
 import { formatCurrency } from '../../utils/formatters';
 import { logger } from '../../utils/logger';
 import {
@@ -19,7 +20,7 @@ import {
   type Payment,
   type UpcomingCoupon,
 } from '../../utils/dashboardAlerts';
-import { RefreshCw, AlertCircle, X, TrendingUp } from 'lucide-react';
+import { RefreshCw, AlertCircle, X } from 'lucide-react';
 
 // generateAlerts function now imported from utils/dashboardAlerts.ts
 
@@ -708,17 +709,6 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
     setMonthlyData(data);
   }, [selectedYear, startMonth, endMonth, chartSubscriptionsAll]);
 
-  // Chart max computed once
-  const chartMax = useMemo(() => {
-    if (!monthlyData.length) {
-      return 1;
-    }
-    return Math.max(
-      ...monthlyData.map(d => (viewMode === 'cumulative' ? d.cumulative || 0 : d.amount)),
-      1
-    );
-  }, [monthlyData, viewMode]);
-
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
       <div className="flex items-center justify-between mb-2">
@@ -728,6 +718,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
+          aria-label="Actualiser le tableau de bord"
           className="flex items-center gap-2 px-4 py-2 bg-finixar-brand-blue text-white rounded-lg hover:bg-finixar-brand-blue-hover transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -754,6 +745,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             </div>
             <button
               onClick={() => setError(null)}
+              aria-label="Fermer le message d'erreur"
               className="text-finixar-red hover:text-red-800 transition-colors"
             >
               <X className="w-4 h-4" />
@@ -785,110 +777,19 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
 
           <DashboardStats stats={stats} />
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900">Évolution des montants levés</h2>
-              <div className="flex items-center gap-4">
-                <select
-                  aria-label="Mode d'affichage"
-                  value={viewMode}
-                  onChange={e => setViewMode(e.target.value as 'monthly' | 'cumulative')}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent font-medium"
-                >
-                  <option value="monthly">Vue par mois</option>
-                  <option value="cumulative">Vue cumulée</option>
-                </select>
-                <select
-                  aria-label="Année"
-                  value={selectedYear}
-                  onChange={e => setSelectedYear(parseInt(e.target.value, 10))}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
-                >
-                  {Array.from({ length: 11 }, (_, i) => 2020 + i).map(year => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  aria-label="Plage de mois"
-                  value={`${startMonth}-${endMonth}`}
-                  onChange={e => {
-                    const [start, end] = e.target.value.split('-').map(Number);
-                    setStartMonth(start);
-                    setEndMonth(end);
-                  }}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
-                >
-                  <option value="0-11">Année complète</option>
-                  <option value="0-2">Q1 (Jan-Mar)</option>
-                  <option value="3-5">Q2 (Avr-Juin)</option>
-                  <option value="6-8">Q3 (Juil-Sep)</option>
-                  <option value="9-11">Q4 (Oct-Déc)</option>
-                  <option value="0-5">S1 (Jan-Juin)</option>
-                  <option value="6-11">S2 (Juil-Déc)</option>
-                </select>
-              </div>
-            </div>
-
-            {monthlyData.length === 0 ? (
-              <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white rounded-lg">
-                <div className="text-center text-slate-400">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Aucune donnée disponible</p>
-                </div>
-              </div>
-            ) : (
-              <div className="h-80 flex items-end justify-between gap-2 px-4 pb-4">
-                {monthlyData.map((data, index) => {
-                  const displayAmount =
-                    viewMode === 'cumulative' ? data.cumulative || 0 : data.amount;
-                  const heightPercentage = Math.max(
-                    (displayAmount / chartMax) * 85,
-                    displayAmount > 0 ? 5 : 0
-                  );
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center gap-2 h-full">
-                      <div className="relative group flex-1 w-full flex flex-col justify-end items-center">
-                        <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                          <div className="bg-slate-900 text-white px-3 py-2 rounded-lg shadow-lg text-xs whitespace-nowrap">
-                            <div className="font-semibold">{data.month}</div>
-                            {viewMode === 'monthly' ? (
-                              <div>{formatCurrency(data.amount)}</div>
-                            ) : (
-                              <>
-                                <div className="text-slate-300">
-                                  Mensuel: {formatCurrency(data.amount)}
-                                </div>
-                                <div className="font-semibold">
-                                  Cumulé: {formatCurrency(data.cumulative || 0)}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                          <div className="w-2 h-2 bg-slate-900 transform rotate-45 mx-auto -mt-1"></div>
-                        </div>
-                        {displayAmount > 0 && (
-                          <div className="mb-1 text-xs font-semibold text-slate-700 whitespace-nowrap">
-                            {formatCurrency(displayAmount)}
-                          </div>
-                        )}
-                        <div
-                          className={`w-full rounded-t-lg transition-all hover:opacity-90 cursor-pointer shadow-md ${
-                            viewMode === 'cumulative'
-                              ? 'bg-gradient-to-t from-finixar-purple to-finixar-teal hover:from-finixar-purple-hover hover:to-finixar-teal-hover'
-                              : 'bg-gradient-to-t from-finixar-teal to-finixar-purple hover:from-finixar-purple hover:to-finixar-teal'
-                          }`}
-                          style={{ height: `${heightPercentage}%` }}
-                        />
-                      </div>
-                      <span className="text-xs font-medium text-slate-600">{data.month}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <DashboardChart
+            monthlyData={monthlyData}
+            viewMode={viewMode}
+            selectedYear={selectedYear}
+            startMonth={startMonth}
+            endMonth={endMonth}
+            onViewModeChange={setViewMode}
+            onYearChange={setSelectedYear}
+            onRangeChange={(start, end) => {
+              setStartMonth(start);
+              setEndMonth(end);
+            }}
+          />
 
           <DashboardRecentPayments
             recentPayments={recentPayments}

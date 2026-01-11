@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { toast } from '../../utils/toast';
 import { Spinner } from '../common/Spinner';
+import { logger } from '../../utils/logger';
 
 interface InviteEmetteurModalProps {
   projectId: string;
@@ -15,6 +16,17 @@ interface InviteEmetteurModalProps {
   projectLastName?: string;
   onClose: () => void;
   onSuccess: () => void;
+}
+
+interface ProjectOrganization {
+  org_id: string | null;
+  organizations: {
+    name: string;
+  } | null;
+}
+
+interface EmetteurData {
+  emetteur_name: string;
 }
 
 export default function InviteEmetteurModal({
@@ -60,10 +72,11 @@ export default function InviteEmetteurModal({
 
       if (error) throw error;
 
-      setProjectOrgId(data.org_id);
-      setProjectOrgName((data.organizations as any)?.name || '');
-    } catch (error: any) {
-      console.error('Error loading project organization:', error);
+      const projectData = data as unknown as ProjectOrganization;
+      setProjectOrgId(projectData.org_id);
+      setProjectOrgName(projectData.organizations?.name || '');
+    } catch (error) {
+      logger.error('Error loading project organization', error);
       toast.error('Erreur lors du chargement du projet');
     }
   };
@@ -76,14 +89,15 @@ export default function InviteEmetteurModal({
       });
 
       if (error) throw error;
-      const emetteurs = data.map((item: any) => item.emetteur_name) || [];
+      const emetteursData = (data || []) as EmetteurData[];
+      const emetteurs = emetteursData.map((item) => item.emetteur_name);
       setAvailableEmetteurs(emetteurs);
 
       if (projectEmetteur && emetteurs.includes(projectEmetteur)) {
         setSelectedEmetteur(projectEmetteur);
       }
-    } catch (error: any) {
-      console.error('Error loading emetteurs:', error);
+    } catch (error) {
+      logger.error('Error loading emetteurs', error);
       toast.error('Erreur lors du chargement des émetteurs');
     } finally {
       setLoadingEmetteurs(false);
@@ -126,9 +140,10 @@ export default function InviteEmetteurModal({
       toast.success('Invitation envoyée avec succès');
       onSuccess();
       onClose();
-    } catch (error: any) {
-      console.error('Error inviting emetteur:', error);
-      toast.error(error.message || 'Erreur lors de l\'envoi de l\'invitation');
+    } catch (error) {
+      logger.error('Error inviting emetteur', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'envoi de l\'invitation';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -150,6 +165,7 @@ export default function InviteEmetteurModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Fermer la modal"
             className="text-gray-400 hover:text-gray-500"
             disabled={loading}
           >

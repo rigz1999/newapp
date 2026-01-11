@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { X } from 'lucide-react';
 import { PaymentProofUpload } from '../payments/PaymentProofUpload';
+import { logger } from '../../utils/logger';
+import { toast } from '../../utils/toast';
 
 interface QuickPaymentModalProps {
   onClose: () => void;
@@ -86,7 +88,9 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
 
       if (error) throw error;
       setProjects(data || []);
-    } catch {
+    } catch (error) {
+      logger.error('Failed to fetch projects', error);
+      toast.error('Erreur lors du chargement des projets');
     } finally {
       setLoading(false);
     }
@@ -129,7 +133,9 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
       );
 
       setTranches(tranchesWithStats);
-    } catch {
+    } catch (error) {
+      logger.error('Failed to fetch tranches', error);
+      toast.error('Erreur lors du chargement des tranches');
     } finally {
       setLoading(false);
     }
@@ -152,7 +158,9 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
 
       if (error) throw error;
       setSubscriptions((data || []) as Subscription[]);
-    } catch {
+    } catch (error) {
+      logger.error('Failed to fetch subscriptions', error);
+      toast.error('Erreur lors du chargement des souscriptions');
     } finally {
       setLoading(false);
     }
@@ -196,7 +204,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
               <h3 className="text-xl font-bold text-slate-900">Enregistrer un paiement de tranche</h3>
               <p className="text-sm text-slate-600 mt-1">Sélectionnez un projet et une tranche à payer</p>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <button onClick={onClose} aria-label="Fermer la modal" className="text-slate-400 hover:text-slate-600">
               <X className="w-6 h-6" />
             </button>
           </div>
