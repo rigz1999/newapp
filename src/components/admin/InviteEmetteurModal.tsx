@@ -255,12 +255,7 @@ export default function InviteEmetteurModal({
             />
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 space-y-2">
-            {projectOrgName && (
-              <p className="text-sm text-blue-900 font-medium">
-                Organisation : {projectOrgName}
-              </p>
-            )}
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
             <p className="text-sm text-blue-800">
               L'émetteur recevra un email pour activer son accès et pourra consulter le calendrier de paiement et les actualités du projet.
             </p>
