@@ -34,21 +34,21 @@ export interface Database {
           id: string
           org_id: string
           user_id: string
-          role: 'member' | 'admin'
+          role: 'member' | 'admin' | 'emetteur'
           created_at: string
         }
         Insert: {
           id?: string
           org_id: string
           user_id: string
-          role?: 'member' | 'admin'
+          role?: 'member' | 'admin' | 'emetteur'
           created_at?: string
         }
         Update: {
           id?: string
           org_id?: string
           user_id?: string
-          role?: 'member' | 'admin'
+          role?: 'member' | 'admin' | 'emetteur'
           created_at?: string
         }
       }
@@ -81,7 +81,7 @@ export interface Database {
           first_name: string
           last_name: string
           org_id: string
-          role: 'member' | 'admin'
+          role: 'member' | 'admin' | 'emetteur'
           invited_by: string
           token: string
           status: 'pending' | 'accepted' | 'expired'
@@ -95,7 +95,7 @@ export interface Database {
           first_name: string
           last_name: string
           org_id: string
-          role?: 'member' | 'admin'
+          role?: 'member' | 'admin' | 'emetteur'
           invited_by: string
           token: string
           status?: 'pending' | 'accepted' | 'expired'
@@ -109,13 +109,44 @@ export interface Database {
           first_name?: string
           last_name?: string
           org_id?: string
-          role?: 'member' | 'admin'
+          role?: 'member' | 'admin' | 'emetteur'
           invited_by?: string
           token?: string
           status?: 'pending' | 'accepted' | 'expired'
           expires_at?: string
           created_at?: string
           accepted_at?: string | null
+        }
+      }
+      emetteur_projects: {
+        Row: {
+          id: string
+          org_id: string
+          projet_id: string
+          user_id: string
+          emetteur_name: string
+          assigned_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          projet_id: string
+          user_id: string
+          emetteur_name: string
+          assigned_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          projet_id?: string
+          user_id?: string
+          emetteur_name?: string
+          assigned_by?: string | null
+          updated_at?: string
         }
       }
       projets: {

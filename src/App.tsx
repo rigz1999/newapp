@@ -36,6 +36,8 @@ const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
 const FormatProfiles = lazy(() => import('./components/admin/FormatProfiles'));
 const Members = lazy(() => import('./components/admin/Members'));
 const Settings = lazy(() => import('./components/admin/Settings'));
+const EmetteurDashboard = lazy(() => import('./components/emetteur/EmetteurDashboard'));
+const EmetteurProjectView = lazy(() => import('./components/emetteur/EmetteurProjectView'));
 
 // Default organization for super admin users
 const DEFAULT_ORG = { id: 'admin', name: 'Admin', role: 'admin' } as const;
@@ -245,6 +247,28 @@ function App(): JSX.Element {
                   <ErrorBoundary>
                     <Suspense fallback={<LoadingFallback />}>
                       <PaymentDetailPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+
+              {/* Emetteur Routes */}
+              <Route
+                path="emetteur"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <EmetteurDashboard />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="emetteur/projets/:projectId"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <EmetteurProjectView />
                     </Suspense>
                   </ErrorBoundary>
                 }
