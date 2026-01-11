@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { TrancheWizard } from '../tranches/TrancheWizard';
@@ -78,7 +78,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
   };
 
   // Fonction pour gérer les clics sur les alertes
-  const handleAlertClick = (alertId: string): void => {
+  const handleAlertClick = useCallback((alertId: string): void => {
     if (alertId === 'no-alerts') {
       return;
     } // Ne rien faire si message positif
@@ -94,7 +94,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
     } else if (alertId.startsWith('deadline-')) {
       navigate('/paiements');
     }
-  };
+  }, [navigate]);
 
   const [stats, setStats] = useState<Stats>({
     totalInvested: 0,

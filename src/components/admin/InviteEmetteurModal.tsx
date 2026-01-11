@@ -39,7 +39,6 @@ export default function InviteEmetteurModal({
   onClose,
   onSuccess,
 }: InviteEmetteurModalProps) {
-  const { user } = useAuth();
   const [projectOrgId, setProjectOrgId] = useState<string | null>(null);
   const [projectOrgName, setProjectOrgName] = useState<string>('');
   const [availableEmetteurs, setAvailableEmetteurs] = useState<string[]>([]);
@@ -122,7 +121,7 @@ export default function InviteEmetteurModal({
     try {
       setLoading(true);
 
-      const { data, error } = await supabase.functions.invoke('invite-emetteur', {
+      const { error } = await supabase.functions.invoke('invite-emetteur', {
         body: {
           email,
           firstName,

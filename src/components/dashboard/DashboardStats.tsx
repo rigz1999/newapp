@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { TrendingUp, CheckCircle2, Folder, Clock, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -21,7 +22,7 @@ interface DashboardStatsProps {
   stats: Stats;
 }
 
-function GrowthBadge({ percentage, label }: { percentage?: number; label: string }) {
+const GrowthBadge = memo(function GrowthBadge({ percentage, label }: { percentage?: number; label: string }) {
   if (percentage === undefined || percentage === null || isNaN(percentage)) {
     return (
       <span className="inline-flex items-center gap-0.5 text-xs font-medium text-slate-400">
@@ -46,9 +47,9 @@ function GrowthBadge({ percentage, label }: { percentage?: number; label: string
       <span className="text-slate-400 font-normal ml-1">{label}</span>
     </span>
   );
-}
+});
 
-export function DashboardStats({ stats }: DashboardStatsProps) {
+export const DashboardStats = memo(function DashboardStats({ stats }: DashboardStatsProps) {
   // Format current month in French
   const currentMonth = new Date().toLocaleDateString('fr-FR', {
     month: 'long',
@@ -129,4 +130,4 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       </div>
     </div>
   );
-}
+});

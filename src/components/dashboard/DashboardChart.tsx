@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -19,7 +19,7 @@ interface DashboardChartProps {
   onRangeChange: (start: number, end: number) => void;
 }
 
-export function DashboardChart({
+export const DashboardChart = memo(function DashboardChart({
   monthlyData,
   viewMode,
   selectedYear,
@@ -145,4 +145,4 @@ export function DashboardChart({
       )}
     </div>
   );
-}
+});

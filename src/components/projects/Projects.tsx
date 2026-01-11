@@ -166,30 +166,58 @@ export function Projects({ organization }: ProjectsProps) {
     return filtered;
   }, [projects, advancedFilters.filters.search]);
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     setLoading(true);
     try {
-      const [projectsRes, tranchesRes, subscriptionsRes] = await Promise.all([
-        supabase.from('projets').select('*').order('created_at', { ascending: false }),
-        supabase.from('tranches').select('id, projet_id'),
-        supabase.from('souscriptions').select('montant_investi, investisseur_id, tranche:tranches!inner(projet_id)')
-      ]);
+      // Fetch projects with selected fields only
+      const projectsRes = await supabase
+        .from('projets')
+        .select('id, projet, emetteur, siren_emetteur, representant_masse, email_representant_masse, date_emission, montant_total, org_id, created_at, date_remboursement_initial, periodicite, taux_nominal')
+        .order('created_at', { ascending: false });
+
+      if (projectsRes.error) throw projectsRes.error;
 
       const projectsData = projectsRes.data || [];
+
+      // Batch fetch stats for all projects
+      const projectIds = projectsData.map(p => p.id);
+
+      const [tranchesRes, subscriptionsRes] = await Promise.all([
+        supabase.from('tranches').select('id, projet_id').in('projet_id', projectIds),
+        supabase
+          .from('souscriptions')
+          .select('montant_investi, investisseur_id, tranche:tranches!inner(projet_id)')
+          .in('tranche.projet_id', projectIds)
+      ]);
+
       const tranchesData = tranchesRes.data || [];
       const subscriptionsData = subscriptionsRes.data || [];
 
-      const projectsWithStats = projectsData.map((project: any) => {
-        const projectTranches = tranchesData.filter((t: any) => t.projet_id === project.id);
-        const projectSubscriptions = subscriptionsData.filter((s: any) => s.tranche?.projet_id === project.id);
-        const totalLeve = projectSubscriptions.reduce((sum: number, sub: any) => sum + (Number(sub.montant_investi) || 0), 0);
-        const uniqueInvestors = new Set(projectSubscriptions.map((s: any) => s.investisseur_id)).size;
+      // Build lookup maps for better performance
+      const tranchesMap = new Map<string, number>();
+      const subscriptionsMap = new Map<string, { total: number; investors: Set<string> }>();
 
+      tranchesData.forEach((t: any) => {
+        tranchesMap.set(t.projet_id, (tranchesMap.get(t.projet_id) || 0) + 1);
+      });
+
+      subscriptionsData.forEach((s: any) => {
+        const projetId = s.tranche?.projet_id;
+        if (!projetId) return;
+
+        const current = subscriptionsMap.get(projetId) || { total: 0, investors: new Set() };
+        current.total += Number(s.montant_investi) || 0;
+        current.investors.add(s.investisseur_id);
+        subscriptionsMap.set(projetId, current);
+      });
+
+      const projectsWithStats = projectsData.map((project: any) => {
+        const stats = subscriptionsMap.get(project.id);
         return {
           ...project,
-          tranches_count: projectTranches.length,
-          total_leve: totalLeve,
-          investisseurs_count: uniqueInvestors,
+          tranches_count: tranchesMap.get(project.id) || 0,
+          total_leve: stats?.total || 0,
+          investisseurs_count: stats?.investors.size || 0,
         };
       });
 
@@ -200,7 +228,7 @@ export function Projects({ organization }: ProjectsProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleDeleteProject = (projectId: string, projectName: string) => {
     setProjectToDelete({ id: projectId, name: projectName });

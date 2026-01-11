@@ -3,6 +3,7 @@
 // Path: src/components/Spinner.tsx
 // ============================================
 
+import { memo } from 'react';
 import { RefreshCw } from 'lucide-react';
 
 interface SpinnerProps {
@@ -12,7 +13,7 @@ interface SpinnerProps {
   fullScreen?: boolean;
 }
 
-export function Spinner({
+export const Spinner = memo(function Spinner({
   size = 'md',
   color = 'blue',
   text,
@@ -53,10 +54,10 @@ export function Spinner({
   }
 
   return spinner;
-}
+});
 
 // Spinner inline pour boutons
-export function ButtonSpinner({ size = 'sm' }: { size?: 'sm' | 'md' }) {
+export const ButtonSpinner = memo(function ButtonSpinner({ size = 'sm' }: { size?: 'sm' | 'md' }) {
   return (
     <div
       className={`${
@@ -64,20 +65,20 @@ export function ButtonSpinner({ size = 'sm' }: { size?: 'sm' | 'md' }) {
       } border-2 border-white border-t-transparent rounded-full animate-spin`}
     />
   );
-}
+});
 
 // Spinner pour cartes/sections
-export function CardSpinner({ text }: { text?: string }) {
+export const CardSpinner = memo(function CardSpinner({ text }: { text?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12">
       <RefreshCw className="w-8 h-8 text-slate-400 animate-spin mb-3" />
       {text && <p className="text-slate-600">{text}</p>}
     </div>
   );
-}
+});
 
 // Skeleton loader pour contenu
-export function SkeletonLoader({ lines = 3 }: { lines?: number }) {
+export const SkeletonLoader = memo(function SkeletonLoader({ lines = 3 }: { lines?: number }) {
   return (
     <div className="animate-pulse space-y-3">
       {Array.from({ length: lines }).map((_, i) => (
@@ -89,4 +90,4 @@ export function SkeletonLoader({ lines = 3 }: { lines?: number }) {
       ))}
     </div>
   );
-}
+});
