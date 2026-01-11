@@ -209,8 +209,8 @@ export function LandingPage(): JSX.Element {
               >
                 <div
                   style={{
-                    width: '120px',
-                    height: '36px',
+                    width: '140px',
+                    height: '40px',
                     overflow: 'hidden',
                     display: 'flex',
                     alignItems: 'center',
@@ -221,9 +221,9 @@ export function LandingPage(): JSX.Element {
                     src="/branding/logo/logo-full-blue.png"
                     alt="Logo Finixar - Plateforme de gestion d'actifs"
                     style={{
-                      height: '36px',
+                      height: '40px',
                       width: 'auto',
-                      transform: 'scale(0.85)',
+                      transform: 'scale(0.95)',
                       transformOrigin: 'left center',
                     }}
                   />
