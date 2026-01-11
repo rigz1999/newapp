@@ -15,9 +15,11 @@ import { isUUID, slugify } from '../../utils/slugify';
 import { Tooltip } from '../common/Tooltip';
 import { Copy } from 'lucide-react';
 import { EcheancierModal } from '../coupons/EcheancierModal';
-import { PaymentsModal } from '../payments/PaymentsModal';  // ✅ AJOUT
+import { PaymentsModal } from '../payments/PaymentsModal';
 import { ProjectActualites } from './ProjectActualites';
 import { CalendarExportModal } from '../calendar/CalendarExportModal';
+import InviteEmetteurModal from '../admin/InviteEmetteurModal';
+import { useAuth } from '../../hooks/useAuth';
 import {
   ArrowLeft,
   Edit,
@@ -34,6 +36,7 @@ import {
   UserCircle,
   ChevronDown,
   ChevronRight,
+  Mail,
 } from 'lucide-react';
 import { DashboardSkeleton } from '../common/Skeleton';
 
@@ -115,6 +118,7 @@ interface AlertState {
 export function ProjectDetail({ organization: _organization }: ProjectDetailProps) {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [tranches, setTranches] = useState<Tranche[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -131,8 +135,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   const [showAllTranches, setShowAllTranches] = useState(false);
   const [showSubscriptionsModal, setShowSubscriptionsModal] = useState(false);
   const [showTranchesModal, setShowTranchesModal] = useState(false);
-  const [showPaymentsModal, setShowPaymentsModal] = useState(false);  // ✅ AJOUT
+  const [showPaymentsModal, setShowPaymentsModal] = useState(false);
   const [showCalendarExport, setShowCalendarExport] = useState(false);
+  const [showInviteEmetteur, setShowInviteEmetteur] = useState(false);
   const [calendarExportScope, setCalendarExportScope] = useState<{
     projectId?: string;
     trancheId?: string;
@@ -728,6 +733,16 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           </div>
 
           <div className="flex items-center gap-2">
+            {(profile?.is_superadmin || organization.role === 'admin') && (
+              <button
+                onClick={() => setShowInviteEmetteur(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-700 bg-white border border-green-600 rounded-lg hover:bg-green-50 transition-colors shadow-sm"
+                aria-label="Inviter un émetteur"
+              >
+                <Mail className="w-4 h-4" aria-hidden="true" />
+                Inviter un émetteur
+              </button>
+            )}
             <button
               onClick={() => {
                 setCalendarExportScope({
@@ -1586,6 +1601,19 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             trancheId={calendarExportScope.trancheId}
             projectName={calendarExportScope.projectName}
             trancheName={calendarExportScope.trancheName}
+          />
+        )}
+
+        {/* Invite Emetteur Modal */}
+        {showInviteEmetteur && project && (
+          <InviteEmetteurModal
+            projectId={project.id}
+            projectName={project.projet}
+            onClose={() => setShowInviteEmetteur(false)}
+            onSuccess={() => {
+              setShowInviteEmetteur(false);
+              fetchProjectData();
+            }}
           />
         )}
       </div>

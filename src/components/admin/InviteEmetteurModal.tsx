@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../hooks/useOrganization';
 import { useAuth } from '../../hooks/useAuth';
-import { showToast } from '../../utils/toast';
+import { toast } from '../../utils/toast';
 import { Spinner } from '../common/Spinner';
 
 interface InviteEmetteurModalProps {
@@ -56,7 +55,7 @@ export default function InviteEmetteurModal({
       setProjectOrgName((data.organizations as any)?.name || '');
     } catch (error: any) {
       console.error('Error loading project organization:', error);
-      showToast.error('Erreur lors du chargement du projet');
+      toast.error('Erreur lors du chargement du projet');
     }
   };
 
@@ -71,7 +70,7 @@ export default function InviteEmetteurModal({
       setAvailableEmetteurs(data.map((item: any) => item.emetteur_name) || []);
     } catch (error: any) {
       console.error('Error loading emetteurs:', error);
-      showToast.error('Erreur lors du chargement des émetteurs');
+      toast.error('Erreur lors du chargement des émetteurs');
     } finally {
       setLoadingEmetteurs(false);
     }
@@ -83,12 +82,12 @@ export default function InviteEmetteurModal({
     const emetteurName = isCustom ? customEmetteurName : selectedEmetteur;
 
     if (!emetteurName || !email || !firstName || !lastName) {
-      showToast.error('Veuillez remplir tous les champs');
+      toast.error('Veuillez remplir tous les champs');
       return;
     }
 
     if (!projectOrgId) {
-      showToast.error('Organisation du projet non trouvée');
+      toast.error('Organisation du projet non trouvée');
       return;
     }
 
@@ -110,12 +109,12 @@ export default function InviteEmetteurModal({
 
       if (error) throw error;
 
-      showToast.success('Invitation envoyée avec succès');
+      toast.success('Invitation envoyée avec succès');
       onSuccess();
       onClose();
     } catch (error: any) {
       console.error('Error inviting emetteur:', error);
-      showToast.error(error.message || 'Erreur lors de l\'envoi de l\'invitation');
+      toast.error(error.message || 'Erreur lors de l\'envoi de l\'invitation');
     } finally {
       setLoading(false);
     }
