@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
@@ -127,11 +128,10 @@ export default function InviteEmetteurModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
       onClick={onClose}
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
     >
       <div
         className="bg-white rounded-lg max-w-md w-full max-h-[90vh] shadow-xl flex flex-col"
@@ -287,6 +287,7 @@ export default function InviteEmetteurModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
