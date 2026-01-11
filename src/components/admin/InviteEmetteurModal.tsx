@@ -10,6 +10,9 @@ interface InviteEmetteurModalProps {
   projectId: string;
   projectName: string;
   projectEmetteur?: string;
+  projectEmail?: string;
+  projectFirstName?: string;
+  projectLastName?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -18,6 +21,9 @@ export default function InviteEmetteurModal({
   projectId,
   projectName,
   projectEmetteur,
+  projectEmail,
+  projectFirstName,
+  projectLastName,
   onClose,
   onSuccess,
 }: InviteEmetteurModalProps) {
@@ -28,9 +34,9 @@ export default function InviteEmetteurModal({
   const [selectedEmetteur, setSelectedEmetteur] = useState('');
   const [isCustom, setIsCustom] = useState(false);
   const [customEmetteurName, setCustomEmetteurName] = useState('');
-  const [email, setEmail] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState(projectEmail || '');
+  const [firstName, setFirstName] = useState(projectFirstName || '');
+  const [lastName, setLastName] = useState(projectLastName || '');
   const [loading, setLoading] = useState(false);
   const [loadingEmetteurs, setLoadingEmetteurs] = useState(true);
 

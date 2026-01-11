@@ -1643,6 +1643,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             projectId={project.id}
             projectName={project.projet}
             projectEmetteur={project.emetteur}
+            projectEmail={project.email_representant || undefined}
+            projectFirstName={project.prenom_representant || undefined}
+            projectLastName={project.nom_representant || undefined}
             onClose={() => setShowInviteEmetteur(false)}
             onSuccess={() => {
               setShowInviteEmetteur(false);
