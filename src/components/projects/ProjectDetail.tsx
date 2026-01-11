@@ -733,7 +733,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           </div>
 
           <div className="flex items-center gap-2">
-            {(profile?.is_superadmin || organization.role === 'admin') && (
+            {(profile?.is_superadmin || _organization.role === 'admin') && (
               <button
                 onClick={() => setShowInviteEmetteur(true)}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-700 bg-white border border-green-600 rounded-lg hover:bg-green-50 transition-colors shadow-sm"
