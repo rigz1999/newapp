@@ -1,7 +1,24 @@
-import { AlertTriangle, Clock, Shield, Lock, CheckCircle, ArrowRight, Menu, X, ChevronRight, Upload, TrendingUp, Users, FileText, BarChart3, UserCheck, Zap, Database, Loader2 } from 'lucide-react';
+import {
+  Clock,
+  Shield,
+  Lock,
+  CheckCircle,
+  ArrowRight,
+  Menu,
+  X,
+  Upload,
+  TrendingUp,
+  Users,
+  FileText,
+  BarChart3,
+  UserCheck,
+  Zap,
+  Database,
+  Loader2,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-export function LandingPage() {
+export function LandingPage(): JSX.Element {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -9,35 +26,48 @@ export function LandingPage() {
   // Add SEO meta tags and structured data
   useEffect(() => {
     // Set page title
-    document.title = 'Finixar - Plateforme de Gestion d\'Actifs | Automatisez votre Gestion';
+    document.title = "Finixar - Plateforme de Gestion d'Actifs | Automatisez votre Gestion";
 
     // Add meta description
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', 'Finixar automatise la gestion de vos actifs financiers. Récupérez 15h par semaine, éliminez 98% des erreurs. Gestion de projets, coupons et investisseurs en toute conformité RGPD.');
+      metaDescription.setAttribute(
+        'content',
+        'Finixar automatise la gestion de vos actifs financiers. Récupérez 15h par semaine, éliminez 98% des erreurs. Gestion de projets, coupons et investisseurs en toute conformité RGPD.'
+      );
     } else {
       const meta = document.createElement('meta');
       meta.name = 'description';
-      meta.content = 'Finixar automatise la gestion de vos actifs financiers. Récupérez 15h par semaine, éliminez 98% des erreurs. Gestion de projets, coupons et investisseurs en toute conformité RGPD.';
+      meta.content =
+        'Finixar automatise la gestion de vos actifs financiers. Récupérez 15h par semaine, éliminez 98% des erreurs. Gestion de projets, coupons et investisseurs en toute conformité RGPD.';
       document.head.appendChild(meta);
     }
 
     // Add OpenGraph meta tags
     const ogTags = [
-      { property: 'og:title', content: 'Finixar - Plateforme de Gestion d\'Actifs' },
-      { property: 'og:description', content: 'Récupérez 15h par semaine et éliminez 98% des erreurs de gestion avec Finixar. Automatisation complète pour gestionnaires d\'actifs.' },
+      { property: 'og:title', content: "Finixar - Plateforme de Gestion d'Actifs" },
+      {
+        property: 'og:description',
+        content:
+          "Récupérez 15h par semaine et éliminez 98% des erreurs de gestion avec Finixar. Automatisation complète pour gestionnaires d'actifs.",
+      },
       { property: 'og:type', content: 'website' },
       { property: 'og:url', content: 'https://app.finixar.com' },
       { property: 'og:image', content: 'https://app.finixar.com/images/dashboard.png' },
       { property: 'og:locale', content: 'fr_FR' },
       { name: 'twitter:card', content: 'summary_large_image' },
-      { name: 'twitter:title', content: 'Finixar - Plateforme de Gestion d\'Actifs' },
-      { name: 'twitter:description', content: 'Récupérez 15h par semaine et éliminez 98% des erreurs de gestion avec Finixar.' },
+      { name: 'twitter:title', content: "Finixar - Plateforme de Gestion d'Actifs" },
+      {
+        name: 'twitter:description',
+        content: 'Récupérez 15h par semaine et éliminez 98% des erreurs de gestion avec Finixar.',
+      },
       { name: 'twitter:image', content: 'https://app.finixar.com/images/dashboard.png' },
     ];
 
     ogTags.forEach(tag => {
-      const existing = document.querySelector(`meta[${tag.property ? 'property' : 'name'}="${tag.property || tag.name}"]`);
+      const existing = document.querySelector(
+        `meta[${tag.property ? 'property' : 'name'}="${tag.property || tag.name}"]`
+      );
       if (existing) {
         existing.setAttribute('content', tag.content);
       } else {
@@ -56,29 +86,30 @@ export function LandingPage() {
     const structuredData = {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
-      'name': 'Finixar',
-      'applicationCategory': 'BusinessApplication',
-      'description': 'Plateforme de gestion d\'actifs financiers pour automatiser vos échéances, centraliser vos données investisseurs et rester conforme RGPD.',
-      'offers': {
+      name: 'Finixar',
+      applicationCategory: 'BusinessApplication',
+      description:
+        "Plateforme de gestion d'actifs financiers pour automatiser vos échéances, centraliser vos données investisseurs et rester conforme RGPD.",
+      offers: {
         '@type': 'Offer',
-        'price': '0',
-        'priceCurrency': 'EUR',
-        'description': 'Tarifs sur mesure selon la taille de votre structure'
+        price: '0',
+        priceCurrency: 'EUR',
+        description: 'Tarifs sur mesure selon la taille de votre structure',
       },
-      'operatingSystem': 'Web',
-      'aggregateRating': {
+      operatingSystem: 'Web',
+      aggregateRating: {
         '@type': 'AggregateRating',
-        'ratingValue': '4.9',
-        'ratingCount': '50'
+        ratingValue: '4.9',
+        ratingCount: '50',
       },
-      'featureList': [
+      featureList: [
         'Gestion de projets et tranches',
         'Automatisation des coupons et échéances',
         'CRM investisseurs',
         'Conformité RGPD',
         'Rappels automatiques',
-        'Import/Export Excel'
-      ]
+        'Import/Export Excel',
+      ],
     };
 
     const script = document.createElement('script');
@@ -98,7 +129,7 @@ export function LandingPage() {
     };
   }, []);
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (email) {
       setIsSubmitting(true);
@@ -171,29 +202,59 @@ export function LandingPage() {
           <div className="flex items-center justify-between h-20">
             {/* Logo Area - 200px dedicated space */}
             <div className="w-[200px] flex items-center">
-              <a href="https://finixar.com" className="flex items-center" aria-label="Retour à la page d'accueil Finixar">
-                <img
-                  src="/branding/logo/logo-full-blue.png"
-                  alt="Logo Finixar - Plateforme de gestion d'actifs"
-                  className="h-10"
-                  width="160"
-                  height="40"
-                />
+              <a
+                href="https://finixar.com"
+                className="flex items-center"
+                aria-label="Retour à la page d'accueil Finixar"
+              >
+                <div
+                  style={{
+                    width: '120px',
+                    height: '36px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                  }}
+                >
+                  <img
+                    src="/branding/logo/logo-full-blue.png"
+                    alt="Logo Finixar - Plateforme de gestion d'actifs"
+                    style={{
+                      height: '36px',
+                      width: 'auto',
+                      transform: 'scale(0.85)',
+                      transformOrigin: 'left center',
+                    }}
+                  />
+                </div>
               </a>
             </div>
 
             {/* Center Links - Desktop */}
             <nav className="hidden md:flex items-center gap-8" aria-label="Navigation principale">
-              <a href="#fonctionnalites" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
+              <a
+                href="#fonctionnalites"
+                className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors"
+              >
                 Fonctionnalités
               </a>
-              <a href="#modules" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
+              <a
+                href="#modules"
+                className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors"
+              >
                 Modules
               </a>
-              <a href="#securite" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
+              <a
+                href="#securite"
+                className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors"
+              >
                 Sécurité
               </a>
-              <a href="#tarifs" className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors">
+              <a
+                href="#tarifs"
+                className="text-slate-700 hover:text-[#2E62FF] font-medium transition-colors"
+              >
                 Tarifs
               </a>
             </nav>
@@ -230,11 +291,37 @@ export function LandingPage() {
           {mobileMenuOpen && (
             <div id="mobile-menu" className="md:hidden py-4 border-t border-slate-200">
               <nav className="flex flex-col gap-4" aria-label="Navigation mobile">
-                <a href="#fonctionnalites" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Fonctionnalités</a>
-                <a href="#modules" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Modules</a>
-                <a href="#securite" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Sécurité</a>
-                <a href="#tarifs" onClick={() => setMobileMenuOpen(false)} className="text-slate-700 font-medium">Tarifs</a>
-                <a href="https://app.finixar.com" className="text-slate-700 font-semibold">Connexion</a>
+                <a
+                  href="#fonctionnalites"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-slate-700 font-medium"
+                >
+                  Fonctionnalités
+                </a>
+                <a
+                  href="#modules"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-slate-700 font-medium"
+                >
+                  Modules
+                </a>
+                <a
+                  href="#securite"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-slate-700 font-medium"
+                >
+                  Sécurité
+                </a>
+                <a
+                  href="#tarifs"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-slate-700 font-medium"
+                >
+                  Tarifs
+                </a>
+                <a href="https://app.finixar.com" className="text-slate-700 font-semibold">
+                  Connexion
+                </a>
                 <a
                   href="/demo"
                   className="px-6 py-2.5 bg-[#2E62FF] text-white font-semibold rounded-lg text-center"
@@ -258,7 +345,8 @@ export function LandingPage() {
               </h1>
 
               <p className="text-xl text-slate-600 mb-8 leading-relaxed">
-                Finixar élimine les tâches manuelles de gestion d'actifs. Automatisez vos échéances, centralisez vos données investisseurs et restez conforme en permanence.
+                Finixar élimine les tâches manuelles de gestion d'actifs. Automatisez vos échéances,
+                centralisez vos données investisseurs et restez conforme en permanence.
               </p>
 
               {/* Email CTA Form */}
@@ -266,7 +354,7 @@ export function LandingPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   placeholder="votre@email.com"
                   className="flex-1 px-6 py-4 bg-white border-2 border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2E62FF] transition-colors"
                   required
@@ -332,7 +420,8 @@ export function LandingPage() {
               Excel uniquement vs Finixar
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Les fichiers Excel exposent votre structure à des risques opérationnels, réglementaires et financiers.
+              Les fichiers Excel exposent votre structure à des risques opérationnels,
+              réglementaires et financiers.
             </p>
           </div>
 
@@ -345,31 +434,42 @@ export function LandingPage() {
                   <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-red-600 font-bold text-sm">✕</span>
                   </div>
-                  <span className="text-slate-700">Aucune traçabilité sur vos fichiers. Prouver votre conformité devient un calvaire administratif.</span>
+                  <span className="text-slate-700">
+                    Aucune traçabilité sur vos fichiers. Prouver votre conformité devient un
+                    calvaire administratif.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-red-600 font-bold text-sm">✕</span>
                   </div>
-                  <span className="text-slate-700">Saisie manuelle répétitive et erreurs de calcul fréquentes.</span>
+                  <span className="text-slate-700">
+                    Saisie manuelle répétitive et erreurs de calcul fréquentes.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-red-600 font-bold text-sm">✕</span>
                   </div>
-                  <span className="text-slate-700">Risques RGPD : sanctions pouvant atteindre 4% du chiffre d'affaires annuel.</span>
+                  <span className="text-slate-700">
+                    Risques RGPD : sanctions pouvant atteindre 4% du chiffre d'affaires annuel.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-red-600 font-bold text-sm">✕</span>
                   </div>
-                  <span className="text-slate-700">Dispersion des données entre plusieurs fichiers et versions.</span>
+                  <span className="text-slate-700">
+                    Dispersion des données entre plusieurs fichiers et versions.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-red-600 font-bold text-sm">✕</span>
                   </div>
-                  <span className="text-slate-700">Rappels manuels d'échéances souvent oubliés.</span>
+                  <span className="text-slate-700">
+                    Rappels manuels d'échéances souvent oubliés.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -380,23 +480,33 @@ export function LandingPage() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-slate-700">Historique complet des modifications pour une traçabilité totale.</span>
+                  <span className="text-slate-700">
+                    Historique complet des modifications pour une traçabilité totale.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-slate-700">Automatisation totale des calculs et saisies répétitives.</span>
+                  <span className="text-slate-700">
+                    Automatisation totale des calculs et saisies répétitives.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-slate-700">Conformité RGPD garantie avec chiffrement des données sensibles.</span>
+                  <span className="text-slate-700">
+                    Conformité RGPD garantie avec chiffrement des données sensibles.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-slate-700">Base de données centralisée : une seule source de vérité.</span>
+                  <span className="text-slate-700">
+                    Base de données centralisée : une seule source de vérité.
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-slate-700">Alertes automatiques par e-mail (J-30, J-7) pour toutes vos échéances.</span>
+                  <span className="text-slate-700">
+                    Alertes automatiques par e-mail (J-30, J-7) pour toutes vos échéances.
+                  </span>
                 </li>
               </ul>
             </div>
@@ -422,7 +532,8 @@ export function LandingPage() {
               <div className="text-3xl font-bold text-slate-900 mb-2">15h par semaine</div>
               <div className="text-sm font-semibold text-[#2E62FF] mb-3">Gain de temps</div>
               <p className="text-slate-600 leading-relaxed text-sm">
-                Automatisation complète des rappels et calculs. Finissez-en avec les tâches répétitives.
+                Automatisation complète des rappels et calculs. Finissez-en avec les tâches
+                répétitives.
               </p>
             </div>
 
@@ -479,7 +590,8 @@ export function LandingPage() {
                 Pilotez vos levées de fonds avec précision.
               </h2>
               <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                Suivez chaque tranche d'investissement. Visualisez les montants engagés, les dates limites et l'état d'avancement de vos projets en un coup d'œil.
+                Suivez chaque tranche d'investissement. Visualisez les montants engagés, les dates
+                limites et l'état d'avancement de vos projets en un coup d'œil.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -535,20 +647,28 @@ export function LandingPage() {
                 Centralisez vos coupons et échéances.
               </h2>
               <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                Visualisez tous vos coupons en un coup d'œil. Suivez les statuts (En Attente, Payés, En Retard), les montants et les échéances pour garantir un suivi parfait de vos paiements.
+                Visualisez tous vos coupons en un coup d'œil. Suivez les statuts (En Attente, Payés,
+                En Retard), les montants et les échéances pour garantir un suivi parfait de vos
+                paiements.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Vue d'ensemble complète de tous vos coupons</span>
+                  <span className="text-slate-700">
+                    Vue d'ensemble complète de tous vos coupons
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Suivi des statuts en temps réel (En Attente, Payés, En Retard)</span>
+                  <span className="text-slate-700">
+                    Suivi des statuts en temps réel (En Attente, Payés, En Retard)
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">Filtres et recherche avancée par projet, tranche ou investisseur</span>
+                  <span className="text-slate-700">
+                    Filtres et recherche avancée par projet, tranche ou investisseur
+                  </span>
                 </li>
               </ul>
             </div>
@@ -565,7 +685,8 @@ export function LandingPage() {
                 Échéancier automatisé et calculs précis.
               </h2>
               <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                Finixar calcule automatiquement toutes vos échéances de coupons. Visualisez votre calendrier de paiements, importez et exportez vos données vers Excel en un clic.
+                Finixar calcule automatiquement toutes vos échéances de coupons. Visualisez votre
+                calendrier de paiements, importez et exportez vos données vers Excel en un clic.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -638,8 +759,12 @@ export function LandingPage() {
                   <CheckCircle className="w-4 h-4 text-[#2E62FF]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900 mb-1">E-mails automatiques à J-7, J-14 et J-30</h3>
-                  <p className="text-sm text-slate-600">Vos investisseurs reçoivent des rappels avant chaque échéance</p>
+                  <h3 className="font-semibold text-slate-900 mb-1">
+                    E-mails automatiques à J-7, J-14 et J-30
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    Vos investisseurs reçoivent des rappels avant chaque échéance
+                  </p>
                 </div>
               </div>
 
@@ -649,7 +774,9 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-slate-900 mb-1">Envoi quotidien à 7h00</h3>
-                  <p className="text-sm text-slate-600">Aucune intervention requise, tout est automatisé</p>
+                  <p className="text-sm text-slate-600">
+                    Aucune intervention requise, tout est automatisé
+                  </p>
                 </div>
               </div>
 
@@ -659,7 +786,9 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-slate-900 mb-1">Configuration simple</h3>
-                  <p className="text-sm text-slate-600">Activez ou désactivez les périodes de rappel par cases à cocher</p>
+                  <p className="text-sm text-slate-600">
+                    Activez ou désactivez les périodes de rappel par cases à cocher
+                  </p>
                 </div>
               </div>
 
@@ -669,7 +798,9 @@ export function LandingPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-slate-900 mb-1">Zéro oubli de paiement</h3>
-                  <p className="text-sm text-slate-600">Garantit que tous vos coupons sont payés à temps</p>
+                  <p className="text-sm text-slate-600">
+                    Garantit que tous vos coupons sont payés à temps
+                  </p>
                 </div>
               </div>
             </div>
@@ -685,7 +816,8 @@ export function LandingPage() {
               Une plateforme complète pour toute votre équipe.
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Finixar couvre l'ensemble de vos besoins en gestion d'actifs, de la levée de fonds au reporting.
+              Finixar couvre l'ensemble de vos besoins en gestion d'actifs, de la levée de fonds au
+              reporting.
             </p>
           </div>
 
@@ -695,9 +827,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                 <TrendingUp className="w-6 h-6 text-[#2E62FF]" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                Gestion de projets
-              </h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Gestion de projets</h3>
               <p className="text-slate-600 leading-relaxed">
                 Suivez vos levées de fonds de A à Z avec une vision claire sur chaque tranche.
               </p>
@@ -708,9 +838,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-[#2E62FF]" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                Relations investisseurs
-              </h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Relations investisseurs</h3>
               <p className="text-slate-600 leading-relaxed">
                 Centralisez les données et RIB en toute sécurité dans un CRM dédié.
               </p>
@@ -721,9 +849,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                 <FileText className="w-6 h-6 text-[#2E62FF]" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                Échéancier & coupons
-              </h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Échéancier & coupons</h3>
               <p className="text-slate-600 leading-relaxed">
                 Automatisez les rappels et évitez les oublis grâce aux notifications intelligentes.
               </p>
@@ -734,9 +860,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                 <BarChart3 className="w-6 h-6 text-[#2E62FF]" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                Reporting & export
-              </h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Reporting & export</h3>
               <p className="text-slate-600 leading-relaxed">
                 Générez vos rapports Excel en un clic pour vos analyses et besoins de conformité.
               </p>
@@ -747,9 +871,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                 <Shield className="w-6 h-6 text-[#2E62FF]" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                Conformité & audit
-              </h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Conformité & audit</h3>
               <p className="text-slate-600 leading-relaxed">
                 Traçabilité complète de toutes les opérations pour une conformité garantie.
               </p>
@@ -760,9 +882,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
                 <UserCheck className="w-6 h-6 text-[#2E62FF]" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">
-                Gestion d'équipe
-              </h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Gestion d'équipe</h3>
               <p className="text-slate-600 leading-relaxed">
                 Droits d'accès granulaires et collaboration multi-utilisateurs en temps réel.
               </p>
@@ -779,7 +899,8 @@ export function LandingPage() {
               Concentrez-vous sur ce qui compte vraiment.
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Finixar s'occupe des tâches administratives. Vous vous concentrez sur le sourcing de projets et la relation avec vos investisseurs.
+              Finixar s'occupe des tâches administratives. Vous vous concentrez sur le sourcing de
+              projets et la relation avec vos investisseurs.
             </p>
           </div>
 
@@ -787,33 +908,30 @@ export function LandingPage() {
             {/* Benefit 1 */}
             <div className="text-left">
               <div className="text-6xl font-bold text-slate-200 mb-4">01</div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">
-                Automatisation totale
-              </h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">Automatisation totale</h3>
               <p className="text-slate-600 leading-relaxed">
-                Les rappels, calculs et exports se font automatiquement. Plus de temps perdu sur des tâches répétitives sans valeur ajoutée.
+                Les rappels, calculs et exports se font automatiquement. Plus de temps perdu sur des
+                tâches répétitives sans valeur ajoutée.
               </p>
             </div>
 
             {/* Benefit 2 */}
             <div className="text-left">
               <div className="text-6xl font-bold text-slate-200 mb-4">02</div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">
-                Collaboration fluide
-              </h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">Collaboration fluide</h3>
               <p className="text-slate-600 leading-relaxed">
-                Toute l'équipe travaille sur la même base de données en temps réel. Fini les conflits de versions et les données obsolètes.
+                Toute l'équipe travaille sur la même base de données en temps réel. Fini les
+                conflits de versions et les données obsolètes.
               </p>
             </div>
 
             {/* Benefit 3 */}
             <div className="text-left">
               <div className="text-6xl font-bold text-slate-200 mb-4">03</div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">
-                Données toujours à jour
-              </h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">Données toujours à jour</h3>
               <p className="text-slate-600 leading-relaxed">
-                Accédez instantanément aux dernières informations. Prenez vos décisions stratégiques sur des données fiables et actualisées.
+                Accédez instantanément aux dernières informations. Prenez vos décisions stratégiques
+                sur des données fiables et actualisées.
               </p>
             </div>
           </div>
@@ -821,7 +939,10 @@ export function LandingPage() {
       </section>
 
       {/* 7. SECURITY SECTION - Flow inspired */}
-      <section id="securite" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#1E40AF] to-[#2E62FF] text-white relative overflow-hidden">
+      <section
+        id="securite"
+        className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-[#1E40AF] to-[#2E62FF] text-white relative overflow-hidden"
+      >
         {/* Decorative background pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl"></div>
@@ -830,11 +951,10 @@ export function LandingPage() {
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Une technologie de confiance.
-            </h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Une technologie de confiance.</h2>
             <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-              Vos données sont protégées par des standards de sécurité conformes aux exigences des institutions financières.
+              Vos données sont protégées par des standards de sécurité conformes aux exigences des
+              institutions financières.
             </p>
           </div>
 
@@ -844,9 +964,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-bold mb-2">
-                Hébergement souverain
-              </h3>
+              <h3 className="text-lg font-bold mb-2">Hébergement souverain</h3>
               <p className="text-blue-100 text-sm leading-relaxed">
                 Données hébergées en France (Région Paris).
               </p>
@@ -857,9 +975,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
                 <Lock className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-bold mb-2">
-                Chiffrement des données
-              </h3>
+              <h3 className="text-lg font-bold mb-2">Chiffrement des données</h3>
               <p className="text-blue-100 text-sm leading-relaxed">
                 SSL/TLS et isolation des bases de données (Row-Level Security).
               </p>
@@ -870,9 +986,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-bold mb-2">
-                Audit-ready
-              </h3>
+              <h3 className="text-lg font-bold mb-2">Audit-ready</h3>
               <p className="text-blue-100 text-sm leading-relaxed">
                 Historique complet des modifications pour une traçabilité totale.
               </p>
@@ -883,9 +997,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
                 <Database className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-bold mb-2">
-                Disponibilité système
-              </h3>
+              <h3 className="text-lg font-bold mb-2">Disponibilité système</h3>
               <p className="text-blue-100 text-sm leading-relaxed">
                 Infrastructure haute disponibilité avec sauvegardes automatiques.
               </p>
@@ -898,9 +1010,7 @@ export function LandingPage() {
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold mb-2">
-                Authentification Microsoft
-              </h3>
+              <h3 className="text-lg font-bold mb-2">Authentification Microsoft</h3>
               <p className="text-blue-100 text-sm leading-relaxed">
                 Connexion sécurisée via vos comptes professionnels existants.
               </p>
@@ -911,9 +1021,7 @@ export function LandingPage() {
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
                 <Zap className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-bold mb-2">
-                Mises à jour continues
-              </h3>
+              <h3 className="text-lg font-bold mb-2">Mises à jour continues</h3>
               <p className="text-blue-100 text-sm leading-relaxed">
                 Améliorations régulières et patches de sécurité automatiques.
               </p>
@@ -925,11 +1033,10 @@ export function LandingPage() {
       {/* 8. PRICING with Dual CTAs */}
       <section id="tarifs" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">
-            Tarifs sur mesure
-          </h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-6">Tarifs sur mesure</h2>
           <p className="text-xl text-slate-600 mb-12">
-            Nos tarifs s'adaptent à la taille de votre structure et au nombre d'utilisateurs. Contactez-nous pour obtenir un devis personnalisé.
+            Nos tarifs s'adaptent à la taille de votre structure et au nombre d'utilisateurs.
+            Contactez-nous pour obtenir un devis personnalisé.
           </p>
           <div className="flex items-center justify-center">
             <a
@@ -968,9 +1075,24 @@ export function LandingPage() {
             <div>
               <h4 className="font-semibold text-white mb-4">Produit</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="#fonctionnalites" className="text-slate-400 hover:text-white transition-colors">Fonctionnalités</a></li>
-                <li><a href="#securite" className="text-slate-400 hover:text-white transition-colors">Sécurité</a></li>
-                <li><a href="#modules" className="text-slate-400 hover:text-white transition-colors">Modules</a></li>
+                <li>
+                  <a
+                    href="#fonctionnalites"
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    Fonctionnalités
+                  </a>
+                </li>
+                <li>
+                  <a href="#securite" className="text-slate-400 hover:text-white transition-colors">
+                    Sécurité
+                  </a>
+                </li>
+                <li>
+                  <a href="#modules" className="text-slate-400 hover:text-white transition-colors">
+                    Modules
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -978,9 +1100,30 @@ export function LandingPage() {
             <div>
               <h4 className="font-semibold text-white mb-4">Légal</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="mailto:contact@finixar.com?subject=Mentions légales" className="text-slate-400 hover:text-white transition-colors">Mentions légales</a></li>
-                <li><a href="mailto:contact@finixar.com?subject=Politique de confidentialité" className="text-slate-400 hover:text-white transition-colors">Politique de confidentialité (RGPD)</a></li>
-                <li><a href="mailto:contact@finixar.com?subject=CGU" className="text-slate-400 hover:text-white transition-colors">CGU</a></li>
+                <li>
+                  <a
+                    href="mailto:contact@finixar.com?subject=Mentions légales"
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    Mentions légales
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="mailto:contact@finixar.com?subject=Politique de confidentialité"
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    Politique de confidentialité (RGPD)
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="mailto:contact@finixar.com?subject=CGU"
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    CGU
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -988,8 +1131,22 @@ export function LandingPage() {
             <div>
               <h4 className="font-semibold text-white mb-4">Contact</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="mailto:contact@finixar.com" className="text-slate-400 hover:text-white transition-colors">Support client</a></li>
-                <li><a href="mailto:contact@finixar.com?subject=Contact" className="text-slate-400 hover:text-white transition-colors">Nous contacter</a></li>
+                <li>
+                  <a
+                    href="mailto:contact@finixar.com"
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    Support client
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="mailto:contact@finixar.com?subject=Contact"
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    Nous contacter
+                  </a>
+                </li>
                 <li className="text-slate-400">Bureau (Paris)</li>
               </ul>
             </div>
