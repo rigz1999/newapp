@@ -9,7 +9,7 @@ interface SidebarProps {
 
 export function Sidebar({ organization, activePage, onNavigate, onLogout }: SidebarProps) {
   return (
-    <aside className="w-64 bg-finixar-navy text-white flex flex-col fixed h-screen">
+    <aside className="w-64 bg-finixar-navy text-white flex flex-col fixed h-screen z-40">
       <div className="p-6">
         <div className="flex items-center gap-3 mb-8">
           <div className="bg-finixar-teal p-3 rounded-xl">
