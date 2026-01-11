@@ -164,6 +164,9 @@ Deno.serve(async (req: Request) => {
         token: tokenString,
         expires_at: expiresAt.toISOString(),
         status: 'pending',
+        emetteur_name: emetteurName,
+        projet_id: projetId,
+        projet_name: projetName,
       })
       .select()
       .single();

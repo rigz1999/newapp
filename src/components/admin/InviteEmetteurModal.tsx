@@ -19,8 +19,9 @@ export default function InviteEmetteurModal({
   onClose,
   onSuccess,
 }: InviteEmetteurModalProps) {
-  const { organization } = useOrganization();
   const { user } = useAuth();
+  const [projectOrgId, setProjectOrgId] = useState<string | null>(null);
+  const [projectOrgName, setProjectOrgName] = useState<string>('');
   const [availableEmetteurs, setAvailableEmetteurs] = useState<string[]>([]);
   const [selectedEmetteur, setSelectedEmetteur] = useState('');
   const [isCustom, setIsCustom] = useState(false);
@@ -32,16 +33,38 @@ export default function InviteEmetteurModal({
   const [loadingEmetteurs, setLoadingEmetteurs] = useState(true);
 
   useEffect(() => {
-    if (organization?.id) {
+    loadProjectOrganization();
+  }, [projectId]);
+
+  useEffect(() => {
+    if (projectOrgId) {
       loadAvailableEmetteurs();
     }
-  }, [organization]);
+  }, [projectOrgId]);
+
+  const loadProjectOrganization = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projets')
+        .select('org_id, organizations(name)')
+        .eq('id', projectId)
+        .single();
+
+      if (error) throw error;
+
+      setProjectOrgId(data.org_id);
+      setProjectOrgName((data.organizations as any)?.name || '');
+    } catch (error: any) {
+      console.error('Error loading project organization:', error);
+      showToast.error('Erreur lors du chargement du projet');
+    }
+  };
 
   const loadAvailableEmetteurs = async () => {
     try {
       setLoadingEmetteurs(true);
       const { data, error } = await supabase.rpc('get_org_emetteurs', {
-        p_org_id: organization!.id,
+        p_org_id: projectOrgId!,
       });
 
       if (error) throw error;
@@ -64,6 +87,11 @@ export default function InviteEmetteurModal({
       return;
     }
 
+    if (!projectOrgId) {
+      showToast.error('Organisation du projet non trouvée');
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -75,8 +103,8 @@ export default function InviteEmetteurModal({
           emetteurName,
           projetId: projectId,
           projetName: projectName,
-          orgId: organization!.id,
-          orgName: organization!.name,
+          orgId: projectOrgId,
+          orgName: projectOrgName,
         },
       });
 
@@ -213,7 +241,12 @@ export default function InviteEmetteurModal({
             />
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 space-y-2">
+            {projectOrgName && (
+              <p className="text-sm text-blue-900 font-medium">
+                Organisation : {projectOrgName}
+              </p>
+            )}
             <p className="text-sm text-blue-800">
               L'émetteur recevra un email pour activer son accès et pourra consulter le calendrier de paiement et les actualités du projet.
             </p>

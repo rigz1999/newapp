@@ -1,24 +1,20 @@
-// ============================================
-// Accept Invitation Edge Function
-// Handles invitation acceptance and account creation
-// bypassing email confirmation since invitation verifies email
-// ============================================
-
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, {
+      status: 200,
+      headers: corsHeaders,
+    });
   }
 
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return new Response(
       JSON.stringify({ error: 'Method not allowed. Use POST.' }),
@@ -27,7 +23,6 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body safely
     let requestBody;
     try {
       requestBody = await req.json();
@@ -49,7 +44,6 @@ serve(async (req) => {
       );
     }
 
-    // Validate password requirements
     const hasLowercase = /[a-z]/.test(password);
     const hasUppercase = /[A-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
@@ -63,7 +57,6 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client with service role (admin privileges)
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -75,11 +68,9 @@ serve(async (req) => {
       }
     );
 
-    // Initialize regular Supabase client for user session
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
-    // 1. Fetch and validate invitation
     const { data: invitation, error: invitationError } = await supabaseAdmin
       .from('invitations')
       .select(`
@@ -96,7 +87,6 @@ serve(async (req) => {
       );
     }
 
-    // Check invitation status
     if (invitation.status === 'accepted') {
       return new Response(
         JSON.stringify({ error: 'Cette invitation a déjà été utilisée' }),
@@ -111,12 +101,10 @@ serve(async (req) => {
       );
     }
 
-    // Check expiration date
     const expiresAt = new Date(invitation.expires_at);
     const now = new Date();
 
     if (expiresAt < now) {
-      // Mark as expired
       await supabaseAdmin
         .from('invitations')
         .update({ status: 'expired' })
@@ -128,7 +116,6 @@ serve(async (req) => {
       );
     }
 
-    // 2. Check if user already exists
     const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
     const userExists = existingUser?.users?.find(u => u.email === invitation.email);
 
@@ -142,11 +129,10 @@ serve(async (req) => {
       );
     }
 
-    // 3. Create user account using admin privileges (bypasses email confirmation)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: invitation.email,
       password: password,
-      email_confirm: true, // Auto-confirm email since invitation verifies it
+      email_confirm: true,
       user_metadata: {
         full_name: `${invitation.first_name} ${invitation.last_name}`,
       },
@@ -160,7 +146,6 @@ serve(async (req) => {
       );
     }
 
-    // 4. Create profile entry (required before creating membership due to foreign key constraint)
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert({
@@ -172,7 +157,6 @@ serve(async (req) => {
 
     if (profileError) {
       console.error('Error creating profile:', profileError);
-      // Rollback: delete the created user
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
 
       return new Response(
@@ -181,7 +165,6 @@ serve(async (req) => {
       );
     }
 
-    // 5. Create membership in organization
     const { error: membershipError } = await supabaseAdmin
       .from('memberships')
       .insert({
@@ -192,7 +175,6 @@ serve(async (req) => {
 
     if (membershipError) {
       console.error('Error creating membership:', membershipError);
-      // Rollback: delete profile and user
       await supabaseAdmin.from('profiles').delete().eq('id', authData.user.id);
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
 
@@ -202,7 +184,30 @@ serve(async (req) => {
       );
     }
 
-    // 6. Mark invitation as accepted
+    if (invitation.role === 'emetteur' && invitation.projet_id && invitation.emetteur_name) {
+      const { error: emetteurProjectError } = await supabaseAdmin
+        .from('emetteur_projects')
+        .insert({
+          org_id: invitation.org_id,
+          projet_id: invitation.projet_id,
+          user_id: authData.user.id,
+          emetteur_name: invitation.emetteur_name,
+          assigned_by: invitation.invited_by,
+        });
+
+      if (emetteurProjectError) {
+        console.error('Error creating emetteur_projects link:', emetteurProjectError);
+        await supabaseAdmin.from('memberships').delete().match({ user_id: authData.user.id, org_id: invitation.org_id });
+        await supabaseAdmin.from('profiles').delete().eq('id', authData.user.id);
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+
+        return new Response(
+          JSON.stringify({ error: 'Erreur lors de l\'assignation au projet' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     await supabaseAdmin
       .from('invitations')
       .update({
@@ -211,7 +216,6 @@ serve(async (req) => {
       })
       .eq('id', invitation.id);
 
-    // 7. Create a session for the user
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
     const { data: sessionData, error: sessionError } = await supabaseClient.auth.signInWithPassword({
       email: invitation.email,
@@ -220,8 +224,6 @@ serve(async (req) => {
 
     if (sessionError || !sessionData.session) {
       console.error('Error creating session:', sessionError);
-      // User is created but we couldn't log them in automatically
-      // They can still log in manually
       return new Response(
         JSON.stringify({
           success: true,
@@ -232,7 +234,6 @@ serve(async (req) => {
       );
     }
 
-    // 8. Return success with session
     return new Response(
       JSON.stringify({
         success: true,
