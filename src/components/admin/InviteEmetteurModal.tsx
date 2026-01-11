@@ -128,8 +128,14 @@ export default function InviteEmetteurModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg max-w-md w-full my-8 shadow-xl">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-lg max-w-md w-full max-h-[90vh] shadow-xl flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Inviter un émetteur</h2>
@@ -144,7 +150,8 @@ export default function InviteEmetteurModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[calc(90vh-8rem)] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="p-6 space-y-4 overflow-y-auto flex-1">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Émetteur
@@ -257,12 +264,13 @@ export default function InviteEmetteurModal({
               L'émetteur recevra un email pour activer son accès et pourra consulter le calendrier de paiement et les actualités du projet.
             </p>
           </div>
+          </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
               disabled={loading}
             >
               Annuler
