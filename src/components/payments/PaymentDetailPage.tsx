@@ -274,7 +274,7 @@ export function PaymentDetailPage() {
                 <div>
                   <p className="text-xs text-slate-500 mb-2">Projet</p>
                   <button
-                    onClick={() => navigate(`/projets/${slugify(payment.tranche.projet.projet)}`)}
+                    onClick={() => navigate(`/projets/${payment.tranche.projet_id}`)}
                     className="text-base font-medium text-finixar-brand-blue hover:underline text-left"
                   >
                     {payment.tranche.projet.projet}

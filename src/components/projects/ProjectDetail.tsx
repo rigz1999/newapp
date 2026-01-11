@@ -16,7 +16,7 @@ import { Tooltip } from '../common/Tooltip';
 import { Copy } from 'lucide-react';
 import { EcheancierModal } from '../coupons/EcheancierModal';
 import { PaymentsModal } from '../payments/PaymentsModal';  // ✅ AJOUT
-import { ProjectComments } from './ProjectComments';  // ✅ AJOUT - Comments feature
+import { ProjectActualites } from './ProjectActualites';
 import { CalendarExportModal } from '../calendar/CalendarExportModal';
 import {
   ArrowLeft,
@@ -1106,7 +1106,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
         {/* ✅ SECTION REMPLACÉE - Commentaires du projet */}
         {project && (
-          <ProjectComments projectId={projectId!} orgId={project.org_id} />
+          <ProjectActualites projectId={projectId!} orgId={project.org_id} />
         )}
 
         {showTrancheWizard && (

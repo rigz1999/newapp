@@ -17,9 +17,9 @@ import { DemoRequest } from './components/landing/DemoRequest';
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
 const ProjectDetail = lazy(() => import('./components/projects/ProjectDetail'));
-const ProjectCommentsPage = lazy(() =>
-  import('./components/projects/ProjectCommentsPage').then(m => ({
-    default: m.ProjectCommentsPage,
+const ProjectActualitesPage = lazy(() =>
+  import('./components/projects/ProjectActualitesPage').then(m => ({
+    default: m.ProjectActualitesPage,
   }))
 );
 const EcheancierPage = lazy(() =>
@@ -180,11 +180,21 @@ function App(): JSX.Element {
                 }
               />
               <Route
-                path="projets/:projectId/comments"
+                path="projets/:projectId/actualites"
                 element={
                   <ErrorBoundary>
                     <Suspense fallback={<LoadingFallback />}>
-                      <ProjectCommentsPage />
+                      <ProjectActualitesPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="projets/:projectId/:slug/actualites"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ProjectActualitesPage />
                     </Suspense>
                   </ErrorBoundary>
                 }
