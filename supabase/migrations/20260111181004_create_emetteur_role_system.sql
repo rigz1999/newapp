@@ -74,6 +74,13 @@ CREATE INDEX IF NOT EXISTS idx_emetteur_projects_org_id ON public.emetteur_proje
 
 -- Step 3: RLS Policies for emetteur_projects
 
+-- Drop existing policies first
+DROP POLICY IF EXISTS "emetteur_projects_select_policy" ON public.emetteur_projects;
+DROP POLICY IF EXISTS "emetteur_projects_insert_policy" ON public.emetteur_projects;
+DROP POLICY IF EXISTS "emetteur_projects_update_policy" ON public.emetteur_projects;
+DROP POLICY IF EXISTS "emetteur_projects_delete_policy" ON public.emetteur_projects;
+DROP POLICY IF EXISTS "emetteur_projects_superadmin_all" ON public.emetteur_projects;
+
 -- Authenticated users can view emetteur assignments for their org
 CREATE POLICY "emetteur_projects_select_policy"
   ON public.emetteur_projects FOR SELECT
