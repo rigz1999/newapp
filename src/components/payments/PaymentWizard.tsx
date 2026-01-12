@@ -33,6 +33,7 @@ import type {
   PaymentMatch,
   WizardStep
 } from './wizard/types';
+import { IMAGE_PROCESSING, FILE_LIMITS } from '../../constants';
 
 interface PaymentWizardProps {
   onClose: () => void;
@@ -53,7 +54,7 @@ export function PaymentWizard({
   showProjectName,
   showTrancheName,
 }: PaymentWizardProps) {
-  const [_loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -68,7 +69,6 @@ export function PaymentWizard({
   const [selectedEcheanceDate, setSelectedEcheanceDate] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [matches, setMatches] = useState<PaymentMatch[]>([]);
-  const [_uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
   const [tempFileNames, setTempFileNames] = useState<string[]>([]);
   const [selectedMatches, setSelectedMatches] = useState<Set<number>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -333,7 +333,7 @@ export function PaymentWizard({
 
       setEcheanceGroups(groups);
     } catch (err) {
-      console.error('Error fetching écheances:', err);
+      logger.error(err instanceof Error ? err : new Error('Error fetching écheances'), { error: err });
       setEcheanceGroups([]);
     } finally {
       setLoading(false);
@@ -403,7 +403,7 @@ export function PaymentWizard({
 
       setSubscriptions(subsWithEcheanceAmounts);
     } catch (err) {
-      console.error('❌ Error fetching subscriptions for échéance:', err);
+      logger.error(err instanceof Error ? err : new Error('Error fetching subscriptions for échéance'), { error: err, trancheId, echeanceDate });
       setSubscriptions([]);
     } finally {
       setLoading(false);
@@ -434,8 +434,8 @@ export function PaymentWizard({
             .upload(tempFileName, file);
 
           if (uploadError) {
-            console.error('Error uploading to temp storage:', uploadError);
-            setError(`Erreur lors du téléchargement: ${uploadError.message}`);
+            logger.error(new Error('Error uploading to temp storage'), { error: uploadError });
+            setError(`Erreur lors du téléchargement: ${uploadError.message || String(uploadError)}`);
             return;
           }
 
@@ -444,8 +444,8 @@ export function PaymentWizard({
 
         setTempFileNames(uploadedNames);
       } catch (err) {
-        console.error('Error in file upload:', err);
-        setError(`Erreur lors du téléchargement: ${err.message}`);
+        logger.error(err instanceof Error ? err : new Error('Error in file upload'), { error: err });
+        setError(`Erreur lors du téléchargement: ${err instanceof Error ? err.message : String(err)}`);
         return;
       }
 
@@ -460,7 +460,7 @@ export function PaymentWizard({
       try {
         await supabase.storage.from('payment-proofs-temp').remove([tempFileNames[indexToRemove]]);
       } catch (err) {
-        console.error('Error removing from temp storage:', err);
+        logger.error(err instanceof Error ? err : new Error('Error removing from temp storage'), { error: err, fileName: tempFileNames[indexToRemove] });
       }
     }
 
@@ -511,8 +511,8 @@ export function PaymentWizard({
           .upload(tempFileName, file);
 
         if (uploadError) {
-          console.error('Error uploading to temp storage:', uploadError);
-          setError(`Erreur lors du téléchargement: ${uploadError.message}`);
+          logger.error(new Error('Error uploading to temp storage'), { error: uploadError });
+          setError(`Erreur lors du téléchargement: ${uploadError.message || String(uploadError)}`);
           return;
         }
 
@@ -521,8 +521,8 @@ export function PaymentWizard({
 
       setTempFileNames(uploadedNames);
     } catch (err) {
-      console.error('Error in file upload:', err);
-      setError(`Erreur lors du téléchargement: ${err.message}`);
+      logger.error(err instanceof Error ? err : new Error('Error in file upload'), { error: err });
+      setError(`Erreur lors du téléchargement: ${err instanceof Error ? err.message : String(err)}`);
       return;
     }
 
@@ -530,12 +530,12 @@ export function PaymentWizard({
     setError('');
   };
 
-  const compressImage = (imageDataUrl: string, quality: number = 0.7): Promise<string> =>
+  const compressImage = (imageDataUrl: string, quality: number = IMAGE_PROCESSING.COMPRESSION_QUALITY): Promise<string> =>
     new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_SIZE = 1200;
+        const MAX_SIZE = IMAGE_PROCESSING.MAX_SIZE;
 
         let width = img.width;
         let height = img.height;
@@ -596,7 +596,7 @@ export function PaymentWizard({
             await page.render({ canvasContext: context, viewport }).promise;
 
             const imageDataUrl = canvas.toDataURL('image/png');
-            const compressed = await compressImage(imageDataUrl, 0.7);
+            const compressed = await compressImage(imageDataUrl, IMAGE_PROCESSING.COMPRESSION_QUALITY);
             base64Images.push(compressed);
           }
         } else {
@@ -605,7 +605,7 @@ export function PaymentWizard({
             reader.onload = async e => {
               const dataUrl = e.target?.result as string;
               try {
-                const compressed = await compressImage(dataUrl, 0.7);
+                const compressed = await compressImage(dataUrl, IMAGE_PROCESSING.COMPRESSION_QUALITY);
                 resolve(compressed);
               } catch (err) {
                 reject(err);
@@ -625,9 +625,10 @@ export function PaymentWizard({
       const totalSizeMB = ((totalSize * 0.75) / 1024 / 1024).toFixed(2);
       logger.debug('Taille totale des images', { sizeMB: totalSizeMB });
 
-      if (totalSize > 5 * 1024 * 1024) {
+      const maxSizeBytes = FILE_LIMITS.ANALYSIS_TOTAL * 1024 * 1024;
+      if (totalSize > maxSizeBytes) {
         throw new Error(
-          `Les images sont trop volumineuses (${totalSizeMB} MB). Limite: 5 MB. Réduisez le nombre de fichiers.`
+          `Les images sont trop volumineuses (${totalSizeMB} MB). Limite: ${FILE_LIMITS.ANALYSIS_TOTAL} MB. Réduisez le nombre de fichiers.`
         );
       }
 
@@ -702,7 +703,6 @@ export function PaymentWizard({
       });
       setSelectedMatches(autoSelected);
 
-      setUploadedFileUrls([]);
       // Don't clear tempFileNames here - we need them for validation!
       // They'll be cleared after successful payment creation
 
@@ -712,7 +712,18 @@ export function PaymentWizard({
       logger.info('Analyse complète', { totalTimeMs: totalTime });
     } catch (err) {
       logger.error(err instanceof Error ? err : new Error(String(err)));
-      setError(err.message || "Erreur lors de l'analyse");
+      const errorMessage = err instanceof Error ? err.message : "Erreur lors de l'analyse";
+      setError(errorMessage);
+
+      // Clean up temp files on error
+      if (tempFileNames.length > 0) {
+        try {
+          await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
+          setTempFileNames([]);
+        } catch (cleanupErr) {
+          logger.error(new Error('Failed to cleanup temp files after analysis error'), { error: cleanupErr });
+        }
+      }
     } finally {
       setAnalyzing(false);
     }
@@ -745,6 +756,20 @@ export function PaymentWizard({
     setError('');
 
     try {
+      // Early validation: Get org_id from projet before processing
+      const { data: projet, error: projetError } = await supabase
+        .from('projets')
+        .select('org_id')
+        .eq('id', selectedProjectId)
+        .single();
+
+      if (projetError) {
+        throw projetError;
+      }
+      if (!projet?.org_id) {
+        throw new Error("Impossible de récupérer l'organisation du projet");
+      }
+
       const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
       const validMatches = selectedMatchesList.filter(m => m.matchedSubscription);
 
@@ -757,20 +782,6 @@ export function PaymentWizard({
               'Le montant doit être un nombre positif.'
           );
         }
-      }
-
-      // Get org_id from projet
-      const { data: projet, error: projetError } = await supabase
-        .from('projets')
-        .select('org_id')
-        .eq('id', selectedProjectId)
-        .single();
-
-      if (projetError) {
-        throw projetError;
-      }
-      if (!projet?.org_id) {
-        throw new Error("Impossible de récupérer l'organisation du projet");
       }
 
       for (const match of validMatches) {
@@ -808,7 +819,7 @@ export function PaymentWizard({
             .eq('date_echeance', selectedEcheanceDate);
 
           if (echeanceError) {
-            console.error('Error updating échéance:', echeanceError);
+            logger.error(new Error('Error updating échéance'), { error: echeanceError });
           }
         }
 
@@ -862,7 +873,19 @@ export function PaymentWizard({
       );
       setShowSuccessModal(true);
     } catch (err) {
-      setError(err.message || 'Erreur lors de la validation');
+      logger.error(err instanceof Error ? err : new Error('Payment validation failed'), { error: err });
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la validation';
+      setError(errorMessage);
+
+      // Clean up temp files on error
+      if (tempFileNames.length > 0) {
+        try {
+          await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
+          setTempFileNames([]);
+        } catch (cleanupErr) {
+          logger.error(new Error('Failed to cleanup temp files after validation error'), { error: cleanupErr });
+        }
+      }
     } finally {
       setProcessing(false);
     }
@@ -873,15 +896,7 @@ export function PaymentWizard({
     setError('');
 
     try {
-      const validMatchesList = matches.filter(
-        m => m.statut === 'correspondance' && m.matchedSubscription
-      );
-
-      if (validMatchesList.length === 0) {
-        throw new Error('Aucune correspondance valide à valider');
-      }
-
-      // Get org_id from projet
+      // Early validation: Get org_id from projet before processing
       const { data: projet, error: projetError } = await supabase
         .from('projets')
         .select('org_id')
@@ -893,6 +908,14 @@ export function PaymentWizard({
       }
       if (!projet?.org_id) {
         throw new Error("Impossible de récupérer l'organisation du projet");
+      }
+
+      const validMatchesList = matches.filter(
+        m => m.statut === 'correspondance' && m.matchedSubscription
+      );
+
+      if (validMatchesList.length === 0) {
+        throw new Error('Aucune correspondance valide à valider');
       }
 
       for (const match of validMatchesList) {
@@ -930,7 +953,7 @@ export function PaymentWizard({
             .eq('date_echeance', selectedEcheanceDate);
 
           if (echeanceError) {
-            console.error('Error updating échéance:', echeanceError);
+            logger.error(new Error('Error updating échéance'), { error: echeanceError });
           }
         }
 
@@ -983,7 +1006,19 @@ export function PaymentWizard({
       );
       setShowSuccessModal(true);
     } catch (err) {
-      setError(err.message || 'Erreur lors de la validation');
+      logger.error(err instanceof Error ? err : new Error('Bulk payment validation failed'), { error: err });
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la validation';
+      setError(errorMessage);
+
+      // Clean up temp files on error
+      if (tempFileNames.length > 0) {
+        try {
+          await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
+          setTempFileNames([]);
+        } catch (cleanupErr) {
+          logger.error(new Error('Failed to cleanup temp files after bulk validation error'), { error: cleanupErr });
+        }
+      }
     } finally {
       setProcessing(false);
     }

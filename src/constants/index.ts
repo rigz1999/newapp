@@ -23,6 +23,15 @@ export const FILE_LIMITS = {
   IMAGES: 5,
   RIB: 5,
   PAYMENT_PROOF: 10,
+  ANALYSIS_TOTAL: 5, // Total size for payment analysis images
+} as const;
+
+/**
+ * Image processing constants
+ */
+export const IMAGE_PROCESSING = {
+  MAX_SIZE: 1200, // Maximum width/height in pixels
+  COMPRESSION_QUALITY: 0.7, // JPEG compression quality (0-1)
 } as const;
 
 /**

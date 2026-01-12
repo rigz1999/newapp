@@ -74,26 +74,36 @@ export function generateAlerts(
   // 1. ÉCHEANCES EN RETARD (Overdue coupons)
   // Note: Échéances are counted by UNIQUE DATES, not by investor
   // Example: 10 investors, 1 date = 1 échéance (not 10)
-  const overdueCoupons = upcomingCoupons.filter(c => {
+  const uniqueOverdueDates = new Set<string>();
+  let totalOverdue = 0;
+
+  for (const c of upcomingCoupons) {
+    let isOverdue = false;
+    let dateStr: string | undefined;
+
     // If we have statut field (from coupons_echeances), check if unpaid and overdue
     if (c.statut !== undefined) {
-      return c.statut !== 'paye' && c.date_echeance && new Date(c.date_echeance) < now;
+      if (c.statut !== 'paye' && c.date_echeance && new Date(c.date_echeance) < now) {
+        isOverdue = true;
+        dateStr = c.date_echeance;
+      }
     }
     // Legacy: if using prochaine_date_coupon from souscriptions
-    if (c.prochaine_date_coupon) {
+    else if (c.prochaine_date_coupon) {
       const couponDate = new Date(c.prochaine_date_coupon);
-      return couponDate < now;
+      if (couponDate < now) {
+        isOverdue = true;
+        dateStr = c.prochaine_date_coupon;
+      }
     }
-    return false;
-  });
 
-  // Group by unique dates to count échéances (not investors)
-  const uniqueOverdueDates = new Set(
-    overdueCoupons.map(c => c.date_echeance || c.prochaine_date_coupon).filter(Boolean)
-  );
+    if (isOverdue && dateStr) {
+      uniqueOverdueDates.add(dateStr);
+      totalOverdue += c.montant_coupon || c.coupon_brut || 0;
+    }
+  }
 
   if (uniqueOverdueDates.size > 0) {
-    const totalOverdue = overdueCoupons.reduce((sum, c) => sum + (c.montant_coupon || c.coupon_brut || 0), 0);
     alerts.push({
       id: 'overdue-coupons',
       type: 'late_payment',
@@ -122,27 +132,26 @@ export function generateAlerts(
   // 3. COUPONS À PAYER CETTE SEMAINE (EXCLUANT LES 3 PROCHAINS JOURS)
   const weekThreshold = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   const urgentThreshold = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-  const upcomingThisWeek = upcomingCoupons.filter(c => {
-    const dateStr = c.date_echeance || c.prochaine_date_coupon;
-    if (!dateStr) return false;
-    const couponDate = new Date(dateStr);
-    // Exclude paid coupons
-    if (c.statut === 'paye') return false;
-    // Exclude urgent coupons (next 3 days) to avoid duplicates
-    return couponDate > urgentThreshold && couponDate <= weekThreshold;
-  });
+  const uniqueUpcomingDates = new Set<string>();
+  let totalUpcomingAmount = 0;
 
-  // Group by unique dates
-  const uniqueUpcomingDates = new Set(
-    upcomingThisWeek.map(c => c.date_echeance || c.prochaine_date_coupon).filter(Boolean)
-  );
+  for (const c of upcomingCoupons) {
+    const dateStr = c.date_echeance || c.prochaine_date_coupon;
+    if (!dateStr || c.statut === 'paye') continue;
+
+    const couponDate = new Date(dateStr);
+    // Exclude urgent coupons (next 3 days) to avoid duplicates
+    if (couponDate > urgentThreshold && couponDate <= weekThreshold) {
+      uniqueUpcomingDates.add(dateStr);
+      totalUpcomingAmount += c.montant_coupon || c.coupon_brut || 0;
+    }
+  }
 
   if (uniqueUpcomingDates.size > 0) {
-    const totalAmount = upcomingThisWeek.reduce((sum, c) => sum + (c.montant_coupon || c.coupon_brut || 0), 0);
     alerts.push({
       id: 'upcoming-week',
       type: 'upcoming_coupons',
-      message: `${uniqueUpcomingDates.size} coupon${uniqueUpcomingDates.size > 1 ? 's' : ''} à payer cette semaine (${formatCurrency(totalAmount)})`,
+      message: `${uniqueUpcomingDates.size} coupon${uniqueUpcomingDates.size > 1 ? 's' : ''} à payer cette semaine (${formatCurrency(totalUpcomingAmount)})`,
       count: uniqueUpcomingDates.size,
     });
   }
