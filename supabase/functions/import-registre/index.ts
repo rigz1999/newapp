@@ -1036,6 +1036,7 @@ Deno.serve(async req => {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const profileId = formData.get('profile_id') as string | undefined;
+    const previewMode = formData.get('preview_mode') === 'true';
 
     const trancheId = formData.get('tranche_id') as string | null;
     const projetId = formData.get('projet_id') as string | null;
@@ -1044,7 +1045,7 @@ Deno.serve(async req => {
     const dateEmission = formData.get('date_emission') as string | null;
     const dureeMois = formData.get('duree_mois') as string | null;
 
-    console.log('📥 Received:', { projetId, trancheName, trancheId, hasFile: !!file });
+    console.log('📥 Received:', { projetId, trancheName, trancheId, hasFile: !!file, previewMode });
 
     // 3. VALIDATE INPUT
     if (!file) {
@@ -1088,28 +1089,35 @@ Deno.serve(async req => {
       orgId = projet.org_id;
       finalProjetId = projetId;
 
-      // Create tranche (without date_emission for now - will extract from CSV next)
-      const trancheData: any = {
-        projet_id: projetId,
-        tranche_name: trancheName,
-        taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
-        date_emission: dateEmission || null,
-        duree_mois: dureeMois ? parseInt(dureeMois, 10) : null,
-      };
+      // In preview mode, skip tranche creation
+      if (!previewMode) {
+        // Create tranche (without date_emission for now - will extract from CSV next)
+        const trancheData: any = {
+          projet_id: projetId,
+          tranche_name: trancheName,
+          taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
+          date_emission: dateEmission || null,
+          duree_mois: dureeMois ? parseInt(dureeMois, 10) : null,
+        };
 
-      const { data: newTranche, error: trancheErr } = await supabaseClient
-        .from('tranches')
-        .insert(trancheData)
-        .select('id')
-        .single();
+        const { data: newTranche, error: trancheErr } = await supabaseClient
+          .from('tranches')
+          .insert(trancheData)
+          .select('id')
+          .single();
 
-      if (trancheErr || !newTranche) {
-        console.error('Erreur création tranche:', trancheErr);
-        throw new Error('Erreur lors de la création de la tranche: ' + trancheErr?.message);
+        if (trancheErr || !newTranche) {
+          console.error('Erreur création tranche:', trancheErr);
+          throw new Error('Erreur lors de la création de la tranche: ' + trancheErr?.message);
+        }
+
+        finalTrancheId = newTranche.id;
+        console.log('✅ Tranche créée:', finalTrancheId);
+      } else {
+        // In preview mode, use a placeholder tranche ID (won't be persisted)
+        finalTrancheId = 'preview-mode';
+        console.log('👁️  Mode aperçu: Tranche non créée');
       }
-
-      finalTrancheId = newTranche.id;
-      console.log('✅ Tranche créée:', finalTrancheId);
     } else if (trancheId && !projetId) {
       // Use existing tranche
       console.log('📝 Mode: Import vers tranche existante');
@@ -1133,23 +1141,55 @@ Deno.serve(async req => {
       throw new Error('Vous devez fournir soit (projet_id + tranche_name) soit (tranche_id)');
     }
 
-    // Get tranche details with project fallback
-    const { data: trancheDetails, error: trancheDetailsErr } = await supabaseClient
-      .from('tranches')
-      .select(
-        'taux_nominal, date_emission, duree_mois, projets!inner(taux_nominal, periodicite_coupons, duree_mois, base_interet)'
-      )
-      .eq('id', finalTrancheId)
-      .single();
+    // Get project and tranche details
+    let trancheDetails: any;
+    let project: any;
+    let tauxNominalFinal: number;
+    let periodiciteCoupons: string;
+    let baseInteret: number;
 
-    if (trancheDetailsErr || !trancheDetails) {
-      throw new Error('Impossible de récupérer les détails de la tranche');
+    if (previewMode && finalTrancheId === 'preview-mode') {
+      // In preview mode, get project details directly (no tranche exists yet)
+      const { data: projectData, error: projectErr } = await supabaseClient
+        .from('projets')
+        .select('taux_nominal, periodicite_coupons, duree_mois, base_interet')
+        .eq('id', finalProjetId)
+        .single();
+
+      if (projectErr || !projectData) {
+        throw new Error('Impossible de récupérer les détails du projet');
+      }
+
+      project = projectData;
+      trancheDetails = {
+        taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
+        date_emission: null, // Will be extracted from CSV
+        duree_mois: dureeMois ? parseInt(dureeMois, 10) : null,
+        projets: projectData,
+      };
+      tauxNominalFinal = trancheDetails.taux_nominal ?? project.taux_nominal;
+      periodiciteCoupons = project.periodicite_coupons;
+      baseInteret = project.base_interet ?? 360;
+    } else {
+      // Normal mode: get tranche details with project fallback
+      const { data: trancheDetailsData, error: trancheDetailsErr } = await supabaseClient
+        .from('tranches')
+        .select(
+          'taux_nominal, date_emission, duree_mois, projets!inner(taux_nominal, periodicite_coupons, duree_mois, base_interet)'
+        )
+        .eq('id', finalTrancheId)
+        .single();
+
+      if (trancheDetailsErr || !trancheDetailsData) {
+        throw new Error('Impossible de récupérer les détails de la tranche');
+      }
+
+      trancheDetails = trancheDetailsData;
+      project = trancheDetails.projets as any;
+      tauxNominalFinal = trancheDetails.taux_nominal ?? project.taux_nominal;
+      periodiciteCoupons = project.periodicite_coupons;
+      baseInteret = project.base_interet ?? 360;
     }
-
-    const project = trancheDetails.projets as any;
-    const tauxNominalFinal = trancheDetails.taux_nominal ?? project.taux_nominal;
-    const periodiciteCoupons = project.periodicite_coupons;
-    const baseInteret = project.base_interet ?? 360;
 
     if (!tauxNominalFinal || !periodiciteCoupons) {
       throw new Error(
@@ -1287,6 +1327,111 @@ Deno.serve(async req => {
         }),
         {
           status: 400,
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // 6.5 PREVIEW MODE: Return preview data without persisting
+    if (previewMode) {
+      console.log('👁️  Mode aperçu: Génération des données de prévisualisation');
+
+      // Build preview data for investors
+      const investorsPreview = rows.slice(0, 20).map(row => {
+        const isPhysical = row._investorType === 'physique';
+        const prenomField = (row['Prénom(s)'] || row['Prénom'] || row['Prénoms'] || '').trim();
+        const nomField = (
+          row['Nom'] ||
+          row['Nom(s)'] ||
+          row["Nom de l'investisseur"] ||
+          row['Raison sociale'] ||
+          row['Nom/Raison sociale'] ||
+          ''
+        ).trim();
+        const nomJeuneFille = (row['Nom de jeune fille'] || '').trim();
+
+        let fullName = '';
+        if (isPhysical) {
+          const nameParts = [prenomField, nomField].filter(Boolean);
+          fullName = nameParts.join(' ');
+          if (nomJeuneFille) {
+            fullName += ` (née ${nomJeuneFille})`;
+          }
+        } else {
+          fullName = nomField;
+        }
+
+        const montantInvesti = toNumber(row['Montant investi']) || toNumber(row['Montant']) || 0;
+        const nombreObligations =
+          toNumber(row['Quantité de titres']) ||
+          toNumber(row['Quantité']) ||
+          toNumber(row['Quantite']) ||
+          0;
+
+        return {
+          nom: fullName,
+          type: row._investorType,
+          montant_investi: montantInvesti,
+          nombre_obligations: nombreObligations,
+        };
+      });
+
+      // Calculate totals
+      const totalMontant = rows.reduce((sum, row) => {
+        const montant = toNumber(row['Montant investi']) || toNumber(row['Montant']) || 0;
+        return sum + montant;
+      }, 0);
+
+      // Count unique investors
+      const uniqueInvestors = new Set(
+        rows.map(row => {
+          const isPhysical = row._investorType === 'physique';
+          const prenomField = (row['Prénom(s)'] || row['Prénom'] || row['Prénoms'] || '').trim();
+          const nomField = (
+            row['Nom'] ||
+            row['Nom(s)'] ||
+            row["Nom de l'investisseur"] ||
+            row['Raison sociale'] ||
+            row['Nom/Raison sociale'] ||
+            ''
+          ).trim();
+          const nomJeuneFille = (row['Nom de jeune fille'] || '').trim();
+
+          if (isPhysical) {
+            const nameParts = [prenomField, nomField].filter(Boolean);
+            let fullName = nameParts.join(' ');
+            if (nomJeuneFille) {
+              fullName += ` (née ${nomJeuneFille})`;
+            }
+            return fullName;
+          }
+          return nomField;
+        })
+      );
+
+      console.log(
+        `✅ Aperçu généré: ${rows.length} lignes, ${uniqueInvestors.size} investisseurs uniques`
+      );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          preview: true,
+          data: {
+            extracted_date_emission: extractedDateEmission,
+            tranche_name: trancheName,
+            taux_nominal: tauxNominalFinal,
+            periodicite_coupons: periodiciteCoupons,
+            duree_mois: trancheDetails.duree_mois || project.duree_mois,
+            investors_preview: investorsPreview,
+            total_investors: uniqueInvestors.size,
+            total_souscriptions: rows.length,
+            total_montant: totalMontant,
+            has_more: rows.length > 20,
+          },
+        }),
+        {
+          status: 200,
           headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
         }
       );
