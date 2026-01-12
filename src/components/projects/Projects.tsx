@@ -172,7 +172,7 @@ export function Projects({ organization }: ProjectsProps) {
       // Fetch projects with selected fields only
       const projectsRes = await supabase
         .from('projets')
-        .select('id, projet, emetteur, siren_emetteur, representant_masse, email_representant_masse, date_emission, montant_total, org_id, created_at, date_remboursement_initial, periodicite, taux_nominal')
+        .select('id, projet, emetteur, siren_emetteur, representant_masse, email_rep_masse, date_emission, montant_global_eur, org_id, created_at, periodicite_coupons, taux_nominal')
         .order('created_at', { ascending: false });
 
       if (projectsRes.error) throw projectsRes.error;
