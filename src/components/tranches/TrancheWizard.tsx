@@ -53,12 +53,7 @@ interface SouscriptionData {
   montant_investi: number;
   nombre_obligations: number;
   investisseurs: {
-    nom?: string;
-    prenom?: string;
-    first_name?: string;
-    last_name?: string;
-    raison_sociale?: string;
-    raisonSociale?: string;
+    nom_raison_sociale?: string;
     type?: string;
   };
 }
@@ -213,11 +208,7 @@ export function TrancheWizard({
           const inv = s.investisseurs;
           logger.debug('Processing souscription investisseur', { investisseur: inv });
 
-          const nom =
-            inv.type === 'morale' || inv.type === 'moral'
-              ? inv.raison_sociale || inv.raisonSociale || 'Raison sociale manquante'
-              : `${inv.nom || inv.first_name || ''} ${inv.prenom || inv.last_name || ''}`.trim() ||
-                'Nom manquant';
+          const nom = inv.nom_raison_sociale || 'Nom manquant';
 
           return {
             id: s.id,
