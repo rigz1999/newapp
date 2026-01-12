@@ -53,10 +53,13 @@ interface SouscriptionData {
   montant_investi: number;
   nombre_obligations: number;
   investisseurs: {
-    nom: string;
-    prenom: string;
-    raison_sociale: string;
-    type: string;
+    nom?: string;
+    prenom?: string;
+    first_name?: string;
+    last_name?: string;
+    raison_sociale?: string;
+    raisonSociale?: string;
+    type?: string;
   };
 }
 
@@ -158,7 +161,10 @@ export function TrancheWizard({
 
   const fetchSouscriptions = async (trancheId: string): Promise<void> => {
     setLoadingSouscriptions(true);
+    setError(''); // Clear previous errors
     try {
+      logger.info('Fetching souscriptions for tranche', { trancheId });
+
       const { data, error } = await supabase
         .from('souscriptions')
         .select(
@@ -168,10 +174,7 @@ export function TrancheWizard({
           montant_investi,
           nombre_obligations,
           investisseurs (
-            nom,
-            prenom,
-            raison_sociale,
-            type
+            *
           )
         `
         )
@@ -179,33 +182,60 @@ export function TrancheWizard({
         .order('created_at', { ascending: true });
 
       if (error) {
-        logger.error(new Error('Erreur lors du chargement des souscriptions'), { error });
-        setError('Impossible de charger les souscriptions');
+        logger.error(new Error('Erreur lors du chargement des souscriptions'), {
+          error,
+          errorMessage: error.message,
+          errorDetails: error.details,
+          errorHint: error.hint,
+        });
+        setError(`Impossible de charger les souscriptions: ${error.message}`);
         return;
       }
 
-      const formattedSouscriptions: Souscription[] = (data || []).map((s: SouscriptionData) => {
-        const inv = s.investisseurs;
-        const nom =
-          inv.type === 'morale'
-            ? inv.raison_sociale
-            : `${inv.nom || ''} ${inv.prenom || ''}`.trim();
+      logger.debug('Souscriptions data received', { data, count: data?.length });
 
-        return {
-          id: s.id,
-          investisseur_id: s.investisseur_id,
-          investisseur_nom: nom,
-          investisseur_type: inv.type,
-          montant_investi: s.montant_investi,
-          nombre_obligations: s.nombre_obligations,
-        };
-      });
+      if (!data || data.length === 0) {
+        logger.info('No souscriptions found for this tranche');
+        setSouscriptions([]);
+        setLoadingSouscriptions(false);
+        return;
+      }
+
+      const formattedSouscriptions: Souscription[] = (data || [])
+        .filter((s: SouscriptionData) => {
+          if (!s.investisseurs) {
+            logger.warn('Souscription without investisseur data', { souscription: s });
+            return false;
+          }
+          return true;
+        })
+        .map((s: SouscriptionData) => {
+          const inv = s.investisseurs;
+          logger.debug('Processing souscription investisseur', { investisseur: inv });
+
+          const nom =
+            inv.type === 'morale' || inv.type === 'moral'
+              ? inv.raison_sociale || inv.raisonSociale || 'Raison sociale manquante'
+              : `${inv.nom || inv.first_name || ''} ${inv.prenom || inv.last_name || ''}`.trim() ||
+                'Nom manquant';
+
+          return {
+            id: s.id,
+            investisseur_id: s.investisseur_id,
+            investisseur_nom: nom,
+            investisseur_type: inv.type || 'physique',
+            montant_investi: s.montant_investi,
+            nombre_obligations: s.nombre_obligations,
+          };
+        });
 
       setSouscriptions(formattedSouscriptions);
       logger.info('Souscriptions chargées', { count: formattedSouscriptions.length });
     } catch (err) {
       logger.error(new Error('Erreur lors du chargement des souscriptions'), { error: err });
-      setError('Impossible de charger les souscriptions');
+      setError(
+        `Impossible de charger les souscriptions: ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setLoadingSouscriptions(false);
     }
