@@ -55,6 +55,7 @@ export function TrancheWizard({
   const [suggestedName, setSuggestedName] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const [tauxNominal, setTauxNominal] = useState<string>('');
   const [dateEmission, setDateEmission] = useState('');

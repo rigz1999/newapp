@@ -1372,6 +1372,11 @@ Deno.serve(async (req: Request) => {
           console.log(`Deleted ${deletedCount} pending coupons`);
 
           // Step 4: Generate new payment schedule
+          if (!finalPeriodiciteCoupons) {
+            console.error('Missing periodicite_coupons');
+            throw new Error('periodicite_coupons is required to generate payment schedule');
+          }
+
           const frequencyMap: Record<string, { months: number; paymentsPerYear: number }> = {
             annuel: { months: 12, paymentsPerYear: 1 },
             annuelle: { months: 12, paymentsPerYear: 1 },
