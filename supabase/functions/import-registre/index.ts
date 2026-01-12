@@ -717,23 +717,36 @@ Deno.serve(async req => {
       try {
         const isPhysical = row._investorType === 'physique';
 
+        // Build full address from available components
+        const addressParts = [row['Adresse'], row['Code Postal'], row['Ville'], row['Pays']].filter(
+          Boolean
+        );
+        const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : null;
+
         const investorData: any = {
           org_id: orgId,
           type: isPhysical ? 'physique' : 'morale',
-          nom: row['Nom'],
-          prenom: isPhysical ? row['Prénom'] : null,
+          nom_raison_sociale: row['Nom'],
+          prenom: isPhysical ? row['Prénom'] || row['Prénom(s)'] : null,
           email: row['E-mail'] || row['E-mail du représentant légal'] || null,
           telephone: cleanPhone(row['Téléphone']),
-          adresse: row['Adresse'] || null,
-          code_postal: row['Code Postal'] || null,
-          ville: row['Ville'] || null,
-          pays: row['Pays'] || null,
+          adresse: fullAddress,
+          nom_jeune_fille: isPhysical ? row['Nom de jeune fille'] : null,
+          departement_naissance: isPhysical ? row['Département de naissance'] : null,
+          residence_fiscale: row['Résidence Fiscale 1'] || null,
+          cgp_nom: row['Nom du CGP'] || null,
+          cgp_email: row['E-mail du CGP'] || null,
         };
 
         if (!isPhysical) {
-          investorData.representant_legal = row['Représentant légal'] || null;
-          investorData.email_representant = row['E-mail du représentant légal'] || null;
+          investorData.representant_legal =
+            row['Nom du représentant légal'] ||
+            row['Prénom du représentant légal'] ||
+            row['Représentant légal'] ||
+            null;
           investorData.siren = row['N° SIREN']?.replace(/\s/g, '') || null;
+          investorData.departement_naissance =
+            row['Département de naissance du représentant'] || null;
         }
 
         const { data: existingInvestor } = await supabaseClient
@@ -741,7 +754,7 @@ Deno.serve(async req => {
           .select('id')
           .eq('org_id', orgId)
           .eq('type', investorData.type)
-          .eq('nom', investorData.nom)
+          .eq('nom_raison_sociale', investorData.nom_raison_sociale)
           .maybeSingle();
 
         let investorId: string;
@@ -788,7 +801,9 @@ Deno.serve(async req => {
 
         if (subErr) {
           console.error('Erreur souscription:', subErr);
-          errors.push(`Erreur souscription pour ${investorData.nom}: ${subErr.message}`);
+          errors.push(
+            `Erreur souscription pour ${investorData.nom_raison_sociale}: ${subErr.message}`
+          );
         } else {
           createdSouscriptions++;
         }

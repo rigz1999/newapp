@@ -280,7 +280,11 @@ function parseTwoSectionsFormat(
     if (trimmed.toLowerCase().includes('quantit')) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
-      console.log(`  En-têtes (${headers.length} colonnes):`, headers.slice(0, 3).join(', '), '...');
+      console.log(
+        `  En-têtes (${headers.length} colonnes):`,
+        headers.slice(0, 3).join(', '),
+        '...'
+      );
       continue;
     }
 
@@ -314,7 +318,9 @@ function parseTwoSectionsFormat(
   }
 
   console.log(`✅ Total lignes parsées: ${result.length}`);
-  console.log(`   - Personnes physiques: ${result.filter(r => r._investorType === 'physique').length}`);
+  console.log(
+    `   - Personnes physiques: ${result.filter(r => r._investorType === 'physique').length}`
+  );
   console.log(`   - Personnes morales: ${result.filter(r => r._investorType === 'morale').length}`);
 
   return result;
@@ -347,10 +353,17 @@ function parseSingleListFormat(
     }
 
     // Detect header row
-    if (trimmed.toLowerCase().includes('quantit') || trimmed.toLowerCase().includes(typeColumn.toLowerCase())) {
+    if (
+      trimmed.toLowerCase().includes('quantit') ||
+      trimmed.toLowerCase().includes(typeColumn.toLowerCase())
+    ) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
-      console.log(`  En-têtes (${headers.length} colonnes):`, headers.slice(0, 3).join(', '), '...');
+      console.log(
+        `  En-têtes (${headers.length} colonnes):`,
+        headers.slice(0, 3).join(', '),
+        '...'
+      );
       continue;
     }
 
@@ -393,7 +406,9 @@ function parseSingleListFormat(
   }
 
   console.log(`✅ Total lignes parsées: ${result.length}`);
-  console.log(`   - Personnes physiques: ${result.filter(r => r._investorType === 'physique').length}`);
+  console.log(
+    `   - Personnes physiques: ${result.filter(r => r._investorType === 'physique').length}`
+  );
   console.log(`   - Personnes morales: ${result.filter(r => r._investorType === 'morale').length}`);
 
   return result;
@@ -402,10 +417,7 @@ function parseSingleListFormat(
 /**
  * Main CSV parsing function with profile-based parsing
  */
-function parseCSVWithProfile(
-  text: string,
-  profile: FormatProfile
-): ParsedRow[] {
+function parseCSVWithProfile(text: string, profile: FormatProfile): ParsedRow[] {
   console.log('📝 Parsing CSV avec profil:', profile.profile_name);
 
   const lines = text.split(/\r?\n/);
@@ -413,7 +425,10 @@ function parseCSVWithProfile(
 
   // Detect separator
   const separator = detectSeparator(lines);
-  console.log('🔍 Séparateur détecté:', separator === '\t' ? 'tabulation' : separator === ';' ? 'point-virgule' : 'virgule');
+  console.log(
+    '🔍 Séparateur détecté:',
+    separator === '\t' ? 'tabulation' : separator === ';' ? 'point-virgule' : 'virgule'
+  );
 
   // Parse based on structure type
   if (config.structure.type === 'two_sections') {
@@ -433,10 +448,7 @@ function parseCSVWithProfile(
  * Validate parsed data against profile rules
  * Improved validation with better error messages
  */
-function validateData(
-  rows: ParsedRow[],
-  profile: FormatProfile
-): ValidationError[] {
+function validateData(rows: ParsedRow[], profile: FormatProfile): ValidationError[] {
   const errors: ValidationError[] = [];
   const rules = profile.format_config.validation_rules;
 
@@ -531,23 +543,35 @@ async function upsertInvestor(
 ): Promise<string> {
   const isPhysical = row._investorType === 'physique';
 
+  // Build full address from available components
+  const addressParts = [row['Adresse'], row['Code Postal'], row['Ville'], row['Pays']].filter(
+    Boolean
+  );
+  const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : null;
+
   const investorData: any = {
     org_id: orgId,
     type: isPhysical ? 'physique' : 'morale',
-    nom: row['Nom'],
-    prenom: isPhysical ? row['Prénom'] : null,
+    nom_raison_sociale: row['Nom'],
+    prenom: isPhysical ? row['Prénom'] || row['Prénom(s)'] : null,
     email: row['E-mail'] || row['E-mail du représentant légal'] || null,
     telephone: cleanPhone(row['Téléphone']),
-    adresse: row['Adresse'] || null,
-    code_postal: row['Code Postal'] || null,
-    ville: row['Ville'] || null,
-    pays: row['Pays'] || null,
+    adresse: fullAddress,
+    nom_jeune_fille: isPhysical ? row['Nom de jeune fille'] : null,
+    departement_naissance: isPhysical ? row['Département de naissance'] : null,
+    residence_fiscale: row['Résidence Fiscale 1'] || null,
+    cgp_nom: row['Nom du CGP'] || null,
+    cgp_email: row['E-mail du CGP'] || null,
   };
 
   if (!isPhysical) {
-    investorData.representant_legal = row['Représentant légal'] || null;
-    investorData.email_representant = row['E-mail du représentant légal'] || null;
+    investorData.representant_legal =
+      row['Nom du représentant légal'] ||
+      row['Prénom du représentant légal'] ||
+      row['Représentant légal'] ||
+      null;
     investorData.siren = row['N° SIREN']?.replace(/\s/g, '') || null;
+    investorData.departement_naissance = row['Département de naissance du représentant'] || null;
   }
 
   // Check for existing investor
@@ -556,7 +580,7 @@ async function upsertInvestor(
     .select('id')
     .eq('org_id', orgId)
     .eq('type', investorData.type)
-    .eq('nom', investorData.nom)
+    .eq('nom_raison_sociale', investorData.nom_raison_sociale)
     .maybeSingle();
 
   if (existingInvestor) {
@@ -605,11 +629,9 @@ async function upsertSubscription(
     statut: 'active',
   };
 
-  const { error: subErr } = await supabase
-    .from('souscriptions')
-    .upsert(subData, {
-      onConflict: 'tranche_id,investisseur_id',
-    });
+  const { error: subErr } = await supabase.from('souscriptions').upsert(subData, {
+    onConflict: 'tranche_id,investisseur_id',
+  });
 
   if (subErr) {
     throw subErr;
@@ -620,7 +642,7 @@ async function upsertSubscription(
 // MAIN HANDLER
 // =============================================================================
 
-Deno.serve(async (req) => {
+Deno.serve(async req => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -641,7 +663,10 @@ Deno.serve(async (req) => {
       }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseClient.auth.getUser();
 
     if (authError || !user) {
       throw new Error('Unauthorized');
