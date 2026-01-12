@@ -808,19 +808,40 @@ async function upsertInvestor(
   );
   const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : null;
 
+  // Generate unique investor ID
+  const idInvestisseur = `INV-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+  // Parse phone number to bigint
+  const phoneStr = cleanPhone(row['Téléphone']);
+  const telephone = phoneStr ? parseInt(phoneStr.replace(/\D/g, ''), 10) : null;
+
+  // Parse SIREN to bigint
+  const sirenStr = row['N° SIREN']?.replace(/\s/g, '');
+  const siren = sirenStr ? parseInt(sirenStr, 10) : null;
+
+  // Parse departement to integer
+  const deptStr = isPhysical
+    ? row['Département de naissance']
+    : row['Département de naissance du représentant'];
+  const departement_naissance = deptStr ? parseInt(deptStr, 10) : null;
+
+  // Parse birth date
+  const dateNaissance = parseDate(row['Né(e) le']) || parseDate(row['Date de naissance']);
+
   const investorData: any = {
+    id_investisseur: idInvestisseur,
     org_id: orgId,
     type: isPhysical ? 'physique' : 'morale',
     nom_raison_sociale: row['Nom'],
-    prenom: isPhysical ? row['Prénom'] || row['Prénom(s)'] : null,
     email: row['E-mail'] || row['E-mail du représentant légal'] || null,
-    telephone: cleanPhone(row['Téléphone']),
+    telephone: telephone,
     adresse: fullAddress,
-    nom_jeune_fille: isPhysical ? row['Nom de jeune fille'] : null,
-    departement_naissance: isPhysical ? row['Département de naissance'] : null,
+    departement_naissance: departement_naissance,
+    date_naissance: dateNaissance,
+    lieu_naissance: row['Lieu de naissance'] || row['Ville de naissance'] || null,
     residence_fiscale: row['Résidence Fiscale 1'] || null,
-    cgp_nom: row['Nom du CGP'] || null,
-    cgp_email: row['E-mail du CGP'] || null,
+    cgp: row['Nom du CGP'] || null,
+    email_cgp: row['E-mail du CGP'] || null,
   };
 
   if (!isPhysical) {
@@ -829,24 +850,30 @@ async function upsertInvestor(
       row['Prénom du représentant légal'] ||
       row['Représentant légal'] ||
       null;
-    investorData.siren = row['N° SIREN']?.replace(/\s/g, '') || null;
-    investorData.departement_naissance = row['Département de naissance du représentant'] || null;
+    investorData.siren = siren;
   }
 
-  // Check for existing investor
-  const { data: existingInvestor } = await supabase
+  // Check for existing investor by name and email (better duplicate detection)
+  let query = supabase
     .from('investisseurs')
     .select('id')
     .eq('org_id', orgId)
     .eq('type', investorData.type)
-    .eq('nom_raison_sociale', investorData.nom_raison_sociale)
-    .maybeSingle();
+    .eq('nom_raison_sociale', investorData.nom_raison_sociale);
+
+  // Add email to query if available for better matching
+  if (investorData.email) {
+    query = query.eq('email', investorData.email);
+  }
+
+  const { data: existingInvestor } = await query.maybeSingle();
 
   if (existingInvestor) {
-    // Update existing
+    // Update existing (exclude id_investisseur from update)
+    const { id_investisseur, ...updateData } = investorData;
     const { data: updated, error: updateErr } = await supabase
       .from('investisseurs')
-      .update(investorData)
+      .update(updateData)
       .eq('id', existingInvestor.id)
       .select('id')
       .single();
