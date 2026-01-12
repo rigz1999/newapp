@@ -1068,18 +1068,17 @@ Deno.serve(async req => {
       `Type: ${fileType.toUpperCase()}`
     );
 
-    // 4. GET/CREATE TRANCHE
-    let finalTrancheId: string;
-    let finalProjetId: string;
+    // 4. GET ORG ID AND PARSE FILE TO EXTRACT PARAMETERS
     let orgId: string;
+    let finalProjetId: string;
+    let finalTrancheId: string;
+    let extractedDateEmission: string | null = null;
 
     if (projetId && trancheName && !trancheId) {
-      // Create new tranche
-      console.log('📝 Mode: Création nouvelle tranche');
-
+      // Get projet first to get orgId
       const { data: projet, error: projetErr } = await supabaseClient
         .from('projets')
-        .select('org_id, taux_nominal, periodicite_coupons, duree_mois, base_interet')
+        .select('org_id')
         .eq('id', projetId)
         .single();
 
@@ -1090,11 +1089,53 @@ Deno.serve(async req => {
       orgId = projet.org_id;
       finalProjetId = projetId;
 
+      // Parse file EARLY to extract date_emission
+      const profile = await getFormatProfile(supabaseClient, orgId, profileId);
+      const rows = await parseFile(file, profile);
+
+      if (rows.length === 0) {
+        throw new Error('Aucune donnée valide trouvée dans le fichier');
+      }
+
+      // Extract date_emission from CSV if not provided
+      if (!dateEmission) {
+        const dateTransfert =
+          parseDate(rows[0]['Date de transfert des fonds']) ||
+          parseDate(rows[0]['Date de transfert']) ||
+          parseDate(rows[0]['Date transfert fonds']);
+
+        if (dateTransfert) {
+          extractedDateEmission = dateTransfert;
+          console.log(
+            `📅 Date émission extraite du CSV (Date de transfert): ${extractedDateEmission}`
+          );
+        } else {
+          // Fallback: use earliest date de souscription
+          const allDates = rows
+            .map(
+              row =>
+                parseDate(row['Date de souscription']) || parseDate(row['Date de Souscription'])
+            )
+            .filter(Boolean)
+            .sort();
+
+          if (allDates.length > 0) {
+            extractedDateEmission = allDates[0];
+            console.log(
+              `📅 Date émission extraite du CSV (première souscription): ${extractedDateEmission}`
+            );
+          }
+        }
+      }
+
+      const finalDateEmission = dateEmission || extractedDateEmission;
+
+      // Now create tranche with extracted date
       const trancheData: any = {
         projet_id: projetId,
         tranche_name: trancheName,
         taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
-        date_emission: dateEmission || null,
+        date_emission: finalDateEmission || null,
         duree_mois: dureeMois ? parseInt(dureeMois, 10) : null,
       };
 
@@ -1111,6 +1152,7 @@ Deno.serve(async req => {
 
       finalTrancheId = newTranche.id;
       console.log('✅ Tranche créée:', finalTrancheId);
+      console.log(`   Date émission: ${finalDateEmission || 'non définie'}`);
     } else if (trancheId && !projetId) {
       // Use existing tranche
       console.log('📝 Mode: Import vers tranche existante');
@@ -1178,6 +1220,41 @@ Deno.serve(async req => {
     if (rows.length > MAX_ROWS) {
       throw new Error(`Too many rows. Maximum: ${MAX_ROWS}, Found: ${rows.length}`);
     }
+
+    // Extract date_emission from CSV if not provided in form
+    // Try "Date de transfert des fonds" or use earliest "Date de souscription"
+    let extractedDateEmission: string | null = null;
+    if (!dateEmission && rows.length > 0) {
+      // Try "Date de transfert des fonds" first
+      const dateTransfert =
+        parseDate(rows[0]['Date de transfert des fonds']) ||
+        parseDate(rows[0]['Date de transfert']) ||
+        parseDate(rows[0]['Date transfert fonds']);
+
+      if (dateTransfert) {
+        extractedDateEmission = dateTransfert;
+        console.log(
+          `📅 Date émission extraite du CSV (Date de transfert): ${extractedDateEmission}`
+        );
+      } else {
+        // Fallback: use earliest date de souscription
+        const allDates = rows
+          .map(
+            row => parseDate(row['Date de souscription']) || parseDate(row['Date de Souscription'])
+          )
+          .filter(Boolean)
+          .sort();
+
+        if (allDates.length > 0) {
+          extractedDateEmission = allDates[0];
+          console.log(
+            `📅 Date émission extraite du CSV (première souscription): ${extractedDateEmission}`
+          );
+        }
+      }
+    }
+
+    const finalDateEmission = dateEmission || extractedDateEmission;
 
     // 6. VALIDATE DATA
     const validationErrors = validateData(rows, profile);
