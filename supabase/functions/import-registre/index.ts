@@ -1068,11 +1068,10 @@ Deno.serve(async req => {
       `Type: ${fileType.toUpperCase()}`
     );
 
-    // 4. GET ORG ID AND PARSE FILE TO EXTRACT PARAMETERS
+    // 4. GET ORG ID FIRST
     let orgId: string;
     let finalProjetId: string;
     let finalTrancheId: string;
-    let extractedDateEmission: string | null = null;
 
     if (projetId && trancheName && !trancheId) {
       // Get projet first to get orgId
@@ -1089,53 +1088,12 @@ Deno.serve(async req => {
       orgId = projet.org_id;
       finalProjetId = projetId;
 
-      // Parse file EARLY to extract date_emission
-      const profile = await getFormatProfile(supabaseClient, orgId, profileId);
-      const rows = await parseFile(file, profile);
-
-      if (rows.length === 0) {
-        throw new Error('Aucune donnée valide trouvée dans le fichier');
-      }
-
-      // Extract date_emission from CSV if not provided
-      if (!dateEmission) {
-        const dateTransfert =
-          parseDate(rows[0]['Date de transfert des fonds']) ||
-          parseDate(rows[0]['Date de transfert']) ||
-          parseDate(rows[0]['Date transfert fonds']);
-
-        if (dateTransfert) {
-          extractedDateEmission = dateTransfert;
-          console.log(
-            `📅 Date émission extraite du CSV (Date de transfert): ${extractedDateEmission}`
-          );
-        } else {
-          // Fallback: use earliest date de souscription
-          const allDates = rows
-            .map(
-              row =>
-                parseDate(row['Date de souscription']) || parseDate(row['Date de Souscription'])
-            )
-            .filter(Boolean)
-            .sort();
-
-          if (allDates.length > 0) {
-            extractedDateEmission = allDates[0];
-            console.log(
-              `📅 Date émission extraite du CSV (première souscription): ${extractedDateEmission}`
-            );
-          }
-        }
-      }
-
-      const finalDateEmission = dateEmission || extractedDateEmission;
-
-      // Now create tranche with extracted date
+      // Create tranche (without date_emission for now - will extract from CSV next)
       const trancheData: any = {
         projet_id: projetId,
         tranche_name: trancheName,
         taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
-        date_emission: finalDateEmission || null,
+        date_emission: dateEmission || null,
         duree_mois: dureeMois ? parseInt(dureeMois, 10) : null,
       };
 
@@ -1152,7 +1110,6 @@ Deno.serve(async req => {
 
       finalTrancheId = newTranche.id;
       console.log('✅ Tranche créée:', finalTrancheId);
-      console.log(`   Date émission: ${finalDateEmission || 'non définie'}`);
     } else if (trancheId && !projetId) {
       // Use existing tranche
       console.log('📝 Mode: Import vers tranche existante');
@@ -1255,6 +1212,21 @@ Deno.serve(async req => {
     }
 
     const finalDateEmission = dateEmission || extractedDateEmission;
+
+    // Update tranche with extracted date if we created a new one and extracted a date
+    if (projetId && trancheName && !trancheId && extractedDateEmission && !dateEmission) {
+      console.log(`📅 Mise à jour de la tranche avec date émission: ${extractedDateEmission}`);
+      const { error: updateErr } = await supabaseClient
+        .from('tranches')
+        .update({ date_emission: extractedDateEmission })
+        .eq('id', finalTrancheId);
+
+      if (updateErr) {
+        console.error('❌ Erreur mise à jour date émission:', updateErr);
+      } else {
+        console.log('✅ Date émission mise à jour sur la tranche');
+      }
+    }
 
     // 6. VALIDATE DATA
     const validationErrors = validateData(rows, profile);
