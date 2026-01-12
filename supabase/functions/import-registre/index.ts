@@ -934,9 +934,11 @@ async function upsertSubscription(
   trancheId: string,
   investorId: string
 ): Promise<void> {
-  const datesouscription = parseDate(row['Date de souscription']);
-  const montantInvesti = toNumber(row['Montant investi']);
-  const nombreObligations = toNumber(row['Quantité de titres']);
+  const datesouscription =
+    parseDate(row['Date de souscription']) || parseDate(row['Date de Souscription']);
+  const montantInvesti = toNumber(row['Montant investi']) || toNumber(row['Montant']);
+  const nombreObligations =
+    toNumber(row['Quantité de titres']) || toNumber(row['Quantité']) || toNumber(row['Quantite']);
 
   const subData: any = {
     tranche_id: trancheId,
@@ -1153,9 +1155,18 @@ Deno.serve(async req => {
           createdInvestisseurs++;
         }
 
-        // Upsert subscription
-        await upsertSubscription(supabaseClient, row, finalTrancheId, investorId);
-        createdSouscriptions++;
+        // Create subscription only if data exists in CSV
+        const hasSubscriptionData =
+          row['Date de souscription'] ||
+          row['Montant investi'] ||
+          row['Montant'] ||
+          row['Quantité'] ||
+          row['Quantité de titres'] ||
+          row['Quantite'];
+        if (hasSubscriptionData) {
+          await upsertSubscription(supabaseClient, row, finalTrancheId, investorId);
+          createdSouscriptions++;
+        }
       } catch (rowErr: any) {
         console.error('Erreur traitement ligne:', rowErr);
         errors.push(`Erreur pour ${row['Nom']}: ${rowErr.message}`);
