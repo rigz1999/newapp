@@ -76,7 +76,7 @@ export function ConfirmDialog({
       onClick={!isProcessing ? onClose : undefined}
     >
       <div
-        className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-slide-in-right"
+        className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
