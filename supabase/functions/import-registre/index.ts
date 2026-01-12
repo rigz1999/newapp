@@ -812,21 +812,9 @@ async function upsertInvestor(
     ''
   ).trim();
 
-  console.log(`🔍 Checking Nom(s): "${row['Nom(s)']}" (length: ${row['Nom(s)']?.length})`);
-
   if (!nomField) {
-    console.error(
-      '❌ Nom vide! row["Nom(s)"]:',
-      row['Nom(s)'],
-      'Toutes colonnes:',
-      Object.keys(row)
-    );
-    throw new Error(
-      `Nom obligatoire vide. Valeur Nom(s): "${row['Nom(s)']}" Colonnes: ${Object.keys(row).join(', ')}`
-    );
+    throw new Error(`Nom obligatoire manquant`);
   }
-
-  console.log(`✅ Nom trouvé: "${nomField}" (type: ${row._investorType})`);
 
   // Build full address from available components
   const adresseField =
@@ -926,13 +914,18 @@ async function upsertInvestor(
 }
 
 /**
- * Upsert subscription
+ * Upsert subscription with proper calculations
  */
 async function upsertSubscription(
   supabase: SupabaseClient,
   row: ParsedRow,
   trancheId: string,
-  investorId: string
+  projetId: string,
+  investorId: string,
+  investorType: string,
+  tauxNominal: number,
+  periodiciteCoupons: string,
+  baseInteret: number
 ): Promise<void> {
   const datesouscription =
     parseDate(row['Date de souscription']) || parseDate(row['Date de Souscription']);
@@ -940,24 +933,51 @@ async function upsertSubscription(
   const nombreObligations =
     toNumber(row['Quantité de titres']) || toNumber(row['Quantité']) || toNumber(row['Quantite']);
 
-  console.log('📊 Données souscription:', {
-    montant: montantInvesti,
-    quantite: nombreObligations,
-    date: datesouscription,
-  });
+  // Calculate coupon_brut and coupon_net
+  const periodRatio = getPeriodRatio(periodiciteCoupons, baseInteret);
+  const couponAnnuel = (montantInvesti * tauxNominal) / 100;
+  const couponBrut = couponAnnuel * periodRatio;
+  const couponNet = investorType.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
 
   const subData: any = {
+    projet_id: projetId,
     tranche_id: trancheId,
     investisseur_id: investorId,
     date_souscription: datesouscription || new Date().toISOString().split('T')[0],
     montant_investi: montantInvesti || 0,
     nombre_obligations: nombreObligations || 0,
+    coupon_brut: Math.round(couponBrut * 100) / 100,
+    coupon_net: Math.round(couponNet * 100) / 100,
   };
 
   const { error: subErr } = await supabase.from('souscriptions').insert(subData);
 
   if (subErr) {
     throw subErr;
+  }
+}
+
+/**
+ * Get period ratio based on periodicite and base_interet
+ */
+function getPeriodRatio(periodicite: string | null, baseInteret: number): number {
+  const base = baseInteret || 360;
+
+  switch (periodicite?.toLowerCase()) {
+    case 'annuel':
+    case 'annuelle':
+      return 1.0;
+    case 'semestriel':
+    case 'semestrielle':
+      return base === 365 ? 182.5 / 365 : 180 / 360;
+    case 'trimestriel':
+    case 'trimestrielle':
+      return base === 365 ? 91.25 / 365 : 90 / 360;
+    case 'mensuel':
+    case 'mensuelle':
+      return base === 365 ? 30.42 / 365 : 30 / 360;
+    default:
+      return 1.0;
   }
 }
 
@@ -1033,6 +1053,7 @@ Deno.serve(async req => {
 
     // 4. GET/CREATE TRANCHE
     let finalTrancheId: string;
+    let finalProjetId: string;
     let orgId: string;
 
     if (projetId && trancheName && !trancheId) {
@@ -1041,7 +1062,7 @@ Deno.serve(async req => {
 
       const { data: projet, error: projetErr } = await supabaseClient
         .from('projets')
-        .select('org_id')
+        .select('org_id, taux_nominal, periodicite_coupons, duree_mois, base_interet')
         .eq('id', projetId)
         .single();
 
@@ -1050,6 +1071,7 @@ Deno.serve(async req => {
       }
 
       orgId = projet.org_id;
+      finalProjetId = projetId;
 
       const trancheData: any = {
         projet_id: projetId,
@@ -1078,7 +1100,9 @@ Deno.serve(async req => {
 
       const { data: tranche, error: trancheErr } = await supabaseClient
         .from('tranches')
-        .select('*, projets!inner(org_id)')
+        .select(
+          '*, projets!inner(id, org_id, taux_nominal, periodicite_coupons, duree_mois, base_interet)'
+        )
         .eq('id', trancheId)
         .single();
 
@@ -1087,12 +1111,35 @@ Deno.serve(async req => {
       }
 
       finalTrancheId = trancheId;
+      finalProjetId = (tranche.projets as any).id;
       orgId = (tranche.projets as any).org_id;
     } else {
       throw new Error('Vous devez fournir soit (projet_id + tranche_name) soit (tranche_id)');
     }
 
-    console.log('🏢 Organisation ID:', orgId);
+    // Get tranche details with project fallback
+    const { data: trancheDetails, error: trancheDetailsErr } = await supabaseClient
+      .from('tranches')
+      .select(
+        'taux_nominal, date_emission, duree_mois, projets!inner(taux_nominal, periodicite_coupons, duree_mois, base_interet)'
+      )
+      .eq('id', finalTrancheId)
+      .single();
+
+    if (trancheDetailsErr || !trancheDetails) {
+      throw new Error('Impossible de récupérer les détails de la tranche');
+    }
+
+    const project = trancheDetails.projets as any;
+    const tauxNominalFinal = trancheDetails.taux_nominal ?? project.taux_nominal;
+    const periodiciteCoupons = project.periodicite_coupons;
+    const baseInteret = project.base_interet ?? 360;
+
+    if (!tauxNominalFinal || !periodiciteCoupons) {
+      throw new Error(
+        'Taux nominal ou périodicité des coupons manquants. Vérifiez la configuration du projet.'
+      );
+    }
 
     // 5. PARSE FILE (CSV or XLSX)
     const profile = await getFormatProfile(supabaseClient, orgId, profileId);
@@ -1134,18 +1181,14 @@ Deno.serve(async req => {
       );
     }
 
-    console.log('✅ Validation OK - Insertion en base...');
-
     // 7. IMPORT DATA
     let createdInvestisseurs = 0;
     let updatedInvestisseurs = 0;
     let createdSouscriptions = 0;
     const errors: string[] = [];
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const rowName = row['Nom'] || row['Nom(s)'] || row['Raison sociale'] || `Row ${i + 1}`;
-      console.log(`\n🔄 Traitement ligne ${i + 1}/${rows.length}: ${rowName}`);
+    for (const row of rows) {
+      const rowName = row['Nom'] || row['Nom(s)'] || row['Raison sociale'] || 'Unnamed';
 
       try {
         // Check if investor already exists
@@ -1157,10 +1200,7 @@ Deno.serve(async req => {
           .eq('nom_raison_sociale', rowName)
           .maybeSingle();
 
-        console.log(`  Investisseur existant: ${existingInvestor ? 'Oui' : 'Non'}`);
-
         const investorId = await upsertInvestor(supabaseClient, row, orgId);
-        console.log(`  ✅ Investisseur ID: ${investorId}`);
 
         if (existingInvestor) {
           updatedInvestisseurs++;
@@ -1168,23 +1208,58 @@ Deno.serve(async req => {
           createdInvestisseurs++;
         }
 
-        // Create subscription
-        console.log(`  📝 Création souscription...`);
-        await upsertSubscription(supabaseClient, row, finalTrancheId, investorId);
+        // Create subscription with all required parameters
+        await upsertSubscription(
+          supabaseClient,
+          row,
+          finalTrancheId,
+          finalProjetId,
+          investorId,
+          row._investorType,
+          tauxNominalFinal,
+          periodiciteCoupons,
+          baseInteret
+        );
         createdSouscriptions++;
-        console.log(`  ✅ Souscription créée`);
       } catch (rowErr: any) {
-        console.error(`  ❌ ERREUR:`, rowErr);
+        console.error(`Erreur traitement ${rowName}:`, rowErr);
         errors.push(`${rowName}: ${rowErr.message}`);
       }
     }
 
-    console.log('✅ Import terminé:');
-    console.log(`   - ${createdInvestisseurs} investisseurs créés`);
-    console.log(`   - ${updatedInvestisseurs} investisseurs mis à jour`);
-    console.log(`   - ${createdSouscriptions} souscriptions créées`);
+    console.log(
+      `✅ Import terminé: ${createdInvestisseurs} investisseurs, ${createdSouscriptions} souscriptions`
+    );
 
-    // 8. RETURN RESULTS
+    // 8. GENERATE ECHEANCIER
+    if (createdSouscriptions > 0) {
+      console.log("📅 Génération de l'échéancier...");
+      try {
+        const regenerateResponse = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/regenerate-echeancier`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: authHeader,
+            },
+            body: JSON.stringify({ tranche_id: finalTrancheId }),
+          }
+        );
+
+        if (!regenerateResponse.ok) {
+          console.error('Erreur génération échéancier:', await regenerateResponse.text());
+        } else {
+          const result = await regenerateResponse.json();
+          console.log(`✅ Échéancier généré: ${result.created_coupons} échéances créées`);
+        }
+      } catch (echeancierErr: any) {
+        console.error("Erreur lors de la génération de l'échéancier:", echeancierErr);
+        // Don't fail the whole import if échéancier generation fails
+      }
+    }
+
+    // 9. RETURN RESULTS
     return new Response(
       JSON.stringify({
         success: true,
