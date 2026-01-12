@@ -128,6 +128,90 @@ const normalizeString = (str: string): string => {
 };
 
 /**
+ * Calculate similarity between two strings (0 to 1, where 1 is identical)
+ * Uses Levenshtein distance for fuzzy matching
+ */
+const calculateSimilarity = (str1: string, str2: string): number => {
+  const s1 = normalizeString(str1);
+  const s2 = normalizeString(str2);
+
+  // If strings are identical after normalization, return 1
+  if (s1 === s2) return 1;
+
+  // Remove common corruption characters for better matching
+  const cleanStr1 = s1.replace(/[�\uFFFD]/g, '');
+  const cleanStr2 = s2.replace(/[�\uFFFD]/g, '');
+
+  if (cleanStr1 === cleanStr2) return 0.95;
+
+  // Check if one string starts with the other (common for truncated/corrupted headers)
+  const minLength = Math.min(cleanStr1.length, cleanStr2.length);
+  if (minLength >= 4) {
+    const prefix1 = cleanStr1.substring(0, minLength);
+    const prefix2 = cleanStr2.substring(0, minLength);
+    if (prefix1 === prefix2) {
+      return 0.85;
+    }
+  }
+
+  // Levenshtein distance calculation
+  const matrix: number[][] = [];
+  const len1 = cleanStr1.length;
+  const len2 = cleanStr2.length;
+
+  if (len1 === 0) return len2 === 0 ? 1 : 0;
+  if (len2 === 0) return 0;
+
+  // Initialize matrix
+  for (let i = 0; i <= len1; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= len2; j++) {
+    matrix[0][j] = j;
+  }
+
+  // Fill matrix
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      const cost = cleanStr1[i - 1] === cleanStr2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1, // deletion
+        matrix[i][j - 1] + 1, // insertion
+        matrix[i - 1][j - 1] + cost // substitution
+      );
+    }
+  }
+
+  const distance = matrix[len1][len2];
+  const maxLength = Math.max(len1, len2);
+  return 1 - distance / maxLength;
+};
+
+/**
+ * Find the best matching key in rawRow for a given target column
+ * Returns the key and its similarity score
+ */
+const findBestMatch = (
+  targetColumn: string,
+  rawRowKeys: string[],
+  threshold: number = 0.7
+): { key: string; similarity: number } | null => {
+  let bestMatch: { key: string; similarity: number } | null = null;
+
+  for (const key of rawRowKeys) {
+    const similarity = calculateSimilarity(targetColumn, key);
+
+    if (similarity >= threshold) {
+      if (!bestMatch || similarity > bestMatch.similarity) {
+        bestMatch = { key, similarity };
+      }
+    }
+  }
+
+  return bestMatch;
+};
+
+/**
  * Parse date from various formats to ISO format
  */
 const parseDate = (value: unknown): string | null => {
@@ -174,7 +258,9 @@ const parseDate = (value: unknown): string | null => {
  */
 const cleanPhone = (s?: string | null): string | null => {
   if (!s) return null;
-  const cleaned = String(s).replace(/['"\s()-]/g, '').replace(/[^0-9+]/g, '');
+  const cleaned = String(s)
+    .replace(/['"\s()-]/g, '')
+    .replace(/[^0-9+]/g, '');
   return cleaned || null;
 };
 
@@ -206,7 +292,8 @@ const detectSeparator = (lines: string[]): string => {
   const max = Math.max(counts['\t'], counts[';'], counts[',']);
   if (max === 0) return '\t'; // Default
 
-  return (Object.keys(counts).find(k => counts[k as keyof typeof counts] === max) || '\t') as string;
+  return (Object.keys(counts).find(k => counts[k as keyof typeof counts] === max) ||
+    '\t') as string;
 };
 
 // =============================================================================
@@ -351,13 +438,28 @@ function applyColumnMappings(
   mappings: Record<string, string>
 ): Record<string, string> {
   const mappedRow: Record<string, string> = {};
+  const rawRowKeys = Object.keys(rawRow);
 
   Object.entries(mappings).forEach(([companyColumn, standardColumn]) => {
     const normalizedCompanyColumn = normalizeString(companyColumn);
 
-    const rawValue = Object.entries(rawRow).find(
+    // First try exact match (normalized)
+    let rawValue = Object.entries(rawRow).find(
       ([key]) => normalizeString(key) === normalizedCompanyColumn
     )?.[1];
+
+    // If exact match fails, try fuzzy matching
+    if (rawValue === undefined) {
+      const bestMatch = findBestMatch(companyColumn, rawRowKeys, 0.7);
+
+      if (bestMatch) {
+        rawValue = rawRow[bestMatch.key];
+        console.log(
+          `🔍 Fuzzy match: "${bestMatch.key}" → "${companyColumn}" ` +
+            `(similarity: ${(bestMatch.similarity * 100).toFixed(1)}%)`
+        );
+      }
+    }
 
     if (rawValue !== undefined) {
       mappedRow[standardColumn] = rawValue;
@@ -416,7 +518,11 @@ function parseTwoSectionsFormat(
     if (normalizedLine.includes('quantit') || normalizedLine.includes('montant')) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
-      console.log(`  En-têtes (${headers.length} colonnes):`, headers.slice(0, 3).join(', '), '...');
+      console.log(
+        `  En-têtes (${headers.length} colonnes):`,
+        headers.slice(0, 3).join(', '),
+        '...'
+      );
       continue;
     }
 
@@ -450,7 +556,9 @@ function parseTwoSectionsFormat(
   }
 
   console.log(`✅ Total lignes parsées: ${result.length}`);
-  console.log(`   - Personnes physiques: ${result.filter(r => r._investorType === 'physique').length}`);
+  console.log(
+    `   - Personnes physiques: ${result.filter(r => r._investorType === 'physique').length}`
+  );
   console.log(`   - Personnes morales: ${result.filter(r => r._investorType === 'morale').length}`);
 
   return result;
@@ -485,10 +593,18 @@ function parseSingleListFormat(
     // Detect header row with normalized matching (handles encoding issues)
     const normalizedLine = normalizeString(trimmed);
     const normalizedTypeColumn = normalizeString(typeColumn);
-    if (normalizedLine.includes('quantit') || normalizedLine.includes('montant') || normalizedLine.includes(normalizedTypeColumn)) {
+    if (
+      normalizedLine.includes('quantit') ||
+      normalizedLine.includes('montant') ||
+      normalizedLine.includes(normalizedTypeColumn)
+    ) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
-      console.log(`  En-têtes (${headers.length} colonnes):`, headers.slice(0, 3).join(', '), '...');
+      console.log(
+        `  En-têtes (${headers.length} colonnes):`,
+        headers.slice(0, 3).join(', '),
+        '...'
+      );
       continue;
     }
 
@@ -531,7 +647,9 @@ function parseSingleListFormat(
   }
 
   console.log(`✅ Total lignes parsées: ${result.length}`);
-  console.log(`   - Personnes physiques: ${result.filter(r => r._investorType === 'physique').length}`);
+  console.log(
+    `   - Personnes physiques: ${result.filter(r => r._investorType === 'physique').length}`
+  );
   console.log(`   - Personnes morales: ${result.filter(r => r._investorType === 'morale').length}`);
 
   return result;
@@ -540,10 +658,7 @@ function parseSingleListFormat(
 /**
  * Main parsing function - handles both CSV and XLSX
  */
-async function parseFile(
-  file: File,
-  profile: FormatProfile
-): Promise<ParsedRow[]> {
+async function parseFile(file: File, profile: FormatProfile): Promise<ParsedRow[]> {
   const fileType = detectFileType(file);
   console.log('📄 Type de fichier détecté:', fileType.toUpperCase());
 
@@ -559,7 +674,7 @@ async function parseFile(
     textContent = decoder.decode(arrayBuffer);
 
     // Remove BOM if present (Excel sometimes adds it)
-    if (textContent.charCodeAt(0) === 0xFEFF) {
+    if (textContent.charCodeAt(0) === 0xfeff) {
       textContent = textContent.substring(1);
     }
   }
@@ -571,7 +686,10 @@ async function parseFile(
 
   // Detect separator (for CSV or converted XLSX)
   const separator = detectSeparator(lines);
-  console.log('🔍 Séparateur détecté:', separator === '\t' ? 'tabulation' : separator === ';' ? 'point-virgule' : 'virgule');
+  console.log(
+    '🔍 Séparateur détecté:',
+    separator === '\t' ? 'tabulation' : separator === ';' ? 'point-virgule' : 'virgule'
+  );
 
   // Parse based on structure type
   if (config.structure.type === 'two_sections') {
@@ -590,10 +708,7 @@ async function parseFile(
 /**
  * Validate parsed data against profile rules
  */
-function validateData(
-  rows: ParsedRow[],
-  profile: FormatProfile
-): ValidationError[] {
+function validateData(rows: ParsedRow[], profile: FormatProfile): ValidationError[] {
   const errors: ValidationError[] = [];
   const rules = profile.format_config.validation_rules;
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -761,11 +876,9 @@ async function upsertSubscription(
     statut: 'active',
   };
 
-  const { error: subErr } = await supabase
-    .from('souscriptions')
-    .upsert(subData, {
-      onConflict: 'tranche_id,investisseur_id',
-    });
+  const { error: subErr } = await supabase.from('souscriptions').upsert(subData, {
+    onConflict: 'tranche_id,investisseur_id',
+  });
 
   if (subErr) {
     throw subErr;
@@ -776,7 +889,7 @@ async function upsertSubscription(
 // MAIN HANDLER
 // =============================================================================
 
-Deno.serve(async (req) => {
+Deno.serve(async req => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -797,7 +910,10 @@ Deno.serve(async (req) => {
       }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseClient.auth.getUser();
 
     if (authError || !user) {
       throw new Error('Unauthorized');
@@ -832,7 +948,12 @@ Deno.serve(async (req) => {
       throw new Error('Type de fichier non supporté. Utilisez CSV ou XLSX/XLS.');
     }
 
-    console.log('📄 Fichier:', file.name, `(${(file.size / 1024).toFixed(2)} KB)`, `Type: ${fileType.toUpperCase()}`);
+    console.log(
+      '📄 Fichier:',
+      file.name,
+      `(${(file.size / 1024).toFixed(2)} KB)`,
+      `Type: ${fileType.toUpperCase()}`
+    );
 
     // 4. GET/CREATE TRANCHE
     let finalTrancheId: string;

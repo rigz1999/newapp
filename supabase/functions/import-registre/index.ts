@@ -97,18 +97,117 @@ function normalizeString(str: string): string {
     .replace(/\s+/g, ' '); // Normalize whitespace
 }
 
+/**
+ * Calculate similarity between two strings (0 to 1, where 1 is identical)
+ * Uses Levenshtein distance for fuzzy matching
+ */
+function calculateSimilarity(str1: string, str2: string): number {
+  const s1 = normalizeString(str1);
+  const s2 = normalizeString(str2);
+
+  // If strings are identical after normalization, return 1
+  if (s1 === s2) return 1;
+
+  // Remove common corruption characters for better matching
+  const cleanStr1 = s1.replace(/[�\uFFFD]/g, '');
+  const cleanStr2 = s2.replace(/[�\uFFFD]/g, '');
+
+  if (cleanStr1 === cleanStr2) return 0.95;
+
+  // Check if one string starts with the other (common for truncated/corrupted headers)
+  const minLength = Math.min(cleanStr1.length, cleanStr2.length);
+  if (minLength >= 4) {
+    const prefix1 = cleanStr1.substring(0, minLength);
+    const prefix2 = cleanStr2.substring(0, minLength);
+    if (prefix1 === prefix2) {
+      return 0.85;
+    }
+  }
+
+  // Levenshtein distance calculation
+  const matrix: number[][] = [];
+  const len1 = cleanStr1.length;
+  const len2 = cleanStr2.length;
+
+  if (len1 === 0) return len2 === 0 ? 1 : 0;
+  if (len2 === 0) return 0;
+
+  // Initialize matrix
+  for (let i = 0; i <= len1; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= len2; j++) {
+    matrix[0][j] = j;
+  }
+
+  // Fill matrix
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      const cost = cleanStr1[i - 1] === cleanStr2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1, // deletion
+        matrix[i][j - 1] + 1, // insertion
+        matrix[i - 1][j - 1] + cost // substitution
+      );
+    }
+  }
+
+  const distance = matrix[len1][len2];
+  const maxLength = Math.max(len1, len2);
+  return 1 - distance / maxLength;
+}
+
+/**
+ * Find the best matching key in rawRow for a given target column
+ * Returns the key and its similarity score
+ */
+function findBestMatch(
+  targetColumn: string,
+  rawRowKeys: string[],
+  threshold: number = 0.7
+): { key: string; similarity: number } | null {
+  let bestMatch: { key: string; similarity: number } | null = null;
+
+  for (const key of rawRowKeys) {
+    const similarity = calculateSimilarity(targetColumn, key);
+
+    if (similarity >= threshold) {
+      if (!bestMatch || similarity > bestMatch.similarity) {
+        bestMatch = { key, similarity };
+      }
+    }
+  }
+
+  return bestMatch;
+}
+
 function applyColumnMappings(
   rawRow: Record<string, string>,
   mappings: Record<string, string>
 ): Record<string, string> {
   const mappedRow: Record<string, string> = {};
+  const rawRowKeys = Object.keys(rawRow);
 
   Object.entries(mappings).forEach(([companyColumn, standardColumn]) => {
     const normalizedCompanyColumn = normalizeString(companyColumn);
 
-    const rawValue = Object.entries(rawRow).find(
+    // First try exact match (normalized)
+    let rawValue = Object.entries(rawRow).find(
       ([key]) => normalizeString(key) === normalizedCompanyColumn
     )?.[1];
+
+    // If exact match fails, try fuzzy matching
+    if (rawValue === undefined) {
+      const bestMatch = findBestMatch(companyColumn, rawRowKeys, 0.7);
+
+      if (bestMatch) {
+        rawValue = rawRow[bestMatch.key];
+        console.log(
+          `🔍 Fuzzy match: "${bestMatch.key}" → "${companyColumn}" ` +
+            `(similarity: ${(bestMatch.similarity * 100).toFixed(1)}%)`
+        );
+      }
+    }
 
     if (rawValue !== undefined) {
       mappedRow[standardColumn] = rawValue;
@@ -280,10 +379,18 @@ function parseSingleListFormat(
     // Detect header row with normalized matching (handles encoding issues)
     const normalizedLine = normalizeString(trimmed);
     const normalizedTypeColumn = normalizeString(typeColumn);
-    if (normalizedLine.includes('quantit') || normalizedLine.includes('montant') || normalizedLine.includes(normalizedTypeColumn)) {
+    if (
+      normalizedLine.includes('quantit') ||
+      normalizedLine.includes('montant') ||
+      normalizedLine.includes(normalizedTypeColumn)
+    ) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
-      console.log(`  En-têtes (${headers.length} colonnes):`, headers.slice(0, 3).join(', '), '...');
+      console.log(
+        `  En-têtes (${headers.length} colonnes):`,
+        headers.slice(0, 3).join(', '),
+        '...'
+      );
       continue;
     }
 
@@ -560,7 +667,7 @@ Deno.serve(async req => {
     let fileContent = decoder.decode(arrayBuffer);
 
     // Remove BOM if present (Excel sometimes adds it)
-    if (fileContent.charCodeAt(0) === 0xFEFF) {
+    if (fileContent.charCodeAt(0) === 0xfeff) {
       fileContent = fileContent.substring(1);
     }
 
