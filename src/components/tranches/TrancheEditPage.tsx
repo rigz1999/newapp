@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { X, AlertCircle, Loader, Edit, Edit2, Lock, ExternalLink, RefreshCw } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Loader, Edit2, Lock, ExternalLink, RefreshCw, X } from 'lucide-react';
 import { logger } from '../../utils/logger';
 
 interface Tranche {
@@ -38,25 +39,20 @@ interface InvestmentSummary {
   nombre_obligations: number;
 }
 
-interface TrancheEditPageProps {
-  tranche: Tranche;
-  onClose: () => void;
-  onSuccess: () => void;
-}
-
 const formatCurrency = (amount: number): string =>
   new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'EUR',
   }).format(amount);
 
-export function TrancheEditPage({
-  tranche,
-  onClose,
-  onSuccess,
-}: TrancheEditPageProps): JSX.Element {
-  const [trancheName, setTrancheName] = useState(tranche.tranche_name);
-  const [dateEmission, setDateEmission] = useState(tranche.date_emission || '');
+export function TrancheEditPage(): JSX.Element {
+  const { trancheId } = useParams<{ trancheId: string }>();
+  const navigate = useNavigate();
+
+  const [tranche, setTranche] = useState<Tranche | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [trancheName, setTrancheName] = useState('');
+  const [dateEmission, setDateEmission] = useState('');
   const [error, setError] = useState('');
   const [processing, setProcessing] = useState(false);
 
@@ -83,12 +79,49 @@ export function TrancheEditPage({
   const [searchInvestorQuery, setSearchInvestorQuery] = useState('');
 
   useEffect(() => {
-    fetchProjectData();
-    fetchSouscriptions();
+    fetchTrancheData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [trancheId]);
+
+  useEffect(() => {
+    if (tranche) {
+      fetchProjectData();
+      fetchSouscriptions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tranche]);
+
+  const fetchTrancheData = async (): Promise<void> => {
+    if (!trancheId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('tranches')
+        .select('id, tranche_name, projet_id, date_emission')
+        .eq('id', trancheId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (data) {
+        setTranche(data);
+        setTrancheName(data.tranche_name);
+        setDateEmission(data.date_emission || '');
+      }
+    } catch (err) {
+      logger.error(new Error('Erreur lors du chargement de la tranche'), { error: err });
+      setError('Impossible de charger la tranche');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchProjectData = async (): Promise<void> => {
+    if (!tranche) return;
+
     try {
       const { data: project } = await supabase
         .from('projets')
@@ -113,6 +146,8 @@ export function TrancheEditPage({
   };
 
   const fetchSouscriptions = async (): Promise<void> => {
+    if (!tranche) return;
+
     setLoadingSouscriptions(true);
     try {
       const { data, error } = await supabase
@@ -315,6 +350,11 @@ export function TrancheEditPage({
       return;
     }
 
+    if (!tranche) {
+      setError('Tranche non trouvée');
+      return;
+    }
+
     setProcessing(true);
     setError('');
 
@@ -332,8 +372,8 @@ export function TrancheEditPage({
       }
 
       logger.info('Tranche mise à jour', { id: tranche.id });
-      onSuccess();
-      onClose();
+      // Navigate back to project page
+      navigate(`/projets/${tranche.projet_id}`);
     } catch (err) {
       logger.error(new Error('Erreur lors de la mise à jour de la tranche'), { error: err });
       setError('Impossible de mettre à jour la tranche');
@@ -342,69 +382,83 @@ export function TrancheEditPage({
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!tranche) {
+    return (
+      <div className="px-6 py-6">
+        <div className="text-center py-12">
+          <p className="text-slate-600">Tranche introuvable</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-50">
-      <div className="h-full overflow-y-auto">
-        {/* Header Bar */}
-        <div className="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
-          <div className="max-w-[1920px] mx-auto px-8 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onClose}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-                disabled={processing}
-              >
-                <X className="w-6 h-6" />
-              </button>
-              <div className="h-8 w-px bg-slate-200" />
-              <Edit className="w-6 h-6 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">Modifier la tranche</h1>
-                <p className="text-sm text-slate-600 mt-0.5">{trancheName || 'Sans nom'}</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                className="px-5 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 font-medium"
-                disabled={processing}
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={processing || !trancheName}
-                className="px-5 py-2.5 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 flex items-center gap-2 font-medium"
-              >
-                {processing ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    Mise à jour...
-                  </>
-                ) : (
-                  'Mettre à jour'
-                )}
-              </button>
-            </div>
+    <div className="space-y-6 px-6 py-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(`/projets/${tranche.projet_id}`)}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            title="Retour au projet"
+            disabled={processing}
+          >
+            <ArrowLeft className="w-5 h-5 text-slate-600" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Modifier la tranche</h1>
+            <p className="text-sm text-slate-600 mt-1">{trancheName || 'Sans nom'}</p>
           </div>
         </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate(`/projets/${tranche.projet_id}`)}
+            className="px-5 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 font-medium"
+            disabled={processing}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={processing || !trancheName}
+            className="px-5 py-2.5 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 flex items-center gap-2 font-medium"
+          >
+            {processing ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                Mise à jour...
+              </>
+            ) : (
+              'Mettre à jour'
+            )}
+          </button>
+        </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="max-w-[1920px] mx-auto px-8 py-8">
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-900">Erreur</p>
-                <p className="text-sm text-red-700 mt-1">{error}</p>
-              </div>
-              <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+      {/* Error Message */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-900">Erreur</p>
+            <p className="text-sm text-red-700 mt-1">{error}</p>
+          </div>
+          <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
             {/* Left Column - Basic Info */}
             <div className="xl:col-span-1 space-y-6">
               {/* Tranche Name Card */}
@@ -678,10 +732,9 @@ export function TrancheEditPage({
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Investor Details Modal */}
-        {selectedInvestorDetails && (
+      {/* Investor Details Modal */}
+      {selectedInvestorDetails && (
           <div className="fixed inset-0 z-[10000] overflow-y-auto">
             <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
             <div className="flex min-h-full items-center justify-center p-4">
@@ -810,8 +863,8 @@ export function TrancheEditPage({
           </div>
         )}
 
-        {/* Reassign Subscription Modal */}
-        {reassigningSouscriptionId && (
+      {/* Reassign Subscription Modal */}
+      {reassigningSouscriptionId && (
           <div className="fixed inset-0 z-[10000] overflow-y-auto">
             <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
             <div className="flex min-h-full items-center justify-center p-4">
@@ -899,7 +952,6 @@ export function TrancheEditPage({
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }

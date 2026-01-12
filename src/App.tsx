@@ -22,6 +22,9 @@ const ProjectActualitesPage = lazy(() =>
     default: m.ProjectActualitesPage,
   }))
 );
+const TrancheEditPage = lazy(() =>
+  import('./components/tranches/TrancheEditPage').then(m => ({ default: m.TrancheEditPage }))
+);
 const EcheancierPage = lazy(() =>
   import('./components/coupons/EcheancierPage').then(m => ({ default: m.EcheancierPage }))
 );
@@ -197,6 +200,16 @@ function App(): JSX.Element {
                   <ErrorBoundary>
                     <Suspense fallback={<LoadingFallback />}>
                       <ProjectActualitesPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="tranches/:trancheId/edit"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <TrancheEditPage />
                     </Suspense>
                   </ErrorBoundary>
                 }
