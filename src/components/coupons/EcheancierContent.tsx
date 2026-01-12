@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload, Eye, FileText, XCircle, Mail, Loader2, CreditCard } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload, FileText, XCircle, Mail, Loader2, CreditCard } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import * as ExcelJS from 'exceljs';
@@ -8,6 +8,8 @@ import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { AlertModal } from '../common/Modals';
 import { QuickPaymentModal } from './QuickPaymentModal';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { logger } from '../../utils/logger';
+import { isDateOverdue } from '../../utils/formatters';
 
 interface EcheancierContentProps {
   projectId: string;
@@ -87,11 +89,7 @@ export function EcheancierContent({
     type?: 'success' | 'error' | 'warning' | 'info';
   }>({ title: '', message: '', type: 'info' });
 
-  useEffect(() => {
-    fetchEcheances();
-  }, [projectId]);
-
-  const fetchEcheances = async () => {
+  const fetchEcheances = useCallback(async () => {
     setLoading(true);
     try {
       const { data: subscriptionsData, error: subsError } = await supabase
@@ -144,12 +142,17 @@ export function EcheancierContent({
       });
 
       setEcheances(enrichedEcheances);
-    } catch {
+    } catch (err) {
+      logger.error(err instanceof Error ? err : new Error('Failed to fetch echeances'), { projectId });
       setEcheances([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchEcheances();
+  }, [fetchEcheances]);
 
   const toggleTranche = (trancheName: string) => {
     const newExpanded = new Set(expandedTranches);
@@ -163,11 +166,7 @@ export function EcheancierContent({
 
   const isOverdue = (echeance: Echeance) => {
     if (echeance.statut === 'paye') return false;
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const echeanceDate = new Date(echeance.date_echeance);
-    echeanceDate.setHours(0, 0, 0, 0);
-    return echeanceDate < now;
+    return isDateOverdue(echeance.date_echeance);
   };
 
   const getEcheanceStatus = (echeance: Echeance) => {
@@ -260,9 +259,9 @@ export function EcheancierContent({
     setExpandedDates(newExpanded);
   };
 
-  const handleViewPaymentProof = async (echeance: Echeance) => {
+  const handleViewPaymentProof = async (echeance: Echeance): Promise<void> => {
     // First, we need to find the paiement_id from the echeance
-    const { data: echeanceData, error: echeanceError } = await supabase
+    const { data: echeanceData, error: _echeanceError } = await supabase
       .from('coupons_echeances')
       .select('paiement_id, souscription_id')
       .eq('id', echeance.id)

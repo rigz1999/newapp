@@ -28,6 +28,35 @@ export const formatCurrencyWithDecimals = (amount: number): string => {
 };
 
 /**
+ * Parse a date string and return a Date object at midnight in local timezone
+ * This ensures consistent date comparisons regardless of timezone
+ */
+export const parseDateAtMidnight = (dateString: string): Date => {
+  const date = new Date(dateString);
+  // Set to midnight in local timezone
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+/**
+ * Get current date at midnight in local timezone
+ */
+export const getTodayAtMidnight = (): Date => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
+};
+
+/**
+ * Check if a date is before today (overdue)
+ */
+export const isDateOverdue = (dateString: string): boolean => {
+  const date = parseDateAtMidnight(dateString);
+  const today = getTodayAtMidnight();
+  return date < today;
+};
+
+/**
  * Format date to French locale
  */
 export const formatDate = (dateString: string): string => {

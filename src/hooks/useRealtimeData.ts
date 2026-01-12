@@ -57,7 +57,7 @@ export function useRealtimePayments(
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchPayments = useCallback(async () => {
+  const fetchPayments = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const start = (page - 1) * pageSize;
@@ -71,22 +71,29 @@ export function useRealtimePayments(
           investisseur:investisseurs(nom_raison_sociale)
         `, { count: 'exact' })
         .order('date_paiement', { ascending: false })
-        .range(start, end);
+        .range(start, end)
+        .abortSignal(signal as any);
 
+      if (signal?.aborted) return;
       if (fetchError) throw fetchError;
       setData(payments || []);
       setTotalCount(count || 0);
       if (onDataChange) onDataChange(payments || []);
     } catch (err) {
+      if (signal?.aborted) return;
       setError(err as Error);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [page, pageSize, onDataChange]);
 
   useEffect(() => {
     if (enabled) {
-      fetchPayments();
+      const abortController = new AbortController();
+      fetchPayments(abortController.signal);
+      return () => abortController.abort();
     }
   }, [enabled, fetchPayments]);
 
@@ -145,7 +152,7 @@ export function useRealtimeInvestors(
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchInvestors = useCallback(async () => {
+  const fetchInvestors = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const start = (page - 1) * pageSize;
@@ -155,22 +162,29 @@ export function useRealtimeInvestors(
         .from('investisseurs')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .range(start, end);
+        .range(start, end)
+        .abortSignal(signal as any);
 
+      if (signal?.aborted) return;
       if (fetchError) throw fetchError;
       setData(investors || []);
       setTotalCount(count || 0);
       if (onDataChange) onDataChange(investors || []);
     } catch (err) {
+      if (signal?.aborted) return;
       setError(err as Error);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [page, pageSize, onDataChange]);
 
   useEffect(() => {
     if (enabled) {
-      fetchInvestors();
+      const abortController = new AbortController();
+      fetchInvestors(abortController.signal);
+      return () => abortController.abort();
     }
   }, [enabled, fetchInvestors]);
 
@@ -229,7 +243,7 @@ export function useRealtimeProjects(
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchProjects = useCallback(async () => {
+  const fetchProjects = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const start = (page - 1) * pageSize;
@@ -239,22 +253,29 @@ export function useRealtimeProjects(
         .from('projets')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .range(start, end);
+        .range(start, end)
+        .abortSignal(signal as any);
 
+      if (signal?.aborted) return;
       if (fetchError) throw fetchError;
       setData(projects || []);
       setTotalCount(count || 0);
       if (onDataChange) onDataChange(projects || []);
     } catch (err) {
+      if (signal?.aborted) return;
       setError(err as Error);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [page, pageSize, onDataChange]);
 
   useEffect(() => {
     if (enabled) {
-      fetchProjects();
+      const abortController = new AbortController();
+      fetchProjects(abortController.signal);
+      return () => abortController.abort();
     }
   }, [enabled, fetchProjects]);
 
@@ -313,7 +334,7 @@ export function useRealtimeSubscriptions(
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchSubscriptions = useCallback(async () => {
+  const fetchSubscriptions = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const start = (page - 1) * pageSize;
@@ -327,22 +348,29 @@ export function useRealtimeSubscriptions(
           tranche:tranches(tranche_name)
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
-        .range(start, end);
+        .range(start, end)
+        .abortSignal(signal as any);
 
+      if (signal?.aborted) return;
       if (fetchError) throw fetchError;
       setData(subscriptions || []);
       setTotalCount(count || 0);
       if (onDataChange) onDataChange(subscriptions || []);
     } catch (err) {
+      if (signal?.aborted) return;
       setError(err as Error);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   }, [page, pageSize, onDataChange]);
 
   useEffect(() => {
     if (enabled) {
-      fetchSubscriptions();
+      const abortController = new AbortController();
+      fetchSubscriptions(abortController.signal);
+      return () => abortController.abort();
     }
   }, [enabled, fetchSubscriptions]);
 
