@@ -382,8 +382,15 @@ export function TrancheWizard({
               setError(result.error || "Erreur lors de l'import");
             }
           } else {
+            let errorMsg = `Erreur serveur (${xhr.status})`;
+            try {
+              const errorResponse = JSON.parse(xhr.responseText);
+              errorMsg = errorResponse.error || errorMsg;
+            } catch (e) {
+              errorMsg += `: ${xhr.responseText}`;
+            }
             logger.error(new Error(`Erreur HTTP ${xhr.status}`), { response: xhr.responseText });
-            setError(`Erreur serveur (${xhr.status}): Voir la console pour plus de détails`);
+            setError(errorMsg);
           }
         } catch (parseErr) {
           logger.error(new Error('Erreur de parsing de la réponse'), { error: parseErr });
