@@ -18,6 +18,7 @@ import { FileUpload } from '../investors/FileUpload';
 import { Tooltip } from '../common/Tooltip';
 import { logger } from '../../utils/logger';
 import { ImportPreviewModal } from './ImportPreviewModal';
+import { TrancheEditPage } from './TrancheEditPage';
 
 interface Project {
   id: string;
@@ -876,6 +877,12 @@ export function TrancheWizard({
     }
   };
 
+  // Use full-page edit view for edit mode
+  if (isEditMode && editingTranche) {
+    return <TrancheEditPage tranche={editingTranche} onClose={onClose} onSuccess={onSuccess} />;
+  }
+
+  // Modal view for create mode
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto">
       {/* Backdrop */}
