@@ -944,7 +944,6 @@ async function upsertSubscription(
     date_souscription: datesouscription || new Date().toISOString().split('T')[0],
     montant_investi: montantInvesti || 0,
     nombre_obligations: nombreObligations || 0,
-    statut: 'active',
   };
 
   const { error: subErr } = await supabase.from('souscriptions').upsert(subData, {
