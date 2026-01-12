@@ -10,6 +10,7 @@ import {
   Download,
   FileSpreadsheet,
   Edit2,
+  Lock,
 } from 'lucide-react';
 import { FileUpload } from '../investors/FileUpload';
 import { Tooltip } from '../common/Tooltip';
@@ -855,7 +856,13 @@ export function TrancheWizard({
                       Souscriptions ({souscriptions.length})
                     </h4>
                     <p className="text-sm text-slate-600 mt-1">
-                      Cliquez sur une ligne pour modifier le montant ou le nombre d'obligations
+                      Cliquez sur une ligne pour modifier le <strong>montant</strong> ou le{' '}
+                      <strong>nombre d'obligations</strong>
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      Les informations investisseur (nom, type) sont des données maître -
+                      modifiables via la gestion des investisseurs
                     </p>
                   </div>
 
@@ -875,16 +882,28 @@ export function TrancheWizard({
                         <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                           <tr>
                             <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                              Investisseur
+                              <div className="flex items-center gap-1">
+                                <Lock className="w-3 h-3" />
+                                Investisseur
+                              </div>
                             </th>
                             <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                              Type
+                              <div className="flex items-center gap-1">
+                                <Lock className="w-3 h-3" />
+                                Type
+                              </div>
                             </th>
                             <th className="px-5 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                              Montant
+                              <div className="flex items-center justify-end gap-1">
+                                <Edit2 className="w-3 h-3" />
+                                Montant
+                              </div>
                             </th>
                             <th className="px-5 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                              Titres
+                              <div className="flex items-center justify-end gap-1">
+                                <Edit2 className="w-3 h-3" />
+                                Titres
+                              </div>
                             </th>
                           </tr>
                         </thead>
@@ -895,22 +914,28 @@ export function TrancheWizard({
                               className={`hover:bg-slate-50 transition-colors ${editingRow === index ? 'bg-blue-50' : ''}`}
                             >
                               <td className="px-5 py-3 text-sm">
-                                <span className="font-medium text-slate-900">
-                                  {souscription.investisseur_nom}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <Lock className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                  <span className="font-medium text-slate-900">
+                                    {souscription.investisseur_nom}
+                                  </span>
+                                </div>
                               </td>
                               <td className="px-5 py-3 text-sm">
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    souscription.investisseur_type === 'physique'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-purple-100 text-purple-800'
-                                  }`}
-                                >
-                                  {souscription.investisseur_type === 'physique'
-                                    ? 'Physique'
-                                    : 'Morale'}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <Lock className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      souscription.investisseur_type === 'physique'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : 'bg-purple-100 text-purple-800'
+                                    }`}
+                                  >
+                                    {souscription.investisseur_type === 'physique'
+                                      ? 'Physique'
+                                      : 'Morale'}
+                                  </span>
+                                </div>
                               </td>
                               <td className="px-5 py-3 text-sm text-right">
                                 {editingRow === index ? (
