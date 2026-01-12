@@ -802,7 +802,9 @@ async function upsertInvestor(
 ): Promise<string> {
   const isPhysical = row._investorType === 'physique';
 
-  // Get name field - try different possible column names, trim empty strings
+  // Get name components
+  const prenomField = (row['Prénom(s)'] || row['Prénom'] || row['Prénoms'] || '').trim();
+
   const nomField = (
     row['Nom'] ||
     row['Nom(s)'] ||
@@ -812,7 +814,22 @@ async function upsertInvestor(
     ''
   ).trim();
 
-  if (!nomField) {
+  const nomJeuneFille = (row['Nom de jeune fille'] || '').trim();
+
+  // Build full name for physical persons: Prénom Nom (née Nom de jeune fille)
+  // For legal entities, just use the raison sociale
+  let fullName = '';
+  if (isPhysical) {
+    const nameParts = [prenomField, nomField].filter(Boolean);
+    fullName = nameParts.join(' ');
+    if (nomJeuneFille) {
+      fullName += ` (née ${nomJeuneFille})`;
+    }
+  } else {
+    fullName = nomField;
+  }
+
+  if (!fullName.trim()) {
     throw new Error(`Nom obligatoire manquant`);
   }
 
@@ -848,7 +865,7 @@ async function upsertInvestor(
     id_investisseur: idInvestisseur,
     org_id: orgId,
     type: isPhysical ? 'physique' : 'morale',
-    nom_raison_sociale: nomField,
+    nom_raison_sociale: fullName,
     email: row['E-mail'] || row['E-mail du représentant légal'] || row['Email'] || null,
     telephone: telephone,
     adresse: fullAddress,
@@ -1019,6 +1036,7 @@ Deno.serve(async req => {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const profileId = formData.get('profile_id') as string | undefined;
+    const previewMode = formData.get('preview_mode') === 'true';
 
     const trancheId = formData.get('tranche_id') as string | null;
     const projetId = formData.get('projet_id') as string | null;
@@ -1027,7 +1045,7 @@ Deno.serve(async req => {
     const dateEmission = formData.get('date_emission') as string | null;
     const dureeMois = formData.get('duree_mois') as string | null;
 
-    console.log('📥 Received:', { projetId, trancheName, trancheId, hasFile: !!file });
+    console.log('📥 Received:', { projetId, trancheName, trancheId, hasFile: !!file, previewMode });
 
     // 3. VALIDATE INPUT
     if (!file) {
@@ -1051,18 +1069,16 @@ Deno.serve(async req => {
       `Type: ${fileType.toUpperCase()}`
     );
 
-    // 4. GET/CREATE TRANCHE
-    let finalTrancheId: string;
-    let finalProjetId: string;
+    // 4. GET ORG ID FIRST
     let orgId: string;
+    let finalProjetId: string;
+    let finalTrancheId: string;
 
     if (projetId && trancheName && !trancheId) {
-      // Create new tranche
-      console.log('📝 Mode: Création nouvelle tranche');
-
+      // Get projet first to get orgId
       const { data: projet, error: projetErr } = await supabaseClient
         .from('projets')
-        .select('org_id, taux_nominal, periodicite_coupons, duree_mois, base_interet')
+        .select('org_id')
         .eq('id', projetId)
         .single();
 
@@ -1073,27 +1089,35 @@ Deno.serve(async req => {
       orgId = projet.org_id;
       finalProjetId = projetId;
 
-      const trancheData: any = {
-        projet_id: projetId,
-        tranche_name: trancheName,
-        taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
-        date_emission: dateEmission || null,
-        duree_mois: dureeMois ? parseInt(dureeMois, 10) : null,
-      };
+      // In preview mode, skip tranche creation
+      if (!previewMode) {
+        // Create tranche (without date_emission for now - will extract from CSV next)
+        const trancheData: any = {
+          projet_id: projetId,
+          tranche_name: trancheName,
+          taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
+          date_emission: dateEmission || null,
+          duree_mois: dureeMois ? parseInt(dureeMois, 10) : null,
+        };
 
-      const { data: newTranche, error: trancheErr } = await supabaseClient
-        .from('tranches')
-        .insert(trancheData)
-        .select('id')
-        .single();
+        const { data: newTranche, error: trancheErr } = await supabaseClient
+          .from('tranches')
+          .insert(trancheData)
+          .select('id')
+          .single();
 
-      if (trancheErr || !newTranche) {
-        console.error('Erreur création tranche:', trancheErr);
-        throw new Error('Erreur lors de la création de la tranche: ' + trancheErr?.message);
+        if (trancheErr || !newTranche) {
+          console.error('Erreur création tranche:', trancheErr);
+          throw new Error('Erreur lors de la création de la tranche: ' + trancheErr?.message);
+        }
+
+        finalTrancheId = newTranche.id;
+        console.log('✅ Tranche créée:', finalTrancheId);
+      } else {
+        // In preview mode, use a placeholder tranche ID (won't be persisted)
+        finalTrancheId = 'preview-mode';
+        console.log('👁️  Mode aperçu: Tranche non créée');
       }
-
-      finalTrancheId = newTranche.id;
-      console.log('✅ Tranche créée:', finalTrancheId);
     } else if (trancheId && !projetId) {
       // Use existing tranche
       console.log('📝 Mode: Import vers tranche existante');
@@ -1117,23 +1141,55 @@ Deno.serve(async req => {
       throw new Error('Vous devez fournir soit (projet_id + tranche_name) soit (tranche_id)');
     }
 
-    // Get tranche details with project fallback
-    const { data: trancheDetails, error: trancheDetailsErr } = await supabaseClient
-      .from('tranches')
-      .select(
-        'taux_nominal, date_emission, duree_mois, projets!inner(taux_nominal, periodicite_coupons, duree_mois, base_interet)'
-      )
-      .eq('id', finalTrancheId)
-      .single();
+    // Get project and tranche details
+    let trancheDetails: any;
+    let project: any;
+    let tauxNominalFinal: number;
+    let periodiciteCoupons: string;
+    let baseInteret: number;
 
-    if (trancheDetailsErr || !trancheDetails) {
-      throw new Error('Impossible de récupérer les détails de la tranche');
+    if (previewMode && finalTrancheId === 'preview-mode') {
+      // In preview mode, get project details directly (no tranche exists yet)
+      const { data: projectData, error: projectErr } = await supabaseClient
+        .from('projets')
+        .select('taux_nominal, periodicite_coupons, duree_mois, base_interet')
+        .eq('id', finalProjetId)
+        .single();
+
+      if (projectErr || !projectData) {
+        throw new Error('Impossible de récupérer les détails du projet');
+      }
+
+      project = projectData;
+      trancheDetails = {
+        taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
+        date_emission: null, // Will be extracted from CSV
+        duree_mois: dureeMois ? parseInt(dureeMois, 10) : null,
+        projets: projectData,
+      };
+      tauxNominalFinal = trancheDetails.taux_nominal ?? project.taux_nominal;
+      periodiciteCoupons = project.periodicite_coupons;
+      baseInteret = project.base_interet ?? 360;
+    } else {
+      // Normal mode: get tranche details with project fallback
+      const { data: trancheDetailsData, error: trancheDetailsErr } = await supabaseClient
+        .from('tranches')
+        .select(
+          'taux_nominal, date_emission, duree_mois, projets!inner(taux_nominal, periodicite_coupons, duree_mois, base_interet)'
+        )
+        .eq('id', finalTrancheId)
+        .single();
+
+      if (trancheDetailsErr || !trancheDetailsData) {
+        throw new Error('Impossible de récupérer les détails de la tranche');
+      }
+
+      trancheDetails = trancheDetailsData;
+      project = trancheDetails.projets as any;
+      tauxNominalFinal = trancheDetails.taux_nominal ?? project.taux_nominal;
+      periodiciteCoupons = project.periodicite_coupons;
+      baseInteret = project.base_interet ?? 360;
     }
-
-    const project = trancheDetails.projets as any;
-    const tauxNominalFinal = trancheDetails.taux_nominal ?? project.taux_nominal;
-    const periodiciteCoupons = project.periodicite_coupons;
-    const baseInteret = project.base_interet ?? 360;
 
     if (!tauxNominalFinal || !periodiciteCoupons) {
       throw new Error(
@@ -1162,6 +1218,101 @@ Deno.serve(async req => {
       throw new Error(`Too many rows. Maximum: ${MAX_ROWS}, Found: ${rows.length}`);
     }
 
+    // Extract date_emission from CSV if not provided in form
+    // Try "Date de Transfert" (case-insensitive)
+    let extractedDateEmission: string | null = null;
+    if (!dateEmission && rows.length > 0) {
+      // Debug: show available columns
+      const firstRow = rows[0];
+      const availableColumns = Object.keys(firstRow).filter(k => !k.startsWith('_'));
+      console.log(
+        `📋 Colonnes disponibles dans le CSV (${availableColumns.length}):`,
+        availableColumns.slice(0, 30).join(', ')
+      );
+
+      // Find "Date de Transfert" column (case-insensitive)
+      console.log(`🔍 Recherche de date d'émission (Date de Transfert)...`);
+
+      // Try exact matches first (common variations)
+      let dateTransfertValue =
+        firstRow['Date de Transfert'] ||
+        firstRow['Date de transfert'] ||
+        firstRow['Date de Transfert des Fonds'] ||
+        firstRow['Date de transfert des fonds'] ||
+        firstRow['Date Transfert'] ||
+        firstRow['Date transfert'];
+
+      // If not found, try case-insensitive search
+      if (!dateTransfertValue) {
+        const transferColumn = availableColumns.find(
+          col => col.toLowerCase().includes('date') && col.toLowerCase().includes('transfert')
+        );
+        if (transferColumn) {
+          dateTransfertValue = firstRow[transferColumn];
+          console.log(`   Trouvé colonne: "${transferColumn}" = "${dateTransfertValue}"`);
+        }
+      } else {
+        console.log(`   Valeur trouvée: "${dateTransfertValue}"`);
+      }
+
+      const dateTransfert = parseDate(dateTransfertValue);
+
+      if (dateTransfert) {
+        extractedDateEmission = dateTransfert;
+        console.log(`📅 Date émission extraite du CSV: ${extractedDateEmission}`);
+      } else {
+        console.log(`   ❌ Colonne "Date de Transfert" non trouvée ou vide dans le CSV!`);
+        console.log(`   ⚠️  Import annulé - la date d'émission est requise`);
+        throw new Error(
+          'Date d\'émission manquante: La colonne "Date de Transfert" doit être présente dans le fichier CSV avec une valeur valide.'
+        );
+      }
+    } else if (dateEmission) {
+      console.log(`📅 Date émission fournie par le formulaire: ${dateEmission}`);
+    }
+
+    const finalDateEmission = dateEmission || extractedDateEmission;
+
+    // Update tranche with extracted date if we created a new one and extracted a date
+    if (projetId && trancheName && !trancheId && extractedDateEmission && !dateEmission) {
+      console.log(`📅 Mise à jour de la tranche avec date émission: ${extractedDateEmission}`);
+      console.log(
+        `   Conditions: projetId=${!!projetId}, trancheName=${!!trancheName}, !trancheId=${!trancheId}, extractedDate=${!!extractedDateEmission}, !dateEmission=${!dateEmission}`
+      );
+
+      const { error: updateErr } = await supabaseClient
+        .from('tranches')
+        .update({ date_emission: extractedDateEmission })
+        .eq('id', finalTrancheId);
+
+      if (updateErr) {
+        console.error('❌ Erreur mise à jour date émission:', updateErr);
+      } else {
+        console.log('✅ Date émission mise à jour sur la tranche');
+
+        // Re-fetch tranche details to get updated date_emission
+        const { data: updatedTranche, error: refetchErr } = await supabaseClient
+          .from('tranches')
+          .select('date_emission')
+          .eq('id', finalTrancheId)
+          .single();
+
+        if (!refetchErr && updatedTranche) {
+          console.log(`✅ Date émission confirmée dans la DB: ${updatedTranche.date_emission}`);
+          // Update trancheDetails with new date
+          (trancheDetails as any).date_emission = updatedTranche.date_emission;
+        }
+      }
+    } else {
+      console.log(`⏭️  Pas de mise à jour de date - conditions non remplies:`);
+      console.log(
+        `   projetId=${!!projetId}, trancheName=${!!trancheName}, !trancheId=${!trancheId}`
+      );
+      console.log(
+        `   extractedDateEmission=${!!extractedDateEmission}, !dateEmission=${!dateEmission}`
+      );
+    }
+
     // 6. VALIDATE DATA
     const validationErrors = validateData(rows, profile);
 
@@ -1181,6 +1332,111 @@ Deno.serve(async req => {
       );
     }
 
+    // 6.5 PREVIEW MODE: Return preview data without persisting
+    if (previewMode) {
+      console.log('👁️  Mode aperçu: Génération des données de prévisualisation');
+
+      // Build preview data for investors
+      const investorsPreview = rows.slice(0, 20).map(row => {
+        const isPhysical = row._investorType === 'physique';
+        const prenomField = (row['Prénom(s)'] || row['Prénom'] || row['Prénoms'] || '').trim();
+        const nomField = (
+          row['Nom'] ||
+          row['Nom(s)'] ||
+          row["Nom de l'investisseur"] ||
+          row['Raison sociale'] ||
+          row['Nom/Raison sociale'] ||
+          ''
+        ).trim();
+        const nomJeuneFille = (row['Nom de jeune fille'] || '').trim();
+
+        let fullName = '';
+        if (isPhysical) {
+          const nameParts = [prenomField, nomField].filter(Boolean);
+          fullName = nameParts.join(' ');
+          if (nomJeuneFille) {
+            fullName += ` (née ${nomJeuneFille})`;
+          }
+        } else {
+          fullName = nomField;
+        }
+
+        const montantInvesti = toNumber(row['Montant investi']) || toNumber(row['Montant']) || 0;
+        const nombreObligations =
+          toNumber(row['Quantité de titres']) ||
+          toNumber(row['Quantité']) ||
+          toNumber(row['Quantite']) ||
+          0;
+
+        return {
+          nom: fullName,
+          type: row._investorType,
+          montant_investi: montantInvesti,
+          nombre_obligations: nombreObligations,
+        };
+      });
+
+      // Calculate totals
+      const totalMontant = rows.reduce((sum, row) => {
+        const montant = toNumber(row['Montant investi']) || toNumber(row['Montant']) || 0;
+        return sum + montant;
+      }, 0);
+
+      // Count unique investors
+      const uniqueInvestors = new Set(
+        rows.map(row => {
+          const isPhysical = row._investorType === 'physique';
+          const prenomField = (row['Prénom(s)'] || row['Prénom'] || row['Prénoms'] || '').trim();
+          const nomField = (
+            row['Nom'] ||
+            row['Nom(s)'] ||
+            row["Nom de l'investisseur"] ||
+            row['Raison sociale'] ||
+            row['Nom/Raison sociale'] ||
+            ''
+          ).trim();
+          const nomJeuneFille = (row['Nom de jeune fille'] || '').trim();
+
+          if (isPhysical) {
+            const nameParts = [prenomField, nomField].filter(Boolean);
+            let fullName = nameParts.join(' ');
+            if (nomJeuneFille) {
+              fullName += ` (née ${nomJeuneFille})`;
+            }
+            return fullName;
+          }
+          return nomField;
+        })
+      );
+
+      console.log(
+        `✅ Aperçu généré: ${rows.length} lignes, ${uniqueInvestors.size} investisseurs uniques`
+      );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          preview: true,
+          data: {
+            extracted_date_emission: extractedDateEmission,
+            tranche_name: trancheName,
+            taux_nominal: tauxNominalFinal,
+            periodicite_coupons: periodiciteCoupons,
+            duree_mois: trancheDetails.duree_mois || project.duree_mois,
+            investors_preview: investorsPreview,
+            total_investors: uniqueInvestors.size,
+            total_souscriptions: rows.length,
+            total_montant: totalMontant,
+            has_more: rows.length > 20,
+          },
+        }),
+        {
+          status: 200,
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // 7. IMPORT DATA
     let createdInvestisseurs = 0;
     let updatedInvestisseurs = 0;
@@ -1188,7 +1444,29 @@ Deno.serve(async req => {
     const errors: string[] = [];
 
     for (const row of rows) {
-      const rowName = row['Nom'] || row['Nom(s)'] || row['Raison sociale'] || 'Unnamed';
+      // Build full name same way as upsertInvestor
+      const isPhysical = row._investorType === 'physique';
+      const prenomField = (row['Prénom(s)'] || row['Prénom'] || row['Prénoms'] || '').trim();
+      const nomField = (
+        row['Nom'] ||
+        row['Nom(s)'] ||
+        row["Nom de l'investisseur"] ||
+        row['Raison sociale'] ||
+        row['Nom/Raison sociale'] ||
+        ''
+      ).trim();
+      const nomJeuneFille = (row['Nom de jeune fille'] || '').trim();
+
+      let rowName = '';
+      if (isPhysical) {
+        const nameParts = [prenomField, nomField].filter(Boolean);
+        rowName = nameParts.join(' ');
+        if (nomJeuneFille) {
+          rowName += ` (née ${nomJeuneFille})`;
+        }
+      } else {
+        rowName = nomField;
+      }
 
       try {
         // Check if investor already exists
@@ -1234,29 +1512,41 @@ Deno.serve(async req => {
     // 8. GENERATE ECHEANCIER
     if (createdSouscriptions > 0) {
       console.log("📅 Génération de l'échéancier...");
+      console.log(`   Tranche ID: ${finalTrancheId}`);
+      console.log(`   Taux nominal: ${tauxNominalFinal}`);
+      console.log(`   Périodicité: ${periodiciteCoupons}`);
+      console.log(`   Date émission: ${trancheDetails.date_emission}`);
+      console.log(`   Durée (mois): ${trancheDetails.duree_mois || project.duree_mois}`);
+
       try {
-        const regenerateResponse = await fetch(
-          `${Deno.env.get('SUPABASE_URL')}/functions/v1/regenerate-echeancier`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: authHeader,
-            },
-            body: JSON.stringify({ tranche_id: finalTrancheId }),
-          }
-        );
+        const regenerateUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/regenerate-echeancier`;
+        console.log(`   Calling: ${regenerateUrl}`);
+
+        const regenerateResponse = await fetch(regenerateUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: authHeader,
+          },
+          body: JSON.stringify({ tranche_id: finalTrancheId }),
+        });
+
+        console.log(`   Response status: ${regenerateResponse.status}`);
 
         if (!regenerateResponse.ok) {
-          console.error('Erreur génération échéancier:', await regenerateResponse.text());
+          const errorText = await regenerateResponse.text();
+          console.error('❌ Erreur génération échéancier:', errorText);
         } else {
           const result = await regenerateResponse.json();
           console.log(`✅ Échéancier généré: ${result.created_coupons} échéances créées`);
         }
       } catch (echeancierErr: any) {
-        console.error("Erreur lors de la génération de l'échéancier:", echeancierErr);
+        console.error('❌ Exception génération échéancier:', echeancierErr.message);
+        console.error('   Stack:', echeancierErr.stack);
         // Don't fail the whole import if échéancier generation fails
       }
+    } else {
+      console.log('⏭️  Aucune souscription créée, échéancier non généré');
     }
 
     // 9. RETURN RESULTS
