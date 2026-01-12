@@ -802,7 +802,9 @@ async function upsertInvestor(
 ): Promise<string> {
   const isPhysical = row._investorType === 'physique';
 
-  // Get name field - try different possible column names, trim empty strings
+  // Get name components
+  const prenomField = (row['Prénom(s)'] || row['Prénom'] || row['Prénoms'] || '').trim();
+
   const nomField = (
     row['Nom'] ||
     row['Nom(s)'] ||
@@ -812,7 +814,22 @@ async function upsertInvestor(
     ''
   ).trim();
 
-  if (!nomField) {
+  const nomJeuneFille = (row['Nom de jeune fille'] || '').trim();
+
+  // Build full name for physical persons: Prénom Nom (née Nom de jeune fille)
+  // For legal entities, just use the raison sociale
+  let fullName = '';
+  if (isPhysical) {
+    const nameParts = [prenomField, nomField].filter(Boolean);
+    fullName = nameParts.join(' ');
+    if (nomJeuneFille) {
+      fullName += ` (née ${nomJeuneFille})`;
+    }
+  } else {
+    fullName = nomField;
+  }
+
+  if (!fullName.trim()) {
     throw new Error(`Nom obligatoire manquant`);
   }
 
@@ -848,7 +865,7 @@ async function upsertInvestor(
     id_investisseur: idInvestisseur,
     org_id: orgId,
     type: isPhysical ? 'physique' : 'morale',
-    nom_raison_sociale: nomField,
+    nom_raison_sociale: fullName,
     email: row['E-mail'] || row['E-mail du représentant légal'] || row['Email'] || null,
     telephone: telephone,
     adresse: fullAddress,
@@ -1188,7 +1205,29 @@ Deno.serve(async req => {
     const errors: string[] = [];
 
     for (const row of rows) {
-      const rowName = row['Nom'] || row['Nom(s)'] || row['Raison sociale'] || 'Unnamed';
+      // Build full name same way as upsertInvestor
+      const isPhysical = row._investorType === 'physique';
+      const prenomField = (row['Prénom(s)'] || row['Prénom'] || row['Prénoms'] || '').trim();
+      const nomField = (
+        row['Nom'] ||
+        row['Nom(s)'] ||
+        row["Nom de l'investisseur"] ||
+        row['Raison sociale'] ||
+        row['Nom/Raison sociale'] ||
+        ''
+      ).trim();
+      const nomJeuneFille = (row['Nom de jeune fille'] || '').trim();
+
+      let rowName = '';
+      if (isPhysical) {
+        const nameParts = [prenomField, nomField].filter(Boolean);
+        rowName = nameParts.join(' ');
+        if (nomJeuneFille) {
+          rowName += ` (née ${nomJeuneFille})`;
+        }
+      } else {
+        rowName = nomField;
+      }
 
       try {
         // Check if investor already exists
@@ -1234,29 +1273,41 @@ Deno.serve(async req => {
     // 8. GENERATE ECHEANCIER
     if (createdSouscriptions > 0) {
       console.log("📅 Génération de l'échéancier...");
+      console.log(`   Tranche ID: ${finalTrancheId}`);
+      console.log(`   Taux nominal: ${tauxNominalFinal}`);
+      console.log(`   Périodicité: ${periodiciteCoupons}`);
+      console.log(`   Date émission: ${trancheDetails.date_emission}`);
+      console.log(`   Durée (mois): ${trancheDetails.duree_mois || project.duree_mois}`);
+
       try {
-        const regenerateResponse = await fetch(
-          `${Deno.env.get('SUPABASE_URL')}/functions/v1/regenerate-echeancier`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: authHeader,
-            },
-            body: JSON.stringify({ tranche_id: finalTrancheId }),
-          }
-        );
+        const regenerateUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/regenerate-echeancier`;
+        console.log(`   Calling: ${regenerateUrl}`);
+
+        const regenerateResponse = await fetch(regenerateUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: authHeader,
+          },
+          body: JSON.stringify({ tranche_id: finalTrancheId }),
+        });
+
+        console.log(`   Response status: ${regenerateResponse.status}`);
 
         if (!regenerateResponse.ok) {
-          console.error('Erreur génération échéancier:', await regenerateResponse.text());
+          const errorText = await regenerateResponse.text();
+          console.error('❌ Erreur génération échéancier:', errorText);
         } else {
           const result = await regenerateResponse.json();
           console.log(`✅ Échéancier généré: ${result.created_coupons} échéances créées`);
         }
       } catch (echeancierErr: any) {
-        console.error("Erreur lors de la génération de l'échéancier:", echeancierErr);
+        console.error('❌ Exception génération échéancier:', echeancierErr.message);
+        console.error('   Stack:', echeancierErr.stack);
         // Don't fail the whole import if échéancier generation fails
       }
+    } else {
+      console.log('⏭️  Aucune souscription créée, échéancier non généré');
     }
 
     // 9. RETURN RESULTS
