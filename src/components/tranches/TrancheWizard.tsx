@@ -9,6 +9,7 @@ import {
   Trash2,
   Download,
   FileSpreadsheet,
+  Edit2,
 } from 'lucide-react';
 import { FileUpload } from '../investors/FileUpload';
 import { Tooltip } from '../common/Tooltip';
@@ -35,6 +36,28 @@ interface InvestorPreview {
   type: string;
   montant_investi: number;
   nombre_obligations: number;
+}
+
+interface Souscription {
+  id: string;
+  investisseur_id: string;
+  investisseur_nom: string;
+  investisseur_type: string;
+  montant_investi: number;
+  nombre_obligations: number;
+}
+
+interface SouscriptionData {
+  id: string;
+  investisseur_id: string;
+  montant_investi: number;
+  nombre_obligations: number;
+  investisseurs: {
+    nom: string;
+    prenom: string;
+    raison_sociale: string;
+    type: string;
+  };
 }
 
 interface PreviewData {
@@ -83,6 +106,11 @@ export function TrancheWizard({
   const [dureeMois, setDureeMois] = useState<string>('');
   const [periodiciteCoupons, setPeriodiciteCoupons] = useState<string>('');
 
+  // For editing subscriptions in edit mode
+  const [souscriptions, setSouscriptions] = useState<Souscription[]>([]);
+  const [editingRow, setEditingRow] = useState<number | null>(null);
+  const [loadingSouscriptions, setLoadingSouscriptions] = useState(false);
+
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -102,12 +130,13 @@ export function TrancheWizard({
       setDateEmission(editingTranche.date_emission || '');
       setDureeMois(editingTranche.duree_mois?.toString() || '');
       setPeriodiciteCoupons(editingTranche.periodicite_coupons || '');
+      fetchSouscriptions(editingTranche.id);
     }
   }, [editingTranche, isEditMode]);
 
   // Handle ESC key to close modal
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
+    const handleEsc = (e: KeyboardEvent): void => {
       if (e.key === 'Escape' && !processing) {
         logger.debug('ESC pressed in TrancheWizard');
         onClose();
@@ -117,7 +146,7 @@ export function TrancheWizard({
     return () => document.removeEventListener('keydown', handleEsc, { capture: true });
   }, [onClose, processing]);
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (): Promise<void> => {
     setLoading(true);
     const { data } = await supabase
       .from('projets')
@@ -127,7 +156,62 @@ export function TrancheWizard({
     setLoading(false);
   };
 
-  const getSuggestedTrancheName = async (projectId: string) => {
+  const fetchSouscriptions = async (trancheId: string): Promise<void> => {
+    setLoadingSouscriptions(true);
+    try {
+      const { data, error } = await supabase
+        .from('souscriptions')
+        .select(
+          `
+          id,
+          investisseur_id,
+          montant_investi,
+          nombre_obligations,
+          investisseurs (
+            nom,
+            prenom,
+            raison_sociale,
+            type
+          )
+        `
+        )
+        .eq('tranche_id', trancheId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        logger.error(new Error('Erreur lors du chargement des souscriptions'), { error });
+        setError('Impossible de charger les souscriptions');
+        return;
+      }
+
+      const formattedSouscriptions: Souscription[] = (data || []).map((s: SouscriptionData) => {
+        const inv = s.investisseurs;
+        const nom =
+          inv.type === 'morale'
+            ? inv.raison_sociale
+            : `${inv.nom || ''} ${inv.prenom || ''}`.trim();
+
+        return {
+          id: s.id,
+          investisseur_id: s.investisseur_id,
+          investisseur_nom: nom,
+          investisseur_type: inv.type,
+          montant_investi: s.montant_investi,
+          nombre_obligations: s.nombre_obligations,
+        };
+      });
+
+      setSouscriptions(formattedSouscriptions);
+      logger.info('Souscriptions chargées', { count: formattedSouscriptions.length });
+    } catch (err) {
+      logger.error(new Error('Erreur lors du chargement des souscriptions'), { error: err });
+      setError('Impossible de charger les souscriptions');
+    } finally {
+      setLoadingSouscriptions(false);
+    }
+  };
+
+  const getSuggestedTrancheName = async (projectId: string): Promise<string> => {
     const { data: project } = await supabase
       .from('projets')
       .select('projet')
@@ -144,7 +228,7 @@ export function TrancheWizard({
     return `${projectName} - T${trancheNumber}`;
   };
 
-  const handleProjectSelect = async (projectId: string) => {
+  const handleProjectSelect = async (projectId: string): Promise<void> => {
     setSelectedProjectId(projectId);
     if (!isEditMode) {
       const suggested = await getSuggestedTrancheName(projectId);
@@ -170,12 +254,53 @@ export function TrancheWizard({
     }
   };
 
-  const handleRemoveFile = () => {
+  const handleRemoveFile = (): void => {
     setCsvFile(null);
     setError('');
   };
 
-  const handleUpdateTranche = async () => {
+  const formatCurrency = (amount: number): string =>
+    new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+
+  const handleSouscriptionEdit = (
+    index: number,
+    field: 'montant_investi' | 'nombre_obligations',
+    value: number
+  ): void => {
+    const updated = [...souscriptions];
+    updated[index] = { ...updated[index], [field]: value };
+    setSouscriptions(updated);
+  };
+
+  const saveSouscriptionEdit = async (index: number): Promise<void> => {
+    const souscription = souscriptions[index];
+    try {
+      const { error } = await supabase
+        .from('souscriptions')
+        .update({
+          montant_investi: souscription.montant_investi,
+          nombre_obligations: souscription.nombre_obligations,
+        })
+        .eq('id', souscription.id);
+
+      if (error) {
+        throw error;
+      }
+
+      logger.info('Souscription mise à jour', { id: souscription.id });
+      setEditingRow(null);
+    } catch (err) {
+      logger.error(new Error('Erreur lors de la mise à jour de la souscription'), { error: err });
+      setError('Impossible de mettre à jour la souscription');
+    }
+  };
+
+  const handleUpdateTranche = async (): Promise<void> => {
     if (!editingTranche || !trancheName) {
       setError('Veuillez remplir le nom de la tranche');
       return;
@@ -679,6 +804,134 @@ export function TrancheWizard({
                       </p>
                     </div>
                   </div>
+                </div>
+
+                {/* Souscriptions - EDITABLE */}
+                <div className="bg-white rounded-lg border border-slate-200">
+                  <div className="p-5 border-b border-slate-200">
+                    <h4 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                      <Edit2 className="w-5 h-5 text-blue-600" />
+                      Souscriptions ({souscriptions.length})
+                    </h4>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Cliquez sur une ligne pour modifier le montant ou le nombre d'obligations
+                    </p>
+                  </div>
+
+                  {loadingSouscriptions ? (
+                    <div className="p-8 text-center">
+                      <Loader className="w-6 h-6 animate-spin mx-auto text-slate-400 mb-2" />
+                      <p className="text-sm text-slate-600">Chargement des souscriptions...</p>
+                    </div>
+                  ) : souscriptions.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <AlertCircle className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                      <p className="text-sm text-slate-600">Aucune souscription trouvée</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                      <table className="w-full">
+                        <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                          <tr>
+                            <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                              Investisseur
+                            </th>
+                            <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                              Type
+                            </th>
+                            <th className="px-5 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                              Montant
+                            </th>
+                            <th className="px-5 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                              Titres
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {souscriptions.map((souscription, index) => (
+                            <tr
+                              key={souscription.id}
+                              className={`hover:bg-slate-50 transition-colors ${editingRow === index ? 'bg-blue-50' : ''}`}
+                            >
+                              <td className="px-5 py-3 text-sm">
+                                <span className="font-medium text-slate-900">
+                                  {souscription.investisseur_nom}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3 text-sm">
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    souscription.investisseur_type === 'physique'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-purple-100 text-purple-800'
+                                  }`}
+                                >
+                                  {souscription.investisseur_type === 'physique'
+                                    ? 'Physique'
+                                    : 'Morale'}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3 text-sm text-right">
+                                {editingRow === index ? (
+                                  <input
+                                    type="number"
+                                    value={souscription.montant_investi}
+                                    onChange={e =>
+                                      handleSouscriptionEdit(
+                                        index,
+                                        'montant_investi',
+                                        parseFloat(e.target.value) || 0
+                                      )
+                                    }
+                                    disabled={processing}
+                                    className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => setEditingRow(index)}
+                                    disabled={processing}
+                                    className="text-left w-full hover:text-blue-600 font-medium text-slate-900"
+                                  >
+                                    {formatCurrency(souscription.montant_investi)}
+                                  </button>
+                                )}
+                              </td>
+                              <td className="px-5 py-3 text-sm text-right">
+                                {editingRow === index ? (
+                                  <div className="flex items-center justify-end gap-2">
+                                    <input
+                                      type="number"
+                                      value={souscription.nombre_obligations}
+                                      onChange={e =>
+                                        handleSouscriptionEdit(
+                                          index,
+                                          'nombre_obligations',
+                                          parseFloat(e.target.value) || 0
+                                        )
+                                      }
+                                      disabled={processing}
+                                      className="w-20 px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                                    />
+                                    <button
+                                      onClick={() => saveSouscriptionEdit(index)}
+                                      disabled={processing}
+                                      className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                                    >
+                                      ✓
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-600">
+                                    {souscription.nombre_obligations}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
