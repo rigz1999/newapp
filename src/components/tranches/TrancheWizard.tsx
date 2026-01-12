@@ -124,11 +124,31 @@ export function TrancheWizard({
       logger.debug('Mode édition activé avec:', editingTranche);
       setSelectedProjectId(editingTranche.projet_id);
       setTrancheName(editingTranche.tranche_name);
-      setTauxNominal(editingTranche.taux_nominal?.toString() || '');
       setDateEmission(editingTranche.date_emission || '');
-      setDureeMois(editingTranche.duree_mois?.toString() || '');
-      setPeriodiciteCoupons(editingTranche.periodicite_coupons || '');
       fetchSouscriptions(editingTranche.id);
+
+      // Fetch project data to populate inherited fields
+      const fetchProjectData = async (): Promise<void> => {
+        const { data: project } = await supabase
+          .from('projets')
+          .select('taux_nominal, periodicite_coupons, duree_mois')
+          .eq('id', editingTranche.projet_id)
+          .single();
+
+        if (project) {
+          if (project.taux_nominal) {
+            setTauxNominal(project.taux_nominal.toString());
+          }
+          if (project.periodicite_coupons) {
+            setPeriodiciteCoupons(project.periodicite_coupons);
+          }
+          if (project.duree_mois) {
+            setDureeMois(project.duree_mois.toString());
+          }
+        }
+      };
+
+      fetchProjectData();
     }
   }, [editingTranche, isEditMode]);
 
