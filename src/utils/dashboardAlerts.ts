@@ -184,14 +184,14 @@ export function generateAlerts(
     Object.entries(byProjectTranche).forEach(([key, data]) => {
       // Only create alert if there are unique dates for this project/tranche
       if (data.dates.size > 0) {
-        const displayName = data.projetName
-          ? `${data.projetName} - ${data.trancheName}`
-          : data.trancheName;
+        const message = data.projetName
+          ? `${data.trancheName} (${data.projetName}) ${getRelativeDate(data.firstDate)}`
+          : `${data.trancheName} ${getRelativeDate(data.firstDate)}`;
 
         alerts.push({
           id: `deadline-${key}`,
           type: 'deadline',
-          message: `Échéance urgente : ${displayName} - ${getRelativeDate(data.firstDate)} (${formatDate(data.firstDate)})`,
+          message,
           count: data.dates.size,
         });
       }
