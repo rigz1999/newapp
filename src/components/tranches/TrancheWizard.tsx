@@ -212,17 +212,13 @@ export function TrancheWizard({
 
     setProcessing(true);
     setError('');
-    setSuccessMessage('');
 
     try {
       logger.info('Mise à jour tranche', {
         trancheId: editingTranche.id,
         data: {
           tranche_name: trancheName,
-          taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
           date_emission: dateEmission || null,
-          duree_mois: dureeMois ? parseInt(dureeMois) : null,
-          periodicite_coupons: periodiciteCoupons || null,
         },
       });
 
@@ -230,10 +226,8 @@ export function TrancheWizard({
         .from('tranches')
         .update({
           tranche_name: trancheName,
-          taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
           date_emission: dateEmission || null,
-          duree_mois: dureeMois ? parseInt(dureeMois) : null,
-          periodicite_coupons: periodiciteCoupons || null,
+          // taux_nominal, duree_mois, periodicite_coupons are inherited from project - not updated
         } as never)
         .eq('id', editingTranche.id);
 
@@ -645,21 +639,7 @@ export function TrancheWizard({
             {/* Champs supplémentaires pour l'édition */}
             {isEditMode && (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Taux Nominal (%)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={tauxNominal}
-                    onChange={e => setTauxNominal(e.target.value)}
-                    disabled={processing}
-                    placeholder="Ex: 5.5"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
-                  />
-                </div>
-
+                {/* Date d'émission - EDITABLE */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-2">
                     Date d'émission
@@ -673,36 +653,32 @@ export function TrancheWizard({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Durée (mois)
-                  </label>
-                  <input
-                    type="number"
-                    value={dureeMois}
-                    onChange={e => setDureeMois(e.target.value)}
-                    disabled={processing}
-                    placeholder="Ex: 24"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
-                  />
-                </div>
+                {/* Inherited fields from project - READ ONLY */}
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                  <p className="text-xs text-slate-600 font-medium uppercase tracking-wider mb-2">
+                    Paramètres hérités du projet (non modifiables)
+                  </p>
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Périodicité des Coupons
-                  </label>
-                  <select
-                    value={periodiciteCoupons}
-                    onChange={e => setPeriodiciteCoupons(e.target.value)}
-                    disabled={processing}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50"
-                  >
-                    <option value="">Sélectionner...</option>
-                    <option value="mensuelle">Mensuelle</option>
-                    <option value="trimestrielle">Trimestrielle</option>
-                    <option value="semestrielle">Semestrielle</option>
-                    <option value="annuelle">Annuelle</option>
-                  </select>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Taux Nominal</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {tauxNominal ? `${tauxNominal}%` : 'Non défini'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Durée</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {dureeMois ? `${dureeMois} mois` : 'Non défini'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 mb-1">Périodicité</p>
+                      <p className="text-sm font-semibold text-slate-900 capitalize">
+                        {periodiciteCoupons || 'Non défini'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
