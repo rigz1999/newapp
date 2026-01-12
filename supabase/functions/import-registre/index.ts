@@ -1179,7 +1179,7 @@ Deno.serve(async req => {
     }
 
     // Extract date_emission from CSV if not provided in form
-    // Try "Date de transfert des fonds" or use earliest "Date de souscription"
+    // Try "Date de Transfert" (case-insensitive)
     let extractedDateEmission: string | null = null;
     if (!dateEmission && rows.length > 0) {
       // Debug: show available columns
@@ -1187,45 +1187,45 @@ Deno.serve(async req => {
       const availableColumns = Object.keys(firstRow).filter(k => !k.startsWith('_'));
       console.log(
         `📋 Colonnes disponibles dans le CSV (${availableColumns.length}):`,
-        availableColumns.slice(0, 20).join(', ')
+        availableColumns.slice(0, 30).join(', ')
       );
 
-      // Try "Date de transfert des fonds" first
-      console.log(`🔍 Recherche de date d'émission...`);
-      console.log(
-        `   Valeurs: Date de transfert des fonds="${firstRow['Date de transfert des fonds']}", Date de transfert="${firstRow['Date de transfert']}", Date transfert fonds="${firstRow['Date transfert fonds']}"`
-      );
+      // Find "Date de Transfert" column (case-insensitive)
+      console.log(`🔍 Recherche de date d'émission (Date de Transfert)...`);
 
-      const dateTransfert =
-        parseDate(firstRow['Date de transfert des fonds']) ||
-        parseDate(firstRow['Date de transfert']) ||
-        parseDate(firstRow['Date transfert fonds']);
+      // Try exact matches first (common variations)
+      let dateTransfertValue =
+        firstRow['Date de Transfert'] ||
+        firstRow['Date de transfert'] ||
+        firstRow['Date de Transfert des Fonds'] ||
+        firstRow['Date de transfert des fonds'] ||
+        firstRow['Date Transfert'] ||
+        firstRow['Date transfert'];
+
+      // If not found, try case-insensitive search
+      if (!dateTransfertValue) {
+        const transferColumn = availableColumns.find(
+          col => col.toLowerCase().includes('date') && col.toLowerCase().includes('transfert')
+        );
+        if (transferColumn) {
+          dateTransfertValue = firstRow[transferColumn];
+          console.log(`   Trouvé colonne: "${transferColumn}" = "${dateTransfertValue}"`);
+        }
+      } else {
+        console.log(`   Valeur trouvée: "${dateTransfertValue}"`);
+      }
+
+      const dateTransfert = parseDate(dateTransfertValue);
 
       if (dateTransfert) {
         extractedDateEmission = dateTransfert;
-        console.log(
-          `📅 Date émission extraite du CSV (Date de transfert): ${extractedDateEmission}`
-        );
+        console.log(`📅 Date émission extraite du CSV: ${extractedDateEmission}`);
       } else {
-        console.log(
-          `   ⚠️ Aucune colonne "Date de transfert" trouvée, utilisation de la première date de souscription`
+        console.log(`   ❌ Colonne "Date de Transfert" non trouvée ou vide dans le CSV!`);
+        console.log(`   ⚠️  Import annulé - la date d'émission est requise`);
+        throw new Error(
+          'Date d\'émission manquante: La colonne "Date de Transfert" doit être présente dans le fichier CSV avec une valeur valide.'
         );
-        // Fallback: use earliest date de souscription
-        const allDates = rows
-          .map(
-            row => parseDate(row['Date de souscription']) || parseDate(row['Date de Souscription'])
-          )
-          .filter(Boolean)
-          .sort();
-
-        if (allDates.length > 0) {
-          extractedDateEmission = allDates[0];
-          console.log(
-            `📅 Date émission extraite du CSV (première souscription): ${extractedDateEmission}`
-          );
-        } else {
-          console.log(`   ❌ Aucune date trouvée dans le CSV!`);
-        }
       }
     } else if (dateEmission) {
       console.log(`📅 Date émission fournie par le formulaire: ${dateEmission}`);
