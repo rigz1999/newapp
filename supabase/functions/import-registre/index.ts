@@ -940,6 +940,12 @@ async function upsertSubscription(
   const nombreObligations =
     toNumber(row['Quantité de titres']) || toNumber(row['Quantité']) || toNumber(row['Quantite']);
 
+  console.log('📊 Données souscription:', {
+    montant: montantInvesti,
+    quantite: nombreObligations,
+    date: datesouscription,
+  });
+
   const subData: any = {
     tranche_id: trancheId,
     investisseur_id: investorId,
@@ -1155,17 +1161,16 @@ Deno.serve(async req => {
           createdInvestisseurs++;
         }
 
-        // Create subscription only if data exists in CSV
-        const hasSubscriptionData =
-          row['Date de souscription'] ||
-          row['Montant investi'] ||
-          row['Montant'] ||
-          row['Quantité'] ||
-          row['Quantité de titres'] ||
-          row['Quantite'];
-        if (hasSubscriptionData) {
+        // Create subscription
+        try {
           await upsertSubscription(supabaseClient, row, finalTrancheId, investorId);
           createdSouscriptions++;
+          console.log(
+            `✅ Souscription créée pour ${row['Nom'] || row['Nom(s)'] || 'investisseur'}`
+          );
+        } catch (subErr: any) {
+          console.error(`❌ Erreur souscription pour ${row['Nom'] || row['Nom(s)']}:`, subErr);
+          throw subErr;
         }
       } catch (rowErr: any) {
         console.error('Erreur traitement ligne:', rowErr);
