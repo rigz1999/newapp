@@ -10,6 +10,9 @@ import {
   Download,
   FileSpreadsheet,
   Edit2,
+  Lock,
+  ExternalLink,
+  RefreshCw,
 } from 'lucide-react';
 import { FileUpload } from '../investors/FileUpload';
 import { Tooltip } from '../common/Tooltip';
@@ -56,6 +59,25 @@ interface SouscriptionData {
     nom_raison_sociale?: string;
     type?: string;
   };
+}
+
+interface InvestorDetails {
+  id: string;
+  nom_raison_sociale: string;
+  type: string;
+  email?: string;
+  telephone?: string;
+  adresse?: string;
+  investments: InvestmentSummary[];
+  total_investments: number;
+}
+
+interface InvestmentSummary {
+  tranche_id: string;
+  tranche_name: string;
+  projet_name: string;
+  montant_investi: number;
+  nombre_obligations: number;
 }
 
 interface PreviewData {
@@ -109,6 +131,18 @@ export function TrancheWizard({
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [loadingSouscriptions, setLoadingSouscriptions] = useState(false);
 
+  // For investor details modal
+  const [selectedInvestorDetails, setSelectedInvestorDetails] = useState<InvestorDetails | null>(
+    null
+  );
+
+  // For reassigning subscriptions
+  const [reassigningSouscriptionId, setReassigningSouscriptionId] = useState<string | null>(null);
+  const [availableInvestors, setAvailableInvestors] = useState<
+    Array<{ id: string; nom_raison_sociale: string; type: string }>
+  >([]);
+  const [searchInvestorQuery, setSearchInvestorQuery] = useState('');
+
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -124,11 +158,31 @@ export function TrancheWizard({
       logger.debug('Mode édition activé avec:', editingTranche);
       setSelectedProjectId(editingTranche.projet_id);
       setTrancheName(editingTranche.tranche_name);
-      setTauxNominal(editingTranche.taux_nominal?.toString() || '');
       setDateEmission(editingTranche.date_emission || '');
-      setDureeMois(editingTranche.duree_mois?.toString() || '');
-      setPeriodiciteCoupons(editingTranche.periodicite_coupons || '');
       fetchSouscriptions(editingTranche.id);
+
+      // Fetch project data to populate inherited fields
+      const fetchProjectData = async (): Promise<void> => {
+        const { data: project } = await supabase
+          .from('projets')
+          .select('taux_nominal, periodicite_coupons, duree_mois')
+          .eq('id', editingTranche.projet_id)
+          .single();
+
+        if (project) {
+          if (project.taux_nominal) {
+            setTauxNominal(project.taux_nominal.toString());
+          }
+          if (project.periodicite_coupons) {
+            setPeriodiciteCoupons(project.periodicite_coupons);
+          }
+          if (project.duree_mois) {
+            setDureeMois(project.duree_mois.toString());
+          }
+        }
+      };
+
+      fetchProjectData();
     }
   }, [editingTranche, isEditMode]);
 
@@ -229,6 +283,123 @@ export function TrancheWizard({
       );
     } finally {
       setLoadingSouscriptions(false);
+    }
+  };
+
+  const fetchInvestorDetails = async (investorId: string): Promise<void> => {
+    try {
+      // Fetch investor info
+      const { data: investor, error: investorError } = await supabase
+        .from('investisseurs')
+        .select('id, nom_raison_sociale, type, email, telephone, adresse')
+        .eq('id', investorId)
+        .single();
+
+      if (investorError) {
+        throw investorError;
+      }
+
+      // Fetch all investments for this investor
+      const { data: investments, error: investmentsError } = await supabase
+        .from('souscriptions')
+        .select(
+          `
+          montant_investi,
+          nombre_obligations,
+          tranches!inner (
+            id,
+            tranche_name,
+            projets!inner (
+              projet
+            )
+          )
+        `
+        )
+        .eq('investisseur_id', investorId);
+
+      if (investmentsError) {
+        throw investmentsError;
+      }
+
+      const investmentsSummary: InvestmentSummary[] = (investments || []).map(
+        (inv: {
+          montant_investi: number;
+          nombre_obligations: number;
+          tranches: {
+            id: string;
+            tranche_name: string;
+            projets: { projet: string };
+          };
+        }) => ({
+          tranche_id: inv.tranches.id,
+          tranche_name: inv.tranches.tranche_name,
+          projet_name: inv.tranches.projets.projet,
+          montant_investi: inv.montant_investi,
+          nombre_obligations: inv.nombre_obligations,
+        })
+      );
+
+      setSelectedInvestorDetails({
+        id: investor.id,
+        nom_raison_sociale: investor.nom_raison_sociale || '',
+        type: investor.type || 'physique',
+        email: investor.email || '',
+        telephone: investor.telephone || '',
+        adresse: investor.adresse || '',
+        investments: investmentsSummary,
+        total_investments: investmentsSummary.length,
+      });
+    } catch (err) {
+      logger.error(new Error("Erreur lors du chargement des détails de l'investisseur"), {
+        error: err,
+      });
+      setError("Impossible de charger les détails de l'investisseur");
+    }
+  };
+
+  const fetchAvailableInvestors = async (): Promise<void> => {
+    try {
+      const { data, error } = await supabase
+        .from('investisseurs')
+        .select('id, nom_raison_sociale, type')
+        .order('nom_raison_sociale', { ascending: true })
+        .limit(100);
+
+      if (error) {
+        throw error;
+      }
+      setAvailableInvestors(data || []);
+    } catch (err) {
+      logger.error(new Error('Erreur lors du chargement des investisseurs'), { error: err });
+    }
+  };
+
+  const handleReassignSouscription = async (
+    souscriptionId: string,
+    newInvestorId: string
+  ): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('souscriptions')
+        .update({ investisseur_id: newInvestorId })
+        .eq('id', souscriptionId);
+
+      if (error) {
+        throw error;
+      }
+
+      logger.info('Souscription réassignée', { souscriptionId, newInvestorId });
+
+      // Refresh subscriptions list
+      if (editingTranche) {
+        await fetchSouscriptions(editingTranche.id);
+      }
+
+      setReassigningSouscriptionId(null);
+      setSearchInvestorQuery('');
+    } catch (err) {
+      logger.error(new Error('Erreur lors de la réassignation de la souscription'), { error: err });
+      setError('Impossible de réassigner la souscription');
     }
   };
 
@@ -835,7 +1006,13 @@ export function TrancheWizard({
                       Souscriptions ({souscriptions.length})
                     </h4>
                     <p className="text-sm text-slate-600 mt-1">
-                      Cliquez sur une ligne pour modifier le montant ou le nombre d'obligations
+                      Cliquez sur une ligne pour modifier le <strong>montant</strong> ou le{' '}
+                      <strong>nombre d'obligations</strong>
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      Les informations investisseur (nom, type) sont des données maître -
+                      modifiables via la gestion des investisseurs
                     </p>
                   </div>
 
@@ -855,16 +1032,31 @@ export function TrancheWizard({
                         <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                           <tr>
                             <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                              Investisseur
+                              <div className="flex items-center gap-1">
+                                <Lock className="w-3 h-3" />
+                                Investisseur
+                              </div>
                             </th>
                             <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                              Type
+                              <div className="flex items-center gap-1">
+                                <Lock className="w-3 h-3" />
+                                Type
+                              </div>
                             </th>
                             <th className="px-5 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                              Montant
+                              <div className="flex items-center justify-end gap-1">
+                                <Edit2 className="w-3 h-3" />
+                                Montant
+                              </div>
                             </th>
                             <th className="px-5 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                              Titres
+                              <div className="flex items-center justify-end gap-1">
+                                <Edit2 className="w-3 h-3" />
+                                Titres
+                              </div>
+                            </th>
+                            <th className="px-5 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                              Actions
                             </th>
                           </tr>
                         </thead>
@@ -875,22 +1067,35 @@ export function TrancheWizard({
                               className={`hover:bg-slate-50 transition-colors ${editingRow === index ? 'bg-blue-50' : ''}`}
                             >
                               <td className="px-5 py-3 text-sm">
-                                <span className="font-medium text-slate-900">
-                                  {souscription.investisseur_nom}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <Lock className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                  <button
+                                    onClick={() =>
+                                      fetchInvestorDetails(souscription.investisseur_id)
+                                    }
+                                    className="font-medium text-slate-900 hover:text-blue-600 flex items-center gap-1 transition-colors"
+                                    title="Voir les détails de l'investisseur"
+                                  >
+                                    <span>{souscription.investisseur_nom}</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </button>
+                                </div>
                               </td>
                               <td className="px-5 py-3 text-sm">
-                                <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    souscription.investisseur_type === 'physique'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-purple-100 text-purple-800'
-                                  }`}
-                                >
-                                  {souscription.investisseur_type === 'physique'
-                                    ? 'Physique'
-                                    : 'Morale'}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <Lock className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      souscription.investisseur_type === 'physique'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : 'bg-purple-100 text-purple-800'
+                                    }`}
+                                  >
+                                    {souscription.investisseur_type === 'physique'
+                                      ? 'Physique'
+                                      : 'Morale'}
+                                  </span>
+                                </div>
                               </td>
                               <td className="px-5 py-3 text-sm text-right">
                                 {editingRow === index ? (
@@ -946,6 +1151,20 @@ export function TrancheWizard({
                                     {souscription.nombre_obligations}
                                   </span>
                                 )}
+                              </td>
+                              <td className="px-5 py-3 text-sm text-center">
+                                <button
+                                  onClick={() => {
+                                    setReassigningSouscriptionId(souscription.id);
+                                    fetchAvailableInvestors();
+                                  }}
+                                  disabled={processing}
+                                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 disabled:opacity-50 transition-colors"
+                                  title="Réassigner à un autre investisseur"
+                                >
+                                  <RefreshCw className="w-3 h-3" />
+                                  Réassigner
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -1123,6 +1342,230 @@ export function TrancheWizard({
           onBack={handleBackToUpload}
           isProcessing={processing}
         />
+      )}
+
+      {/* Investor Details Modal */}
+      {selectedInvestorDetails && (
+        <div className="fixed inset-0 z-[80] overflow-y-auto">
+          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="flex-shrink-0 bg-gradient-to-r from-purple-600 to-purple-700 p-6 text-white">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold mb-2">Détails de l'investisseur</h3>
+                    <p className="text-purple-100 text-sm">
+                      {selectedInvestorDetails.total_investments} investissement(s)
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedInvestorDetails(null)}
+                    className="text-white hover:text-purple-200 transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
+                {/* Investor Info */}
+                <div className="bg-white rounded-lg border border-slate-200 p-5">
+                  <h4 className="text-lg font-semibold text-slate-900 mb-4">Informations</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">Nom / Raison sociale</p>
+                      <p className="font-semibold text-slate-900">
+                        {selectedInvestorDetails.nom_raison_sociale}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">Type</p>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          selectedInvestorDetails.type === 'physique'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-purple-100 text-purple-800'
+                        }`}
+                      >
+                        {selectedInvestorDetails.type === 'physique' ? 'Physique' : 'Morale'}
+                      </span>
+                    </div>
+                    {selectedInvestorDetails.email && (
+                      <div>
+                        <p className="text-sm text-slate-600 mb-1">Email</p>
+                        <p className="text-sm text-slate-900">{selectedInvestorDetails.email}</p>
+                      </div>
+                    )}
+                    {selectedInvestorDetails.telephone && (
+                      <div>
+                        <p className="text-sm text-slate-600 mb-1">Téléphone</p>
+                        <p className="text-sm text-slate-900">
+                          {selectedInvestorDetails.telephone}
+                        </p>
+                      </div>
+                    )}
+                    {selectedInvestorDetails.adresse && (
+                      <div className="col-span-2">
+                        <p className="text-sm text-slate-600 mb-1">Adresse</p>
+                        <p className="text-sm text-slate-900">{selectedInvestorDetails.adresse}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Investments List */}
+                <div className="bg-white rounded-lg border border-slate-200">
+                  <div className="p-5 border-b border-slate-200">
+                    <h4 className="text-lg font-semibold text-slate-900">
+                      Tous les investissements ({selectedInvestorDetails.total_investments})
+                    </h4>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                          <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
+                            Projet
+                          </th>
+                          <th className="px-5 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
+                            Tranche
+                          </th>
+                          <th className="px-5 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                            Montant
+                          </th>
+                          <th className="px-5 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                            Titres
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {selectedInvestorDetails.investments.map((inv, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            <td className="px-5 py-3 text-sm text-slate-900">{inv.projet_name}</td>
+                            <td className="px-5 py-3 text-sm text-slate-900">{inv.tranche_name}</td>
+                            <td className="px-5 py-3 text-sm text-right font-medium">
+                              {formatCurrency(inv.montant_investi)}
+                            </td>
+                            <td className="px-5 py-3 text-sm text-right text-slate-600">
+                              {inv.nombre_obligations}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex-shrink-0 bg-white p-6 border-t border-slate-200">
+                <button
+                  onClick={() => setSelectedInvestorDetails(null)}
+                  className="w-full px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reassign Subscription Modal */}
+      {reassigningSouscriptionId && (
+        <div className="fixed inset-0 z-[80] overflow-y-auto">
+          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full">
+              {/* Header */}
+              <div className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold mb-1">Réassigner la souscription</h3>
+                    <p className="text-blue-100 text-sm">Sélectionnez un nouvel investisseur</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setReassigningSouscriptionId(null);
+                      setSearchInvestorQuery('');
+                    }}
+                    className="text-white hover:text-blue-200 transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-4">
+                {/* Search */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Rechercher un investisseur
+                  </label>
+                  <input
+                    type="text"
+                    value={searchInvestorQuery}
+                    onChange={e => setSearchInvestorQuery(e.target.value)}
+                    placeholder="Nom ou raison sociale..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Investor List */}
+                <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
+                  {availableInvestors
+                    .filter(inv =>
+                      inv.nom_raison_sociale
+                        .toLowerCase()
+                        .includes(searchInvestorQuery.toLowerCase())
+                    )
+                    .map(investor => (
+                      <button
+                        key={investor.id}
+                        onClick={() =>
+                          handleReassignSouscription(reassigningSouscriptionId, investor.id)
+                        }
+                        className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b border-slate-100 last:border-b-0 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-slate-900">
+                              {investor.nom_raison_sociale}
+                            </p>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1 ${
+                                investor.type === 'physique'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-purple-100 text-purple-800'
+                              }`}
+                            >
+                              {investor.type === 'physique' ? 'Physique' : 'Morale'}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-slate-200">
+                <button
+                  onClick={() => {
+                    setReassigningSouscriptionId(null);
+                    setSearchInvestorQuery('');
+                  }}
+                  className="w-full px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
