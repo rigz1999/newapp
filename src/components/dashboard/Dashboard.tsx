@@ -92,7 +92,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
     } else if (alertId === 'missing-ribs') {
       navigate('/investisseurs');
     } else if (alertId.startsWith('deadline-')) {
-      navigate('/paiements');
+      navigate('/coupons');
     }
   }, [navigate]);
 

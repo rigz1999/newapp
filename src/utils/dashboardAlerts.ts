@@ -119,15 +119,17 @@ export function generateAlerts(
     });
   }
 
-  // 3. COUPONS À PAYER CETTE SEMAINE
+  // 3. COUPONS À PAYER CETTE SEMAINE (EXCLUANT LES 3 PROCHAINS JOURS)
   const weekThreshold = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const urgentThreshold = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
   const upcomingThisWeek = upcomingCoupons.filter(c => {
     const dateStr = c.date_echeance || c.prochaine_date_coupon;
     if (!dateStr) return false;
     const couponDate = new Date(dateStr);
     // Exclude paid coupons
     if (c.statut === 'paye') return false;
-    return couponDate >= now && couponDate <= weekThreshold;
+    // Exclude urgent coupons (next 3 days) to avoid duplicates
+    return couponDate > urgentThreshold && couponDate <= weekThreshold;
   });
 
   // Group by unique dates
@@ -146,7 +148,6 @@ export function generateAlerts(
   }
 
   // 4. ÉCHÉANCES URGENTES (dans les 3 jours)
-  const urgentThreshold = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
   const urgentCoupons = upcomingCoupons.filter(c => {
     const dateStr = c.date_echeance || c.prochaine_date_coupon;
     if (!dateStr) return false;
@@ -157,29 +158,40 @@ export function generateAlerts(
   });
 
   if (urgentCoupons.length > 0) {
-    // Grouper par tranche et compter les dates uniques (pas les investisseurs)
-    const byTranche = urgentCoupons.reduce((acc, c) => {
+    // Grouper par projet + tranche et compter les dates uniques
+    const byProjectTranche = urgentCoupons.reduce((acc, c) => {
       const trancheName = c.tranche?.tranche_name || c.souscription?.tranche?.tranche_name || 'Inconnu';
+      const projetName = c.tranche?.projet?.projet || c.souscription?.tranche?.projet?.projet || '';
       const dateStr = c.date_echeance || c.prochaine_date_coupon || '';
-      if (!acc[trancheName]) {
-        acc[trancheName] = {
+
+      // Clé unique : projet|tranche
+      const key = `${projetName}|${trancheName}`;
+
+      if (!acc[key]) {
+        acc[key] = {
           dates: new Set<string>(),
           firstDate: dateStr,
+          projetName,
+          trancheName,
         };
       }
       if (dateStr) {
-        acc[trancheName].dates.add(dateStr);
+        acc[key].dates.add(dateStr);
       }
       return acc;
-    }, {} as Record<string, { dates: Set<string>; firstDate: string }>);
+    }, {} as Record<string, { dates: Set<string>; firstDate: string; projetName: string; trancheName: string }>);
 
-    Object.entries(byTranche).forEach(([tranche, data]) => {
-      // Only create alert if there are unique dates for this tranche
+    Object.entries(byProjectTranche).forEach(([key, data]) => {
+      // Only create alert if there are unique dates for this project/tranche
       if (data.dates.size > 0) {
+        const displayName = data.projetName
+          ? `${data.projetName} - ${data.trancheName}`
+          : data.trancheName;
+
         alerts.push({
-          id: `deadline-${tranche}`,
+          id: `deadline-${key}`,
           type: 'deadline',
-          message: `Échéance urgente : ${tranche} - ${getRelativeDate(data.firstDate)} (${formatDate(data.firstDate)})`,
+          message: `Échéance urgente : ${displayName} - ${getRelativeDate(data.firstDate)} (${formatDate(data.firstDate)})`,
           count: data.dates.size,
         });
       }
