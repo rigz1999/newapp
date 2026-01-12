@@ -802,17 +802,10 @@ async function upsertInvestor(
 ): Promise<string> {
   const isPhysical = row._investorType === 'physique';
 
-  // Debug: log available columns
-  console.log(
-    '📋 Colonnes disponibles dans row:',
-    Object.keys(row)
-      .filter(k => k !== '_investorType')
-      .join(', ')
-  );
-
   // Get name field - try different possible column names
   const nomField =
     row['Nom'] ||
+    row['Nom(s)'] ||
     row["Nom de l'investisseur"] ||
     row['Raison sociale'] ||
     row['Nom/Raison sociale'];
@@ -824,8 +817,12 @@ async function upsertInvestor(
     );
   }
 
+  console.log(`✅ Nom trouvé: "${nomField}" (type: ${row._investorType})`);
+
   // Build full address from available components
-  const addressParts = [row['Adresse'], row['Code Postal'], row['Ville'], row['Pays']].filter(
+  const adresseField =
+    row['Adresse du domicile'] || row['Adresse du siège social'] || row['Adresse'];
+  const addressParts = [adresseField, row['Code Postal'], row['Ville'], row['Pays']].filter(
     Boolean
   );
   const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : null;
@@ -867,11 +864,15 @@ async function upsertInvestor(
   };
 
   if (!isPhysical) {
-    investorData.representant_legal =
-      row['Nom du représentant légal'] ||
-      row['Prénom du représentant légal'] ||
-      row['Représentant légal'] ||
-      null;
+    // Combine nom and prenom for representant_legal
+    const nomRepresentant = row['Nom du représentant légal'] || '';
+    const prenomRepresentant = row['Prénom du représentant légal'] || '';
+    const representantCombined = [nomRepresentant, prenomRepresentant]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    investorData.representant_legal = representantCombined || row['Représentant légal'] || null;
     investorData.siren = siren;
   }
 
