@@ -802,18 +802,27 @@ async function upsertInvestor(
 ): Promise<string> {
   const isPhysical = row._investorType === 'physique';
 
-  // Get name field - try different possible column names
-  const nomField =
+  // Get name field - try different possible column names, trim empty strings
+  const nomField = (
     row['Nom'] ||
     row['Nom(s)'] ||
     row["Nom de l'investisseur"] ||
     row['Raison sociale'] ||
-    row['Nom/Raison sociale'];
+    row['Nom/Raison sociale'] ||
+    ''
+  ).trim();
+
+  console.log(`🔍 Checking Nom(s): "${row['Nom(s)']}" (length: ${row['Nom(s)']?.length})`);
 
   if (!nomField) {
-    console.error('❌ Nom manquant! Colonnes:', Object.keys(row));
+    console.error(
+      '❌ Nom vide! row["Nom(s)"]:',
+      row['Nom(s)'],
+      'Toutes colonnes:',
+      Object.keys(row)
+    );
     throw new Error(
-      `Nom obligatoire manquant. Colonnes disponibles: ${Object.keys(row).join(', ')}`
+      `Nom obligatoire vide. Valeur Nom(s): "${row['Nom(s)']}" Colonnes: ${Object.keys(row).join(', ')}`
     );
   }
 
