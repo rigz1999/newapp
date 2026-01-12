@@ -427,7 +427,16 @@ export function TrancheWizard({
     setError('');
   };
 
-  const handleConfirmImport = async (finalDateEmission: string | null): Promise<void> => {
+  const handleConfirmImport = async (
+    finalDateEmission: string | null,
+    editedInvestors: Array<{
+      nom: string;
+      type: string;
+      montant_investi: number;
+      nombre_obligations: number;
+      index: number;
+    }>
+  ): Promise<void> => {
     if (!selectedProjectId || !trancheName || !csvFile) {
       return;
     }
@@ -443,6 +452,7 @@ export function TrancheWizard({
         trancheName,
         fileName: csvFile.name,
         finalDateEmission,
+        editedInvestorsCount: editedInvestors.length,
       });
 
       const form = new FormData();

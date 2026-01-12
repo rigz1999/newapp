@@ -1,4 +1,13 @@
-import { X, CheckCircle, AlertCircle, Calendar, Users, DollarSign, ArrowLeft } from 'lucide-react';
+import {
+  X,
+  CheckCircle,
+  AlertCircle,
+  Calendar,
+  Users,
+  DollarSign,
+  ArrowLeft,
+  Edit2,
+} from 'lucide-react';
 import { useState } from 'react';
 
 interface InvestorPreview {
@@ -21,9 +30,13 @@ interface PreviewData {
   has_more: boolean;
 }
 
+interface EditedInvestor extends InvestorPreview {
+  index: number;
+}
+
 interface ImportPreviewModalProps {
   previewData: PreviewData;
-  onConfirm: (editedDateEmission: string | null) => void;
+  onConfirm: (editedDateEmission: string | null, editedInvestors: EditedInvestor[]) => void;
   onCancel: () => void;
   onBack: () => void;
   isProcessing: boolean;
@@ -39,6 +52,10 @@ export function ImportPreviewModal({
   const [editedDateEmission, setEditedDateEmission] = useState<string>(
     previewData.extracted_date_emission || ''
   );
+  const [editedInvestors, setEditedInvestors] = useState<InvestorPreview[]>(
+    previewData.investors_preview
+  );
+  const [editingRow, setEditingRow] = useState<number | null>(null);
 
   const formatCurrency = (amount: number): string =>
     new Intl.NumberFormat('fr-FR', {
@@ -47,6 +64,19 @@ export function ImportPreviewModal({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+
+  const handleInvestorEdit = (
+    index: number,
+    field: keyof InvestorPreview,
+    value: string | number
+  ): void => {
+    const updated = [...editedInvestors];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditedInvestors(updated);
+  };
+
+  const exportEditedInvestors = (): EditedInvestor[] =>
+    editedInvestors.map((inv, index) => ({ ...inv, index }));
 
   return (
     <div className="fixed inset-0 z-[70] overflow-y-auto">
@@ -184,25 +214,102 @@ export function ImportPreviewModal({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {previewData.investors_preview.map((investor, index) => (
-                      <tr key={index} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-5 py-3 text-sm text-slate-900">{investor.nom}</td>
+                    {editedInvestors.map((investor, index) => (
+                      <tr
+                        key={index}
+                        className={`hover:bg-slate-50 transition-colors ${editingRow === index ? 'bg-blue-50' : ''}`}
+                      >
                         <td className="px-5 py-3 text-sm">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              investor.type === 'physique'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-purple-100 text-purple-800'
-                            }`}
-                          >
-                            {investor.type === 'physique' ? 'Physique' : 'Morale'}
-                          </span>
+                          {editingRow === index ? (
+                            <input
+                              type="text"
+                              value={investor.nom}
+                              onChange={e => handleInvestorEdit(index, 'nom', e.target.value)}
+                              className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              disabled={isProcessing}
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setEditingRow(index)}
+                              className="text-left w-full hover:text-blue-600 flex items-center gap-2"
+                              disabled={isProcessing}
+                            >
+                              <Edit2 className="w-3 h-3 text-slate-400" />
+                              <span>{investor.nom}</span>
+                            </button>
+                          )}
                         </td>
-                        <td className="px-5 py-3 text-sm text-right font-medium text-slate-900">
-                          {formatCurrency(investor.montant_investi)}
+                        <td className="px-5 py-3 text-sm">
+                          {editingRow === index ? (
+                            <select
+                              value={investor.type}
+                              onChange={e => handleInvestorEdit(index, 'type', e.target.value)}
+                              className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              disabled={isProcessing}
+                            >
+                              <option value="physique">Physique</option>
+                              <option value="morale">Morale</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                investor.type === 'physique'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-purple-100 text-purple-800'
+                              }`}
+                            >
+                              {investor.type === 'physique' ? 'Physique' : 'Morale'}
+                            </span>
+                          )}
                         </td>
-                        <td className="px-5 py-3 text-sm text-right text-slate-600">
-                          {investor.nombre_obligations}
+                        <td className="px-5 py-3 text-sm text-right">
+                          {editingRow === index ? (
+                            <input
+                              type="number"
+                              value={investor.montant_investi}
+                              onChange={e =>
+                                handleInvestorEdit(
+                                  index,
+                                  'montant_investi',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                              disabled={isProcessing}
+                            />
+                          ) : (
+                            <span className="font-medium text-slate-900">
+                              {formatCurrency(investor.montant_investi)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-sm text-right">
+                          {editingRow === index ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <input
+                                type="number"
+                                value={investor.nombre_obligations}
+                                onChange={e =>
+                                  handleInvestorEdit(
+                                    index,
+                                    'nombre_obligations',
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
+                                className="w-20 px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                                disabled={isProcessing}
+                              />
+                              <button
+                                onClick={() => setEditingRow(null)}
+                                className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                                disabled={isProcessing}
+                              >
+                                ✓
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-slate-600">{investor.nombre_obligations}</span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -246,7 +353,7 @@ export function ImportPreviewModal({
               Annuler
             </button>
             <button
-              onClick={() => onConfirm(editedDateEmission || null)}
+              onClick={() => onConfirm(editedDateEmission || null, exportEditedInvestors())}
               disabled={isProcessing || !editedDateEmission}
               className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
             >
