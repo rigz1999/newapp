@@ -116,6 +116,18 @@ const detectFileType = (file: File): FileType => {
 };
 
 /**
+ * Normalize string for comparison (remove accents, normalize whitespace)
+ */
+const normalizeString = (str: string): string => {
+  return str
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/\s+/g, ' '); // Normalize whitespace
+};
+
+/**
  * Parse date from various formats to ISO format
  */
 const parseDate = (value: unknown): string | null => {
@@ -341,8 +353,10 @@ function applyColumnMappings(
   const mappedRow: Record<string, string> = {};
 
   Object.entries(mappings).forEach(([companyColumn, standardColumn]) => {
+    const normalizedCompanyColumn = normalizeString(companyColumn);
+
     const rawValue = Object.entries(rawRow).find(
-      ([key]) => key.toLowerCase().trim() === companyColumn.toLowerCase().trim()
+      ([key]) => normalizeString(key) === normalizedCompanyColumn
     )?.[1];
 
     if (rawValue !== undefined) {
@@ -397,8 +411,9 @@ function parseTwoSectionsFormat(
       continue;
     }
 
-    // Detect header row
-    if (trimmed.toLowerCase().includes('quantit')) {
+    // Detect header row with normalized matching (handles encoding issues)
+    const normalizedLine = normalizeString(trimmed);
+    if (normalizedLine.includes('quantit') || normalizedLine.includes('montant')) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
       console.log(`  En-têtes (${headers.length} colonnes):`, headers.slice(0, 3).join(', '), '...');
@@ -467,8 +482,10 @@ function parseSingleListFormat(
       continue;
     }
 
-    // Detect header row
-    if (trimmed.toLowerCase().includes('quantit') || trimmed.toLowerCase().includes(typeColumn.toLowerCase())) {
+    // Detect header row with normalized matching (handles encoding issues)
+    const normalizedLine = normalizeString(trimmed);
+    const normalizedTypeColumn = normalizeString(typeColumn);
+    if (normalizedLine.includes('quantit') || normalizedLine.includes('montant') || normalizedLine.includes(normalizedTypeColumn)) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
       console.log(`  En-têtes (${headers.length} colonnes):`, headers.slice(0, 3).join(', '), '...');
@@ -536,8 +553,15 @@ async function parseFile(
     // Parse XLSX and convert to CSV-like text
     textContent = await parseXLSXFile(file);
   } else {
-    // Read as text for CSV
-    textContent = await file.text();
+    // Read CSV with proper UTF-8 encoding handling
+    const arrayBuffer = await file.arrayBuffer();
+    const decoder = new TextDecoder('utf-8');
+    textContent = decoder.decode(arrayBuffer);
+
+    // Remove BOM if present (Excel sometimes adds it)
+    if (textContent.charCodeAt(0) === 0xFEFF) {
+      textContent = textContent.substring(1);
+    }
   }
 
   console.log('📝 Parsing avec profil:', profile.profile_name);

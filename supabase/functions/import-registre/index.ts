@@ -85,6 +85,18 @@ async function getFormatProfile(
   return standardProfile as FormatProfile;
 }
 
+/**
+ * Normalize string for comparison (remove accents, normalize whitespace)
+ */
+function normalizeString(str: string): string {
+  return str
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/\s+/g, ' '); // Normalize whitespace
+}
+
 function applyColumnMappings(
   rawRow: Record<string, string>,
   mappings: Record<string, string>
@@ -92,8 +104,10 @@ function applyColumnMappings(
   const mappedRow: Record<string, string> = {};
 
   Object.entries(mappings).forEach(([companyColumn, standardColumn]) => {
+    const normalizedCompanyColumn = normalizeString(companyColumn);
+
     const rawValue = Object.entries(rawRow).find(
-      ([key]) => key.toLowerCase().trim() === companyColumn.toLowerCase().trim()
+      ([key]) => normalizeString(key) === normalizedCompanyColumn
     )?.[1];
 
     if (rawValue !== undefined) {
@@ -114,7 +128,12 @@ function parseCSVWithProfile(
   const config = profile.format_config;
 
   let separator = '\t';
-  const sampleLine = lines.find(line => line.length > 10 && line.includes('Quantit'));
+  // Look for header line with multiple possible keywords (handles encoding issues)
+  const headerKeywords = ['quantit', 'montant', 'nom', 'prenom', 'projet'];
+  const sampleLine = lines.find(line => {
+    const normalizedLine = normalizeString(line);
+    return line.length > 10 && headerKeywords.some(keyword => normalizedLine.includes(keyword));
+  });
 
   if (sampleLine) {
     const tabCount = (sampleLine.match(/\t/g) || []).length;
@@ -183,7 +202,9 @@ function parseTwoSectionsFormat(
       continue;
     }
 
-    if (trimmed.toLowerCase().includes('quantit')) {
+    // Detect header row with normalized matching (handles encoding issues)
+    const normalizedLine = normalizeString(trimmed);
+    if (normalizedLine.includes('quantit') || normalizedLine.includes('montant')) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
       console.log(
@@ -256,7 +277,10 @@ function parseSingleListFormat(
       continue;
     }
 
-    if (trimmed.toLowerCase().includes('quantit') || trimmed.toLowerCase().includes(typeColumn.toLowerCase())) {
+    // Detect header row with normalized matching (handles encoding issues)
+    const normalizedLine = normalizeString(trimmed);
+    const normalizedTypeColumn = normalizeString(typeColumn);
+    if (normalizedLine.includes('quantit') || normalizedLine.includes('montant') || normalizedLine.includes(normalizedTypeColumn)) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
       console.log(`  En-têtes (${headers.length} colonnes):`, headers.slice(0, 3).join(', '), '...');
@@ -530,7 +554,15 @@ Deno.serve(async req => {
     console.log('📁 Fichier:', file.name, `(${file.size} bytes)`);
     console.log('🏢 Organisation ID:', orgId);
 
-    const fileContent = await file.text();
+    // Read file with proper UTF-8 encoding handling
+    const arrayBuffer = await file.arrayBuffer();
+    const decoder = new TextDecoder('utf-8');
+    let fileContent = decoder.decode(arrayBuffer);
+
+    // Remove BOM if present (Excel sometimes adds it)
+    if (fileContent.charCodeAt(0) === 0xFEFF) {
+      fileContent = fileContent.substring(1);
+    }
 
     const profile = await getFormatProfile(supabaseClient, orgId, profileId);
 
