@@ -1142,7 +1142,11 @@ Deno.serve(async req => {
     let createdSouscriptions = 0;
     const errors: string[] = [];
 
-    for (const row of rows) {
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowName = row['Nom'] || row['Nom(s)'] || row['Raison sociale'] || `Row ${i + 1}`;
+      console.log(`\n🔄 Traitement ligne ${i + 1}/${rows.length}: ${rowName}`);
+
       try {
         // Check if investor already exists
         const { data: existingInvestor } = await supabaseClient
@@ -1150,10 +1154,13 @@ Deno.serve(async req => {
           .select('id')
           .eq('org_id', orgId)
           .eq('type', row._investorType)
-          .eq('nom', row['Nom'])
+          .eq('nom_raison_sociale', rowName)
           .maybeSingle();
 
+        console.log(`  Investisseur existant: ${existingInvestor ? 'Oui' : 'Non'}`);
+
         const investorId = await upsertInvestor(supabaseClient, row, orgId);
+        console.log(`  ✅ Investisseur ID: ${investorId}`);
 
         if (existingInvestor) {
           updatedInvestisseurs++;
@@ -1162,19 +1169,13 @@ Deno.serve(async req => {
         }
 
         // Create subscription
-        try {
-          await upsertSubscription(supabaseClient, row, finalTrancheId, investorId);
-          createdSouscriptions++;
-          console.log(
-            `✅ Souscription créée pour ${row['Nom'] || row['Nom(s)'] || 'investisseur'}`
-          );
-        } catch (subErr: any) {
-          console.error(`❌ Erreur souscription pour ${row['Nom'] || row['Nom(s)']}:`, subErr);
-          throw subErr;
-        }
+        console.log(`  📝 Création souscription...`);
+        await upsertSubscription(supabaseClient, row, finalTrancheId, investorId);
+        createdSouscriptions++;
+        console.log(`  ✅ Souscription créée`);
       } catch (rowErr: any) {
-        console.error('Erreur traitement ligne:', rowErr);
-        errors.push(`Erreur pour ${row['Nom']}: ${rowErr.message}`);
+        console.error(`  ❌ ERREUR:`, rowErr);
+        errors.push(`${rowName}: ${rowErr.message}`);
       }
     }
 
