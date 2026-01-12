@@ -21,13 +21,12 @@ export const mockProject = {
   projet: 'Test Project',
   emetteur: 'Test Emetteur',
   siren_emetteur: '732829320',
-  montant_total: 1000000,
+  montant_global_eur: 1000000,
   taux_nominal: 5.0,
   date_emission: '2025-01-01',
-  date_remboursement_initial: '2030-01-01',
-  periodicite: 'annuelle' as const,
+  periodicite_coupons: 'annuelle' as const,
   representant_masse: 'Test Rep',
-  email_representant_masse: 'rep@example.com',
+  email_rep_masse: 'rep@example.com',
   org_id: 'org-123',
   created_at: '2025-01-01T00:00:00Z',
 };
@@ -54,7 +53,7 @@ export const mockTranche = {
   montant: 500000,
   date_emission: '2025-01-01',
   date_echeance_initiale: '2030-01-01',
-  periodicite: 'annuelle' as const,
+  periodicite_coupons: 'annuelle' as const,
   org_id: 'org-123',
   created_at: '2025-01-01T00:00:00Z',
 };
@@ -139,7 +138,7 @@ export function createMockProjects(count: number = 5) {
     ...mockProject,
     id: `project-${i + 1}`,
     projet: `Project ${i + 1}`,
-    montant_total: 1000000 + i * 100000,
+    montant_global_eur: 1000000 + i * 100000,
   }));
 }
 
