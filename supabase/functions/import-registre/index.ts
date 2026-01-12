@@ -946,9 +946,7 @@ async function upsertSubscription(
     nombre_obligations: nombreObligations || 0,
   };
 
-  const { error: subErr } = await supabase.from('souscriptions').upsert(subData, {
-    onConflict: 'tranche_id,investisseur_id',
-  });
+  const { error: subErr } = await supabase.from('souscriptions').insert(subData);
 
   if (subErr) {
     throw subErr;
