@@ -1030,8 +1030,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setEditingTranche(tranche);
-                              setShowTrancheWizard(true);
+                              navigate(`/tranches/${tranche.id}/edit`);
                             }}
                             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                             title="Modifier"
@@ -1592,8 +1591,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             subscriptions={subscriptions}
             onClose={() => setShowTranchesModal(false)}
             onEdit={(tranche) => {
-              setEditingTranche(tranche);
-              setShowTrancheWizard(true);
+              navigate(`/tranches/${tranche.id}/edit`);
             }}
             onDelete={handleDeleteTranche}
             formatCurrency={formatCurrency}
