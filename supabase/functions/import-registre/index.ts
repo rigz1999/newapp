@@ -1,4 +1,9 @@
 import { createClient, SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import * as XLSX from 'npm:xlsx@0.18.5';
+
+// =============================================================================
+// TYPES & INTERFACES
+// =============================================================================
 
 interface FormatProfile {
   id: string;
@@ -36,11 +41,345 @@ interface FormatProfile {
   };
 }
 
+interface ParsedRow extends Record<string, string> {
+  _investorType: 'physique' | 'morale';
+}
+
+interface ValidationError {
+  row: number;
+  field: string;
+  error: string;
+  value?: string;
+}
+
+interface ImportResult {
+  success: boolean;
+  createdInvestisseurs?: number;
+  updatedInvestisseurs?: number;
+  createdSouscriptions?: number;
+  total_rows?: number;
+  errors?: string[];
+  error?: string;
+  validation_errors?: ValidationError[];
+  total_errors?: number;
+}
+
+type FileType = 'csv' | 'xlsx' | 'xls';
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
+};
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_ROWS = 10000; // Safety limit
+
+const SUPPORTED_MIME_TYPES = [
+  'text/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/csv',
+  'text/plain',
+];
+
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+
+/**
+ * Detect file type from extension or MIME type
+ */
+const detectFileType = (file: File): FileType => {
+  const fileName = file.name.toLowerCase();
+
+  if (fileName.endsWith('.xlsx')) {
+    return 'xlsx';
+  } else if (fileName.endsWith('.xls')) {
+    return 'xls';
+  } else if (fileName.endsWith('.csv')) {
+    return 'csv';
+  }
+
+  // Fallback to MIME type
+  const mimeType = file.type.toLowerCase();
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) {
+    return 'xlsx';
+  }
+
+  return 'csv'; // Default
+};
+
+/**
+ * Normalize string for comparison (remove accents, normalize whitespace)
+ */
+const normalizeString = (str: string): string => {
+  return str
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/\s+/g, ' '); // Normalize whitespace
+};
+
+/**
+ * Calculate similarity between two strings (0 to 1, where 1 is identical)
+ * Uses Levenshtein distance for fuzzy matching
+ */
+const calculateSimilarity = (str1: string, str2: string): number => {
+  const s1 = normalizeString(str1);
+  const s2 = normalizeString(str2);
+
+  // If strings are identical after normalization, return 1
+  if (s1 === s2) return 1;
+
+  // Remove common corruption characters for better matching
+  const cleanStr1 = s1.replace(/[�\uFFFD]/g, '');
+  const cleanStr2 = s2.replace(/[�\uFFFD]/g, '');
+
+  if (cleanStr1 === cleanStr2) return 0.95;
+
+  // Check if one string starts with the other (common for truncated/corrupted headers)
+  const minLength = Math.min(cleanStr1.length, cleanStr2.length);
+  if (minLength >= 4) {
+    const prefix1 = cleanStr1.substring(0, minLength);
+    const prefix2 = cleanStr2.substring(0, minLength);
+    if (prefix1 === prefix2) {
+      return 0.85;
+    }
+  }
+
+  // Levenshtein distance calculation
+  const matrix: number[][] = [];
+  const len1 = cleanStr1.length;
+  const len2 = cleanStr2.length;
+
+  if (len1 === 0) return len2 === 0 ? 1 : 0;
+  if (len2 === 0) return 0;
+
+  // Initialize matrix
+  for (let i = 0; i <= len1; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= len2; j++) {
+    matrix[0][j] = j;
+  }
+
+  // Fill matrix
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      const cost = cleanStr1[i - 1] === cleanStr2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1, // deletion
+        matrix[i][j - 1] + 1, // insertion
+        matrix[i - 1][j - 1] + cost // substitution
+      );
+    }
+  }
+
+  const distance = matrix[len1][len2];
+  const maxLength = Math.max(len1, len2);
+  return 1 - distance / maxLength;
+};
+
+/**
+ * Find the best matching key in rawRow for a given target column
+ * Returns the key and its similarity score
+ */
+const findBestMatch = (
+  targetColumn: string,
+  rawRowKeys: string[],
+  threshold: number = 0.7
+): { key: string; similarity: number } | null => {
+  let bestMatch: { key: string; similarity: number } | null = null;
+
+  for (const key of rawRowKeys) {
+    const similarity = calculateSimilarity(targetColumn, key);
+
+    if (similarity >= threshold) {
+      if (!bestMatch || similarity > bestMatch.similarity) {
+        bestMatch = { key, similarity };
+      }
+    }
+  }
+
+  return bestMatch;
+};
+
+/**
+ * Parse date from various formats to ISO format
+ */
+const parseDate = (value: unknown): string | null => {
+  if (!value) return null;
+
+  // Handle Excel serial date numbers
+  if (typeof value === 'number') {
+    const excelEpoch = new Date(1899, 11, 30);
+    const date = new Date(excelEpoch.getTime() + value * 86400000);
+    return date.toISOString().split('T')[0];
+  }
+
+  const v = String(value).trim();
+
+  // French format: DD/MM/YYYY
+  const frMatch = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (frMatch) {
+    const [, dd, mm, yyyy] = frMatch;
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // ISO format: YYYY-MM-DD
+  const isoMatch = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+
+  // US format: MM/DD/YYYY
+  const usMatch = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (usMatch) {
+    const [, mm, dd, yyyy] = usMatch;
+    // Heuristic: if dd > 12, it's likely DD/MM/YYYY not MM/DD/YYYY
+    if (parseInt(dd) > 12) {
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  return null;
+};
+
+/**
+ * Clean phone number by removing formatting characters
+ */
+const cleanPhone = (s?: string | null): string | null => {
+  if (!s) return null;
+  const cleaned = String(s)
+    .replace(/['"\s()-]/g, '')
+    .replace(/[^0-9+]/g, '');
+  return cleaned || null;
+};
+
+/**
+ * Convert string to number, handling commas and spaces
+ */
+const toNumber = (s?: string | number | null): number | null => {
+  if (s === null || s === undefined || s === '') return null;
+  if (typeof s === 'number') return s;
+  const str = String(s).replace(/\s/g, '').replace(',', '.');
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+};
+
+/**
+ * Detect CSV separator from sample line
+ */
+const detectSeparator = (lines: string[]): string => {
+  const sampleLines = lines.slice(0, 20).filter(line => line.length > 10);
+
+  const counts = { '\t': 0, ';': 0, ',': 0 };
+
+  for (const line of sampleLines) {
+    counts['\t'] += (line.match(/\t/g) || []).length;
+    counts[';'] += (line.match(/;/g) || []).length;
+    counts[','] += (line.match(/,/g) || []).length;
+  }
+
+  const max = Math.max(counts['\t'], counts[';'], counts[',']);
+  if (max === 0) return '\t'; // Default
+
+  return (Object.keys(counts).find(k => counts[k as keyof typeof counts] === max) ||
+    '\t') as string;
+};
+
+// =============================================================================
+// XLSX PARSING
+// =============================================================================
+
+/**
+ * Convert XLSX sheet to array of string arrays
+ */
+const xlsxSheetToRows = (sheet: XLSX.WorkSheet): string[][] => {
+  const rows: string[][] = [];
+  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    const row: string[] = [];
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+      const cell = sheet[cellAddress];
+
+      let cellValue = '';
+      if (cell) {
+        if (cell.t === 'd') {
+          // Date type
+          cellValue = cell.v.toISOString().split('T')[0];
+        } else if (cell.w) {
+          // Use formatted value if available
+          cellValue = cell.w;
+        } else {
+          cellValue = String(cell.v || '');
+        }
+      }
+
+      row.push(cellValue.trim());
+    }
+    rows.push(row);
+  }
+
+  return rows;
+};
+
+/**
+ * Convert XLSX rows to CSV-like text format
+ */
+const xlsxRowsToCsvText = (rows: string[][]): string => {
+  return rows.map(row => row.join('\t')).join('\n');
+};
+
+/**
+ * Parse XLSX file and convert to CSV-like format
+ */
+const parseXLSXFile = async (file: File): Promise<string> => {
+  console.log('📊 Parsing XLSX file:', file.name);
+
+  const arrayBuffer = await file.arrayBuffer();
+  const workbook = XLSX.read(arrayBuffer, {
+    type: 'array',
+    cellDates: true,
+    cellNF: false,
+  });
+
+  // Use first sheet
+  const firstSheetName = workbook.SheetNames[0];
+  console.log(`  Using sheet: ${firstSheetName}`);
+
+  const worksheet = workbook.Sheets[firstSheetName];
+  const rows = xlsxSheetToRows(worksheet);
+
+  console.log(`  Parsed ${rows.length} rows from XLSX`);
+
+  // Convert to CSV-like text format
+  return xlsxRowsToCsvText(rows);
+};
+
+// =============================================================================
+// PROFILE MANAGEMENT
+// =============================================================================
+
+/**
+ * Get format profile with proper fallback logic
+ */
 async function getFormatProfile(
   supabase: SupabaseClient,
   orgId: string,
   profileId?: string
 ): Promise<FormatProfile> {
+  // 1. Try specific profile if provided
   if (profileId) {
     const { data: specificProfile, error: specificError } = await supabase
       .from('company_format_profiles')
@@ -58,6 +397,7 @@ async function getFormatProfile(
     return specificProfile as FormatProfile;
   }
 
+  // 2. Try organization-specific profile
   const { data: orgProfile, error: orgError } = await supabase
     .from('company_format_profiles')
     .select('*')
@@ -70,6 +410,7 @@ async function getFormatProfile(
     return orgProfile as FormatProfile;
   }
 
+  // 3. Fallback to standard profile
   const { data: standardProfile, error: standardError } = await supabase
     .from('company_format_profiles')
     .select('*')
@@ -85,16 +426,40 @@ async function getFormatProfile(
   return standardProfile as FormatProfile;
 }
 
+// =============================================================================
+// CSV PARSING (Keep existing functions)
+// =============================================================================
+
+/**
+ * Apply column mappings from company format to standard format
+ */
 function applyColumnMappings(
   rawRow: Record<string, string>,
   mappings: Record<string, string>
 ): Record<string, string> {
   const mappedRow: Record<string, string> = {};
+  const rawRowKeys = Object.keys(rawRow);
 
   Object.entries(mappings).forEach(([companyColumn, standardColumn]) => {
-    const rawValue = Object.entries(rawRow).find(
-      ([key]) => key.toLowerCase().trim() === companyColumn.toLowerCase().trim()
+    const normalizedCompanyColumn = normalizeString(companyColumn);
+
+    // First try exact match (normalized)
+    let rawValue = Object.entries(rawRow).find(
+      ([key]) => normalizeString(key) === normalizedCompanyColumn
     )?.[1];
+
+    // If exact match fails, try fuzzy matching
+    if (rawValue === undefined) {
+      const bestMatch = findBestMatch(companyColumn, rawRowKeys, 0.7);
+
+      if (bestMatch) {
+        rawValue = rawRow[bestMatch.key];
+        console.log(
+          `🔍 Fuzzy match: "${bestMatch.key}" → "${companyColumn}" ` +
+            `(similarity: ${(bestMatch.similarity * 100).toFixed(1)}%)`
+        );
+      }
+    }
 
     if (rawValue !== undefined) {
       mappedRow[standardColumn] = rawValue;
@@ -104,52 +469,15 @@ function applyColumnMappings(
   return mappedRow;
 }
 
-function parseCSVWithProfile(
-  text: string,
-  profile: FormatProfile
-): Array<Record<string, string> & { _investorType: string }> {
-  console.log('📝 Parsing CSV avec profil:', profile.profile_name);
-
-  const lines = text.split(/\r?\n/);
-  const config = profile.format_config;
-
-  let separator = '\t';
-  const sampleLine = lines.find(line => line.length > 10 && line.includes('Quantit'));
-
-  if (sampleLine) {
-    const tabCount = (sampleLine.match(/\t/g) || []).length;
-    const semicolonCount = (sampleLine.match(/;/g) || []).length;
-    const commaCount = (sampleLine.match(/,/g) || []).length;
-
-    if (tabCount > Math.max(semicolonCount, commaCount)) {
-      separator = '\t';
-    } else if (semicolonCount > Math.max(tabCount, commaCount)) {
-      separator = ';';
-    } else if (commaCount > 0) {
-      separator = ',';
-    }
-
-    console.log(
-      '🔍 Séparateur détecté:',
-      separator === '\t' ? 'tabulation' : separator === ';' ? 'point-virgule' : 'virgule'
-    );
-  }
-
-  if (config.structure.type === 'two_sections') {
-    return parseTwoSectionsFormat(lines, separator, profile);
-  } else if (config.structure.type === 'single_list') {
-    return parseSingleListFormat(lines, separator, profile);
-  } else {
-    throw new Error(`Type de structure non supporté: ${config.structure.type}`);
-  }
-}
-
+/**
+ * Parse CSV with two-sections format (separate sections for physical/moral)
+ */
 function parseTwoSectionsFormat(
   lines: string[],
   separator: string,
   profile: FormatProfile
-): Array<Record<string, string> & { _investorType: string }> {
-  const result: Array<Record<string, string> & { _investorType: string }> = [];
+): ParsedRow[] {
+  const result: ParsedRow[] = [];
   const config = profile.format_config;
   const markers = config.structure.section_markers!;
   const skipRows = config.data_transformations.skip_rows_with || [];
@@ -162,6 +490,7 @@ function parseTwoSectionsFormat(
     const trimmed = line.trim();
     if (!trimmed) continue;
 
+    // Check for section markers
     if (trimmed.toLowerCase().includes(markers.physical.toLowerCase())) {
       console.log('📍 Section: Personnes Physiques');
       currentSection = 'physique';
@@ -178,12 +507,15 @@ function parseTwoSectionsFormat(
       continue;
     }
 
+    // Skip designated rows
     if (skipRows.some(skip => trimmed.toLowerCase().includes(skip.toLowerCase()))) {
       inDataSection = false;
       continue;
     }
 
-    if (trimmed.toLowerCase().includes('quantit')) {
+    // Detect header row with normalized matching (handles encoding issues)
+    const normalizedLine = normalizeString(trimmed);
+    if (normalizedLine.includes('quantit') || normalizedLine.includes('montant')) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
       console.log(
@@ -194,18 +526,18 @@ function parseTwoSectionsFormat(
       continue;
     }
 
+    // Process data rows
     if (inDataSection && headers.length > 0 && currentSection) {
       const values = line.split(separator);
-      const firstValue = values[0] ? values[0].trim() : '';
+      const firstValue = values[0]?.trim() || '';
 
       if (
         firstValue &&
-        !skipRows.some(skip => firstValue.toLowerCase().includes(skip.toLowerCase())) &&
-        firstValue.length > 0
+        !skipRows.some(skip => firstValue.toLowerCase().includes(skip.toLowerCase()))
       ) {
         const rawRow: Record<string, string> = {};
         headers.forEach((header, index) => {
-          rawRow[header] = values[index] ? values[index].trim() : '';
+          rawRow[header] = values[index]?.trim() || '';
         });
 
         const mappings =
@@ -215,12 +547,10 @@ function parseTwoSectionsFormat(
 
         const mappedRow = applyColumnMappings(rawRow, mappings);
 
-        const finalRow = {
+        result.push({
           ...mappedRow,
           _investorType: currentSection,
-        };
-
-        result.push(finalRow);
+        });
       }
     }
   }
@@ -234,12 +564,15 @@ function parseTwoSectionsFormat(
   return result;
 }
 
+/**
+ * Parse CSV with single-list format (type column determines physical/moral)
+ */
 function parseSingleListFormat(
   lines: string[],
   separator: string,
   profile: FormatProfile
-): Array<Record<string, string> & { _investorType: string }> {
-  const result: Array<Record<string, string> & { _investorType: string }> = [];
+): ParsedRow[] {
+  const result: ParsedRow[] = [];
   const config = profile.format_config;
   const skipRows = config.data_transformations.skip_rows_with || [];
   const typeColumn = config.structure.type_column!;
@@ -252,25 +585,38 @@ function parseSingleListFormat(
     const trimmed = line.trim();
     if (!trimmed) continue;
 
+    // Skip designated rows
     if (skipRows.some(skip => trimmed.toLowerCase().includes(skip.toLowerCase()))) {
       continue;
     }
 
-    if (trimmed.toLowerCase().includes('quantit') || trimmed.toLowerCase().includes(typeColumn.toLowerCase())) {
+    // Detect header row with normalized matching (handles encoding issues)
+    const normalizedLine = normalizeString(trimmed);
+    const normalizedTypeColumn = normalizeString(typeColumn);
+    if (
+      normalizedLine.includes('quantit') ||
+      normalizedLine.includes('montant') ||
+      normalizedLine.includes(normalizedTypeColumn)
+    ) {
       headers = trimmed.split(separator).map(h => h.trim());
       inDataSection = true;
-      console.log(`  En-têtes (${headers.length} colonnes):`, headers.slice(0, 3).join(', '), '...');
+      console.log(
+        `  En-têtes (${headers.length} colonnes):`,
+        headers.slice(0, 3).join(', '),
+        '...'
+      );
       continue;
     }
 
+    // Process data rows
     if (inDataSection && headers.length > 0) {
       const values = line.split(separator);
-      const firstValue = values[0] ? values[0].trim() : '';
+      const firstValue = values[0]?.trim() || '';
 
-      if (firstValue && firstValue.length > 0) {
+      if (firstValue) {
         const rawRow: Record<string, string> = {};
         headers.forEach((header, index) => {
-          rawRow[header] = values[index] ? values[index].trim() : '';
+          rawRow[header] = values[index]?.trim() || '';
         });
 
         const typeValue = rawRow[typeColumn]?.toLowerCase() || '';
@@ -281,7 +627,7 @@ function parseSingleListFormat(
         } else if (typeValue.includes(typeValues.moral.toLowerCase())) {
           investorType = 'morale';
         } else {
-          console.warn(`Type inconnu: ${typeValue}, ligne ignorée`);
+          console.warn(`⚠️  Type inconnu: ${typeValue}, ligne ignorée`);
           continue;
         }
 
@@ -292,12 +638,10 @@ function parseSingleListFormat(
 
         const mappedRow = applyColumnMappings(rawRow, mappings);
 
-        const finalRow = {
+        result.push({
           ...mappedRow,
           _investorType: investorType,
-        };
-
-        result.push(finalRow);
+        });
       }
     }
   }
@@ -311,12 +655,63 @@ function parseSingleListFormat(
   return result;
 }
 
-function validateData(
-  rows: Array<Record<string, string> & { _investorType: string }>,
-  profile: FormatProfile
-): Array<{ row: number; field: string; error: string; value?: string }> {
-  const errors: Array<{ row: number; field: string; error: string; value?: string }> = [];
+/**
+ * Main parsing function - handles both CSV and XLSX
+ */
+async function parseFile(file: File, profile: FormatProfile): Promise<ParsedRow[]> {
+  const fileType = detectFileType(file);
+  console.log('📄 Type de fichier détecté:', fileType.toUpperCase());
+
+  let textContent: string;
+
+  if (fileType === 'xlsx' || fileType === 'xls') {
+    // Parse XLSX and convert to CSV-like text
+    textContent = await parseXLSXFile(file);
+  } else {
+    // Read CSV with proper UTF-8 encoding handling
+    const arrayBuffer = await file.arrayBuffer();
+    const decoder = new TextDecoder('utf-8');
+    textContent = decoder.decode(arrayBuffer);
+
+    // Remove BOM if present (Excel sometimes adds it)
+    if (textContent.charCodeAt(0) === 0xfeff) {
+      textContent = textContent.substring(1);
+    }
+  }
+
+  console.log('📝 Parsing avec profil:', profile.profile_name);
+
+  const lines = textContent.split(/\r?\n/);
+  const config = profile.format_config;
+
+  // Detect separator (for CSV or converted XLSX)
+  const separator = detectSeparator(lines);
+  console.log(
+    '🔍 Séparateur détecté:',
+    separator === '\t' ? 'tabulation' : separator === ';' ? 'point-virgule' : 'virgule'
+  );
+
+  // Parse based on structure type
+  if (config.structure.type === 'two_sections') {
+    return parseTwoSectionsFormat(lines, separator, profile);
+  } else if (config.structure.type === 'single_list') {
+    return parseSingleListFormat(lines, separator, profile);
+  } else {
+    throw new Error(`Type de structure non supporté: ${config.structure.type}`);
+  }
+}
+
+// =============================================================================
+// VALIDATION
+// =============================================================================
+
+/**
+ * Validate parsed data against profile rules
+ */
+function validateData(rows: ParsedRow[], profile: FormatProfile): ValidationError[] {
+  const errors: ValidationError[] = [];
   const rules = profile.format_config.validation_rules;
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   rows.forEach((row, index) => {
     const rowNumber = index + 1;
@@ -325,9 +720,10 @@ function validateData(
       ? rules.required_fields_physical
       : rules.required_fields_moral;
 
+    // Check required fields (except email which is handled separately)
     requiredFields.forEach(field => {
       if (field === 'E-mail' || field === 'E-mail du représentant légal') {
-        return;
+        return; // Email is optional, validated separately
       }
 
       const value = row[field];
@@ -340,19 +736,23 @@ function validateData(
       }
     });
 
+    // Email validation (optional but must be valid if present)
     if (rules.email_validation) {
       const emailField = isPhysical ? 'E-mail' : 'E-mail du représentant légal';
       const email = row[emailField];
-      if (email && email.trim() !== '' && !email.includes('@')) {
-        errors.push({
-          row: rowNumber,
-          field: emailField,
-          error: 'E-mail invalide (doit contenir @)',
-          value: email,
-        });
+      if (email && email.trim() !== '') {
+        if (!EMAIL_REGEX.test(email)) {
+          errors.push({
+            row: rowNumber,
+            field: emailField,
+            error: 'E-mail invalide (format incorrect)',
+            value: email,
+          });
+        }
       }
     }
 
+    // SIREN validation for moral persons
     if (!isPhysical) {
       const siren = row['N° SIREN'];
       if (siren) {
@@ -368,6 +768,7 @@ function validateData(
       }
     }
 
+    // Phone validation (optional but must be valid if present)
     if (rules.phone_validation) {
       const phone = row['Téléphone'];
       if (phone && phone.trim() !== '') {
@@ -387,49 +788,211 @@ function validateData(
   return errors;
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
-};
+// =============================================================================
+// DATABASE OPERATIONS
+// =============================================================================
 
-const parseDate = (value: any): string | null => {
-  if (!value) return null;
-  const v = String(value).trim();
+/**
+ * Upsert investor with proper duplicate detection
+ */
+async function upsertInvestor(
+  supabase: SupabaseClient,
+  row: ParsedRow,
+  orgId: string
+): Promise<string> {
+  const isPhysical = row._investorType === 'physique';
 
-  const frMatch = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (frMatch) {
-    const [_, dd, mm, yyyy] = frMatch;
-    return `${yyyy}-${mm}-${dd}`;
+  // Get name field - try different possible column names, trim empty strings
+  const nomField = (
+    row['Nom'] ||
+    row['Nom(s)'] ||
+    row["Nom de l'investisseur"] ||
+    row['Raison sociale'] ||
+    row['Nom/Raison sociale'] ||
+    ''
+  ).trim();
+
+  if (!nomField) {
+    throw new Error(`Nom obligatoire manquant`);
   }
 
-  const isoMatch = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (isoMatch) {
-    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  // Build full address from available components
+  const adresseField =
+    row['Adresse du domicile'] || row['Adresse du siège social'] || row['Adresse'];
+  const addressParts = [adresseField, row['Code Postal'], row['Ville'], row['Pays']].filter(
+    Boolean
+  );
+  const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : null;
+
+  // Generate unique investor ID
+  const idInvestisseur = `INV-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+  // Parse phone number to bigint
+  const phoneStr = cleanPhone(row['Téléphone']);
+  const telephone = phoneStr ? parseInt(phoneStr.replace(/\D/g, ''), 10) : null;
+
+  // Parse SIREN to bigint
+  const sirenStr = row['N° SIREN']?.replace(/\s/g, '');
+  const siren = sirenStr ? parseInt(sirenStr, 10) : null;
+
+  // Parse departement to integer
+  const deptStr = isPhysical
+    ? row['Département de naissance']
+    : row['Département de naissance du représentant'];
+  const departement_naissance = deptStr ? parseInt(deptStr, 10) : null;
+
+  // Parse birth date
+  const dateNaissance = parseDate(row['Né(e) le']) || parseDate(row['Date de naissance']);
+
+  const investorData: any = {
+    id_investisseur: idInvestisseur,
+    org_id: orgId,
+    type: isPhysical ? 'physique' : 'morale',
+    nom_raison_sociale: nomField,
+    email: row['E-mail'] || row['E-mail du représentant légal'] || row['Email'] || null,
+    telephone: telephone,
+    adresse: fullAddress,
+    departement_naissance: departement_naissance,
+    date_naissance: dateNaissance,
+    lieu_naissance: row['Lieu de naissance'] || row['Ville de naissance'] || null,
+    residence_fiscale: row['Résidence Fiscale 1'] || row['Résidence fiscale'] || null,
+    cgp: row['Nom du CGP'] || row['CGP'] || null,
+    email_cgp: row['E-mail du CGP'] || row['Email CGP'] || null,
+  };
+
+  if (!isPhysical) {
+    // Combine nom and prenom for representant_legal
+    const nomRepresentant = row['Nom du représentant légal'] || '';
+    const prenomRepresentant = row['Prénom du représentant légal'] || '';
+    const representantCombined = [nomRepresentant, prenomRepresentant]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    investorData.representant_legal = representantCombined || row['Représentant légal'] || null;
+    investorData.siren = siren;
   }
 
-  return null;
-};
+  // Check for existing investor by name and email (better duplicate detection)
+  let query = supabase
+    .from('investisseurs')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('type', investorData.type)
+    .eq('nom_raison_sociale', investorData.nom_raison_sociale);
 
-const cleanPhone = (s?: string | null): string | null => {
-  if (!s) return null;
-  return s.replace(/['"\s()-]/g, '').replace(/[^0-9+]/g, '') || null;
-};
+  // Add email to query if available for better matching
+  if (investorData.email) {
+    query = query.eq('email', investorData.email);
+  }
 
-const toNumber = (s?: string | number | null): number | null => {
-  if (s === null || s === undefined || s === '') return null;
-  const str = String(s).replace(/\s/g, '').replace(',', '.');
-  const num = parseFloat(str);
-  return isNaN(num) ? null : num;
-};
+  const { data: existingInvestor } = await query.maybeSingle();
+
+  if (existingInvestor) {
+    // Update existing (exclude id_investisseur from update)
+    const { id_investisseur, ...updateData } = investorData;
+    const { data: updated, error: updateErr } = await supabase
+      .from('investisseurs')
+      .update(updateData)
+      .eq('id', existingInvestor.id)
+      .select('id')
+      .single();
+
+    if (updateErr) throw updateErr;
+    return updated.id;
+  } else {
+    // Create new
+    const { data: created, error: insertErr } = await supabase
+      .from('investisseurs')
+      .insert(investorData)
+      .select('id')
+      .single();
+
+    if (insertErr) throw insertErr;
+    return created.id;
+  }
+}
+
+/**
+ * Upsert subscription with proper calculations
+ */
+async function upsertSubscription(
+  supabase: SupabaseClient,
+  row: ParsedRow,
+  trancheId: string,
+  projetId: string,
+  investorId: string,
+  investorType: string,
+  tauxNominal: number,
+  periodiciteCoupons: string,
+  baseInteret: number
+): Promise<void> {
+  const datesouscription =
+    parseDate(row['Date de souscription']) || parseDate(row['Date de Souscription']);
+  const montantInvesti = toNumber(row['Montant investi']) || toNumber(row['Montant']);
+  const nombreObligations =
+    toNumber(row['Quantité de titres']) || toNumber(row['Quantité']) || toNumber(row['Quantite']);
+
+  // Calculate coupon_brut and coupon_net
+  const periodRatio = getPeriodRatio(periodiciteCoupons, baseInteret);
+  const couponAnnuel = (montantInvesti * tauxNominal) / 100;
+  const couponBrut = couponAnnuel * periodRatio;
+  const couponNet = investorType.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
+
+  const subData: any = {
+    projet_id: projetId,
+    tranche_id: trancheId,
+    investisseur_id: investorId,
+    date_souscription: datesouscription || new Date().toISOString().split('T')[0],
+    montant_investi: montantInvesti || 0,
+    nombre_obligations: nombreObligations || 0,
+    coupon_brut: Math.round(couponBrut * 100) / 100,
+    coupon_net: Math.round(couponNet * 100) / 100,
+  };
+
+  const { error: subErr } = await supabase.from('souscriptions').insert(subData);
+
+  if (subErr) {
+    throw subErr;
+  }
+}
+
+/**
+ * Get period ratio based on periodicite and base_interet
+ */
+function getPeriodRatio(periodicite: string | null, baseInteret: number): number {
+  const base = baseInteret || 360;
+
+  switch (periodicite?.toLowerCase()) {
+    case 'annuel':
+    case 'annuelle':
+      return 1.0;
+    case 'semestriel':
+    case 'semestrielle':
+      return base === 365 ? 182.5 / 365 : 180 / 360;
+    case 'trimestriel':
+    case 'trimestrielle':
+      return base === 365 ? 91.25 / 365 : 90 / 360;
+    case 'mensuel':
+    case 'mensuelle':
+      return base === 365 ? 30.42 / 365 : 30 / 360;
+    default:
+      return 1.0;
+  }
+}
+
+// =============================================================================
+// MAIN HANDLER
+// =============================================================================
 
 Deno.serve(async req => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
   try {
+    // 1. AUTHENTICATION
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('Missing authorization header');
@@ -452,6 +1015,7 @@ Deno.serve(async req => {
       throw new Error('Unauthorized');
     }
 
+    // 2. PARSE FORM DATA
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const profileId = formData.get('profile_id') as string | undefined;
@@ -465,19 +1029,40 @@ Deno.serve(async req => {
 
     console.log('📥 Received:', { projetId, trancheName, trancheId, hasFile: !!file });
 
+    // 3. VALIDATE INPUT
     if (!file) {
       throw new Error('Missing file');
     }
 
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error(`File too large. Maximum size: ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+    }
+
+    // Validate file type
+    const fileType = detectFileType(file);
+    if (!['csv', 'xlsx', 'xls'].includes(fileType)) {
+      throw new Error('Type de fichier non supporté. Utilisez CSV ou XLSX/XLS.');
+    }
+
+    console.log(
+      '📄 Fichier:',
+      file.name,
+      `(${(file.size / 1024).toFixed(2)} KB)`,
+      `Type: ${fileType.toUpperCase()}`
+    );
+
+    // 4. GET/CREATE TRANCHE
     let finalTrancheId: string;
+    let finalProjetId: string;
     let orgId: string;
 
     if (projetId && trancheName && !trancheId) {
+      // Create new tranche
       console.log('📝 Mode: Création nouvelle tranche');
 
       const { data: projet, error: projetErr } = await supabaseClient
         .from('projets')
-        .select('org_id, emetteur, projet')
+        .select('org_id, taux_nominal, periodicite_coupons, duree_mois, base_interet')
         .eq('id', projetId)
         .single();
 
@@ -486,13 +1071,14 @@ Deno.serve(async req => {
       }
 
       orgId = projet.org_id;
+      finalProjetId = projetId;
 
       const trancheData: any = {
         projet_id: projetId,
         tranche_name: trancheName,
         taux_nominal: tauxNominal ? parseFloat(tauxNominal) : null,
         date_emission: dateEmission || null,
-        duree_mois: dureeMois ? parseInt(dureeMois) : null,
+        duree_mois: dureeMois ? parseInt(dureeMois, 10) : null,
       };
 
       const { data: newTranche, error: trancheErr } = await supabaseClient
@@ -509,11 +1095,14 @@ Deno.serve(async req => {
       finalTrancheId = newTranche.id;
       console.log('✅ Tranche créée:', finalTrancheId);
     } else if (trancheId && !projetId) {
+      // Use existing tranche
       console.log('📝 Mode: Import vers tranche existante');
 
       const { data: tranche, error: trancheErr } = await supabaseClient
         .from('tranches')
-        .select('*, projets!inner(org_id, emetteur, projet)')
+        .select(
+          '*, projets!inner(id, org_id, taux_nominal, periodicite_coupons, duree_mois, base_interet)'
+        )
         .eq('id', trancheId)
         .single();
 
@@ -522,19 +1111,39 @@ Deno.serve(async req => {
       }
 
       finalTrancheId = trancheId;
+      finalProjetId = (tranche.projets as any).id;
       orgId = (tranche.projets as any).org_id;
     } else {
       throw new Error('Vous devez fournir soit (projet_id + tranche_name) soit (tranche_id)');
     }
 
-    console.log('📁 Fichier:', file.name, `(${file.size} bytes)`);
-    console.log('🏢 Organisation ID:', orgId);
+    // Get tranche details with project fallback
+    const { data: trancheDetails, error: trancheDetailsErr } = await supabaseClient
+      .from('tranches')
+      .select(
+        'taux_nominal, date_emission, duree_mois, projets!inner(taux_nominal, periodicite_coupons, duree_mois, base_interet)'
+      )
+      .eq('id', finalTrancheId)
+      .single();
 
-    const fileContent = await file.text();
+    if (trancheDetailsErr || !trancheDetails) {
+      throw new Error('Impossible de récupérer les détails de la tranche');
+    }
 
+    const project = trancheDetails.projets as any;
+    const tauxNominalFinal = trancheDetails.taux_nominal ?? project.taux_nominal;
+    const periodiciteCoupons = project.periodicite_coupons;
+    const baseInteret = project.base_interet ?? 360;
+
+    if (!tauxNominalFinal || !periodiciteCoupons) {
+      throw new Error(
+        'Taux nominal ou périodicité des coupons manquants. Vérifiez la configuration du projet.'
+      );
+    }
+
+    // 5. PARSE FILE (CSV or XLSX)
     const profile = await getFormatProfile(supabaseClient, orgId, profileId);
-
-    const rows = parseCSVWithProfile(fileContent, profile);
+    const rows = await parseFile(file, profile);
 
     if (rows.length === 0) {
       return new Response(
@@ -544,15 +1153,20 @@ Deno.serve(async req => {
         }),
         {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
         }
       );
     }
 
+    if (rows.length > MAX_ROWS) {
+      throw new Error(`Too many rows. Maximum: ${MAX_ROWS}, Found: ${rows.length}`);
+    }
+
+    // 6. VALIDATE DATA
     const validationErrors = validateData(rows, profile);
 
     if (validationErrors.length > 0) {
-      console.warn(`⚠️ ${validationErrors.length} erreur(s) de validation`);
+      console.warn(`⚠️  ${validationErrors.length} erreur(s) de validation`);
       return new Response(
         JSON.stringify({
           success: false,
@@ -562,108 +1176,90 @@ Deno.serve(async req => {
         }),
         {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    console.log('✅ Validation OK - Insertion en base...');
-
+    // 7. IMPORT DATA
     let createdInvestisseurs = 0;
     let updatedInvestisseurs = 0;
     let createdSouscriptions = 0;
     const errors: string[] = [];
 
     for (const row of rows) {
+      const rowName = row['Nom'] || row['Nom(s)'] || row['Raison sociale'] || 'Unnamed';
+
       try {
-        const isPhysical = row._investorType === 'physique';
-
-        const investorData: any = {
-          org_id: orgId,
-          type: isPhysical ? 'physique' : 'morale',
-          nom: row['Nom'],
-          prenom: isPhysical ? row['Prénom'] : null,
-          email: row['E-mail'] || row['E-mail du représentant légal'] || null,
-          telephone: cleanPhone(row['Téléphone']),
-          adresse: row['Adresse'] || null,
-          code_postal: row['Code Postal'] || null,
-          ville: row['Ville'] || null,
-          pays: row['Pays'] || null,
-        };
-
-        if (!isPhysical) {
-          investorData.representant_legal = row['Représentant légal'] || null;
-          investorData.email_representant = row['E-mail du représentant légal'] || null;
-          investorData.siren = row['N° SIREN']?.replace(/\s/g, '') || null;
-        }
-
+        // Check if investor already exists
         const { data: existingInvestor } = await supabaseClient
           .from('investisseurs')
           .select('id')
           .eq('org_id', orgId)
-          .eq('type', investorData.type)
-          .eq('nom', investorData.nom)
+          .eq('type', row._investorType)
+          .eq('nom_raison_sociale', rowName)
           .maybeSingle();
 
-        let investorId: string;
+        const investorId = await upsertInvestor(supabaseClient, row, orgId);
 
         if (existingInvestor) {
-          const { data: updated, error: updateErr } = await supabaseClient
-            .from('investisseurs')
-            .update(investorData)
-            .eq('id', existingInvestor.id)
-            .select('id')
-            .single();
-
-          if (updateErr) throw updateErr;
-          investorId = updated.id;
           updatedInvestisseurs++;
         } else {
-          const { data: created, error: insertErr } = await supabaseClient
-            .from('investisseurs')
-            .insert(investorData)
-            .select('id')
-            .single();
-
-          if (insertErr) throw insertErr;
-          investorId = created.id;
           createdInvestisseurs++;
         }
 
-        const datesouscription = parseDate(row['Date de souscription']);
-        const montantInvesti = toNumber(row['Montant investi']);
-        const nombreObligations = toNumber(row['Quantité de titres']);
-
-        const subData: any = {
-          tranche_id: finalTrancheId,
-          investisseur_id: investorId,
-          date_souscription: datesouscription || new Date().toISOString().split('T')[0],
-          montant_investi: montantInvesti || 0,
-          nombre_obligations: nombreObligations || 0,
-          statut: 'active',
-        };
-
-        const { error: subErr } = await supabaseClient.from('souscriptions').upsert(subData, {
-          onConflict: 'tranche_id,investisseur_id',
-        });
-
-        if (subErr) {
-          console.error('Erreur souscription:', subErr);
-          errors.push(`Erreur souscription pour ${investorData.nom}: ${subErr.message}`);
-        } else {
-          createdSouscriptions++;
-        }
+        // Create subscription with all required parameters
+        await upsertSubscription(
+          supabaseClient,
+          row,
+          finalTrancheId,
+          finalProjetId,
+          investorId,
+          row._investorType,
+          tauxNominalFinal,
+          periodiciteCoupons,
+          baseInteret
+        );
+        createdSouscriptions++;
       } catch (rowErr: any) {
-        console.error('Erreur traitement ligne:', rowErr);
-        errors.push(`Erreur: ${rowErr.message}`);
+        console.error(`Erreur traitement ${rowName}:`, rowErr);
+        errors.push(`${rowName}: ${rowErr.message}`);
       }
     }
 
-    console.log('✅ Import terminé:');
-    console.log(`   - ${createdInvestisseurs} investisseurs créés`);
-    console.log(`   - ${updatedInvestisseurs} investisseurs mis à jour`);
-    console.log(`   - ${createdSouscriptions} souscriptions créées`);
+    console.log(
+      `✅ Import terminé: ${createdInvestisseurs} investisseurs, ${createdSouscriptions} souscriptions`
+    );
 
+    // 8. GENERATE ECHEANCIER
+    if (createdSouscriptions > 0) {
+      console.log("📅 Génération de l'échéancier...");
+      try {
+        const regenerateResponse = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/regenerate-echeancier`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: authHeader,
+            },
+            body: JSON.stringify({ tranche_id: finalTrancheId }),
+          }
+        );
+
+        if (!regenerateResponse.ok) {
+          console.error('Erreur génération échéancier:', await regenerateResponse.text());
+        } else {
+          const result = await regenerateResponse.json();
+          console.log(`✅ Échéancier généré: ${result.created_coupons} échéances créées`);
+        }
+      } catch (echeancierErr: any) {
+        console.error("Erreur lors de la génération de l'échéancier:", echeancierErr);
+        // Don't fail the whole import if échéancier generation fails
+      }
+    }
+
+    // 9. RETURN RESULTS
     return new Response(
       JSON.stringify({
         success: true,
@@ -675,7 +1271,7 @@ Deno.serve(async req => {
       }),
       {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       }
     );
   } catch (err: any) {
@@ -687,7 +1283,7 @@ Deno.serve(async req => {
       }),
       {
         status: err.message?.includes('Unauthorized') ? 401 : 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       }
     );
   }
