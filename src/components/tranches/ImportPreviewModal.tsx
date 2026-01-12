@@ -1,4 +1,5 @@
-import { X, CheckCircle, AlertCircle, Calendar, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Calendar, Users, DollarSign, ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
 
 interface InvestorPreview {
   nom: string;
@@ -22,8 +23,9 @@ interface PreviewData {
 
 interface ImportPreviewModalProps {
   previewData: PreviewData;
-  onConfirm: () => void;
+  onConfirm: (editedDateEmission: string | null) => void;
   onCancel: () => void;
+  onBack: () => void;
   isProcessing: boolean;
 }
 
@@ -31,8 +33,13 @@ export function ImportPreviewModal({
   previewData,
   onConfirm,
   onCancel,
+  onBack,
   isProcessing,
 }: ImportPreviewModalProps): JSX.Element {
+  const [editedDateEmission, setEditedDateEmission] = useState<string>(
+    previewData.extracted_date_emission || ''
+  );
+
   const formatCurrency = (amount: number): string =>
     new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -40,17 +47,6 @@ export function ImportPreviewModal({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-
-  const formatDate = (dateStr: string | null): string => {
-    if (!dateStr) {
-      return 'Non définie';
-    }
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  };
 
   return (
     <div className="fixed inset-0 z-[70] overflow-y-auto">
@@ -93,37 +89,23 @@ export function ImportPreviewModal({
                   <p className="font-semibold text-slate-900">{previewData.tranche_name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600 mb-1 flex items-center gap-1">
+                  <label className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
                     Date d'émission
-                  </p>
-                  <p
-                    className={`font-semibold ${
-                      previewData.extracted_date_emission ? 'text-green-600' : 'text-orange-600'
-                    }`}
-                  >
-                    {formatDate(previewData.extracted_date_emission)}
-                  </p>
+                  </label>
+                  <input
+                    type="date"
+                    value={editedDateEmission}
+                    onChange={e => setEditedDateEmission(e.target.value)}
+                    disabled={isProcessing}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:bg-slate-50"
+                  />
                   {previewData.extracted_date_emission && (
                     <p className="text-xs text-green-600 mt-1">✓ Extraite du CSV</p>
                   )}
-                </div>
-                <div>
-                  <p className="text-sm text-slate-600 mb-1 flex items-center gap-1">
-                    <TrendingUp className="w-4 h-4" />
-                    Taux nominal
-                  </p>
-                  <p className="font-semibold text-slate-900">{previewData.taux_nominal}%</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-600 mb-1">Périodicité</p>
-                  <p className="font-semibold text-slate-900 capitalize">
-                    {previewData.periodicite_coupons}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-600 mb-1">Durée</p>
-                  <p className="font-semibold text-slate-900">{previewData.duree_mois} mois</p>
+                  {!previewData.extracted_date_emission && editedDateEmission && (
+                    <p className="text-xs text-blue-600 mt-1">Modifiée manuellement</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -230,17 +212,15 @@ export function ImportPreviewModal({
             </div>
 
             {/* Warning if date missing */}
-            {!previewData.extracted_date_emission && (
+            {!editedDateEmission && (
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-orange-900 mb-1">
-                      Date d'émission non trouvée
-                    </p>
+                    <p className="font-semibold text-orange-900 mb-1">Date d'émission manquante</p>
                     <p className="text-sm text-orange-700">
-                      La colonne "Date de Transfert" est manquante ou vide dans le fichier CSV.
-                      L'échéancier ne pourra pas être généré automatiquement.
+                      Veuillez saisir une date d'émission. L'échéancier ne pourra pas être généré
+                      sans cette information.
                     </p>
                   </div>
                 </div>
@@ -251,6 +231,14 @@ export function ImportPreviewModal({
           {/* Footer */}
           <div className="flex-shrink-0 bg-white p-6 border-t border-slate-200 flex gap-3">
             <button
+              onClick={onBack}
+              className="px-4 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
+              disabled={isProcessing}
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Retour
+            </button>
+            <button
               onClick={onCancel}
               className="flex-1 px-4 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 font-medium"
               disabled={isProcessing}
@@ -258,8 +246,8 @@ export function ImportPreviewModal({
               Annuler
             </button>
             <button
-              onClick={onConfirm}
-              disabled={isProcessing}
+              onClick={() => onConfirm(editedDateEmission || null)}
+              disabled={isProcessing || !editedDateEmission}
               className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
             >
               {isProcessing ? (

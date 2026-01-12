@@ -421,7 +421,13 @@ export function TrancheWizard({
     }
   };
 
-  const handleConfirmImport = async (): Promise<void> => {
+  const handleBackToUpload = (): void => {
+    setPreviewData(null);
+    setCsvFile(null);
+    setError('');
+  };
+
+  const handleConfirmImport = async (finalDateEmission: string | null): Promise<void> => {
     if (!selectedProjectId || !trancheName || !csvFile) {
       return;
     }
@@ -436,6 +442,7 @@ export function TrancheWizard({
         projectId: selectedProjectId,
         trancheName,
         fileName: csvFile.name,
+        finalDateEmission,
       });
 
       const form = new FormData();
@@ -448,7 +455,10 @@ export function TrancheWizard({
       if (tauxNominal) {
         form.append('taux_nominal', tauxNominal);
       }
-      if (dateEmission) {
+      // Use the edited date from preview modal
+      if (finalDateEmission) {
+        form.append('date_emission', finalDateEmission);
+      } else if (dateEmission) {
         form.append('date_emission', dateEmission);
       }
       if (dureeMois) {
@@ -850,6 +860,7 @@ export function TrancheWizard({
           previewData={previewData}
           onConfirm={handleConfirmImport}
           onCancel={() => setPreviewData(null)}
+          onBack={handleBackToUpload}
           isProcessing={processing}
         />
       )}
