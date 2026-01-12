@@ -351,7 +351,7 @@ export function TrancheEditPage({
       <div className="fixed inset-0 z-[75] bg-slate-50 overflow-y-auto">
         {/* Header Bar */}
         <div className="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="max-w-[1920px] mx-auto px-8 py-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <button
                 onClick={onClose}
@@ -394,7 +394,7 @@ export function TrancheEditPage({
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-[1920px] mx-auto px-8 py-8">
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -408,9 +408,9 @@ export function TrancheEditPage({
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
             {/* Left Column - Basic Info */}
-            <div className="lg:col-span-1 space-y-6">
+            <div className="xl:col-span-1 space-y-6">
               {/* Tranche Name Card */}
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h3 className="text-lg font-semibold text-slate-900 mb-4">Informations de base</h3>
@@ -481,7 +481,7 @@ export function TrancheEditPage({
             </div>
 
             {/* Right Column - Subscriptions */}
-            <div className="lg:col-span-2">
+            <div className="xl:col-span-3">
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5">
                   <div className="flex items-center justify-between">
@@ -498,8 +498,8 @@ export function TrancheEditPage({
                   </div>
                 </div>
 
-                <div className="p-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="p-8">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 mb-8">
                     <div className="flex items-start gap-3">
                       <Lock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
@@ -536,31 +536,31 @@ export function TrancheEditPage({
                         <table className="w-full">
                           <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
-                              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                              <th className="px-8 py-5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                 <div className="flex items-center gap-2">
                                   <Lock className="w-3.5 h-3.5" />
                                   Investisseur
                                 </div>
                               </th>
-                              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                              <th className="px-8 py-5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                 <div className="flex items-center gap-2">
                                   <Lock className="w-3.5 h-3.5" />
                                   Type
                                 </div>
                               </th>
-                              <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                              <th className="px-8 py-5 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                 <div className="flex items-center justify-end gap-2">
                                   <Edit2 className="w-3.5 h-3.5" />
                                   Montant
                                 </div>
                               </th>
-                              <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                              <th className="px-8 py-5 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                 <div className="flex items-center justify-end gap-2">
                                   <Edit2 className="w-3.5 h-3.5" />
                                   Titres
                                 </div>
                               </th>
-                              <th className="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                              <th className="px-8 py-5 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                 Actions
                               </th>
                             </tr>
@@ -571,7 +571,7 @@ export function TrancheEditPage({
                                 key={souscription.id}
                                 className={`transition-colors ${editingRow === index ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                               >
-                                <td className="px-6 py-4 text-sm whitespace-nowrap">
+                                <td className="px-8 py-5 text-sm whitespace-nowrap">
                                   <div className="flex items-center gap-2">
                                     <Lock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                                     <button
@@ -586,7 +586,7 @@ export function TrancheEditPage({
                                     </button>
                                   </div>
                                 </td>
-                                <td className="px-6 py-4 text-sm whitespace-nowrap">
+                                <td className="px-8 py-5 text-sm whitespace-nowrap">
                                   <div className="flex items-center gap-2">
                                     <Lock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                                     <span
@@ -602,7 +602,7 @@ export function TrancheEditPage({
                                     </span>
                                   </div>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-right whitespace-nowrap">
+                                <td className="px-8 py-5 text-sm text-right whitespace-nowrap">
                                   {editingRow === index ? (
                                     <input
                                       type="number"
@@ -627,7 +627,7 @@ export function TrancheEditPage({
                                     </button>
                                   )}
                                 </td>
-                                <td className="px-6 py-4 text-sm text-right whitespace-nowrap">
+                                <td className="px-8 py-5 text-sm text-right whitespace-nowrap">
                                   {editingRow === index ? (
                                     <div className="flex items-center justify-end gap-2">
                                       <input
@@ -657,7 +657,7 @@ export function TrancheEditPage({
                                     </span>
                                   )}
                                 </td>
-                                <td className="px-6 py-4 text-sm text-center whitespace-nowrap">
+                                <td className="px-8 py-5 text-sm text-center whitespace-nowrap">
                                   <button
                                     onClick={() => {
                                       setReassigningSouscriptionId(souscription.id);
