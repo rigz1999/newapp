@@ -345,10 +345,10 @@ export function TrancheEditPage({
   return (
     <>
       {/* Backdrop to cover underlying content */}
-      <div className="fixed inset-0 z-[70] bg-slate-900 bg-opacity-50" />
+      <div className="fixed inset-0 z-[9998] bg-slate-900 bg-opacity-75" />
 
       {/* Main Edit Page */}
-      <div className="fixed inset-0 z-[75] bg-slate-50 overflow-y-auto">
+      <div className="fixed inset-0 z-[9999] bg-slate-50 overflow-y-auto">
         {/* Header Bar */}
         <div className="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
           <div className="max-w-[1920px] mx-auto px-8 py-4 flex justify-between items-center">
@@ -686,7 +686,7 @@ export function TrancheEditPage({
 
         {/* Investor Details Modal */}
         {selectedInvestorDetails && (
-          <div className="fixed inset-0 z-[80] overflow-y-auto">
+          <div className="fixed inset-0 z-[10000] overflow-y-auto">
             <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
             <div className="flex min-h-full items-center justify-center p-4">
               <div className="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -816,7 +816,7 @@ export function TrancheEditPage({
 
         {/* Reassign Subscription Modal */}
         {reassigningSouscriptionId && (
-          <div className="fixed inset-0 z-[80] overflow-y-auto">
+          <div className="fixed inset-0 z-[10000] overflow-y-auto">
             <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" />
             <div className="flex min-h-full items-center justify-center p-4">
               <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full">
