@@ -13,6 +13,7 @@ import {
 import { FileUpload } from '../investors/FileUpload';
 import { Tooltip } from '../common/Tooltip';
 import { logger } from '../../utils/logger';
+import { ImportPreviewModal } from './ImportPreviewModal';
 
 interface Project {
   id: string;
@@ -27,6 +28,26 @@ interface Tranche {
   duree_mois: number | null;
   periodicite_coupons: string | null;
   projet_id: string;
+}
+
+interface InvestorPreview {
+  nom: string;
+  type: string;
+  montant_investi: number;
+  nombre_obligations: number;
+}
+
+interface PreviewData {
+  extracted_date_emission: string | null;
+  tranche_name: string;
+  taux_nominal: number;
+  periodicite_coupons: string;
+  duree_mois: number;
+  investors_preview: InvestorPreview[];
+  total_investors: number;
+  total_souscriptions: number;
+  total_montant: number;
+  has_more: boolean;
 }
 
 interface TrancheWizardProps {
@@ -55,7 +76,7 @@ export function TrancheWizard({
   const [suggestedName, setSuggestedName] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
 
   const [tauxNominal, setTauxNominal] = useState<string>('');
   const [dateEmission, setDateEmission] = useState('');
@@ -301,12 +322,11 @@ export function TrancheWizard({
 
     setProcessing(true);
     setError('');
-    setSuccessMessage('');
     setProgress(0);
     setIsProcessingOnServer(false);
 
     try {
-      logger.info('Début import', {
+      logger.info('Demande aperçu import', {
         projectId: selectedProjectId,
         trancheName,
         fileName: csvFile.name,
@@ -316,6 +336,7 @@ export function TrancheWizard({
       form.append('projet_id', selectedProjectId);
       form.append('tranche_name', trancheName);
       form.append('file', csvFile, csvFile.name);
+      form.append('preview_mode', 'true'); // Request preview
 
       // Add tranche metadata
       if (tauxNominal) {
@@ -360,33 +381,20 @@ export function TrancheWizard({
         try {
           if (xhr.status >= 200 && xhr.status < 300) {
             const result = JSON.parse(xhr.responseText);
-            logger.info('Import terminé', { result });
+            logger.info('Aperçu reçu', { result });
 
-            if (result.success && result.createdSouscriptions > 0) {
-              const successMsg =
-                `Import terminé!\n` +
-                `${result.createdSouscriptions || 0} souscriptions créées\n` +
-                `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
-                `${result.updatedInvestisseurs || 0} investisseurs mis à jour`;
-
-              onClose();
-              onSuccess(successMsg);
-
-              if (result.errors && result.errors.length > 0) {
-                logger.warn("Erreurs d'import", { errors: result.errors });
-              }
-            } else if (result.success && result.createdSouscriptions === 0) {
-              setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
-              logger.error(new Error('Import terminé mais 0 souscriptions créées'), { result });
+            if (result.success && result.preview && result.data) {
+              // Show preview modal
+              setPreviewData(result.data);
             } else {
-              setError(result.error || "Erreur lors de l'import");
+              setError(result.error || "Erreur lors de la génération de l'aperçu");
             }
           } else {
             let errorMsg = `Erreur serveur (${xhr.status})`;
             try {
               const errorResponse = JSON.parse(xhr.responseText);
               errorMsg = errorResponse.error || errorMsg;
-            } catch (e) {
+            } catch (_e) {
               errorMsg += `: ${xhr.responseText}`;
             }
             logger.error(new Error(`Erreur HTTP ${xhr.status}`), { response: xhr.responseText });
@@ -410,6 +418,130 @@ export function TrancheWizard({
       logger.error(err instanceof Error ? err : new Error(String(err)));
       setError(errorMessage);
       setProcessing(false);
+    }
+  };
+
+  const handleConfirmImport = async (): Promise<void> => {
+    if (!selectedProjectId || !trancheName || !csvFile) {
+      return;
+    }
+
+    setProcessing(true);
+    setError('');
+    setProgress(0);
+    setIsProcessingOnServer(false);
+
+    try {
+      logger.info('Confirmation import', {
+        projectId: selectedProjectId,
+        trancheName,
+        fileName: csvFile.name,
+      });
+
+      const form = new FormData();
+      form.append('projet_id', selectedProjectId);
+      form.append('tranche_name', trancheName);
+      form.append('file', csvFile, csvFile.name);
+      // preview_mode not set = actual import
+
+      // Add tranche metadata
+      if (tauxNominal) {
+        form.append('taux_nominal', tauxNominal);
+      }
+      if (dateEmission) {
+        form.append('date_emission', dateEmission);
+      }
+      if (dureeMois) {
+        form.append('duree_mois', dureeMois);
+      }
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-registre`;
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session. Please log in again.');
+      }
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+
+      xhr.upload.onprogress = event => {
+        if (event.lengthComputable) {
+          const p = Math.round((event.loaded / event.total) * 100);
+          setProgress(p);
+          if (p === 100) {
+            setIsProcessingOnServer(true);
+          }
+        }
+      };
+
+      xhr.onload = () => {
+        setProcessing(false);
+        logger.debug('Réponse serveur', { status: xhr.status });
+
+        try {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const result = JSON.parse(xhr.responseText);
+            logger.info('Import terminé', { result });
+
+            if (result.success && result.createdSouscriptions > 0) {
+              const successMsg =
+                `Import terminé!\n` +
+                `${result.createdSouscriptions || 0} souscriptions créées\n` +
+                `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
+                `${result.updatedInvestisseurs || 0} investisseurs mis à jour`;
+
+              setPreviewData(null); // Close preview modal
+              onClose();
+              onSuccess(successMsg);
+
+              if (result.errors && result.errors.length > 0) {
+                logger.warn("Erreurs d'import", { errors: result.errors });
+              }
+            } else if (result.success && result.createdSouscriptions === 0) {
+              setError("Aucune souscription n'a été créée. Vérifiez le format du CSV.");
+              setPreviewData(null);
+              logger.error(new Error('Import terminé mais 0 souscriptions créées'), { result });
+            } else {
+              setError(result.error || "Erreur lors de l'import");
+              setPreviewData(null);
+            }
+          } else {
+            let errorMsg = `Erreur serveur (${xhr.status})`;
+            try {
+              const errorResponse = JSON.parse(xhr.responseText);
+              errorMsg = errorResponse.error || errorMsg;
+            } catch (_e) {
+              errorMsg += `: ${xhr.responseText}`;
+            }
+            logger.error(new Error(`Erreur HTTP ${xhr.status}`), { response: xhr.responseText });
+            setError(errorMsg);
+            setPreviewData(null);
+          }
+        } catch (parseErr) {
+          logger.error(new Error('Erreur de parsing de la réponse'), { error: parseErr });
+          setError('Réponse invalide du serveur');
+          setPreviewData(null);
+        }
+      };
+
+      xhr.onerror = () => {
+        setProcessing(false);
+        logger.error(new Error('Erreur réseau XHR'));
+        setError("Erreur réseau pendant l'upload");
+        setPreviewData(null);
+      };
+
+      xhr.send(form);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Erreur lors de l'import";
+      logger.error(err instanceof Error ? err : new Error(String(err)));
+      setError(errorMessage);
+      setProcessing(false);
+      setPreviewData(null);
     }
   };
 
@@ -711,6 +843,16 @@ export function TrancheWizard({
           </div>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {previewData && (
+        <ImportPreviewModal
+          previewData={previewData}
+          onConfirm={handleConfirmImport}
+          onCancel={() => setPreviewData(null)}
+          isProcessing={processing}
+        />
+      )}
     </div>
   );
 }
