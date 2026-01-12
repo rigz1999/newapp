@@ -1182,11 +1182,24 @@ Deno.serve(async req => {
     // Try "Date de transfert des fonds" or use earliest "Date de souscription"
     let extractedDateEmission: string | null = null;
     if (!dateEmission && rows.length > 0) {
+      // Debug: show available columns
+      const firstRow = rows[0];
+      const availableColumns = Object.keys(firstRow).filter(k => !k.startsWith('_'));
+      console.log(
+        `📋 Colonnes disponibles dans le CSV (${availableColumns.length}):`,
+        availableColumns.slice(0, 20).join(', ')
+      );
+
       // Try "Date de transfert des fonds" first
+      console.log(`🔍 Recherche de date d'émission...`);
+      console.log(
+        `   Valeurs: Date de transfert des fonds="${firstRow['Date de transfert des fonds']}", Date de transfert="${firstRow['Date de transfert']}", Date transfert fonds="${firstRow['Date transfert fonds']}"`
+      );
+
       const dateTransfert =
-        parseDate(rows[0]['Date de transfert des fonds']) ||
-        parseDate(rows[0]['Date de transfert']) ||
-        parseDate(rows[0]['Date transfert fonds']);
+        parseDate(firstRow['Date de transfert des fonds']) ||
+        parseDate(firstRow['Date de transfert']) ||
+        parseDate(firstRow['Date transfert fonds']);
 
       if (dateTransfert) {
         extractedDateEmission = dateTransfert;
@@ -1194,6 +1207,9 @@ Deno.serve(async req => {
           `📅 Date émission extraite du CSV (Date de transfert): ${extractedDateEmission}`
         );
       } else {
+        console.log(
+          `   ⚠️ Aucune colonne "Date de transfert" trouvée, utilisation de la première date de souscription`
+        );
         // Fallback: use earliest date de souscription
         const allDates = rows
           .map(
@@ -1207,8 +1223,12 @@ Deno.serve(async req => {
           console.log(
             `📅 Date émission extraite du CSV (première souscription): ${extractedDateEmission}`
           );
+        } else {
+          console.log(`   ❌ Aucune date trouvée dans le CSV!`);
         }
       }
+    } else if (dateEmission) {
+      console.log(`📅 Date émission fournie par le formulaire: ${dateEmission}`);
     }
 
     const finalDateEmission = dateEmission || extractedDateEmission;
@@ -1216,6 +1236,10 @@ Deno.serve(async req => {
     // Update tranche with extracted date if we created a new one and extracted a date
     if (projetId && trancheName && !trancheId && extractedDateEmission && !dateEmission) {
       console.log(`📅 Mise à jour de la tranche avec date émission: ${extractedDateEmission}`);
+      console.log(
+        `   Conditions: projetId=${!!projetId}, trancheName=${!!trancheName}, !trancheId=${!trancheId}, extractedDate=${!!extractedDateEmission}, !dateEmission=${!dateEmission}`
+      );
+
       const { error: updateErr } = await supabaseClient
         .from('tranches')
         .update({ date_emission: extractedDateEmission })
@@ -1225,7 +1249,28 @@ Deno.serve(async req => {
         console.error('❌ Erreur mise à jour date émission:', updateErr);
       } else {
         console.log('✅ Date émission mise à jour sur la tranche');
+
+        // Re-fetch tranche details to get updated date_emission
+        const { data: updatedTranche, error: refetchErr } = await supabaseClient
+          .from('tranches')
+          .select('date_emission')
+          .eq('id', finalTrancheId)
+          .single();
+
+        if (!refetchErr && updatedTranche) {
+          console.log(`✅ Date émission confirmée dans la DB: ${updatedTranche.date_emission}`);
+          // Update trancheDetails with new date
+          (trancheDetails as any).date_emission = updatedTranche.date_emission;
+        }
       }
+    } else {
+      console.log(`⏭️  Pas de mise à jour de date - conditions non remplies:`);
+      console.log(
+        `   projetId=${!!projetId}, trancheName=${!!trancheName}, !trancheId=${!trancheId}`
+      );
+      console.log(
+        `   extractedDateEmission=${!!extractedDateEmission}, !dateEmission=${!dateEmission}`
+      );
     }
 
     // 6. VALIDATE DATA
