@@ -802,6 +802,28 @@ async function upsertInvestor(
 ): Promise<string> {
   const isPhysical = row._investorType === 'physique';
 
+  // Debug: log available columns
+  console.log(
+    '📋 Colonnes disponibles dans row:',
+    Object.keys(row)
+      .filter(k => k !== '_investorType')
+      .join(', ')
+  );
+
+  // Get name field - try different possible column names
+  const nomField =
+    row['Nom'] ||
+    row["Nom de l'investisseur"] ||
+    row['Raison sociale'] ||
+    row['Nom/Raison sociale'];
+
+  if (!nomField) {
+    console.error('❌ Nom manquant! Colonnes:', Object.keys(row));
+    throw new Error(
+      `Nom obligatoire manquant. Colonnes disponibles: ${Object.keys(row).join(', ')}`
+    );
+  }
+
   // Build full address from available components
   const addressParts = [row['Adresse'], row['Code Postal'], row['Ville'], row['Pays']].filter(
     Boolean
@@ -832,16 +854,16 @@ async function upsertInvestor(
     id_investisseur: idInvestisseur,
     org_id: orgId,
     type: isPhysical ? 'physique' : 'morale',
-    nom_raison_sociale: row['Nom'],
-    email: row['E-mail'] || row['E-mail du représentant légal'] || null,
+    nom_raison_sociale: nomField,
+    email: row['E-mail'] || row['E-mail du représentant légal'] || row['Email'] || null,
     telephone: telephone,
     adresse: fullAddress,
     departement_naissance: departement_naissance,
     date_naissance: dateNaissance,
     lieu_naissance: row['Lieu de naissance'] || row['Ville de naissance'] || null,
-    residence_fiscale: row['Résidence Fiscale 1'] || null,
-    cgp: row['Nom du CGP'] || null,
-    email_cgp: row['E-mail du CGP'] || null,
+    residence_fiscale: row['Résidence Fiscale 1'] || row['Résidence fiscale'] || null,
+    cgp: row['Nom du CGP'] || row['CGP'] || null,
+    email_cgp: row['E-mail du CGP'] || row['Email CGP'] || null,
   };
 
   if (!isPhysical) {
