@@ -668,10 +668,19 @@ async function parseFile(file: File, profile: FormatProfile): Promise<ParsedRow[
     // Parse XLSX and convert to CSV-like text
     textContent = await parseXLSXFile(file);
   } else {
-    // Read CSV with proper UTF-8 encoding handling
+    // Read CSV with proper encoding detection
     const arrayBuffer = await file.arrayBuffer();
-    const decoder = new TextDecoder('utf-8');
-    textContent = decoder.decode(arrayBuffer);
+
+    // Try UTF-8 first
+    let decoder = new TextDecoder('utf-8', { fatal: true });
+    try {
+      textContent = decoder.decode(arrayBuffer);
+    } catch (e) {
+      // If UTF-8 fails, try Windows-1252 (common for French Excel exports)
+      console.log('UTF-8 decoding failed, trying Windows-1252');
+      decoder = new TextDecoder('windows-1252');
+      textContent = decoder.decode(arrayBuffer);
+    }
 
     // Remove BOM if present (Excel sometimes adds it)
     if (textContent.charCodeAt(0) === 0xfeff) {
