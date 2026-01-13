@@ -6,487 +6,789 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Script de génération du modèle Excel pour l'import de registre des titres
- * Format standard avec validation des données
+ * Script de generation du modele Excel optimise pour l'import de registre des titres
+ * Version 2.0 - Optimisations UX et compatibilite parser
+ *
+ * Ameliorations:
+ * - Colonnes obligatoires en premier
+ * - Pas d'asterisques dans les noms de colonnes (compatibilite parser)
+ * - Indicateurs visuels clairs (couleurs, groupes)
+ * - Dropdowns pour tous les champs contraints
+ * - Messages d'aide sur les cellules
+ * - Lignes d'exemple marquees "EXEMPLE" (ignorees par le parser)
+ * - En-tetes figes pour navigation facile
  */
+
+// =============================================================================
+// CONFIGURATION
+// =============================================================================
+
+const COLORS = {
+  // Section headers
+  PHYSICAL_HEADER: 'FF2563EB', // Blue
+  MORAL_HEADER: 'FF059669', // Green
+
+  // Column groups
+  REQUIRED_HEADER: 'FF3B82F6', // Lighter blue
+  OPTIONAL_HEADER: 'FF9CA3AF', // Gray
+
+  // Data cells
+  REQUIRED_CELL: 'FFDBEAFE', // Very light blue
+  OPTIONAL_CELL: 'FFF3F4F6', // Very light gray
+
+  // Example row
+  EXAMPLE_BG: 'FFFEF3C7', // Light yellow
+  EXAMPLE_TEXT: 'FF92400E', // Brown
+
+  // Group label row
+  GROUP_REQUIRED: 'FFBFDBFE', // Light blue
+  GROUP_OPTIONAL: 'FFE5E7EB', // Light gray
+
+  // Instructions
+  INSTRUCTIONS_HEADER: 'FF1E40AF',
+  INSTRUCTIONS_BG: 'FFF8FAFC',
+};
+
+// Personnes Physiques columns - REQUIRED FIRST
+// Column names MUST match exactly what the parser expects (from standard profile)
+const PHYSICAL_COLUMNS = {
+  required: [
+    {
+      header: 'Quantité',
+      key: 'quantite',
+      width: 12,
+      tooltip: "Nombre d'obligations souscrites (nombre entier)",
+      example: 100,
+    },
+    {
+      header: 'Montant',
+      key: 'montant',
+      width: 15,
+      tooltip: 'Montant total investi en euros',
+      example: 10000,
+    },
+    {
+      header: 'Nom(s)',
+      key: 'nom',
+      width: 20,
+      tooltip: "Nom(s) de famille de l'investisseur",
+      example: 'Dupont',
+    },
+    {
+      header: 'Prénom(s)',
+      key: 'prenom',
+      width: 20,
+      tooltip: "Prénom(s) de l'investisseur",
+      example: 'Jean',
+    },
+    {
+      header: 'E-mail',
+      key: 'email',
+      width: 30,
+      tooltip: 'Adresse e-mail valide',
+      example: 'jean.dupont@exemple.fr',
+    },
+  ],
+  optional: [
+    {
+      header: 'Téléphone',
+      key: 'telephone',
+      width: 18,
+      tooltip: 'Format: +33612345678 ou 0612345678',
+      example: '+33612345678',
+    },
+    {
+      header: 'Né(e) le',
+      key: 'date_naissance',
+      width: 15,
+      tooltip: 'Date de naissance (jj/mm/aaaa)',
+      example: '15/03/1980',
+    },
+    {
+      header: 'Lieu de naissance',
+      key: 'lieu_naissance',
+      width: 20,
+      tooltip: 'Ville de naissance',
+      example: 'Paris',
+    },
+    {
+      header: 'Département de naissance',
+      key: 'dept_naissance',
+      width: 22,
+      tooltip: 'Numéro du département',
+      example: '75',
+    },
+    {
+      header: 'Adresse du domicile',
+      key: 'adresse',
+      width: 35,
+      tooltip: 'Adresse complète',
+      example: '123 Rue de la République, 75001 Paris',
+    },
+    {
+      header: 'Résidence Fiscale 1',
+      key: 'residence_fiscale',
+      width: 20,
+      tooltip: 'Pays de résidence fiscale',
+      example: 'France',
+      dropdown: ['France', 'Belgique', 'Suisse', 'Luxembourg', 'Autre'],
+    },
+    {
+      header: 'PPE',
+      key: 'ppe',
+      width: 10,
+      tooltip: 'Personne Politiquement Exposée',
+      example: 'Non',
+      dropdown: ['Oui', 'Non'],
+    },
+    {
+      header: 'Catégorisation',
+      key: 'categorisation',
+      width: 22,
+      tooltip: 'Catégorie MiFID',
+      example: 'Client Non Professionnel',
+      dropdown: ['Client Professionnel', 'Client Non Professionnel', 'Contrepartie Éligible'],
+    },
+    {
+      header: 'Date de Transfert',
+      key: 'date_transfert',
+      width: 18,
+      tooltip: 'Date de souscription (jj/mm/aaaa)',
+      example: '01/01/2024',
+    },
+    {
+      header: "Nom d'usage",
+      key: 'nom_usage',
+      width: 18,
+      tooltip: "Nom d'usage si différent",
+      example: '',
+    },
+    {
+      header: 'Date de Validation BS',
+      key: 'date_validation',
+      width: 20,
+      tooltip: 'Date de validation back-office',
+      example: '',
+    },
+    {
+      header: 'PEA / PEA-PME',
+      key: 'pea',
+      width: 15,
+      tooltip: 'Compte PEA actif',
+      example: 'Non',
+      dropdown: ['Oui', 'Non'],
+    },
+    {
+      header: 'Numéro de Compte PEA / PEA-PME',
+      key: 'numero_pea',
+      width: 28,
+      tooltip: 'Numéro du compte PEA si applicable',
+      example: '',
+    },
+    {
+      header: 'CGP',
+      key: 'cgp',
+      width: 22,
+      tooltip: 'Nom du Conseiller en Gestion de Patrimoine',
+      example: '',
+    },
+    {
+      header: 'E-mail du CGP',
+      key: 'email_cgp',
+      width: 25,
+      tooltip: 'E-mail du CGP',
+      example: '',
+    },
+    {
+      header: 'Code du CGP',
+      key: 'code_cgp',
+      width: 15,
+      tooltip: 'Code identifiant du CGP',
+      example: '',
+    },
+    {
+      header: 'Siren du CGP',
+      key: 'siren_cgp',
+      width: 15,
+      tooltip: 'SIREN du CGP (9 chiffres)',
+      example: '',
+    },
+  ],
+};
+
+// Personnes Morales columns - REQUIRED FIRST
+// Column names MUST match exactly what the parser expects (from standard profile)
+const MORAL_COLUMNS = {
+  required: [
+    {
+      header: 'Quantité',
+      key: 'quantite',
+      width: 12,
+      tooltip: "Nombre d'obligations souscrites",
+      example: 500,
+    },
+    {
+      header: 'Montant',
+      key: 'montant',
+      width: 15,
+      tooltip: 'Montant total investi en euros',
+      example: 50000,
+    },
+    {
+      header: 'Raison sociale',
+      key: 'raison_sociale',
+      width: 28,
+      tooltip: "Dénomination sociale de l'entreprise",
+      example: 'ACME Corporation SAS',
+    },
+    {
+      header: 'N° SIREN',
+      key: 'siren',
+      width: 15,
+      tooltip: 'Numéro SIREN (exactement 9 chiffres)',
+      example: '123456789',
+    },
+    {
+      header: 'E-mail du représentant légal',
+      key: 'email_rep',
+      width: 32,
+      tooltip: 'E-mail du représentant légal',
+      example: 'contact@acme-corp.fr',
+    },
+  ],
+  optional: [
+    {
+      header: 'Prénom du représentant légal',
+      key: 'prenom_rep',
+      width: 25,
+      tooltip: 'Prénom du représentant',
+      example: 'Marie',
+    },
+    {
+      header: 'Nom du représentant légal',
+      key: 'nom_rep',
+      width: 25,
+      tooltip: 'Nom du représentant',
+      example: 'Dubois',
+    },
+    {
+      header: 'Téléphone',
+      key: 'telephone',
+      width: 18,
+      tooltip: "Téléphone de l'entreprise",
+      example: '+33123456789',
+    },
+    {
+      header: 'Adresse du siège social',
+      key: 'adresse',
+      width: 38,
+      tooltip: 'Adresse complète du siège',
+      example: '10 Boulevard des Entreprises, 92000 Nanterre',
+    },
+    {
+      header: 'Résidence Fiscale 1 du représentant légal',
+      key: 'residence_fiscale',
+      width: 32,
+      tooltip: 'Pays de résidence fiscale du représentant',
+      example: 'France',
+      dropdown: ['France', 'Belgique', 'Suisse', 'Luxembourg', 'Autre'],
+    },
+    {
+      header: 'Département de naissance du représentant',
+      key: 'dept_naissance',
+      width: 32,
+      tooltip: 'Département de naissance du représentant',
+      example: '75',
+    },
+    {
+      header: 'PPE',
+      key: 'ppe',
+      width: 10,
+      tooltip: 'Représentant Politiquement Exposé',
+      example: 'Non',
+      dropdown: ['Oui', 'Non'],
+    },
+    {
+      header: 'Catégorisation',
+      key: 'categorisation',
+      width: 22,
+      tooltip: 'Catégorie MiFID',
+      example: 'Client Professionnel',
+      dropdown: ['Client Professionnel', 'Client Non Professionnel', 'Contrepartie Éligible'],
+    },
+    {
+      header: 'Date de Transfert',
+      key: 'date_transfert',
+      width: 18,
+      tooltip: 'Date de souscription (jj/mm/aaaa)',
+      example: '01/01/2024',
+    },
+    {
+      header: 'Date de Validation BS',
+      key: 'date_validation',
+      width: 20,
+      tooltip: 'Date de validation back-office',
+      example: '',
+    },
+    {
+      header: 'PEA / PEA-PME',
+      key: 'pea',
+      width: 15,
+      tooltip: 'Compte PEA-PME actif',
+      example: 'Non',
+      dropdown: ['Oui', 'Non'],
+    },
+    {
+      header: 'Numéro de Compte PEA / PEA-PME',
+      key: 'numero_pea',
+      width: 28,
+      tooltip: 'Numéro du compte si applicable',
+      example: '',
+    },
+    {
+      header: 'CGP',
+      key: 'cgp',
+      width: 22,
+      tooltip: 'Conseiller en Gestion de Patrimoine',
+      example: '',
+    },
+    {
+      header: 'E-mail du CGP',
+      key: 'email_cgp',
+      width: 25,
+      tooltip: 'E-mail du CGP',
+      example: '',
+    },
+    {
+      header: 'Code du CGP',
+      key: 'code_cgp',
+      width: 15,
+      tooltip: 'Code du CGP',
+      example: '',
+    },
+    {
+      header: 'Siren du CGP',
+      key: 'siren_cgp',
+      width: 15,
+      tooltip: 'SIREN du CGP',
+      example: '',
+    },
+  ],
+};
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Apply cell styling for headers
+ */
+function styleHeaderCell(cell, isRequired, sectionColor) {
+  cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+  cell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: isRequired ? sectionColor : COLORS.OPTIONAL_HEADER },
+  };
+  cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  cell.border = {
+    top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+    bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+    left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+    right: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+  };
+}
+
+/**
+ * Apply cell styling for data entry cells
+ */
+function styleDataCell(cell, isRequired) {
+  cell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: isRequired ? COLORS.REQUIRED_CELL : COLORS.OPTIONAL_CELL },
+  };
+  cell.border = {
+    top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+    bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+    left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+    right: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+  };
+}
+
+/**
+ * Apply cell styling for example rows
+ */
+function styleExampleCell(cell) {
+  cell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: COLORS.EXAMPLE_BG },
+  };
+  cell.font = { italic: true, color: { argb: COLORS.EXAMPLE_TEXT } };
+  cell.border = {
+    top: { style: 'thin', color: { argb: 'FFFCD34D' } },
+    bottom: { style: 'thin', color: { argb: 'FFFCD34D' } },
+    left: { style: 'thin', color: { argb: 'FFFCD34D' } },
+    right: { style: 'thin', color: { argb: 'FFFCD34D' } },
+  };
+}
+
+/**
+ * Add data validation dropdown to a cell
+ */
+function addDropdown(cell, options) {
+  cell.dataValidation = {
+    type: 'list',
+    allowBlank: true,
+    formulae: [`"${options.join(',')}"`],
+    showErrorMessage: true,
+    errorTitle: 'Valeur invalide',
+    error: `Veuillez choisir parmi: ${options.join(', ')}`,
+  };
+}
+
+/**
+ * Add input message (tooltip) to a cell
+ */
+function addInputMessage(cell, title, message) {
+  cell.dataValidation = {
+    ...cell.dataValidation,
+    showInputMessage: true,
+    promptTitle: title,
+    prompt: message,
+  };
+}
+
+// =============================================================================
+// MAIN GENERATION FUNCTION
+// =============================================================================
 
 async function generateTemplate() {
   const workbook = new ExcelJS.Workbook();
 
-  // Configuration générale
   workbook.creator = 'Finixar';
   workbook.created = new Date();
   workbook.modified = new Date();
+  workbook.properties.title = 'Modele Import Registre des Titres';
+  workbook.properties.subject = 'Import de donnees investisseurs';
+  workbook.properties.company = 'Finixar';
 
-  // ===== Feuille 1 : Instructions =====
-  const instructionsSheet = workbook.addWorksheet('Instructions', {
-    properties: { tabColor: { argb: 'FF2563EB' } },
-  });
-
-  instructionsSheet.getColumn(1).width = 100;
-
-  // Titre principal
-  instructionsSheet.mergeCells('A1:A3');
-  const titleCell = instructionsSheet.getCell('A1');
-  titleCell.value = '📋 MODÈLE REGISTRE DES TITRES';
-  titleCell.font = { size: 20, bold: true, color: { argb: 'FF2563EB' } };
-  titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-  titleCell.fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FFF3F4F6' },
-  };
-
-  let row = 5;
-
-  // Section : À propos
-  instructionsSheet.getCell(`A${row}`).value = '📖 À propos de ce modèle';
-  instructionsSheet.getCell(`A${row}`).font = { size: 14, bold: true };
-  row++;
-
-  instructionsSheet.getCell(`A${row}`).value =
-    "Ce modèle Excel vous permet d'importer facilement votre registre des titres dans Finixar. " +
-    'Il contient des validations automatiques pour garantir la qualité des données.';
-  instructionsSheet.getCell(`A${row}`).alignment = { wrapText: true };
-  row += 2;
-
-  // Section : Instructions
-  instructionsSheet.getCell(`A${row}`).value = "📝 Instructions d'utilisation";
-  instructionsSheet.getCell(`A${row}`).font = { size: 14, bold: true };
-  row++;
-
-  const instructions = [
-    '1. Ouvrez l\'onglet "Registre" en bas de l\'écran',
-    '2. Remplissez les sections "Personnes Physiques" et "Personnes Morales"',
-    "3. Les champs marqués d'un astérisque (*) sont obligatoires",
-    "4. Les cellules avec erreur s'afficheront en rouge",
-    '5. Ne modifiez pas les en-têtes de colonnes',
-    '6. Conservez la structure avec les deux sections',
-    '7. Une fois terminé, enregistrez et importez le fichier dans Finixar',
-  ];
-
-  instructions.forEach(instruction => {
-    instructionsSheet.getCell(`A${row}`).value = instruction;
-    row++;
-  });
-  row++;
-
-  // Section : Champs obligatoires
-  instructionsSheet.getCell(`A${row}`).value = '⚠️ Champs obligatoires';
-  instructionsSheet.getCell(`A${row}`).font = { size: 14, bold: true };
-  row++;
-
-  instructionsSheet.getCell(`A${row}`).value = 'Personnes Physiques :';
-  instructionsSheet.getCell(`A${row}`).font = { bold: true };
-  row++;
-
-  const requiredPhysical = ['• Quantité, Montant', '• Nom(s), Prénom(s)', '• E-mail'];
-  requiredPhysical.forEach(field => {
-    instructionsSheet.getCell(`A${row}`).value = field;
-    row++;
-  });
-  row++;
-
-  instructionsSheet.getCell(`A${row}`).value = 'Personnes Morales :';
-  instructionsSheet.getCell(`A${row}`).font = { bold: true };
-  row++;
-
-  const requiredMoral = [
-    '• Quantité, Montant',
-    '• Raison sociale',
-    '• N° SIREN (9 chiffres)',
-    '• E-mail du représentant légal',
-  ];
-  requiredMoral.forEach(field => {
-    instructionsSheet.getCell(`A${row}`).value = field;
-    row++;
-  });
-  row++;
-
-  // Section : Formats
-  instructionsSheet.getCell(`A${row}`).value = '📐 Formats attendus';
-  instructionsSheet.getCell(`A${row}`).font = { size: 14, bold: true };
-  row++;
-
-  const formats = [
-    '• Dates : jj/mm/aaaa (exemple : 15/03/1980)',
-    '• E-mail : doit contenir un @',
-    '• SIREN : exactement 9 chiffres',
-    '• Téléphone : numéros avec ou sans +',
-    '• PPE : Oui ou Non',
-    '• Montants : nombres décimaux acceptés',
-  ];
-  formats.forEach(format => {
-    instructionsSheet.getCell(`A${row}`).value = format;
-    row++;
-  });
-  row += 2;
-
-  // Section : Support
-  instructionsSheet.getCell(`A${row}`).value = "💬 Besoin d'aide ?";
-  instructionsSheet.getCell(`A${row}`).font = { size: 14, bold: true };
-  row++;
-
-  instructionsSheet.getCell(`A${row}`).value =
-    'Consultez l\'onglet "Aide" pour le détail de chaque champ, ou contactez le support.';
-  row++;
-
-  // Protéger la feuille en lecture seule
-  await instructionsSheet.protect('finixar', {
-    selectLockedCells: true,
-    selectUnlockedCells: true,
-  });
-
-  // ===== Feuille 2 : Registre (données) =====
+  // =============================================================================
+  // SHEET 1: REGISTRE (Data Entry) - MUST BE FIRST FOR PARSER
+  // =============================================================================
   const registreSheet = workbook.addWorksheet('Registre', {
     properties: { tabColor: { argb: 'FF10B981' } },
+    views: [{ state: 'frozen', xSplit: 0, ySplit: 3 }], // Freeze first 3 rows
   });
 
-  // Configuration des colonnes pour Personnes Physiques
-  const physicalColumns = [
-    { header: 'Quantité *', key: 'quantite', width: 12 },
-    { header: 'Montant *', key: 'montant', width: 15 },
-    { header: 'Nom(s) *', key: 'nom', width: 20 },
-    { header: 'Prénom(s) *', key: 'prenom', width: 20 },
-    { header: "Nom d'usage", key: 'nom_usage', width: 20 },
-    { header: 'E-mail *', key: 'email', width: 30 },
-    { header: 'Téléphone *', key: 'telephone', width: 18 },
-    { header: 'Né(e) le *', key: 'date_naissance', width: 15 },
-    { header: 'Lieu de naissance *', key: 'lieu_naissance', width: 25 },
-    { header: 'Département de naissance', key: 'dept_naissance', width: 25 },
-    { header: 'Adresse du domicile *', key: 'adresse', width: 35 },
-    { header: 'Résidence Fiscale 1 *', key: 'residence_fiscale', width: 25 },
-    { header: 'PPE *', key: 'ppe', width: 10 },
-    { header: 'Catégorisation *', key: 'categorisation', width: 20 },
-    { header: 'Date de Transfert *', key: 'date_transfert', width: 18 },
-    { header: 'Date de Validation BS', key: 'date_validation', width: 20 },
-    { header: 'PEA / PEA-PME', key: 'pea', width: 18 },
-    { header: 'Numéro de Compte PEA / PEA-PME', key: 'numero_pea', width: 30 },
-    { header: 'CGP', key: 'cgp', width: 25 },
-    { header: 'E-mail du CGP', key: 'email_cgp', width: 30 },
-    { header: 'Code du CGP', key: 'code_cgp', width: 15 },
-    { header: 'Siren du CGP', key: 'siren_cgp', width: 15 },
-  ];
+  const allPhysicalCols = [...PHYSICAL_COLUMNS.required, ...PHYSICAL_COLUMNS.optional];
+  const allMoralCols = [...MORAL_COLUMNS.required, ...MORAL_COLUMNS.optional];
+  const totalCols = Math.max(allPhysicalCols.length, allMoralCols.length);
 
-  // Titre de section Personnes Physiques
-  registreSheet.mergeCells('A1:V1');
-  const ppTitle = registreSheet.getCell('A1');
+  // ----- PERSONNES PHYSIQUES SECTION -----
+  let currentRow = 1;
+
+  // Row 1: Section header "Personnes Physiques"
+  registreSheet.mergeCells(currentRow, 1, currentRow, totalCols);
+  const ppTitle = registreSheet.getCell(currentRow, 1);
   ppTitle.value = 'Personnes Physiques';
   ppTitle.font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
   ppTitle.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF2563EB' },
+    fgColor: { argb: COLORS.PHYSICAL_HEADER },
   };
   ppTitle.alignment = { vertical: 'middle', horizontal: 'center' };
+  registreSheet.getRow(currentRow).height = 28;
+  currentRow++;
 
-  // En-têtes Personnes Physiques
-  let colIndex = 1;
-  physicalColumns.forEach(col => {
-    const cell = registreSheet.getCell(2, colIndex);
-    cell.value = col.header;
-    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.fill = {
+  // Row 2: Group labels (OBLIGATOIRE | OPTIONNEL)
+  const ppRequiredCount = PHYSICAL_COLUMNS.required.length;
+  const ppOptionalCount = PHYSICAL_COLUMNS.optional.length;
+
+  // Merge cells for "OBLIGATOIRE"
+  registreSheet.mergeCells(currentRow, 1, currentRow, ppRequiredCount);
+  const ppRequiredLabel = registreSheet.getCell(currentRow, 1);
+  ppRequiredLabel.value = 'OBLIGATOIRE';
+  ppRequiredLabel.font = { bold: true, size: 10, color: { argb: 'FF1E40AF' } };
+  ppRequiredLabel.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: COLORS.GROUP_REQUIRED },
+  };
+  ppRequiredLabel.alignment = { vertical: 'middle', horizontal: 'center' };
+
+  // Merge cells for "OPTIONNEL"
+  if (ppOptionalCount > 0) {
+    registreSheet.mergeCells(currentRow, ppRequiredCount + 1, currentRow, totalCols);
+    const ppOptionalLabel = registreSheet.getCell(currentRow, ppRequiredCount + 1);
+    ppOptionalLabel.value = 'OPTIONNEL';
+    ppOptionalLabel.font = { bold: true, size: 10, color: { argb: 'FF4B5563' } };
+    ppOptionalLabel.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FF3B82F6' },
+      fgColor: { argb: COLORS.GROUP_OPTIONAL },
     };
-    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-    registreSheet.getColumn(colIndex).width = col.width;
-    colIndex++;
+    ppOptionalLabel.alignment = { vertical: 'middle', horizontal: 'center' };
+  }
+  registreSheet.getRow(currentRow).height = 22;
+  currentRow++;
+
+  // Row 3: Column headers
+  allPhysicalCols.forEach((col, index) => {
+    const cell = registreSheet.getCell(currentRow, index + 1);
+    cell.value = col.header;
+    const isRequired = index < ppRequiredCount;
+    styleHeaderCell(cell, isRequired, COLORS.REQUIRED_HEADER);
+    registreSheet.getColumn(index + 1).width = col.width;
+
+    // Add input message to header
+    if (col.tooltip) {
+      addInputMessage(cell, col.header, col.tooltip);
+    }
   });
+  registreSheet.getRow(currentRow).height = 35;
+  currentRow++;
 
-  // Données d'exemple Personnes Physiques
-  const examplePhysical = [
-    {
-      quantite: 100,
-      montant: 10000,
-      nom: 'Dupont',
-      prenom: 'Jean',
-      nom_usage: '',
-      email: 'jean.dupont@exemple.fr',
-      telephone: '+33612345678',
-      date_naissance: '15/03/1980',
-      lieu_naissance: 'Paris',
-      dept_naissance: '75 - Paris',
-      adresse: '123 Rue de la République, 75001 Paris',
-      residence_fiscale: 'France',
-      ppe: 'Non',
-      categorisation: 'Client Professionnel',
-      date_transfert: '01/01/2024',
-      date_validation: '05/01/2024',
-      pea: 'Oui',
-      numero_pea: 'PEA123456789',
-      cgp: 'Cabinet Dupuis',
-      email_cgp: 'contact@cabinet-dupuis.fr',
-      code_cgp: 'CGP001',
-      siren_cgp: '123456789',
-    },
-    {
-      quantite: 50,
-      montant: 5000,
-      nom: 'Martin',
-      prenom: 'Sophie',
-      nom_usage: '',
-      email: 'sophie.martin@exemple.fr',
-      telephone: '0687654321',
-      date_naissance: '22/07/1975',
-      lieu_naissance: 'Lyon',
-      dept_naissance: '69 - Rhône',
-      adresse: '45 Avenue des Champs, 69001 Lyon',
-      residence_fiscale: 'France',
-      ppe: 'Non',
-      categorisation: 'Client Non Professionnel',
-      date_transfert: '01/01/2024',
-      date_validation: '05/01/2024',
-      pea: 'Non',
-      numero_pea: '',
-      cgp: '',
-      email_cgp: '',
-      code_cgp: '',
-      siren_cgp: '',
-    },
-  ];
+  // Row 4: Example row (marked with EXEMPLE)
+  allPhysicalCols.forEach((col, index) => {
+    const cell = registreSheet.getCell(currentRow, index + 1);
+    // First cell gets "EXEMPLE" prefix for parser to skip
+    if (index === 0) {
+      cell.value = 'EXEMPLE';
+    } else {
+      cell.value = col.example;
+    }
+    styleExampleCell(cell);
 
-  examplePhysical.forEach((data, index) => {
-    const rowNum = 3 + index;
-    colIndex = 1;
-    physicalColumns.forEach(col => {
-      const cell = registreSheet.getCell(rowNum, colIndex);
-      cell.value = data[col.key];
-
-      // Style des exemples
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFFEF3C7' },
-      };
-      cell.font = { italic: true, color: { argb: 'FF92400E' } };
-
-      colIndex++;
-    });
+    // Add dropdown if applicable
+    if (col.dropdown) {
+      addDropdown(cell, col.dropdown);
+    }
   });
+  registreSheet.getRow(currentRow).height = 22;
+  currentRow++;
 
-  // Lignes vides pour saisie (10 lignes)
-  for (let i = 0; i < 10; i++) {
-    const rowNum = 5 + i;
-    physicalColumns.forEach((col, idx) => {
-      const cell = registreSheet.getCell(rowNum, idx + 1);
-      cell.value = null;
+  // Rows 5-24: Empty data entry rows (20 rows)
+  const ppDataStartRow = currentRow;
+  for (let i = 0; i < 20; i++) {
+    allPhysicalCols.forEach((col, colIndex) => {
+      const cell = registreSheet.getCell(currentRow, colIndex + 1);
+      const isRequired = colIndex < ppRequiredCount;
+      styleDataCell(cell, isRequired);
 
-      // Fond bleu très clair pour les champs obligatoires
-      if (col.header.includes('*')) {
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFDBEAFE' },
-        };
+      // Add dropdown validation
+      if (col.dropdown) {
+        addDropdown(cell, col.dropdown);
+      }
+
+      // Add tooltip
+      if (col.tooltip) {
+        addInputMessage(cell, col.header, col.tooltip);
       }
     });
+    registreSheet.getRow(currentRow).height = 22;
+    currentRow++;
   }
 
-  // === Section Personnes Morales ===
-  const moralStartRow = 17;
+  // Add empty row before next section
+  currentRow += 2;
 
-  // Titre de section Personnes Morales
-  registreSheet.mergeCells(`A${moralStartRow}:V${moralStartRow}`);
-  const pmTitle = registreSheet.getCell(`A${moralStartRow}`);
+  // ----- PERSONNES MORALES SECTION -----
+  const moralStartRow = currentRow;
+
+  // Row N: Section header "Personnes Morales"
+  registreSheet.mergeCells(currentRow, 1, currentRow, totalCols);
+  const pmTitle = registreSheet.getCell(currentRow, 1);
   pmTitle.value = 'Personnes Morales';
   pmTitle.font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
   pmTitle.fill = {
     type: 'pattern',
     pattern: 'solid',
-    fgColor: { argb: 'FF10B981' },
+    fgColor: { argb: COLORS.MORAL_HEADER },
   };
   pmTitle.alignment = { vertical: 'middle', horizontal: 'center' };
+  registreSheet.getRow(currentRow).height = 28;
+  currentRow++;
 
-  // Configuration des colonnes pour Personnes Morales
-  const moralColumns = [
-    { header: 'Quantité *', key: 'quantite', width: 12 },
-    { header: 'Montant *', key: 'montant', width: 15 },
-    { header: 'Raison sociale *', key: 'raison_sociale', width: 30 },
-    { header: 'N° SIREN *', key: 'siren', width: 15 },
-    { header: 'E-mail du représentant légal *', key: 'email_rep', width: 35 },
-    { header: 'Prénom du représentant légal', key: 'prenom_rep', width: 25 },
-    { header: 'Nom du représentant légal', key: 'nom_rep', width: 25 },
-    { header: 'Téléphone *', key: 'telephone', width: 18 },
-    { header: 'Adresse du siège social *', key: 'adresse', width: 40 },
-    { header: 'Résidence Fiscale 1 du représentant légal', key: 'residence_fiscale', width: 35 },
-    { header: 'Département de naissance du représentant', key: 'dept_naissance', width: 35 },
-    { header: 'PPE *', key: 'ppe', width: 10 },
-    { header: 'Catégorisation *', key: 'categorisation', width: 20 },
-    { header: 'Date de Transfert *', key: 'date_transfert', width: 18 },
-    { header: 'Date de Validation BS', key: 'date_validation', width: 20 },
-    { header: 'PEA / PEA-PME', key: 'pea', width: 18 },
-    { header: 'Numéro de Compte PEA / PEA-PME', key: 'numero_pea', width: 30 },
-    { header: 'CGP', key: 'cgp', width: 25 },
-    { header: 'E-mail du CGP', key: 'email_cgp', width: 30 },
-    { header: 'Code du CGP', key: 'code_cgp', width: 15 },
-    { header: 'Siren du CGP', key: 'siren_cgp', width: 15 },
-  ];
+  // Row N+1: Group labels
+  const pmRequiredCount = MORAL_COLUMNS.required.length;
+  const pmOptionalCount = MORAL_COLUMNS.optional.length;
 
-  // En-têtes Personnes Morales
-  colIndex = 1;
-  moralColumns.forEach(col => {
-    const cell = registreSheet.getCell(moralStartRow + 1, colIndex);
-    cell.value = col.header;
-    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.fill = {
+  registreSheet.mergeCells(currentRow, 1, currentRow, pmRequiredCount);
+  const pmRequiredLabel = registreSheet.getCell(currentRow, 1);
+  pmRequiredLabel.value = 'OBLIGATOIRE';
+  pmRequiredLabel.font = { bold: true, size: 10, color: { argb: 'FF065F46' } };
+  pmRequiredLabel.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFD1FAE5' },
+  };
+  pmRequiredLabel.alignment = { vertical: 'middle', horizontal: 'center' };
+
+  if (pmOptionalCount > 0) {
+    registreSheet.mergeCells(currentRow, pmRequiredCount + 1, currentRow, totalCols);
+    const pmOptionalLabel = registreSheet.getCell(currentRow, pmRequiredCount + 1);
+    pmOptionalLabel.value = 'OPTIONNEL';
+    pmOptionalLabel.font = { bold: true, size: 10, color: { argb: 'FF4B5563' } };
+    pmOptionalLabel.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FF059669' },
+      fgColor: { argb: COLORS.GROUP_OPTIONAL },
     };
-    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-    registreSheet.getColumn(colIndex).width = col.width;
-    colIndex++;
+    pmOptionalLabel.alignment = { vertical: 'middle', horizontal: 'center' };
+  }
+  registreSheet.getRow(currentRow).height = 22;
+  currentRow++;
+
+  // Row N+2: Column headers
+  allMoralCols.forEach((col, index) => {
+    const cell = registreSheet.getCell(currentRow, index + 1);
+    cell.value = col.header;
+    const isRequired = index < pmRequiredCount;
+    styleHeaderCell(cell, isRequired, 'FF10B981');
+    registreSheet.getColumn(index + 1).width = Math.max(
+      registreSheet.getColumn(index + 1).width || 0,
+      col.width
+    );
+
+    if (col.tooltip) {
+      addInputMessage(cell, col.header, col.tooltip);
+    }
   });
+  registreSheet.getRow(currentRow).height = 35;
+  currentRow++;
 
-  // Données d'exemple Personnes Morales
-  const exampleMoral = [
-    {
-      quantite: 500,
-      montant: 50000,
-      raison_sociale: 'ACME Corporation',
-      siren: '123456789',
-      email_rep: 'contact@acme-corp.fr',
-      prenom_rep: 'Marie',
-      nom_rep: 'Dubois',
-      telephone: '+33123456789',
-      adresse: '10 Boulevard des Entreprises, 92000 Nanterre',
-      residence_fiscale: 'France',
-      dept_naissance: '75 - Paris',
-      ppe: 'Non',
-      categorisation: 'Contrepartie Éligible',
-      date_transfert: '01/01/2024',
-      date_validation: '05/01/2024',
-      pea: 'Non',
-      numero_pea: '',
-      cgp: 'Cabinet Finance Pro',
-      email_cgp: 'info@financepro.fr',
-      code_cgp: 'CGP100',
-      siren_cgp: '987654321',
-    },
-    {
-      quantite: 200,
-      montant: 20000,
-      raison_sociale: 'Tech Innovations SAS',
-      siren: '987654321',
-      email_rep: 'dirigeant@tech-innov.fr',
-      prenom_rep: 'Pierre',
-      nom_rep: 'Leroy',
-      telephone: '0145678901',
-      adresse: '25 Rue de la Tech, 69002 Lyon',
-      residence_fiscale: 'France',
-      dept_naissance: '69 - Rhône',
-      ppe: 'Non',
-      categorisation: 'Client Professionnel',
-      date_transfert: '01/01/2024',
-      date_validation: '05/01/2024',
-      pea: 'Non',
-      numero_pea: '',
-      cgp: '',
-      email_cgp: '',
-      code_cgp: '',
-      siren_cgp: '',
-    },
-  ];
+  // Row N+3: Example row
+  allMoralCols.forEach((col, index) => {
+    const cell = registreSheet.getCell(currentRow, index + 1);
+    if (index === 0) {
+      cell.value = 'EXEMPLE';
+    } else {
+      cell.value = col.example;
+    }
+    styleExampleCell(cell);
 
-  exampleMoral.forEach((data, index) => {
-    const rowNum = moralStartRow + 2 + index;
-    colIndex = 1;
-    moralColumns.forEach(col => {
-      const cell = registreSheet.getCell(rowNum, colIndex);
-      cell.value = data[col.key];
-
-      // Style des exemples
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFFEF3C7' },
-      };
-      cell.font = { italic: true, color: { argb: 'FF92400E' } };
-
-      colIndex++;
-    });
+    if (col.dropdown) {
+      addDropdown(cell, col.dropdown);
+    }
   });
+  registreSheet.getRow(currentRow).height = 22;
+  currentRow++;
 
-  // Lignes vides pour saisie (10 lignes)
-  for (let i = 0; i < 10; i++) {
-    const rowNum = moralStartRow + 4 + i;
-    moralColumns.forEach((col, idx) => {
-      const cell = registreSheet.getCell(rowNum, idx + 1);
-      cell.value = null;
+  // Rows N+4 to N+23: Empty data entry rows (20 rows)
+  for (let i = 0; i < 20; i++) {
+    allMoralCols.forEach((col, colIndex) => {
+      const cell = registreSheet.getCell(currentRow, colIndex + 1);
+      const isRequired = colIndex < pmRequiredCount;
+      styleDataCell(cell, isRequired);
 
-      // Fond vert très clair pour les champs obligatoires
-      if (col.header.includes('*')) {
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFD1FAE5' },
-        };
+      if (col.dropdown) {
+        addDropdown(cell, col.dropdown);
+      }
+
+      if (col.tooltip) {
+        addInputMessage(cell, col.header, col.tooltip);
       }
     });
+    registreSheet.getRow(currentRow).height = 22;
+    currentRow++;
   }
 
-  // === Validations de données ===
-
-  // Validation PPE (Oui/Non) pour Personnes Physiques
-  registreSheet.getColumn(13).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
-    if (rowNumber > 2 && rowNumber < 15) {
-      // Lignes de données PP
-      cell.dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: ['"Oui,Non"'],
-      };
-    }
+  // =============================================================================
+  // SHEET 2: INSTRUCTIONS
+  // =============================================================================
+  const instructionsSheet = workbook.addWorksheet('Instructions', {
+    properties: { tabColor: { argb: 'FF2563EB' } },
   });
 
-  // Validation PPE (Oui/Non) pour Personnes Morales
-  registreSheet.getColumn(12).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
-    if (rowNumber > moralStartRow + 1 && rowNumber < moralStartRow + 14) {
-      // Lignes de données PM
-      cell.dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: ['"Oui,Non"'],
-      };
-    }
+  instructionsSheet.getColumn(1).width = 80;
+
+  // Title
+  instructionsSheet.mergeCells('A1:A2');
+  const titleCell = instructionsSheet.getCell('A1');
+  titleCell.value = 'GUIDE D\'UTILISATION';
+  titleCell.font = { size: 18, bold: true, color: { argb: COLORS.INSTRUCTIONS_HEADER } };
+  titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  titleCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: COLORS.INSTRUCTIONS_BG },
+  };
+
+  let instRow = 4;
+
+  const addSection = (title, items) => {
+    const sectionCell = instructionsSheet.getCell(`A${instRow}`);
+    sectionCell.value = title;
+    sectionCell.font = { size: 13, bold: true, color: { argb: COLORS.INSTRUCTIONS_HEADER } };
+    instRow++;
+
+    items.forEach(item => {
+      const itemCell = instructionsSheet.getCell(`A${instRow}`);
+      itemCell.value = item;
+      itemCell.alignment = { wrapText: true };
+      instRow++;
+    });
+    instRow++;
+  };
+
+  addSection('ETAPES', [
+    '1. Allez sur l\'onglet "Registre" (premier onglet)',
+    '2. Remplissez la section "Personnes Physiques" pour les investisseurs individuels',
+    '3. Remplissez la section "Personnes Morales" pour les entreprises',
+    '4. Supprimez les lignes "EXEMPLE" avant l\'import (ou laissez-les, elles seront ignorees)',
+    '5. Enregistrez le fichier et importez-le dans Finixar',
+  ]);
+
+  addSection('COLONNES', [
+    'Les colonnes sur fond BLEU sont OBLIGATOIRES - vous devez les remplir',
+    'Les colonnes sur fond GRIS sont OPTIONNELLES - remplissez-les si vous avez l\'information',
+    'Les lignes JAUNES sont des exemples - elles ne seront pas importees',
+  ]);
+
+  addSection('FORMATS ATTENDUS', [
+    'Dates: jj/mm/aaaa (exemple: 15/03/1980)',
+    'E-mail: format valide avec @ (exemple: nom@domaine.fr)',
+    'SIREN: exactement 9 chiffres (exemple: 123456789)',
+    'Telephone: avec ou sans indicatif (exemple: +33612345678 ou 0612345678)',
+    'Montants: nombres (exemple: 10000 ou 10000.50)',
+  ]);
+
+  addSection('CONSEILS', [
+    'Utilisez les listes deroulantes quand elles sont disponibles (PPE, Categorisation, etc.)',
+    'Survolez les en-tetes de colonnes pour voir les explications',
+    'Ne modifiez pas les en-tetes de colonnes',
+    'Gardez la structure avec les deux sections separees',
+  ]);
+
+  addSection('SUPPORT', [
+    'En cas de probleme, contactez le support Finixar',
+    'Consultez la documentation en ligne pour plus de details',
+  ]);
+
+  // Protect instructions sheet
+  await instructionsSheet.protect('finixar', {
+    selectLockedCells: true,
+    selectUnlockedCells: true,
   });
 
-  // Note : Les validations plus complexes (e-mail, SIREN, etc.) sont gérées côté serveur
-  // car ExcelJS a des limitations avec les validations personnalisées
-
-  // Protéger les en-têtes uniquement
-  registreSheet.eachRow((row, rowNumber) => {
-    if (
-      rowNumber === 1 ||
-      rowNumber === 2 ||
-      rowNumber === moralStartRow ||
-      rowNumber === moralStartRow + 1
-    ) {
-      row.eachCell(cell => {
-        cell.protection = { locked: true };
-      });
-    } else {
-      row.eachCell(cell => {
-        cell.protection = { locked: false };
-      });
-    }
-  });
-
-  // ===== Feuille 3 : Aide (description des champs) =====
+  // =============================================================================
+  // SHEET 3: AIDE (Field Reference)
+  // =============================================================================
   const helpSheet = workbook.addWorksheet('Aide', {
     properties: { tabColor: { argb: 'FFFBBF24' } },
   });
 
   helpSheet.getColumn(1).width = 35;
-  helpSheet.getColumn(2).width = 70;
+  helpSheet.getColumn(2).width = 60;
+  helpSheet.getColumn(3).width = 15;
 
-  // Titre
-  helpSheet.mergeCells('A1:B1');
+  // Title
+  helpSheet.mergeCells('A1:C1');
   const helpTitle = helpSheet.getCell('A1');
-  helpTitle.value = '📚 DICTIONNAIRE DES CHAMPS';
+  helpTitle.value = 'DICTIONNAIRE DES CHAMPS';
   helpTitle.font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
   helpTitle.fill = {
     type: 'pattern',
@@ -495,143 +797,85 @@ async function generateTemplate() {
   };
   helpTitle.alignment = { vertical: 'middle', horizontal: 'center' };
 
+  // Headers
   let helpRow = 3;
-
-  // Section Personnes Physiques
-  helpSheet.getCell(`A${helpRow}`).value = 'PERSONNES PHYSIQUES';
-  helpSheet.getCell(`A${helpRow}`).font = { size: 14, bold: true, color: { argb: 'FF2563EB' } };
+  ['Champ', 'Description', 'Obligatoire'].forEach((header, index) => {
+    const cell = helpSheet.getCell(helpRow, index + 1);
+    cell.value = header;
+    cell.font = { bold: true };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE5E7EB' },
+    };
+  });
   helpRow++;
 
-  const physicalHelp = [
-    [
-      'Quantité *',
-      "Nombre d'obligations souscrites. Doit être un nombre entier positif. Exemple : 100",
-    ],
-    [
-      'Montant *',
-      'Montant total investi en euros. Peut contenir des décimales. Exemple : 10000 ou 10000.50',
-    ],
-    ['Nom(s) *', "Nom(s) de famille de l'investisseur. Exemple : Dupont"],
-    ['Prénom(s) *', "Prénom(s) de l'investisseur. Exemple : Jean"],
-    ["Nom d'usage", "Nom d'usage si différent du nom de famille. Optionnel."],
-    ['E-mail *', 'Adresse e-mail valide. Doit contenir un @. Exemple : jean.dupont@exemple.fr'],
-    ['Téléphone *', 'Numéro de téléphone. Format : +33612345678 ou 0612345678'],
-    ['Né(e) le *', 'Date de naissance au format jj/mm/aaaa. Exemple : 15/03/1980'],
-    ['Lieu de naissance *', 'Ville de naissance. Exemple : Paris'],
-    ['Département de naissance', 'Département de naissance. Exemple : 75 - Paris'],
-    [
-      'Adresse du domicile *',
-      'Adresse complète du domicile. Exemple : 123 Rue de la République, 75001 Paris',
-    ],
-    ['Résidence Fiscale 1 *', 'Pays de résidence fiscale principal. Exemple : France'],
-    ['PPE *', 'Personne Politiquement Exposée. Valeurs possibles : Oui ou Non'],
-    [
-      'Catégorisation *',
-      'Catégorie MiFID. Exemples : Client Professionnel, Client Non Professionnel, Contrepartie Éligible',
-    ],
-    [
-      'Date de Transfert *',
-      'Date de transfert/souscription. Format : jj/mm/aaaa. Exemple : 01/01/2024',
-    ],
-    [
-      'Date de Validation BS',
-      'Date de validation par le back-office. Format : jj/mm/aaaa. Optionnel.',
-    ],
-    ['PEA / PEA-PME', 'Compte PEA actif. Valeurs : Oui, Non, ou vide'],
-    ['Numéro de Compte PEA / PEA-PME', 'Numéro du compte PEA si applicable. Optionnel.'],
-    ['CGP', 'Nom du Conseiller en Gestion de Patrimoine. Optionnel.'],
-    ['E-mail du CGP', 'Adresse e-mail du CGP. Optionnel.'],
-    ['Code du CGP', 'Code identifiant du CGP. Optionnel.'],
-    ['Siren du CGP', 'Numéro SIREN du CGP (9 chiffres). Optionnel.'],
-  ];
+  // Personnes Physiques section
+  const ppSectionCell = helpSheet.getCell(`A${helpRow}`);
+  ppSectionCell.value = 'PERSONNES PHYSIQUES';
+  ppSectionCell.font = { bold: true, color: { argb: COLORS.PHYSICAL_HEADER } };
+  helpRow++;
 
-  physicalHelp.forEach(([field, description]) => {
-    helpSheet.getCell(`A${helpRow}`).value = field;
-    helpSheet.getCell(`A${helpRow}`).font = { bold: true };
-    helpSheet.getCell(`B${helpRow}`).value = description;
-    helpSheet.getCell(`B${helpRow}`).alignment = { wrapText: true };
+  allPhysicalCols.forEach((col, index) => {
+    helpSheet.getCell(helpRow, 1).value = col.header;
+    helpSheet.getCell(helpRow, 2).value = col.tooltip;
+    helpSheet.getCell(helpRow, 2).alignment = { wrapText: true };
+    helpSheet.getCell(helpRow, 3).value = index < ppRequiredCount ? 'Oui' : 'Non';
+    helpSheet.getCell(helpRow, 3).font = {
+      color: { argb: index < ppRequiredCount ? 'FF059669' : 'FF6B7280' },
+    };
     helpRow++;
   });
 
-  helpRow += 2;
-
-  // Section Personnes Morales
-  helpSheet.getCell(`A${helpRow}`).value = 'PERSONNES MORALES';
-  helpSheet.getCell(`A${helpRow}`).font = { size: 14, bold: true, color: { argb: 'FF10B981' } };
   helpRow++;
 
-  const moralHelp = [
-    [
-      'Quantité *',
-      "Nombre d'obligations souscrites. Doit être un nombre entier positif. Exemple : 500",
-    ],
-    ['Montant *', 'Montant total investi en euros. Exemple : 50000'],
-    ['Raison sociale *', "Dénomination sociale de l'entreprise. Exemple : ACME Corporation"],
-    [
-      'N° SIREN *',
-      "Numéro SIREN de l'entreprise. Doit contenir exactement 9 chiffres. Exemple : 123456789",
-    ],
-    [
-      'E-mail du représentant légal *',
-      'Adresse e-mail du représentant légal. Exemple : contact@acme-corp.fr',
-    ],
-    ['Prénom du représentant légal', 'Prénom du représentant légal. Optionnel.'],
-    ['Nom du représentant légal', 'Nom du représentant légal. Optionnel.'],
-    ['Téléphone *', "Numéro de téléphone de l'entreprise. Format : +33123456789 ou 0123456789"],
-    [
-      'Adresse du siège social *',
-      'Adresse complète du siège social. Exemple : 10 Boulevard des Entreprises, 92000 Nanterre',
-    ],
-    [
-      'Résidence Fiscale 1 du représentant légal',
-      'Pays de résidence fiscale du représentant. Exemple : France',
-    ],
-    [
-      'Département de naissance du représentant',
-      'Département de naissance du représentant légal. Exemple : 75 - Paris',
-    ],
-    ['PPE *', 'Représentant Politiquement Exposé. Valeurs possibles : Oui ou Non'],
-    ['Catégorisation *', 'Catégorie MiFID. Exemples : Client Professionnel, Contrepartie Éligible'],
-    [
-      'Date de Transfert *',
-      'Date de transfert/souscription. Format : jj/mm/aaaa. Exemple : 01/01/2024',
-    ],
-    [
-      'Date de Validation BS',
-      'Date de validation par le back-office. Format : jj/mm/aaaa. Optionnel.',
-    ],
-    ['PEA / PEA-PME', 'Compte PEA-PME actif. Valeurs : Oui, Non, ou vide'],
-    ['Numéro de Compte PEA / PEA-PME', 'Numéro du compte PEA-PME si applicable. Optionnel.'],
-    ['CGP', 'Nom du Conseiller en Gestion de Patrimoine. Optionnel.'],
-    ['E-mail du CGP', 'Adresse e-mail du CGP. Optionnel.'],
-    ['Code du CGP', 'Code identifiant du CGP. Optionnel.'],
-    ['Siren du CGP', 'Numéro SIREN du CGP (9 chiffres). Optionnel.'],
-  ];
+  // Personnes Morales section
+  const pmSectionCell = helpSheet.getCell(`A${helpRow}`);
+  pmSectionCell.value = 'PERSONNES MORALES';
+  pmSectionCell.font = { bold: true, color: { argb: COLORS.MORAL_HEADER } };
+  helpRow++;
 
-  moralHelp.forEach(([field, description]) => {
-    helpSheet.getCell(`A${helpRow}`).value = field;
-    helpSheet.getCell(`A${helpRow}`).font = { bold: true };
-    helpSheet.getCell(`B${helpRow}`).value = description;
-    helpSheet.getCell(`B${helpRow}`).alignment = { wrapText: true };
+  allMoralCols.forEach((col, index) => {
+    helpSheet.getCell(helpRow, 1).value = col.header;
+    helpSheet.getCell(helpRow, 2).value = col.tooltip;
+    helpSheet.getCell(helpRow, 2).alignment = { wrapText: true };
+    helpSheet.getCell(helpRow, 3).value = index < pmRequiredCount ? 'Oui' : 'Non';
+    helpSheet.getCell(helpRow, 3).font = {
+      color: { argb: index < pmRequiredCount ? 'FF059669' : 'FF6B7280' },
+    };
     helpRow++;
   });
 
-  // Protéger la feuille d'aide
+  // Protect help sheet
   await helpSheet.protect('finixar', {
     selectLockedCells: true,
     selectUnlockedCells: true,
   });
 
-  // Sauvegarder le fichier
+  // =============================================================================
+  // SAVE FILE
+  // =============================================================================
   const outputPath = join(__dirname, '..', 'public', 'templates', 'Modele_Registre_Titres.xlsx');
   await workbook.xlsx.writeFile(outputPath);
 
-  console.log('✅ Modèle Excel généré avec succès !');
-  console.log(`📁 Fichier : ${outputPath}`);
+  console.log('');
+  console.log('Modele Excel v2.0 genere avec succes!');
+  console.log(`Fichier: ${outputPath}`);
+  console.log('');
+  console.log('Ameliorations:');
+  console.log('  - Colonnes obligatoires en premier');
+  console.log('  - Pas d\'asterisques (compatibilite parser)');
+  console.log('  - Labels OBLIGATOIRE/OPTIONNEL');
+  console.log('  - Dropdowns pour PPE, Categorisation, PEA, Residence Fiscale');
+  console.log('  - Tooltips sur toutes les cellules');
+  console.log('  - Lignes d\'exemple marquees "EXEMPLE"');
+  console.log('  - En-tetes figes');
+  console.log('');
 }
 
-// Exécuter le script
+// Run
 generateTemplate().catch(err => {
-  console.error('❌ Erreur lors de la génération du modèle :', err);
+  console.error('Erreur lors de la generation:', err);
   process.exit(1);
 });
