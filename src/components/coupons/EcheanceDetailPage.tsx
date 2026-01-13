@@ -298,9 +298,9 @@ export function EcheanceDetailPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Handle back navigation - go to root (dashboard is at /)
+  // Handle back navigation - go to project's échéancier complet
   const handleBack = () => {
-    navigate('/');
+    navigate(`/projets/${projectId}/echeancier`);
   };
 
   if (loading) {
