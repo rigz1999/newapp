@@ -156,8 +156,10 @@ function Investors({ organization: _organization }: InvestorsProps) {
   const [selectedInvestorIds, setSelectedInvestorIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
-  // Track if URL filters have been processed to avoid double-processing
-  const urlFiltersProcessedRef = useRef(false);
+  // Capture URL params on mount before any async operations can affect them
+  const initialUrlParamsRef = useRef<{ ribStatus: string | null } | null>({
+    ribStatus: searchParams.get('ribStatus'),
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -202,16 +204,21 @@ function Investors({ organization: _organization }: InvestorsProps) {
   }, [searchParams, investors, setSearchParams]);
 
   // Apply URL filters from dashboard alerts (deep linking)
+  // Uses params captured on mount to avoid race conditions
   useEffect(() => {
-    // Wait for data to load and only process once
-    if (loading || urlFiltersProcessedRef.current) return;
+    // Wait for data to load
+    if (loading) return;
 
-    const ribStatus = searchParams.get('ribStatus');
+    // Check if we have captured params to apply
+    const params = initialUrlParamsRef.current;
+    if (!params) return;
+
+    const { ribStatus } = params;
 
     // Only apply filters if we have the filter param
     if (ribStatus) {
-      // Mark as processed to prevent re-running
-      urlFiltersProcessedRef.current = true;
+      // Clear the ref so we don't apply again
+      initialUrlParamsRef.current = null;
 
       // Clear existing filters first
       advancedFilters.clearAllFilters();
@@ -222,12 +229,15 @@ function Investors({ organization: _organization }: InvestorsProps) {
       // Show advanced filters panel when filters are applied from URL
       setShowAdvancedFilters(true);
 
-      // Clean up URL params after applying filters (use new URLSearchParams to avoid mutation issues)
+      // Clean up URL params after applying filters
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('ribStatus');
       setSearchParams(newSearchParams, { replace: true });
+    } else {
+      // No filters to apply, clear the ref
+      initialUrlParamsRef.current = null;
     }
-  }, [loading, searchParams]);
+  }, [loading]);
 
   // Clear selections when filters change
   useEffect(() => {

@@ -129,8 +129,12 @@ export function Coupons() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
 
-  // Track if URL filters have been processed to avoid double-processing
-  const urlFiltersProcessedRef = useRef(false);
+  // Capture URL params on mount before any async operations can affect them
+  const initialUrlParamsRef = useRef<{ status: string | null; tranche: string | null; date: string | null } | null>({
+    status: searchParams.get('status'),
+    tranche: searchParams.get('tranche'),
+    date: searchParams.get('date'),
+  });
 
   useEffect(() => {
     fetchCoupons();
@@ -152,18 +156,21 @@ export function Coupons() {
   }, [searchParams, coupons]);
 
   // Apply URL filters from dashboard alerts (deep linking)
+  // Uses params captured on mount to avoid race conditions
   useEffect(() => {
-    // Wait for data to load and only process once
-    if (loading || urlFiltersProcessedRef.current) return;
+    // Wait for data to load
+    if (loading) return;
 
-    const status = searchParams.get('status');
-    const tranche = searchParams.get('tranche');
-    const date = searchParams.get('date');
+    // Check if we have captured params to apply
+    const params = initialUrlParamsRef.current;
+    if (!params) return;
+
+    const { status, tranche, date } = params;
 
     // Only apply filters if we have at least one filter param
     if (status || tranche || date) {
-      // Mark as processed to prevent re-running
-      urlFiltersProcessedRef.current = true;
+      // Clear the ref so we don't apply again
+      initialUrlParamsRef.current = null;
 
       // Clear existing filters first
       advancedFilters.clearAllFilters();
@@ -186,14 +193,17 @@ export function Coupons() {
       // Show advanced filters panel when filters are applied from URL
       setShowAdvancedFilters(true);
 
-      // Clean up URL params after applying filters (use new URLSearchParams to avoid mutation issues)
+      // Clean up URL params after applying filters
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('status');
       newSearchParams.delete('tranche');
       newSearchParams.delete('date');
       setSearchParams(newSearchParams, { replace: true });
+    } else {
+      // No filters to apply, clear the ref
+      initialUrlParamsRef.current = null;
     }
-  }, [loading, searchParams]);
+  }, [loading]);
 
   useEffect(() => {
     if (user) {
