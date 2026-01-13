@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -129,12 +129,26 @@ export function Coupons() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
 
-  // Capture URL params on mount before any async operations can affect them
-  const initialUrlParamsRef = useRef<{ status: string | null; tranche: string | null; date: string | null } | null>({
-    status: searchParams.get('status'),
-    tranche: searchParams.get('tranche'),
-    date: searchParams.get('date'),
-  });
+  // Apply URL filters from dashboard alerts (deep linking) - runs ONCE on mount
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const tranche = searchParams.get('tranche');
+    const date = searchParams.get('date');
+
+    if (status || tranche || date) {
+      // Apply filters immediately (filter state can be set before data loads)
+      advancedFilters.clearAllFilters();
+
+      if (status) advancedFilters.addMultiSelectFilter('statut', status);
+      if (tranche) advancedFilters.addMultiSelectFilter('tranche', tranche);
+      if (date) advancedFilters.setDateRange(date, date);
+
+      setShowAdvancedFilters(true);
+
+      // Clear URL params
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     fetchCoupons();
@@ -154,56 +168,6 @@ export function Coupons() {
       }
     }
   }, [searchParams, coupons]);
-
-  // Apply URL filters from dashboard alerts (deep linking)
-  // Uses params captured on mount to avoid race conditions
-  useEffect(() => {
-    // Wait for data to load
-    if (loading) return;
-
-    // Check if we have captured params to apply
-    const params = initialUrlParamsRef.current;
-    if (!params) return;
-
-    const { status, tranche, date } = params;
-
-    // Only apply filters if we have at least one filter param
-    if (status || tranche || date) {
-      // Clear the ref so we don't apply again
-      initialUrlParamsRef.current = null;
-
-      // Clear existing filters first
-      advancedFilters.clearAllFilters();
-
-      // Apply status filter
-      if (status) {
-        advancedFilters.addMultiSelectFilter('statut', status);
-      }
-
-      // Apply tranche filter
-      if (tranche) {
-        advancedFilters.addMultiSelectFilter('tranche', tranche);
-      }
-
-      // Apply date filter - set as date range for specific date
-      if (date) {
-        advancedFilters.setDateRange(date, date);
-      }
-
-      // Show advanced filters panel when filters are applied from URL
-      setShowAdvancedFilters(true);
-
-      // Clean up URL params after applying filters
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.delete('status');
-      newSearchParams.delete('tranche');
-      newSearchParams.delete('date');
-      setSearchParams(newSearchParams, { replace: true });
-    } else {
-      // No filters to apply, clear the ref
-      initialUrlParamsRef.current = null;
-    }
-  }, [loading]);
 
   useEffect(() => {
     if (user) {
