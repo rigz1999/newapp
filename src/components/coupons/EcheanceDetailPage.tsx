@@ -20,6 +20,7 @@ import { QuickPaymentModal } from './QuickPaymentModal';
 import { SimplePaymentModal } from './SimplePaymentModal';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { isValidShortId } from '../../utils/shortId';
 import * as ExcelJS from 'exceljs';
 
 interface EcheanceItem {
@@ -41,11 +42,13 @@ interface EcheanceItem {
 
 interface ProjetInfo {
   id: string;
+  short_id: string;
   projet: string;
 }
 
 interface TrancheInfo {
   id: string;
+  short_id: string;
   tranche_name: string;
 }
 
@@ -131,23 +134,34 @@ export function EcheanceDetailPage() {
 
     setLoading(true);
     try {
-      // Fetch project info
-      const { data: projet } = await supabase
+      // Determine if we're using short_id or UUID format
+      const isProjectShortId = isValidShortId(projectId, 'projet');
+      const isTrancheShortId = isValidShortId(trancheId, 'tranche');
+
+      // Fetch project info (by short_id or id)
+      const projetQuery = supabase
         .from('projets')
-        .select('id, projet')
-        .eq('id', projectId)
-        .single();
+        .select('id, short_id, projet');
+
+      const { data: projet } = isProjectShortId
+        ? await projetQuery.eq('short_id', projectId).single()
+        : await projetQuery.eq('id', projectId).single();
 
       if (projet) setProjetInfo(projet);
 
-      // Fetch tranche info
-      const { data: tranche } = await supabase
+      // Fetch tranche info (by short_id or id)
+      const trancheQuery = supabase
         .from('tranches')
-        .select('id, tranche_name')
-        .eq('id', trancheId)
-        .single();
+        .select('id, short_id, tranche_name');
+
+      const { data: tranche } = isTrancheShortId
+        ? await trancheQuery.eq('short_id', trancheId).single()
+        : await trancheQuery.eq('id', trancheId).single();
 
       if (tranche) setTrancheInfo(tranche);
+
+      // Use the resolved UUID for querying écheances
+      const resolvedTrancheId = tranche?.id || trancheId;
 
       // Fetch all écheances for this date and tranche
       const { data: echeancesData, error } = await supabase
@@ -174,7 +188,7 @@ export function EcheanceDetailPage() {
           )
         `)
         .eq('date_echeance', date)
-        .eq('souscription.tranche_id', trancheId);
+        .eq('souscription.tranche_id', resolvedTrancheId);
 
       if (error) throw error;
 
@@ -299,8 +313,11 @@ export function EcheanceDetailPage() {
   };
 
   // Handle back navigation - go to project's échéancier complet
+  // Use short_id for cleaner URLs when available
   const handleBack = () => {
-    if (projectId) {
+    if (projetInfo?.short_id) {
+      navigate(`/projets/${projetInfo.short_id}/echeancier`);
+    } else if (projectId) {
       navigate(`/projets/${projectId}/echeancier`);
     } else {
       navigate('/projets');

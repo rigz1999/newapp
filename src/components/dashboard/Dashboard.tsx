@@ -107,9 +107,9 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       if (filters?.ribStatus) params.set('ribStatus', filters.ribStatus);
       navigate(`/investisseurs${params.toString() ? `?${params.toString()}` : ''}`);
     } else if (alert.id.startsWith('deadline-')) {
-      // Navigate to EcheanceDetailPage if we have all required IDs
-      if (filters?.projectId && filters?.trancheId && filters?.dateEcheance) {
-        navigate(`/echeance/${filters.projectId}/${filters.trancheId}/${filters.dateEcheance}?returnTo=dashboard`);
+      // Navigate to EcheanceDetailPage if we have all required short IDs
+      if (filters?.projectShortId && filters?.trancheShortId && filters?.dateEcheance) {
+        navigate(`/echeance/${filters.projectShortId}/${filters.trancheShortId}/${filters.dateEcheance}?returnTo=dashboard`);
       } else {
         // Fallback to coupons page with filters
         const params = new URLSearchParams();
@@ -440,9 +440,10 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
                 tranche_id,
                 investisseur:investisseurs(nom_raison_sociale),
                 tranche:tranches(
+                  short_id,
                   tranche_name,
                   projet_id,
-                  projet:projets(projet)
+                  projet:projets(short_id, projet)
                 )
               )
             `
@@ -462,9 +463,10 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
               souscription:souscriptions!inner(
                 tranche_id,
                 tranche:tranches(
+                  short_id,
                   tranche_name,
                   projet_id,
-                  projet:projets(projet)
+                  projet:projets(short_id, projet)
                 )
               )
             `

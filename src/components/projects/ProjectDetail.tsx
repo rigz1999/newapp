@@ -12,6 +12,7 @@ import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
 import { copyToClipboard } from '../../utils/clipboard';
 import { isUUID, slugify } from '../../utils/slugify';
+import { isValidShortId } from '../../utils/shortId';
 import { Tooltip } from '../common/Tooltip';
 import { Copy } from 'lucide-react';
 import { EcheancierModal } from '../coupons/EcheancierModal';
@@ -199,10 +200,23 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     setLoading(true);
 
     try {
-      // Determine if projectId is a UUID or a slug
+      // Determine if projectId is a UUID, short_id, or a slug
       let actualProjectId = projectId;
 
-      if (!isUUID(projectId)) {
+      if (isValidShortId(projectId, 'projet')) {
+        // It's a short_id (prj_xxx), look up by short_id column
+        const { data: projectByShortId } = await supabase
+          .from('projets')
+          .select('id')
+          .eq('short_id', projectId)
+          .single();
+
+        if (!projectByShortId) {
+          throw new Error('Projet non trouvé');
+        }
+
+        actualProjectId = projectByShortId.id;
+      } else if (!isUUID(projectId)) {
         // It's a slug, find the project by slugified name
         const { data: allProjects } = await supabase
           .from('projets')
