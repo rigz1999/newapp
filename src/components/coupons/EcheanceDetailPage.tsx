@@ -304,8 +304,8 @@ export function EcheanceDetailPage() {
     if (returnTo === 'dashboard') {
       navigate('/dashboard');
     } else {
-      // Default to coupons page (safer than navigate(-1) which can fail)
-      navigate('/coupons');
+      // Default to project echeancier page
+      navigate(`/projets/${projectId}/echeancier`);
     }
   };
 
