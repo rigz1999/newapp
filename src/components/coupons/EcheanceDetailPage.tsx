@@ -298,15 +298,9 @@ export function EcheanceDetailPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Handle back navigation - return to source if specified
+  // Handle back navigation - go to root (dashboard is at /)
   const handleBack = () => {
-    const returnTo = searchParams.get('returnTo');
-    if (returnTo === 'dashboard') {
-      navigate('/dashboard');
-    } else {
-      // Default to project echeancier page
-      navigate(`/projets/${projectId}/echeancier`);
-    }
+    navigate('/');
   };
 
   if (loading) {
