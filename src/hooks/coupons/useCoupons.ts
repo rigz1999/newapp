@@ -103,7 +103,8 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
       const { data, error: queryError } = await supabase
         .from('coupons_optimized')
         .select('*')
-        .order(sortBy, { ascending: sortOrder === 'asc' });
+        .order(sortBy, { ascending: sortOrder === 'asc' })
+        .range(0, 9999); // Override Supabase default limit of 1000
 
       if (queryError) throw queryError;
 
