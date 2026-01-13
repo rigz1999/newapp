@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Download, FileText, MessageSquare } from 'lucide-react';
+import * as ExcelJS from 'exceljs';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { Spinner } from '../common/Spinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 import { ProjectActualites } from '../projects/ProjectActualites';
+import toast from 'react-hot-toast';
 
 interface ProjectDetails {
   id: string;
@@ -106,12 +108,74 @@ export default function EmetteurProjectView() {
     }
   };
 
-  const exportToExcel = () => {
-    console.log('Export to Excel');
+  const exportToExcel = async () => {
+    if (!project || schedule.length === 0) {
+      toast.error('Aucune donnée à exporter');
+      return;
+    }
+
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Échéancier');
+
+      // Set up columns
+      worksheet.columns = [
+        { header: 'Date Échéance', key: 'date', width: 15 },
+        { header: 'Coupon N°', key: 'numero', width: 12 },
+        { header: 'Montant Brut', key: 'montantBrut', width: 18 },
+        { header: 'Montant Net', key: 'montantNet', width: 18 },
+        { header: 'Souscriptions', key: 'souscriptions', width: 15 },
+        { header: 'Statut', key: 'statut', width: 12 },
+      ];
+
+      // Style header row
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4472C4' },
+      };
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+      // Add data rows
+      schedule.forEach((item) => {
+        worksheet.addRow({
+          date: formatDate(item.date_echeance),
+          numero: item.numero_coupon,
+          montantBrut: item.total_montant_brut,
+          montantNet: item.total_montant_net,
+          souscriptions: item.nombre_souscriptions,
+          statut: item.statut,
+        });
+      });
+
+      // Format currency columns
+      worksheet.getColumn('montantBrut').numFmt = '#,##0.00 €';
+      worksheet.getColumn('montantNet').numFmt = '#,##0.00 €';
+
+      // Generate and download file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const dateStr = new Date().toISOString().split('T')[0];
+      link.download = `Echeancier_${project.projet.replace(/\s+/g, '_')}_${dateStr}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Export Excel téléchargé');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error("Erreur lors de l'export Excel");
+    }
   };
 
   const exportToPDF = () => {
-    console.log('Export to PDF');
+    toast.error('Export PDF non disponible pour le moment');
   };
 
   if (loading) {
