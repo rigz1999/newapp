@@ -13,6 +13,7 @@ import {
   FileText,
   Download,
   Loader2,
+  TrendingUp,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { QuickPaymentModal } from './QuickPaymentModal';
@@ -97,8 +98,9 @@ export function EcheanceDetailPage() {
     if (statut === 'paye') {
       return {
         text: 'Payé',
-        className: 'bg-green-100 text-green-800 border-green-200',
+        className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         icon: CheckCircle,
+        iconColor: 'text-emerald-500',
       };
     }
     const today = new Date();
@@ -109,14 +111,16 @@ export function EcheanceDetailPage() {
     if (dueDate < today) {
       return {
         text: 'En retard',
-        className: 'bg-red-100 text-red-800 border-red-200',
+        className: 'bg-red-50 text-red-700 border-red-200',
         icon: AlertCircle,
+        iconColor: 'text-red-500',
       };
     }
     return {
       text: 'Prévu',
-      className: 'bg-blue-100 text-blue-800 border-blue-200',
+      className: 'bg-amber-50 text-amber-700 border-amber-200',
       icon: Clock,
+      iconColor: 'text-amber-500',
     };
   };
 
@@ -306,241 +310,283 @@ export function EcheanceDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+          <p className="text-slate-500 font-medium">Chargement de l'échéance...</p>
+        </div>
       </div>
     );
   }
 
-  const dateStatusBadge = getStatusBadge(
-    stats.paid === stats.total ? 'paye' : 'en_attente',
-    date || ''
-  );
+  const progressPercent = stats.total > 0 ? Math.round((stats.paid / stats.total) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleBack}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            aria-label="Retour"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-600" />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
-              <Building2 className="w-4 h-4" />
-              <span>{projetInfo?.projet}</span>
-              <span className="mx-1">•</span>
-              <span>{trancheInfo?.tranche_name}</span>
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-              <Calendar className="w-6 h-6 text-blue-600" />
-              Échéance du {formatDate(date || '')}
-              <span
-                className={`text-sm font-medium px-3 py-1 rounded-full border ${dateStatusBadge.className}`}
+    <div className="min-h-screen bg-slate-50/50">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Header Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <button
+                onClick={handleBack}
+                className="mt-1 p-2.5 hover:bg-slate-100 rounded-xl transition-colors border border-slate-200"
+                aria-label="Retour"
               >
-                {stats.paid === stats.total
-                  ? 'Complète'
-                  : stats.overdue > 0
-                    ? `${stats.overdue} en retard`
-                    : `${stats.pending} à payer`}
-              </span>
-            </h1>
+                <ArrowLeft className="w-5 h-5 text-slate-600" />
+              </button>
+              <div>
+                <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                  <Building2 className="w-4 h-4" />
+                  <span className="font-medium">{projetInfo?.projet}</span>
+                  <span className="text-slate-300">•</span>
+                  <span>{trancheInfo?.tranche_name}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-xl">
+                      <Calendar className="w-6 h-6 text-blue-600" />
+                    </div>
+                    Échéance du {formatDate(date || '')}
+                  </h1>
+                  <span
+                    className={`text-sm font-semibold px-4 py-1.5 rounded-full border ${
+                      stats.paid === stats.total
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : stats.overdue > 0
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
+                    }`}
+                  >
+                    {stats.paid === stats.total
+                      ? 'Complète'
+                      : stats.overdue > 0
+                        ? `${stats.overdue} en retard`
+                        : `${stats.pending} à payer`}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={exportToExcel}
+                className="flex items-center gap-2 px-5 py-2.5 text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-medium shadow-sm"
+              >
+                <Download className="w-4 h-4" />
+                Exporter
+              </button>
+              {stats.paid < stats.total && (
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium shadow-sm shadow-blue-200"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Enregistrer un paiement
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={exportToExcel}
-            className="flex items-center gap-2 px-4 py-2 text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Exporter
-          </button>
-          {stats.paid < stats.total && (
-            <button
-              onClick={() => setShowPaymentModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <CreditCard className="w-4 h-4" />
-              Enregistrer un paiement
-            </button>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-blue-50 rounded-xl">
+                <Coins className="w-6 h-6 text-blue-600" />
+              </div>
+              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                Total
+              </span>
+            </div>
+            <p className="text-3xl font-bold text-slate-900 mb-1">
+              {formatCurrency(stats.totalAmount)}
+            </p>
+            <p className="text-sm text-slate-500">{stats.total} coupons à traiter</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-emerald-50 rounded-xl">
+                <CheckCircle className="w-6 h-6 text-emerald-600" />
+              </div>
+              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                Payé
+              </span>
+            </div>
+            <p className="text-3xl font-bold text-emerald-600 mb-1">
+              {formatCurrency(stats.paidAmount)}
+            </p>
+            <p className="text-sm text-slate-500">{stats.paid} coupons réglés</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-amber-50 rounded-xl">
+                <Clock className="w-6 h-6 text-amber-600" />
+              </div>
+              <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+                Prévu
+              </span>
+            </div>
+            <p className="text-3xl font-bold text-amber-600 mb-1">
+              {formatCurrency(stats.pendingAmount)}
+            </p>
+            <p className="text-sm text-slate-500">
+              {stats.pending + stats.overdue} coupons restants
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-slate-100 rounded-xl">
+                <TrendingUp className="w-6 h-6 text-slate-600" />
+              </div>
+              <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                Progression
+              </span>
+            </div>
+            <p className="text-3xl font-bold text-slate-900 mb-3">{progressPercent}%</p>
+            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500 ease-out"
+                style={{
+                  width: `${progressPercent}%`,
+                  background:
+                    progressPercent === 100
+                      ? 'linear-gradient(90deg, #10b981, #34d399)'
+                      : 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Table Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-900">Liste des investisseurs</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              {echeances.length} souscription{echeances.length > 1 ? 's' : ''} pour cette échéance
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50/80">
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Investisseur
+                  </th>
+                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    N° Souscription
+                  </th>
+                  <th className="text-right px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Montant Investi
+                  </th>
+                  <th className="text-right px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Coupon Net
+                  </th>
+                  <th className="text-center px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Statut
+                  </th>
+                  <th className="text-center px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {echeances.map((echeance, index) => {
+                  const status = getStatusBadge(echeance.statut, echeance.date_echeance);
+                  const StatusIcon = status.icon;
+
+                  return (
+                    <tr
+                      key={echeance.id}
+                      className={`hover:bg-slate-50/50 transition-colors ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
+                      }`}
+                    >
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                              echeance.investisseur_type === 'Moral'
+                                ? 'bg-purple-100'
+                                : 'bg-blue-100'
+                            }`}
+                          >
+                            {echeance.investisseur_type === 'Moral' ? (
+                              <Building2 className="w-5 h-5 text-purple-600" aria-hidden="true" />
+                            ) : (
+                              <User className="w-5 h-5 text-blue-600" aria-hidden="true" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-900">
+                              {echeance.investisseur_nom}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              {echeance.investisseur_type === 'Moral'
+                                ? 'Personne Morale'
+                                : 'Personne Physique'}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="font-mono text-sm text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">
+                          {echeance.souscription_id_display || '-'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <span className="font-semibold text-slate-700">
+                          {formatCurrency(echeance.montant_investi)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <span className="text-lg font-bold text-slate-900">
+                          {formatCurrency(echeance.montant_coupon)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-center">
+                        <span
+                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border ${status.className}`}
+                        >
+                          <StatusIcon className={`w-4 h-4 ${status.iconColor}`} />
+                          {status.text}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-center">
+                        {echeance.statut === 'paye' && echeance.paiement_id ? (
+                          <button
+                            onClick={() => setViewProofsEcheanceId(echeance.id)}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-200"
+                          >
+                            <FileText className="w-4 h-4" />
+                            Voir justificatif
+                          </button>
+                        ) : (
+                          <span className="text-sm text-slate-300">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {echeances.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-slate-400" />
+              </div>
+              <p className="text-slate-500 font-medium">Aucun coupon trouvé pour cette échéance</p>
+            </div>
           )}
         </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Coins className="w-5 h-5 text-blue-600" />
-            </div>
-            <span className="text-sm text-slate-500">Total à payer</span>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalAmount)}</p>
-          <p className="text-sm text-slate-500 mt-1">{stats.total} coupons</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <span className="text-sm text-slate-500">Payé</span>
-          </div>
-          <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.paidAmount)}</p>
-          <p className="text-sm text-slate-500 mt-1">{stats.paid} coupons</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock className="w-5 h-5 text-yellow-600" />
-            </div>
-            <span className="text-sm text-slate-500">Prévu</span>
-          </div>
-          <p className="text-2xl font-bold text-yellow-600">
-            {formatCurrency(stats.pendingAmount)}
-          </p>
-          <p className="text-sm text-slate-500 mt-1">
-            {stats.pending + stats.overdue} coupons restants
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-slate-100 rounded-lg">
-              <User className="w-5 h-5 text-slate-600" />
-            </div>
-            <span className="text-sm text-slate-500">Progression</span>
-          </div>
-          <p className="text-2xl font-bold text-slate-900">
-            {stats.total > 0 ? Math.round((stats.paid / stats.total) * 100) : 0}%
-          </p>
-          <div className="w-full bg-slate-200 rounded-full h-2 mt-2">
-            <div
-              className="bg-green-500 h-2 rounded-full transition-all"
-              style={{ width: `${stats.total > 0 ? (stats.paid / stats.total) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-slate-900">
-                  Investisseur
-                </th>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-slate-900">
-                  N° Souscription
-                </th>
-                <th className="text-right px-6 py-4 text-sm font-semibold text-slate-900">
-                  Montant Investi
-                </th>
-                <th className="text-right px-6 py-4 text-sm font-semibold text-slate-900">
-                  Coupon Net
-                </th>
-                <th className="text-center px-6 py-4 text-sm font-semibold text-slate-900">
-                  Statut
-                </th>
-                <th className="text-center px-6 py-4 text-sm font-semibold text-slate-900">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {echeances.map((echeance) => {
-                const status = getStatusBadge(echeance.statut, echeance.date_echeance);
-                const StatusIcon = status.icon;
-
-                return (
-                  <tr key={echeance.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`p-2 rounded-full ${
-                            echeance.investisseur_type === 'Moral'
-                              ? 'bg-purple-100'
-                              : 'bg-blue-100'
-                          }`}
-                        >
-                          {echeance.investisseur_type === 'Moral' ? (
-                            <Building2
-                              className="w-4 h-4 text-purple-600"
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <User className="w-4 h-4 text-blue-600" aria-hidden="true" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {echeance.investisseur_nom}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {echeance.investisseur_type === 'Moral'
-                              ? 'Personne Morale'
-                              : 'Personne Physique'}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-sm text-slate-600">
-                        {echeance.souscription_id_display || '-'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="font-medium text-slate-900">
-                        {formatCurrency(echeance.montant_investi)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="font-bold text-slate-900">
-                        {formatCurrency(echeance.montant_coupon)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}
-                      >
-                        <StatusIcon className="w-3.5 h-3.5" />
-                        {status.text}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {echeance.statut === 'paye' && echeance.paiement_id ? (
-                        <button
-                          onClick={() => setViewProofsEcheanceId(echeance.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        >
-                          <FileText className="w-4 h-4" />
-                          Voir le justificatif
-                        </button>
-                      ) : (
-                        <span className="text-sm text-slate-400">-</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {echeances.length === 0 && (
-          <div className="text-center py-12 text-slate-500">
-            Aucun coupon trouvé pour cette échéance
-          </div>
-        )}
       </div>
 
       {/* Payment Modal */}
