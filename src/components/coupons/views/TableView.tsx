@@ -28,6 +28,7 @@ interface TableViewProps {
 }
 
 interface GroupedData {
+  key: string; // unique key: date|tranche_id
   date: string;
   coupons: Coupon[];
   totalBrut: number;
@@ -112,7 +113,7 @@ export function TableView({
 
     return Object.entries(grouped)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([_key, coupons]) => {
+      .map(([key, coupons]) => {
         // Extract actual date from first coupon (key is date|tranche_id)
         const date = coupons[0].date_echeance;
         const paidCount = coupons.filter(c => c.statut_calculated === 'paye').length;
@@ -139,6 +140,7 @@ export function TableView({
           : 0;
 
         return {
+          key, // unique key for expand/collapse
           date,
           coupons,
           totalBrut: coupons.reduce((sum, c) => sum + c.montant_brut, 0),
@@ -155,12 +157,12 @@ export function TableView({
       });
   }, [coupons]);
 
-  const toggleDate = (date: string) => {
+  const toggleGroup = (key: string) => {
     const newExpanded = new Set(expandedDates);
-    if (newExpanded.has(date)) {
-      newExpanded.delete(date);
+    if (newExpanded.has(key)) {
+      newExpanded.delete(key);
     } else {
-      newExpanded.add(date);
+      newExpanded.add(key);
     }
     setExpandedDates(newExpanded);
   };
@@ -237,7 +239,7 @@ export function TableView({
           </thead>
           <tbody>
             {groupedData.map(group => {
-              const isExpanded = expandedDates.has(group.date);
+              const isExpanded = expandedDates.has(group.key);
               const daysUntil = getDaysUntil(group.date);
               const statusDisplay = getEcheanceStatusDisplay(group);
 
@@ -255,7 +257,7 @@ export function TableView({
                             ? 'bg-orange-50/30'
                             : 'bg-white'
                     }`}
-                    onClick={() => toggleDate(group.date)}
+                    onClick={() => toggleGroup(group.key)}
                   >
                     <td className="px-4 py-3">
                       {isExpanded ? (
