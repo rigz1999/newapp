@@ -68,7 +68,8 @@ export function EcheanceDetailPage() {
 
   // Modals
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [viewProofsEcheanceId, setViewProofsEcheanceId] = useState<string | null>(null);
+  const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<Record<string, unknown> | null>(null);
+  const [paymentProofs, setPaymentProofs] = useState<Record<string, unknown>[]>([]);
   const [singlePaymentEcheance, setSinglePaymentEcheance] = useState<EcheanceItem | null>(null);
 
   // Stats
@@ -248,6 +249,33 @@ export function EcheanceDetailPage() {
     setShowPaymentModal(false);
     await triggerCacheInvalidation(['coupons', 'echeances']);
     fetchData();
+  };
+
+  const handleViewPaymentProof = async (echeance: EcheanceItem) => {
+    if (!echeance.paiement_id) return;
+
+    // Fetch the payment with its related data
+    const { data: paymentData } = await supabase
+      .from('paiements')
+      .select(`
+        *,
+        tranche:tranches(tranche_name),
+        investisseur:investisseurs(nom_raison_sociale)
+      `)
+      .eq('id', echeance.paiement_id)
+      .single();
+
+    if (!paymentData) return;
+
+    // Fetch payment proofs
+    const { data: proofsData } = await supabase
+      .from('payment_proofs')
+      .select('*')
+      .eq('paiement_id', echeance.paiement_id)
+      .order('validated_at', { ascending: false });
+
+    setSelectedPaymentForProof(paymentData);
+    setPaymentProofs(proofsData || []);
   };
 
   const exportToExcel = async () => {
@@ -569,7 +597,7 @@ export function EcheanceDetailPage() {
                       <td className="px-6 py-5 text-right">
                         {echeance.statut === 'paye' && echeance.paiement_id ? (
                           <button
-                            onClick={() => setViewProofsEcheanceId(echeance.id)}
+                            onClick={() => handleViewPaymentProof(echeance)}
                             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-200"
                           >
                             <FileText className="w-4 h-4" />
@@ -617,13 +645,18 @@ export function EcheanceDetailPage() {
       )}
 
       {/* View Proofs Modal */}
-      {viewProofsEcheanceId && (
+      {selectedPaymentForProof && (
         <ViewProofsModal
-          echeanceId={viewProofsEcheanceId}
-          onClose={() => setViewProofsEcheanceId(null)}
-          onUnlinkSuccess={() => {
-            setViewProofsEcheanceId(null);
+          payment={selectedPaymentForProof}
+          proofs={paymentProofs}
+          onClose={() => {
+            setSelectedPaymentForProof(null);
+            setPaymentProofs([]);
+          }}
+          onProofDeleted={() => {
             fetchData();
+            setSelectedPaymentForProof(null);
+            setPaymentProofs([]);
           }}
         />
       )}
