@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle, Filter, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
@@ -156,6 +156,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
   const [selectedInvestorIds, setSelectedInvestorIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
+  // Track if URL filters have been processed to avoid double-processing
+  const urlFiltersProcessedRef = useRef(false);
+
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
@@ -200,10 +203,16 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
   // Apply URL filters from dashboard alerts (deep linking)
   useEffect(() => {
+    // Wait for data to load and only process once
+    if (loading || urlFiltersProcessedRef.current) return;
+
     const ribStatus = searchParams.get('ribStatus');
 
-    // Only apply filters if we have the filter param and investors are loaded
-    if (ribStatus && investors.length > 0) {
+    // Only apply filters if we have the filter param
+    if (ribStatus) {
+      // Mark as processed to prevent re-running
+      urlFiltersProcessedRef.current = true;
+
       // Clear existing filters first
       advancedFilters.clearAllFilters();
 
@@ -213,11 +222,12 @@ function Investors({ organization: _organization }: InvestorsProps) {
       // Show advanced filters panel when filters are applied from URL
       setShowAdvancedFilters(true);
 
-      // Clean up URL params after applying filters
-      searchParams.delete('ribStatus');
-      setSearchParams(searchParams, { replace: true });
+      // Clean up URL params after applying filters (use new URLSearchParams to avoid mutation issues)
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('ribStatus');
+      setSearchParams(newSearchParams, { replace: true });
     }
-  }, [searchParams, investors.length]);
+  }, [loading, searchParams]);
 
   // Clear selections when filters change
   useEffect(() => {

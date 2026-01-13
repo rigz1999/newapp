@@ -1,4 +1,4 @@
- import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -129,6 +129,9 @@ export function Coupons() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
 
+  // Track if URL filters have been processed to avoid double-processing
+  const urlFiltersProcessedRef = useRef(false);
+
   useEffect(() => {
     fetchCoupons();
   }, []);
@@ -150,12 +153,18 @@ export function Coupons() {
 
   // Apply URL filters from dashboard alerts (deep linking)
   useEffect(() => {
+    // Wait for data to load and only process once
+    if (loading || urlFiltersProcessedRef.current) return;
+
     const status = searchParams.get('status');
     const tranche = searchParams.get('tranche');
     const date = searchParams.get('date');
 
-    // Only apply filters if we have at least one filter param and coupons are loaded
-    if ((status || tranche || date) && coupons.length > 0) {
+    // Only apply filters if we have at least one filter param
+    if (status || tranche || date) {
+      // Mark as processed to prevent re-running
+      urlFiltersProcessedRef.current = true;
+
       // Clear existing filters first
       advancedFilters.clearAllFilters();
 
@@ -177,13 +186,14 @@ export function Coupons() {
       // Show advanced filters panel when filters are applied from URL
       setShowAdvancedFilters(true);
 
-      // Clean up URL params after applying filters
-      searchParams.delete('status');
-      searchParams.delete('tranche');
-      searchParams.delete('date');
-      setSearchParams(searchParams, { replace: true });
+      // Clean up URL params after applying filters (use new URLSearchParams to avoid mutation issues)
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('status');
+      newSearchParams.delete('tranche');
+      newSearchParams.delete('date');
+      setSearchParams(newSearchParams, { replace: true });
     }
-  }, [searchParams, coupons.length]);
+  }, [loading, searchParams]);
 
   useEffect(() => {
     if (user) {
