@@ -153,7 +153,7 @@ export default function PaymentRemindersModal({
       } else if (data?.error) {
         setErrorMessage(data.error);
       } else {
-        setSuccessMessage('Email de test envoyé avec succès ! Vérifiez votre boîte de réception.');
+        setSuccessMessage('E-mail de test envoyé avec succès ! Vérifiez votre boîte de réception.');
       }
     } catch (err) {
       setSendingTestEmail(false);
@@ -179,7 +179,7 @@ export default function PaymentRemindersModal({
               <div className="min-w-0">
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900">Rappels de paiements</h2>
                 <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-                  Recevez des rappels par email pour les coupons à échéance prochaine
+                  Recevez des rappels par e-mail pour les coupons à échéance prochaine
                 </p>
               </div>
             </div>
@@ -306,7 +306,7 @@ export default function PaymentRemindersModal({
                 <div className="text-xs sm:text-sm text-blue-900">
                   <p className="font-medium mb-0.5">Comment ça marche ?</p>
                   <p className="text-blue-800">
-                    Les rappels sont envoyés automatiquement chaque jour à 7h00. Vous recevrez un email
+                    Les rappels sont envoyés automatiquement chaque jour à 7h00. Vous recevrez un e-mail
                     listant tous les coupons correspondant aux périodes que vous avez sélectionnées.
                   </p>
                 </div>
@@ -351,7 +351,7 @@ export default function PaymentRemindersModal({
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    Email test
+                    E-mail test
                   </>
                 )}
               </button>
