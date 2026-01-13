@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { QuickPaymentModal } from './QuickPaymentModal';
+import { SimplePaymentModal } from './SimplePaymentModal';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import * as ExcelJS from 'exceljs';
@@ -65,6 +66,7 @@ export function EcheanceDetailPage() {
   // Modals
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [viewProofsEcheanceId, setViewProofsEcheanceId] = useState<string | null>(null);
+  const [singlePaymentEcheance, setSinglePaymentEcheance] = useState<EcheanceItem | null>(null);
 
   // Stats
   const [stats, setStats] = useState({
@@ -479,9 +481,6 @@ export function EcheanceDetailPage() {
                   <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Investisseur
                   </th>
-                  <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    N° Souscription
-                  </th>
                   <th className="text-right px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Montant Investi
                   </th>
@@ -491,7 +490,7 @@ export function EcheanceDetailPage() {
                   <th className="text-center px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Statut
                   </th>
-                  <th className="text-center px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="text-right px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -535,11 +534,6 @@ export function EcheanceDetailPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-5">
-                        <span className="font-mono text-sm text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">
-                          {echeance.souscription_id_display || '-'}
-                        </span>
-                      </td>
                       <td className="px-6 py-5 text-right">
                         <span className="font-semibold text-slate-700">
                           {formatCurrency(echeance.montant_investi)}
@@ -558,17 +552,23 @@ export function EcheanceDetailPage() {
                           {status.text}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-center">
+                      <td className="px-6 py-5 text-right">
                         {echeance.statut === 'paye' && echeance.paiement_id ? (
                           <button
                             onClick={() => setViewProofsEcheanceId(echeance.id)}
                             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-200"
                           >
                             <FileText className="w-4 h-4" />
-                            Voir justificatif
+                            Justificatif
                           </button>
                         ) : (
-                          <span className="text-sm text-slate-300">—</span>
+                          <button
+                            onClick={() => setSinglePaymentEcheance(echeance)}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
+                          >
+                            <CreditCard className="w-4 h-4" />
+                            Enregistrer
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -609,6 +609,22 @@ export function EcheanceDetailPage() {
           onClose={() => setViewProofsEcheanceId(null)}
           onUnlinkSuccess={() => {
             setViewProofsEcheanceId(null);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Single Payment Modal */}
+      {singlePaymentEcheance && (
+        <SimplePaymentModal
+          echeanceId={singlePaymentEcheance.id}
+          investisseurNom={singlePaymentEcheance.investisseur_nom}
+          investisseurType={singlePaymentEcheance.investisseur_type}
+          montant={singlePaymentEcheance.montant_coupon}
+          dateEcheance={singlePaymentEcheance.date_echeance}
+          onClose={() => setSinglePaymentEcheance(null)}
+          onSuccess={() => {
+            setSinglePaymentEcheance(null);
             fetchData();
           }}
         />
