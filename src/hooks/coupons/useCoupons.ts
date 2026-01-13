@@ -196,11 +196,8 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     return result;
   }, [allCoupons, filters]);
 
-  // Calculate total count based on unique date+tranche groups (matching TableView grouping)
-  const totalCount = useMemo(() => {
-    const uniqueGroups = new Set(filteredCoupons.map(c => `${c.date_echeance}|${c.tranche_id}`));
-    return uniqueGroups.size;
-  }, [filteredCoupons]);
+  // Total count is number of coupons (for pagination math)
+  const totalCount = filteredCoupons.length;
 
   // Apply pagination CLIENT-SIDE
   const paginatedCoupons = useMemo(() => {
