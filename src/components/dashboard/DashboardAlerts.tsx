@@ -3,7 +3,7 @@ import type { Alert } from '../../utils/dashboardAlerts';
 
 interface DashboardAlertsProps {
   alerts: Alert[];
-  onAlertClick: (alertId: string) => void;
+  onAlertClick: (alert: Alert) => void;
   onDismiss: () => void;
   dismissed?: boolean;
 }
@@ -43,7 +43,7 @@ export function DashboardAlerts({
           {alerts.map(alert => (
             <div
               key={alert.id}
-              onClick={() => onAlertClick(alert.id)}
+              onClick={() => onAlertClick(alert)}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 alert.type === 'late_payment'
                   ? 'bg-red-50 hover:bg-red-100 border border-red-200'

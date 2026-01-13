@@ -198,6 +198,27 @@ function Investors({ organization: _organization }: InvestorsProps) {
     }
   }, [searchParams, investors, setSearchParams]);
 
+  // Apply URL filters from dashboard alerts (deep linking)
+  useEffect(() => {
+    const ribStatus = searchParams.get('ribStatus');
+
+    // Only apply filters if we have the filter param and investors are loaded
+    if (ribStatus && investors.length > 0) {
+      // Clear existing filters first
+      advancedFilters.clearAllFilters();
+
+      // Apply RIB status filter
+      advancedFilters.addMultiSelectFilter('ribStatus', ribStatus);
+
+      // Show advanced filters panel when filters are applied from URL
+      setShowAdvancedFilters(true);
+
+      // Clean up URL params after applying filters
+      searchParams.delete('ribStatus');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, investors.length]);
+
   // Clear selections when filters change
   useEffect(() => {
     setSelectedInvestorIds(new Set());
