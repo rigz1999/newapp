@@ -13,6 +13,7 @@ import {
   XCircle,
   MoreVertical,
   FileText,
+  Loader2,
 } from 'lucide-react';
 
 interface TableViewProps {
@@ -368,11 +369,16 @@ export function TableView({
                               );
                               onMarkGroupAsUnpaid(group.date, paidCoupons);
                             }}
-                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all shadow-sm hover:shadow-md"
+                            disabled={markingUnpaid === 'bulk'}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-wait"
                             title="Marquer tous les coupons de cette échéance comme impayés"
                           >
-                            <XCircle className="w-4 h-4 flex-shrink-0" />
-                            Marquer impayé
+                            {markingUnpaid === 'bulk' ? (
+                              <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin" />
+                            ) : (
+                              <XCircle className="w-4 h-4 flex-shrink-0" />
+                            )}
+                            {markingUnpaid === 'bulk' ? 'Traitement...' : 'Marquer impayé'}
                           </button>
                         )}
                       </div>
@@ -483,12 +489,14 @@ export function TableView({
                                         onMarkAsUnpaid(coupon);
                                       }}
                                       disabled={markingUnpaid === coupon.id}
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-wait"
                                     >
-                                      <XCircle
-                                        className={`w-4 h-4 text-finixar-red flex-shrink-0 ${markingUnpaid === coupon.id ? 'animate-pulse' : ''}`}
-                                      />
-                                      <span>Marquer impayé</span>
+                                      {markingUnpaid === coupon.id ? (
+                                        <Loader2 className="w-4 h-4 text-slate-500 flex-shrink-0 animate-spin" />
+                                      ) : (
+                                        <XCircle className="w-4 h-4 text-finixar-red flex-shrink-0" />
+                                      )}
+                                      <span>{markingUnpaid === coupon.id ? 'Traitement...' : 'Marquer impayé'}</span>
                                     </button>
                                   )}
 
