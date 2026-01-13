@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -14,6 +14,7 @@ import {
   Download,
   Loader2,
   TrendingUp,
+  ChevronDown,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { QuickPaymentModal } from './QuickPaymentModal';
@@ -70,6 +71,10 @@ export function EcheanceDetailPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showProofsModal, setShowProofsModal] = useState(false);
   const [singlePaymentEcheance, setSinglePaymentEcheance] = useState<EcheanceItem | null>(null);
+
+  // Actions dropdown
+  const [showActionsDropdown, setShowActionsDropdown] = useState(false);
+  const actionsDropdownRef = useRef<HTMLDivElement>(null);
 
   // Stats
   const [stats, setStats] = useState({
@@ -244,6 +249,17 @@ export function EcheanceDetailPage() {
     fetchData();
   }, [fetchData]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (actionsDropdownRef.current && !actionsDropdownRef.current.contains(event.target as Node)) {
+        setShowActionsDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handlePaymentSuccess = async () => {
     setShowPaymentModal(false);
     await triggerCacheInvalidation(['coupons', 'echeances']);
@@ -384,31 +400,52 @@ export function EcheanceDetailPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="relative" ref={actionsDropdownRef}>
               <button
-                onClick={exportToExcel}
-                className="flex items-center gap-2 px-5 py-2.5 text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-medium shadow-sm"
+                onClick={() => setShowActionsDropdown(!showActionsDropdown)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium shadow-sm shadow-blue-200"
               >
-                <Download className="w-4 h-4" />
-                Exporter
+                Actions
+                <ChevronDown className={`w-4 h-4 transition-transform ${showActionsDropdown ? 'rotate-180' : ''}`} />
               </button>
-              {stats.paid > 0 && (
-                <button
-                  onClick={() => setShowProofsModal(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-medium shadow-sm"
-                >
-                  <FileText className="w-4 h-4" />
-                  Justificatifs
-                </button>
-              )}
-              {stats.paid < stats.total && (
-                <button
-                  onClick={() => setShowPaymentModal(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium shadow-sm shadow-blue-200"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  Enregistrer un paiement
-                </button>
+
+              {showActionsDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+                  {stats.paid < stats.total && (
+                    <button
+                      onClick={() => {
+                        setShowPaymentModal(true);
+                        setShowActionsDropdown(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <CreditCard className="w-4 h-4 text-blue-600" />
+                      <span className="font-medium">Enregistrer un paiement</span>
+                    </button>
+                  )}
+                  {stats.paid > 0 && (
+                    <button
+                      onClick={() => {
+                        setShowProofsModal(true);
+                        setShowActionsDropdown(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <FileText className="w-4 h-4 text-emerald-600" />
+                      <span className="font-medium">Justificatifs</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      exportToExcel();
+                      setShowActionsDropdown(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <Download className="w-4 h-4 text-slate-500" />
+                    <span className="font-medium">Exporter Excel</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
