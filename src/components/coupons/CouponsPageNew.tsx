@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useCoupons, Coupon } from '../../hooks/coupons/useCoupons';
 import { useCouponFilters } from '../../hooks/coupons/useCouponFilters';
 import { TableView } from './views/TableView';
@@ -33,11 +34,46 @@ interface CouponsPageNewProps {
 }
 
 export function CouponsPageNew(_props: CouponsPageNewProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // View state
   const [showFilters, setShowFilters] = useState(false);
 
   // Filter state
   const filterState = useCouponFilters();
+
+  // Apply URL filters from dashboard alerts (deep linking)
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const tranche = searchParams.get('tranche');
+    const date = searchParams.get('date');
+
+    if (status || tranche || date) {
+      // Clear existing filters first
+      filterState.clearFilters();
+
+      // Apply status filter (e.g., 'en_retard', 'en_attente')
+      if (status) {
+        filterState.setStatut([status]);
+      }
+
+      // Apply tranche filter
+      if (tranche) {
+        filterState.setTranches([tranche]);
+      }
+
+      // Apply date filter
+      if (date) {
+        filterState.setDateRange(date, date);
+      }
+
+      // Show filters panel
+      setShowFilters(true);
+
+      // Clear URL params
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Data fetching
   const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats } =
