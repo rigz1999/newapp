@@ -604,12 +604,12 @@ export function EcheanceDetailPage() {
       </div>
 
       {/* Payment Modal */}
-      {showPaymentModal && (
+      {showPaymentModal && projetInfo && trancheInfo && (
         <QuickPaymentModal
-          preselectedProjectId={projectId}
-          preselectedProjectName={projetInfo?.projet}
-          preselectedTrancheId={trancheId}
-          preselectedTrancheName={trancheInfo?.tranche_name}
+          preselectedProjectId={projetInfo.id}
+          preselectedProjectName={projetInfo.projet}
+          preselectedTrancheId={trancheInfo.id}
+          preselectedTrancheName={trancheInfo.tranche_name}
           preselectedEcheanceDate={date}
           onClose={() => setShowPaymentModal(false)}
           onSuccess={handlePaymentSuccess}
