@@ -112,7 +112,9 @@ export function TableView({
 
     return Object.entries(grouped)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, coupons]) => {
+      .map(([_key, coupons]) => {
+        // Extract actual date from first coupon (key is date|tranche_id)
+        const date = coupons[0].date_echeance;
         const paidCount = coupons.filter(c => c.statut_calculated === 'paye').length;
         const lateCount = coupons.filter(c => c.statut_calculated === 'en_retard').length;
         const totalCount = coupons.length;
