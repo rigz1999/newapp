@@ -755,7 +755,13 @@ export function EcheancierPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate(`/projets/${projectId}`)}
+                onClick={() => {
+                  if (projectId) {
+                    navigate(`/projets/${projectId}`);
+                  } else {
+                    navigate('/projets');
+                  }
+                }}
                 className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                 title="Retour au projet"
               >

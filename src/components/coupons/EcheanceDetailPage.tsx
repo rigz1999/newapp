@@ -300,7 +300,11 @@ export function EcheanceDetailPage() {
 
   // Handle back navigation - go to project's échéancier complet
   const handleBack = () => {
-    navigate(`/projets/${projectId}/echeancier`);
+    if (projectId) {
+      navigate(`/projets/${projectId}/echeancier`);
+    } else {
+      navigate('/projets');
+    }
   };
 
   if (loading) {
