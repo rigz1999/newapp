@@ -8,7 +8,7 @@ import { formatCurrency, formatDate } from '../../utils/formatters';
 import { Spinner } from '../common/Spinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 import { ProjectActualites } from '../projects/ProjectActualites';
-import toast from 'react-hot-toast';
+import { toast } from '../../utils/toast';
 
 interface ProjectDetails {
   id: string;
