@@ -197,7 +197,7 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
   }, [allCoupons, filters]);
 
   // Total count is number of coupons (for pagination math)
-  const totalCount = filteredCoupons.length;
+  const totalCount = useMemo(() => filteredCoupons.length, [filteredCoupons]);
 
   // Apply pagination CLIENT-SIDE
   const paginatedCoupons = useMemo(() => {
