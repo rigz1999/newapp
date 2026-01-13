@@ -27,6 +27,11 @@ export interface Coupon {
   montant_net: number;
   statut_calculated: string;
   jours_restants: number;
+
+  // Final reimbursement fields
+  montant_investi: number;
+  date_echeance_finale: string;
+  is_last_echeance: boolean;
 }
 
 export interface CouponsFilters {
@@ -104,7 +109,7 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
 
       setAllCoupons(data || []);
 
-      // Calculate stats from all data
+      // Calculate stats from all data (including nominal reimbursement for final payments)
       const enAttenteData = (data || []).filter(c => c.statut_calculated === 'en_attente');
       const payesData = (data || []).filter(c => c.statut_calculated === 'paye');
       const enRetardData = (data || []).filter(c => c.statut_calculated === 'en_retard');
@@ -113,18 +118,28 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
       const uniquePayesDates = new Set(payesData.map(c => c.date_echeance));
       const uniqueEnRetardDates = new Set(enRetardData.map(c => c.date_echeance));
 
+      // Helper to calculate total including nominal reimbursement for last echeance
+      const calculateTotal = (coupons: typeof data) =>
+        coupons.reduce((sum, c) => {
+          const nominal = c.is_last_echeance ? (c.montant_investi || 0) : 0;
+          return sum + c.montant_net + nominal;
+        }, 0);
+
       setStats({
         enAttente: {
           count: uniqueEnAttenteDates.size,
-          total: enAttenteData.reduce((sum, c) => sum + c.montant_net, 0),
+          total: calculateTotal(enAttenteData),
         },
         payes: {
           count: uniquePayesDates.size,
-          total: payesData.reduce((sum, c) => sum + (c.montant_paye || c.montant_net), 0),
+          total: payesData.reduce((sum, c) => {
+            const nominal = c.is_last_echeance ? (c.montant_investi || 0) : 0;
+            return sum + (c.montant_paye || (c.montant_net + nominal));
+          }, 0),
         },
         enRetard: {
           count: uniqueEnRetardDates.size,
-          total: enRetardData.reduce((sum, c) => sum + c.montant_net, 0),
+          total: calculateTotal(enRetardData),
         },
       });
     } catch (err) {

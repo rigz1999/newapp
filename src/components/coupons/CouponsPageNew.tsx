@@ -431,6 +431,10 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         CGP: c.investisseur_cgp || '',
         'Montant Brut': c.montant_brut,
         'Montant Net': c.montant_net,
+        'Remboursement Nominal': c.is_last_echeance ? c.montant_investi : 0,
+        'Total à Payer': c.is_last_echeance
+          ? c.montant_net + c.montant_investi
+          : c.montant_net,
         Statut: c.statut_calculated,
         'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
       }));
@@ -818,6 +822,29 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                   </p>
                 </div>
               </div>
+              {selectedCoupon.is_last_echeance && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded">
+                      Échéance finale
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-purple-600">Remboursement Nominal</p>
+                      <p className="text-sm font-bold text-purple-900">
+                        {formatCurrency(selectedCoupon.montant_investi)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-purple-600">Total à Payer</p>
+                      <p className="text-sm font-bold text-purple-900">
+                        {formatCurrency(selectedCoupon.montant_net + selectedCoupon.montant_investi)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {selectedCoupon.statut_calculated === 'paye' && selectedCoupon.date_paiement && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-sm font-medium text-green-900">

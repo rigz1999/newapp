@@ -32,12 +32,14 @@ interface GroupedData {
   coupons: Coupon[];
   totalBrut: number;
   totalNet: number;
+  totalNominal: number;
   paidCount: number;
   totalCount: number;
   status: 'all_paid' | 'partial' | 'all_late' | 'all_pending' | 'mixed';
   hasUnpaid: boolean;
   projectName: string;
   trancheName: string;
+  isLastEcheance: boolean;
 }
 
 export function TableView({
@@ -127,17 +129,25 @@ export function TableView({
           status = 'all_pending';
         }
 
+        // Calculate nominal reimbursement for last echeance
+        const isLastEcheance = coupons.some(c => c.is_last_echeance);
+        const totalNominal = isLastEcheance
+          ? coupons.filter(c => c.is_last_echeance).reduce((sum, c) => sum + c.montant_investi, 0)
+          : 0;
+
         return {
           date,
           coupons,
           totalBrut: coupons.reduce((sum, c) => sum + c.montant_brut, 0),
           totalNet: coupons.reduce((sum, c) => sum + c.montant_net, 0),
+          totalNominal,
           paidCount,
           totalCount,
           status,
           hasUnpaid: paidCount < totalCount,
           projectName: coupons[0].projet_nom,
           trancheName: coupons[0].tranche_nom,
+          isLastEcheance,
         };
       });
   }, [coupons]);
@@ -305,12 +315,25 @@ export function TableView({
                     </td>
                     <td className="px-4 py-4 text-right align-middle">
                       <div className="flex flex-col items-end gap-1">
-                        <div className="text-base font-bold text-finixar-green leading-tight">
-                          {formatCurrency(group.totalNet)}
+                        <div className="flex items-center gap-2">
+                          {group.isLastEcheance && (
+                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded">
+                              + Nominal
+                            </span>
+                          )}
+                          <div className="text-base font-bold text-finixar-green leading-tight">
+                            {formatCurrency(group.totalNet + group.totalNominal)}
+                          </div>
                         </div>
-                        <div className="text-xs text-slate-600 leading-tight">
-                          Brut: {formatCurrency(group.totalBrut)}
-                        </div>
+                        {group.isLastEcheance ? (
+                          <div className="text-xs text-slate-600 leading-tight">
+                            Coupon: {formatCurrency(group.totalNet)} + Nominal: {formatCurrency(group.totalNominal)}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-600 leading-tight">
+                            Brut: {formatCurrency(group.totalBrut)}
+                          </div>
+                        )}
                         <div className="text-xs text-slate-500 font-medium leading-tight">
                           {group.totalCount} coupon{group.totalCount > 1 ? 's' : ''}
                         </div>
@@ -392,18 +415,29 @@ export function TableView({
                           <td className="px-4 py-3 text-right align-middle">
                             <div className="flex flex-col items-end gap-1">
                               <div className="flex items-center gap-2">
+                                {coupon.is_last_echeance && (
+                                  <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded">
+                                    + Nominal
+                                  </span>
+                                )}
                                 <TaxInfoTooltip
                                   couponBrut={coupon.montant_brut}
                                   couponNet={coupon.montant_net}
                                   investorType={coupon.investisseur_type || 'physique'}
                                 />
                                 <div className="text-sm font-bold text-finixar-green leading-tight">
-                                  {formatCurrency(coupon.montant_net)}
+                                  {formatCurrency(coupon.montant_net + (coupon.is_last_echeance ? coupon.montant_investi : 0))}
                                 </div>
                               </div>
-                              <div className="text-xs text-slate-500 leading-tight">
-                                Brut: {formatCurrency(coupon.montant_brut)}
-                              </div>
+                              {coupon.is_last_echeance ? (
+                                <div className="text-xs text-slate-500 leading-tight">
+                                  Coupon: {formatCurrency(coupon.montant_net)} + Nominal: {formatCurrency(coupon.montant_investi)}
+                                </div>
+                              ) : (
+                                <div className="text-xs text-slate-500 leading-tight">
+                                  Brut: {formatCurrency(coupon.montant_brut)}
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td className="px-4 py-3 align-middle">
