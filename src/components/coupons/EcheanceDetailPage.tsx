@@ -303,10 +303,9 @@ export function EcheanceDetailPage() {
     const returnTo = searchParams.get('returnTo');
     if (returnTo === 'dashboard') {
       navigate('/dashboard');
-    } else if (returnTo === 'coupons') {
-      navigate('/coupons');
     } else {
-      navigate(-1);
+      // Default to coupons page (safer than navigate(-1) which can fail)
+      navigate('/coupons');
     }
   };
 
