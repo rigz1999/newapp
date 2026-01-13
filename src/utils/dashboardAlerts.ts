@@ -37,17 +37,21 @@ export interface UpcomingCoupon {
   souscription?: {
     tranche_id: string;
     tranche?: {
+      short_id: string;
       tranche_name: string;
       projet_id: string;
       projet?: {
+        short_id: string;
         projet: string;
       };
     };
   };
   tranche?: {
+    short_id: string;
     tranche_name: string;
     projet_id: string;
     projet?: {
+      short_id: string;
       projet: string;
     };
   };
@@ -55,9 +59,11 @@ export interface UpcomingCoupon {
 
 export interface AlertTargetFilters {
   status?: string;          // e.g., 'en_retard', 'en_attente' (displayed as 'prévu')
-  trancheId?: string;       // Specific tranche ID
+  trancheId?: string;       // Specific tranche ID (UUID - for DB lookups)
+  trancheShortId?: string;  // Specific tranche short ID (for URLs)
   trancheName?: string;     // Tranche name for display
-  projectId?: string;       // Specific project ID
+  projectId?: string;       // Specific project ID (UUID - for DB lookups)
+  projectShortId?: string;  // Specific project short ID (for URLs)
   projectName?: string;     // Project name for display
   ribStatus?: string;       // e.g., 'without-rib'
   dateEcheance?: string;    // Specific échéance date
@@ -190,7 +196,9 @@ export function generateAlerts(
     // Grouper par projet + tranche et compter les dates uniques
     const byProjectTranche = urgentCoupons.reduce((acc, c) => {
       const trancheName = c.tranche?.tranche_name || c.souscription?.tranche?.tranche_name || 'Inconnu';
+      const trancheShortId = c.tranche?.short_id || c.souscription?.tranche?.short_id || '';
       const projetName = c.tranche?.projet?.projet || c.souscription?.tranche?.projet?.projet || '';
+      const projectShortId = c.tranche?.projet?.short_id || c.souscription?.tranche?.projet?.short_id || '';
       const trancheId = c.tranche_id || c.souscription?.tranche_id || '';
       const projectId = c.tranche?.projet_id || c.souscription?.tranche?.projet_id || '';
       const dateStr = c.date_echeance || c.prochaine_date_coupon || '';
@@ -205,14 +213,16 @@ export function generateAlerts(
           projetName,
           trancheName,
           trancheId,
+          trancheShortId,
           projectId,
+          projectShortId,
         };
       }
       if (dateStr) {
         acc[key].dates.add(dateStr);
       }
       return acc;
-    }, {} as Record<string, { dates: Set<string>; firstDate: string; projetName: string; trancheName: string; trancheId: string; projectId: string }>);
+    }, {} as Record<string, { dates: Set<string>; firstDate: string; projetName: string; trancheName: string; trancheId: string; trancheShortId: string; projectId: string; projectShortId: string }>);
 
     Object.entries(byProjectTranche).forEach(([key, data]) => {
       // Only create alert if there are unique dates for this project/tranche
@@ -228,8 +238,10 @@ export function generateAlerts(
           count: data.dates.size,
           targetFilters: {
             trancheId: data.trancheId,
+            trancheShortId: data.trancheShortId,
             trancheName: data.trancheName,
             projectId: data.projectId,
+            projectShortId: data.projectShortId,
             projectName: data.projetName,
             dateEcheance: data.firstDate,
             status: 'en_attente',

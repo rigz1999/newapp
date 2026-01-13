@@ -24,6 +24,7 @@ import { QuickPaymentModal } from './QuickPaymentModal';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { AlertModal } from '../common/Modals';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { isValidShortId } from '../../utils/shortId';
 
 interface Echeance {
   id: string;
@@ -103,6 +104,8 @@ export function EcheancierPage() {
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [projectName, setProjectName] = useState<string>('');
+  // Store resolved project info (UUID and short_id) for proper lookups and navigation
+  const [projectInfo, setProjectInfo] = useState<{ id: string; short_id: string } | null>(null);
   const [preselectedTrancheId, setPreselectedTrancheId] = useState<string | undefined>(undefined);
   const [preselectedTrancheName, setPreselectedTrancheName] = useState<string | undefined>(undefined);
   const [preselectedEcheanceDate, setPreselectedEcheanceDate] = useState<string | undefined>(
@@ -149,21 +152,33 @@ export function EcheancierPage() {
   useEffect(() => {
     if (projectId) {
       fetchProjectName();
-      fetchEcheances();
     }
   }, [projectId]);
+
+  // Fetch écheances once we have resolved the project info
+  useEffect(() => {
+    if (projectId && projectInfo) {
+      fetchEcheances();
+    }
+  }, [projectId, projectInfo]);
 
   const fetchProjectName = async () => {
     if (!projectId) return;
 
-    const { data, error } = await supabase
+    // Determine if using short_id or UUID format
+    const isShortId = isValidShortId(projectId, 'projet');
+
+    const query = supabase
       .from('projets')
-      .select('projet')
-      .eq('id', projectId)
-      .single();
+      .select('id, short_id, projet');
+
+    const { data, error } = isShortId
+      ? await query.eq('short_id', projectId).single()
+      : await query.eq('id', projectId).single();
 
     if (!error && data) {
       setProjectName(data.projet);
+      setProjectInfo({ id: data.id, short_id: data.short_id });
     }
   };
 
@@ -183,6 +198,10 @@ export function EcheancierPage() {
 
     setLoading(true);
     try {
+      // Use resolved UUID if available, otherwise use the URL param
+      // This handles both short_id and UUID formats in URLs
+      const resolvedProjectId = projectInfo?.id || projectId;
+
       // Use INNER JOIN to automatically exclude orphaned écheances at database level
       // This prevents écheances with invalid subscription_ids from being fetched
       const { data: echeancesData, error: echError } = await supabase
@@ -199,7 +218,7 @@ export function EcheancierPage() {
             tranche:tranches!inner(id, tranche_name, date_echeance_finale, projet_id)
           )
         `)
-        .eq('souscription.tranche.projet_id', projectId)
+        .eq('souscription.tranche.projet_id', resolvedProjectId)
         .order('date_echeance', { ascending: true });
 
       if (echError) {
@@ -756,7 +775,10 @@ export function EcheancierPage() {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => {
-                  if (projectId) {
+                  // Use short_id for cleaner URLs when available
+                  if (projectInfo?.short_id) {
+                    navigate(`/projets/${projectInfo.short_id}`);
+                  } else if (projectId) {
                     navigate(`/projets/${projectId}`);
                   } else {
                     navigate('/projets');
@@ -1270,7 +1292,7 @@ export function EcheancierPage() {
       {/* Quick Payment Modal */}
       {showPaymentWizard && (
         <QuickPaymentModal
-          preselectedProjectId={projectId}
+          preselectedProjectId={projectInfo?.id || projectId}
           preselectedProjectName={projectName}
           preselectedTrancheId={preselectedTrancheId}
           preselectedTrancheName={preselectedTrancheName}
