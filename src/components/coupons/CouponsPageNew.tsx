@@ -77,7 +77,6 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   // Data fetching
   const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats, filterOptions } =
     useCoupons({
-      pageSize: 50,
       filters: filterState.filters,
     });
 
