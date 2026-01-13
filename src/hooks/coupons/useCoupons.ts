@@ -77,7 +77,7 @@ export interface UseCouponsReturn {
 
 export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
   const {
-    pageSize = 50,
+    pageSize = 1000, // Increased to show all écheances (was 50, cutting off data)
     filters = {},
     sortBy = 'date_echeance',
     sortOrder = 'asc',
