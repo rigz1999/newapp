@@ -148,6 +148,43 @@ export function Coupons() {
     }
   }, [searchParams, coupons]);
 
+  // Apply URL filters from dashboard alerts (deep linking)
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const tranche = searchParams.get('tranche');
+    const date = searchParams.get('date');
+
+    // Only apply filters if we have at least one filter param and coupons are loaded
+    if ((status || tranche || date) && coupons.length > 0) {
+      // Clear existing filters first
+      advancedFilters.clearAllFilters();
+
+      // Apply status filter
+      if (status) {
+        advancedFilters.addMultiSelectFilter('statut', status);
+      }
+
+      // Apply tranche filter
+      if (tranche) {
+        advancedFilters.addMultiSelectFilter('tranche', tranche);
+      }
+
+      // Apply date filter - set as date range for specific date
+      if (date) {
+        advancedFilters.setDateRange(date, date);
+      }
+
+      // Show advanced filters panel when filters are applied from URL
+      setShowAdvancedFilters(true);
+
+      // Clean up URL params after applying filters
+      searchParams.delete('status');
+      searchParams.delete('tranche');
+      searchParams.delete('date');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, coupons.length]);
+
   useEffect(() => {
     if (user) {
       fetchReminderSettings();

@@ -17,6 +17,7 @@ import { logger } from '../../utils/logger';
 import {
   generateAlerts,
   type Alert,
+  type AlertTargetFilters,
   type Payment,
   type UpcomingCoupon,
 } from '../../utils/dashboardAlerts';
@@ -77,22 +78,41 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
     }
   };
 
-  // Fonction pour gérer les clics sur les alertes
-  const handleAlertClick = useCallback((alertId: string): void => {
-    if (alertId === 'no-alerts') {
+  // Fonction pour gérer les clics sur les alertes avec deep linking
+  const handleAlertClick = useCallback((alert: Alert): void => {
+    if (alert.id === 'no-alerts') {
       return;
     } // Ne rien faire si message positif
 
-    if (alertId === 'overdue-coupons') {
-      navigate('/coupons');
-    } else if (alertId === 'late-payments') {
-      navigate('/paiements');
-    } else if (alertId === 'upcoming-week') {
-      navigate('/coupons');
-    } else if (alertId === 'missing-ribs') {
-      navigate('/investisseurs');
-    } else if (alertId.startsWith('deadline-')) {
-      navigate('/coupons');
+    const filters = alert.targetFilters;
+
+    if (alert.id === 'overdue-coupons') {
+      // Deep link to coupons page with status filter
+      const params = new URLSearchParams();
+      if (filters?.status) params.set('status', filters.status);
+      navigate(`/coupons${params.toString() ? `?${params.toString()}` : ''}`);
+    } else if (alert.id === 'late-payments') {
+      // Deep link to payments page with status filter
+      const params = new URLSearchParams();
+      if (filters?.status) params.set('status', filters.status);
+      navigate(`/paiements${params.toString() ? `?${params.toString()}` : ''}`);
+    } else if (alert.id === 'upcoming-week') {
+      // Deep link to coupons page with status filter
+      const params = new URLSearchParams();
+      if (filters?.status) params.set('status', filters.status);
+      navigate(`/coupons${params.toString() ? `?${params.toString()}` : ''}`);
+    } else if (alert.id === 'missing-ribs') {
+      // Deep link to investors page with RIB status filter
+      const params = new URLSearchParams();
+      if (filters?.ribStatus) params.set('ribStatus', filters.ribStatus);
+      navigate(`/investisseurs${params.toString() ? `?${params.toString()}` : ''}`);
+    } else if (alert.id.startsWith('deadline-')) {
+      // Deep link to coupons page with tranche/project/date filters
+      const params = new URLSearchParams();
+      if (filters?.trancheName) params.set('tranche', filters.trancheName);
+      if (filters?.dateEcheance) params.set('date', filters.dateEcheance);
+      if (filters?.status) params.set('status', filters.status);
+      navigate(`/coupons${params.toString() ? `?${params.toString()}` : ''}`);
     }
   }, [navigate]);
 

@@ -53,11 +53,22 @@ export interface UpcomingCoupon {
   };
 }
 
+export interface AlertTargetFilters {
+  status?: string;          // e.g., 'en_retard', 'en_attente'
+  trancheId?: string;       // Specific tranche ID
+  trancheName?: string;     // Tranche name for display
+  projectId?: string;       // Specific project ID
+  projectName?: string;     // Project name for display
+  ribStatus?: string;       // e.g., 'without-rib'
+  dateEcheance?: string;    // Specific échéance date
+}
+
 export interface Alert {
   id: string;
   type: 'deadline' | 'late_payment' | 'upcoming_coupons';
   message: string;
   count?: number;
+  targetFilters?: AlertTargetFilters;
 }
 
 /**
@@ -109,6 +120,9 @@ export function generateAlerts(
       type: 'late_payment',
       message: `${uniqueOverdueDates.size} échéance${uniqueOverdueDates.size > 1 ? 's' : ''} en retard (${formatCurrency(totalOverdue)})`,
       count: uniqueOverdueDates.size,
+      targetFilters: {
+        status: 'en_retard',
+      },
     });
   }
 
@@ -126,6 +140,9 @@ export function generateAlerts(
       type: 'late_payment',
       message: `${latePayments.length} paiement${latePayments.length > 1 ? 's' : ''} en retard (${formatCurrency(totalLate)})`,
       count: latePayments.length,
+      targetFilters: {
+        status: 'en_retard',
+      },
     });
   }
 
@@ -153,6 +170,9 @@ export function generateAlerts(
       type: 'upcoming_coupons',
       message: `${uniqueUpcomingDates.size} coupon${uniqueUpcomingDates.size > 1 ? 's' : ''} à payer cette semaine (${formatCurrency(totalUpcomingAmount)})`,
       count: uniqueUpcomingDates.size,
+      targetFilters: {
+        status: 'en_attente',
+      },
     });
   }
 
@@ -171,6 +191,8 @@ export function generateAlerts(
     const byProjectTranche = urgentCoupons.reduce((acc, c) => {
       const trancheName = c.tranche?.tranche_name || c.souscription?.tranche?.tranche_name || 'Inconnu';
       const projetName = c.tranche?.projet?.projet || c.souscription?.tranche?.projet?.projet || '';
+      const trancheId = c.tranche_id || c.souscription?.tranche_id || '';
+      const projectId = c.tranche?.projet_id || c.souscription?.tranche?.projet_id || '';
       const dateStr = c.date_echeance || c.prochaine_date_coupon || '';
 
       // Clé unique : projet|tranche
@@ -182,13 +204,15 @@ export function generateAlerts(
           firstDate: dateStr,
           projetName,
           trancheName,
+          trancheId,
+          projectId,
         };
       }
       if (dateStr) {
         acc[key].dates.add(dateStr);
       }
       return acc;
-    }, {} as Record<string, { dates: Set<string>; firstDate: string; projetName: string; trancheName: string }>);
+    }, {} as Record<string, { dates: Set<string>; firstDate: string; projetName: string; trancheName: string; trancheId: string; projectId: string }>);
 
     Object.entries(byProjectTranche).forEach(([key, data]) => {
       // Only create alert if there are unique dates for this project/tranche
@@ -202,6 +226,14 @@ export function generateAlerts(
           type: 'deadline',
           message,
           count: data.dates.size,
+          targetFilters: {
+            trancheId: data.trancheId,
+            trancheName: data.trancheName,
+            projectId: data.projectId,
+            projectName: data.projetName,
+            dateEcheance: data.firstDate,
+            status: 'en_attente',
+          },
         });
       }
     });
@@ -214,6 +246,9 @@ export function generateAlerts(
       type: 'deadline',
       message: `${ribManquantsCount} investisseur${ribManquantsCount > 1 ? 's n\'ont' : ' n\'a'} pas de RIB enregistré`,
       count: ribManquantsCount,
+      targetFilters: {
+        ribStatus: 'without-rib',
+      },
     });
   }
 
