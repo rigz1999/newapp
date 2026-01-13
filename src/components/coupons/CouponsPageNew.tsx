@@ -75,7 +75,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Data fetching
-  const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats } =
+  const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats, filterOptions } =
     useCoupons({
       pageSize: 50,
       filters: filterState.filters,
@@ -466,22 +466,10 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
     }
   };
 
-  // Extract unique values for filters
-  const uniqueProjets = useMemo(
-    () =>
-      Array.from(new Set(coupons.map(c => c.projet_nom)))
-        .sort()
-        .map(p => ({ value: p, label: p })),
-    [coupons]
-  );
-
-  const uniqueTranches = useMemo(
-    () =>
-      Array.from(new Set(coupons.map(c => c.tranche_nom)))
-        .sort()
-        .map(t => ({ value: t, label: t })),
-    [coupons]
-  );
+  // Use filter options from hook (fetched separately, not affected by current filters)
+  const uniqueProjets = filterOptions.projets;
+  const uniqueTranches = filterOptions.tranches;
+  const uniqueCGPs = filterOptions.cgps;
 
   const uniqueStatuts = useMemo(
     () => [
@@ -490,14 +478,6 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       { value: 'en_retard', label: 'En retard' },
     ],
     []
-  );
-
-  const uniqueCGPs = useMemo(
-    () =>
-      Array.from(new Set(coupons.map(c => c.investisseur_cgp).filter(Boolean)))
-        .sort()
-        .map(cgp => ({ value: cgp!, label: cgp! })),
-    [coupons]
   );
 
   if (loading) {

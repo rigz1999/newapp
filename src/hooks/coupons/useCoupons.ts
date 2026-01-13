@@ -46,6 +46,12 @@ export interface UseCouponsOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
+export interface FilterOptions {
+  projets: { value: string; label: string }[];
+  tranches: { value: string; label: string }[];
+  cgps: { value: string; label: string }[];
+}
+
 export interface UseCouponsReturn {
   coupons: Coupon[];
   loading: boolean;
@@ -61,6 +67,7 @@ export interface UseCouponsReturn {
     payes: { count: number; total: number };
     enRetard: { count: number; total: number };
   };
+  filterOptions: FilterOptions;
 }
 
 export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
@@ -81,6 +88,38 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     payes: { count: 0, total: 0 },
     enRetard: { count: 0, total: 0 },
   });
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    projets: [],
+    tranches: [],
+    cgps: [],
+  });
+
+  // Fetch all available filter options (unfiltered)
+  const fetchFilterOptions = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('coupons_optimized')
+        .select('projet_nom, tranche_nom, investisseur_cgp');
+
+      if (data) {
+        const projets = Array.from(new Set(data.map(c => c.projet_nom).filter(Boolean)))
+          .sort()
+          .map(p => ({ value: p, label: p }));
+
+        const tranches = Array.from(new Set(data.map(c => c.tranche_nom).filter(Boolean)))
+          .sort()
+          .map(t => ({ value: t, label: t }));
+
+        const cgps = Array.from(new Set(data.map(c => c.investisseur_cgp).filter(Boolean)))
+          .sort()
+          .map(cgp => ({ value: cgp!, label: cgp! }));
+
+        setFilterOptions({ projets, tranches, cgps });
+      }
+    } catch (err) {
+      console.error('Error fetching filter options:', err);
+    }
+  }, []);
 
   const fetchCoupons = useCallback(async () => {
     setLoading(true);
@@ -246,6 +285,11 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     fetchCoupons();
   }, [fetchCoupons]);
 
+  // Fetch filter options once on mount
+  useEffect(() => {
+    fetchFilterOptions();
+  }, [fetchFilterOptions]);
+
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return {
@@ -259,5 +303,6 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     setPage,
     refresh,
     stats,
+    filterOptions,
   };
 }
