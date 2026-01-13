@@ -889,7 +889,7 @@ export function EcheancierPage() {
         </div>
 
         {/* Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible">
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
