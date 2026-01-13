@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle, Filter, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
 import { ConfirmModal, AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
@@ -105,7 +105,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedInvestor, setSelectedInvestor] = useState<InvestorWithStats | null>(null);
   const [editFormData, setEditFormData] = useState<Investor | null>(null);
-  
+
+  // Breadcrumb navigation support
+  const returnTo = searchParams.get('returnTo');
+  const returnLabel = searchParams.get('returnLabel');
+
   const [showRibModal, setShowRibModal] = useState(false);
   const [ribFile, setRibFile] = useState<File | null>(null);
   const [ribPreview, setRibPreview] = useState<string | null>(null);
@@ -166,20 +170,33 @@ function Investors({ organization: _organization }: InvestorsProps) {
     };
   }, []);
 
-  // Open details modal if ID is in URL params (from search)
+  // Open details/edit modal if ID is in URL params (from search or navigation)
   useEffect(() => {
     const investorId = searchParams.get('id');
+    const shouldEdit = searchParams.get('edit') === 'true';
+
     if (investorId && investors.length > 0) {
       const investor = investors.find(inv => inv.id === investorId);
       if (investor) {
         setSelectedInvestor(investor);
-        setShowDetailsModal(true);
-        // Remove the ID from URL to avoid reopening on refresh
+
+        if (shouldEdit) {
+          // Open edit modal
+          setEditFormData(investor);
+          setShowEditModal(true);
+        } else {
+          // Open details modal
+          setShowDetailsModal(true);
+        }
+
+        // Remove the ID and edit params from URL to avoid reopening on refresh
+        // Keep returnTo param for breadcrumb navigation
         searchParams.delete('id');
+        searchParams.delete('edit');
         setSearchParams(searchParams, { replace: true });
       }
     }
-  }, [searchParams, investors]);
+  }, [searchParams, investors, setSearchParams]);
 
   // Clear selections when filters change
   useEffect(() => {
@@ -754,6 +771,19 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
+      {/* Breadcrumb Navigation */}
+      {returnTo && (
+        <div className="mb-4">
+          <Link
+            to={returnTo}
+            className="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 transition-colors w-fit"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Retour à {returnLabel || 'la page précédente'}</span>
+          </Link>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-100 rounded-xl">
