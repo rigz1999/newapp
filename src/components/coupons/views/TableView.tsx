@@ -97,21 +97,24 @@ export function TableView({
     return { text: 'Prévu', className: 'bg-blue-100 text-blue-800 border-blue-200' };
   };
 
-  // Group by date with aggregated status
+  // Group by date + project + tranche (not just date!)
   const groupedData = useMemo<GroupedData[]>(() => {
-    const grouped: { [date: string]: Coupon[] } = {};
+    const grouped: { [key: string]: Coupon[] } = {};
 
     coupons.forEach(coupon => {
-      const date = coupon.date_echeance;
-      if (!grouped[date]) {
-        grouped[date] = [];
+      // Use date + tranche_id as key to avoid mixing different projects/tranches
+      const key = `${coupon.date_echeance}|${coupon.tranche_id}`;
+      if (!grouped[key]) {
+        grouped[key] = [];
       }
-      grouped[date].push(coupon);
+      grouped[key].push(coupon);
     });
 
     return Object.entries(grouped)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, coupons]) => {
+      .map(([_key, coupons]) => {
+        // Extract actual date from first coupon (key is date|tranche_id)
+        const date = coupons[0].date_echeance;
         const paidCount = coupons.filter(c => c.statut_calculated === 'paye').length;
         const lateCount = coupons.filter(c => c.statut_calculated === 'en_retard').length;
         const totalCount = coupons.length;
