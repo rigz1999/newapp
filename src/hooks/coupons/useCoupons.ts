@@ -77,7 +77,7 @@ export interface UseCouponsReturn {
 
 export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
   const {
-    pageSize = 1000, // Increased to show all écheances (was 50, cutting off data)
+    pageSize = 200, // ~20-40 grouped écheances per page
     filters = {},
     sortBy = 'date_echeance',
     sortOrder = 'asc',
@@ -196,10 +196,10 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     return result;
   }, [allCoupons, filters]);
 
-  // Calculate total count based on unique dates in filtered results
+  // Calculate total count based on unique date+tranche groups (matching TableView grouping)
   const totalCount = useMemo(() => {
-    const uniqueDates = new Set(filteredCoupons.map(c => c.date_echeance));
-    return uniqueDates.size;
+    const uniqueGroups = new Set(filteredCoupons.map(c => `${c.date_echeance}|${c.tranche_id}`));
+    return uniqueGroups.size;
   }, [filteredCoupons]);
 
   // Apply pagination CLIENT-SIDE
