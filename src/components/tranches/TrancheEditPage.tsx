@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { ArrowLeft, AlertCircle, Loader, Edit2, Lock, ExternalLink, RefreshCw, X } from 'lucide-react';
 import { logger } from '../../utils/logger';
@@ -624,16 +624,14 @@ export function TrancheEditPage(): JSX.Element {
                                 <td className="px-8 py-5 text-sm whitespace-nowrap">
                                   <div className="flex items-center gap-2">
                                     <Lock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                                    <button
-                                      onClick={() =>
-                                        fetchInvestorDetails(souscription.investisseur_id)
-                                      }
+                                    <Link
+                                      to={`/investisseurs?id=${souscription.investisseur_id}&edit=true&returnTo=${encodeURIComponent(`/tranches/${tranche.id}/edit`)}&returnLabel=${encodeURIComponent(trancheName)}`}
                                       className="font-medium text-slate-900 hover:text-blue-600 flex items-center gap-1.5 transition-colors group"
-                                      title="Voir les détails de l'investisseur"
+                                      title="Modifier l'investisseur"
                                     >
                                       <span>{souscription.investisseur_nom}</span>
                                       <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </button>
+                                    </Link>
                                   </div>
                                 </td>
                                 <td className="px-8 py-5 text-sm whitespace-nowrap">
