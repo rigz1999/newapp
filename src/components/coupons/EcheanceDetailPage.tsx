@@ -14,13 +14,11 @@ import {
   Download,
   Loader2,
   TrendingUp,
-  Upload,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { QuickPaymentModal } from './QuickPaymentModal';
 import { SimplePaymentModal } from './SimplePaymentModal';
-import { ViewProofsModal } from '../investors/ViewProofsModal';
-import { PaymentProofUpload } from '../payments/PaymentProofUpload';
+import { EcheanceProofsModal } from './EcheanceProofsModal';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { isValidShortId } from '../../utils/shortId';
 import * as ExcelJS from 'exceljs';
@@ -70,10 +68,8 @@ export function EcheanceDetailPage() {
 
   // Modals
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<Record<string, unknown> | null>(null);
-  const [paymentProofs, setPaymentProofs] = useState<Record<string, unknown>[]>([]);
+  const [showProofsModal, setShowProofsModal] = useState(false);
   const [singlePaymentEcheance, setSinglePaymentEcheance] = useState<EcheanceItem | null>(null);
-  const [uploadingProofPayment, setUploadingProofPayment] = useState<Record<string, unknown> | null>(null);
 
   // Stats
   const [stats, setStats] = useState({
@@ -254,54 +250,6 @@ export function EcheanceDetailPage() {
     fetchData();
   };
 
-  const handleViewPaymentProof = async (echeance: EcheanceItem) => {
-    if (!echeance.paiement_id) return;
-
-    // Fetch the payment with its related data
-    const { data: paymentData } = await supabase
-      .from('paiements')
-      .select(`
-        *,
-        tranche:tranches(tranche_name),
-        investisseur:investisseurs(nom_raison_sociale)
-      `)
-      .eq('id', echeance.paiement_id)
-      .single();
-
-    if (!paymentData) return;
-
-    // Fetch payment proofs
-    const { data: proofsData } = await supabase
-      .from('payment_proofs')
-      .select('*')
-      .eq('paiement_id', echeance.paiement_id)
-      .order('validated_at', { ascending: false });
-
-    setSelectedPaymentForProof(paymentData);
-    setPaymentProofs(proofsData || []);
-  };
-
-  const handleUploadProof = async (echeance: EcheanceItem) => {
-    if (!echeance.paiement_id) return;
-
-    // Fetch the payment with its related data for upload modal
-    const { data: paymentData } = await supabase
-      .from('paiements')
-      .select(`
-        id,
-        montant,
-        date_paiement,
-        tranche:tranches(tranche_name),
-        investisseur:investisseurs(nom_raison_sociale)
-      `)
-      .eq('id', echeance.paiement_id)
-      .single();
-
-    if (paymentData) {
-      setUploadingProofPayment(paymentData);
-    }
-  };
-
   const exportToExcel = async () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Échéance');
@@ -444,6 +392,15 @@ export function EcheanceDetailPage() {
                 <Download className="w-4 h-4" />
                 Exporter
               </button>
+              {stats.paid > 0 && (
+                <button
+                  onClick={() => setShowProofsModal(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all font-medium shadow-sm"
+                >
+                  <FileText className="w-4 h-4" />
+                  Justificatifs
+                </button>
+              )}
               {stats.paid < stats.total && (
                 <button
                   onClick={() => setShowPaymentModal(true)}
@@ -619,24 +576,7 @@ export function EcheanceDetailPage() {
                         </span>
                       </td>
                       <td className="px-6 py-5 text-right">
-                        {echeance.statut === 'paye' && echeance.paiement_id ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleViewPaymentProof(echeance)}
-                              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-200"
-                            >
-                              <FileText className="w-4 h-4" />
-                              Justificatif
-                            </button>
-                            <button
-                              onClick={() => handleUploadProof(echeance)}
-                              className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors border border-transparent hover:border-emerald-200"
-                              title="Ajouter un justificatif"
-                            >
-                              <Upload className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
+                        {echeance.statut !== 'paye' && (
                           <button
                             onClick={() => setSinglePaymentEcheance(echeance)}
                             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
@@ -677,20 +617,24 @@ export function EcheanceDetailPage() {
         />
       )}
 
-      {/* View Proofs Modal */}
-      {selectedPaymentForProof && (
-        <ViewProofsModal
-          payment={selectedPaymentForProof}
-          proofs={paymentProofs}
-          onClose={() => {
-            setSelectedPaymentForProof(null);
-            setPaymentProofs([]);
-          }}
-          onProofDeleted={() => {
-            fetchData();
-            setSelectedPaymentForProof(null);
-            setPaymentProofs([]);
-          }}
+      {/* Proofs Modal (View & Upload) */}
+      {showProofsModal && projetInfo && trancheInfo && date && (
+        <EcheanceProofsModal
+          echeanceDate={date}
+          trancheId={trancheInfo.id}
+          trancheName={trancheInfo.tranche_name}
+          projetName={projetInfo.projet}
+          paidEcheances={echeances
+            .filter(e => e.statut === 'paye' && e.paiement_id)
+            .map(e => ({
+              id: e.id,
+              paiement_id: e.paiement_id!,
+              investisseur_nom: e.investisseur_nom,
+              investisseur_id: e.investisseur_id,
+              montant_coupon: e.montant_coupon,
+            }))}
+          onClose={() => setShowProofsModal(false)}
+          onSuccess={() => fetchData()}
         />
       )}
 
@@ -705,24 +649,6 @@ export function EcheanceDetailPage() {
           onClose={() => setSinglePaymentEcheance(null)}
           onSuccess={() => {
             setSinglePaymentEcheance(null);
-            fetchData();
-          }}
-        />
-      )}
-
-      {/* Upload Proof Modal */}
-      {uploadingProofPayment && (
-        <PaymentProofUpload
-          payment={uploadingProofPayment as {
-            id: string;
-            montant: number;
-            date_paiement: string;
-            tranche: { tranche_name: string };
-            investisseur: { nom_raison_sociale: string } | null;
-          }}
-          onClose={() => setUploadingProofPayment(null)}
-          onSuccess={() => {
-            setUploadingProofPayment(null);
             fetchData();
           }}
         />
