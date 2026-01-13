@@ -107,12 +107,17 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       if (filters?.ribStatus) params.set('ribStatus', filters.ribStatus);
       navigate(`/investisseurs${params.toString() ? `?${params.toString()}` : ''}`);
     } else if (alert.id.startsWith('deadline-')) {
-      // Deep link to coupons page with tranche/project/date filters
-      const params = new URLSearchParams();
-      if (filters?.trancheName) params.set('tranche', filters.trancheName);
-      if (filters?.dateEcheance) params.set('date', filters.dateEcheance);
-      if (filters?.status) params.set('status', filters.status);
-      navigate(`/coupons${params.toString() ? `?${params.toString()}` : ''}`);
+      // Navigate to EcheanceDetailPage if we have all required IDs
+      if (filters?.projectId && filters?.trancheId && filters?.dateEcheance) {
+        navigate(`/echeance/${filters.projectId}/${filters.trancheId}/${filters.dateEcheance}?returnTo=dashboard`);
+      } else {
+        // Fallback to coupons page with filters
+        const params = new URLSearchParams();
+        if (filters?.trancheName) params.set('tranche', filters.trancheName);
+        if (filters?.dateEcheance) params.set('date', filters.dateEcheance);
+        if (filters?.status) params.set('status', filters.status);
+        navigate(`/coupons${params.toString() ? `?${params.toString()}` : ''}`);
+      }
     }
   }, [navigate]);
 

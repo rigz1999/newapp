@@ -156,6 +156,24 @@ function Investors({ organization: _organization }: InvestorsProps) {
   const [selectedInvestorIds, setSelectedInvestorIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
+  // Apply URL filters from dashboard alerts (deep linking) - runs ONCE on mount
+  useEffect(() => {
+    const ribStatus = searchParams.get('ribStatus');
+
+    if (ribStatus) {
+      // Apply filters immediately (filter state can be set before data loads)
+      advancedFilters.clearAllFilters();
+      advancedFilters.addMultiSelectFilter('ribStatus', ribStatus);
+      setShowAdvancedFilters(true);
+
+      // Clear URL params (keep returnTo for breadcrumb)
+      const newParams = new URLSearchParams();
+      if (searchParams.get('returnTo')) newParams.set('returnTo', searchParams.get('returnTo')!);
+      if (searchParams.get('returnLabel')) newParams.set('returnLabel', searchParams.get('returnLabel')!);
+      setSearchParams(newParams, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
@@ -197,27 +215,6 @@ function Investors({ organization: _organization }: InvestorsProps) {
       }
     }
   }, [searchParams, investors, setSearchParams]);
-
-  // Apply URL filters from dashboard alerts (deep linking)
-  useEffect(() => {
-    const ribStatus = searchParams.get('ribStatus');
-
-    // Only apply filters if we have the filter param and investors are loaded
-    if (ribStatus && investors.length > 0) {
-      // Clear existing filters first
-      advancedFilters.clearAllFilters();
-
-      // Apply RIB status filter
-      advancedFilters.addMultiSelectFilter('ribStatus', ribStatus);
-
-      // Show advanced filters panel when filters are applied from URL
-      setShowAdvancedFilters(true);
-
-      // Clean up URL params after applying filters
-      searchParams.delete('ribStatus');
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [searchParams, investors.length]);
 
   // Clear selections when filters change
   useEffect(() => {

@@ -54,7 +54,7 @@ export interface UpcomingCoupon {
 }
 
 export interface AlertTargetFilters {
-  status?: string;          // e.g., 'en_retard', 'en_attente'
+  status?: string;          // e.g., 'en_retard', 'en_attente' (displayed as 'prévu')
   trancheId?: string;       // Specific tranche ID
   trancheName?: string;     // Tranche name for display
   projectId?: string;       // Specific project ID

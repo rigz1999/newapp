@@ -1,4 +1,4 @@
- import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -129,6 +129,27 @@ export function Coupons() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
 
+  // Apply URL filters from dashboard alerts (deep linking) - runs ONCE on mount
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const tranche = searchParams.get('tranche');
+    const date = searchParams.get('date');
+
+    if (status || tranche || date) {
+      // Apply filters immediately (filter state can be set before data loads)
+      advancedFilters.clearAllFilters();
+
+      if (status) advancedFilters.addMultiSelectFilter('statut', status);
+      if (tranche) advancedFilters.addMultiSelectFilter('tranche', tranche);
+      if (date) advancedFilters.setDateRange(date, date);
+
+      setShowAdvancedFilters(true);
+
+      // Clear URL params
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     fetchCoupons();
   }, []);
@@ -147,43 +168,6 @@ export function Coupons() {
       }
     }
   }, [searchParams, coupons]);
-
-  // Apply URL filters from dashboard alerts (deep linking)
-  useEffect(() => {
-    const status = searchParams.get('status');
-    const tranche = searchParams.get('tranche');
-    const date = searchParams.get('date');
-
-    // Only apply filters if we have at least one filter param and coupons are loaded
-    if ((status || tranche || date) && coupons.length > 0) {
-      // Clear existing filters first
-      advancedFilters.clearAllFilters();
-
-      // Apply status filter
-      if (status) {
-        advancedFilters.addMultiSelectFilter('statut', status);
-      }
-
-      // Apply tranche filter
-      if (tranche) {
-        advancedFilters.addMultiSelectFilter('tranche', tranche);
-      }
-
-      // Apply date filter - set as date range for specific date
-      if (date) {
-        advancedFilters.setDateRange(date, date);
-      }
-
-      // Show advanced filters panel when filters are applied from URL
-      setShowAdvancedFilters(true);
-
-      // Clean up URL params after applying filters
-      searchParams.delete('status');
-      searchParams.delete('tranche');
-      searchParams.delete('date');
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [searchParams, coupons.length]);
 
   useEffect(() => {
     if (user) {
@@ -318,7 +302,7 @@ export function Coupons() {
   );
 
   const uniqueStatuts = useMemo(() => [
-    { value: 'en_attente', label: 'En attente' },
+    { value: 'en_attente', label: 'Prévu' },
     { value: 'paye', label: 'Payé' },
     { value: 'en_retard', label: 'En retard' },
   ], []);
@@ -610,7 +594,7 @@ export function Coupons() {
           <div className="flex items-center justify-between mb-2">
             <Clock className="w-8 h-8 text-finixar-amber" />
             <span className="text-xs font-medium text-finixar-amber bg-yellow-100 px-2 py-1 rounded-full">
-              En Attente
+              Prévu
             </span>
           </div>
           <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enAttente.total)}</h3>

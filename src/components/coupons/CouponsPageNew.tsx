@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useCoupons, Coupon } from '../../hooks/coupons/useCoupons';
 import { useCouponFilters } from '../../hooks/coupons/useCouponFilters';
 import { TableView } from './views/TableView';
@@ -33,11 +34,46 @@ interface CouponsPageNewProps {
 }
 
 export function CouponsPageNew(_props: CouponsPageNewProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // View state
   const [showFilters, setShowFilters] = useState(false);
 
   // Filter state
   const filterState = useCouponFilters();
+
+  // Apply URL filters from dashboard alerts (deep linking)
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const tranche = searchParams.get('tranche');
+    const date = searchParams.get('date');
+
+    if (status || tranche || date) {
+      // Clear existing filters first
+      filterState.clearFilters();
+
+      // Apply status filter (e.g., 'en_retard', 'en_attente')
+      if (status) {
+        filterState.setStatut([status]);
+      }
+
+      // Apply tranche filter
+      if (tranche) {
+        filterState.setTranches([tranche]);
+      }
+
+      // Apply date filter
+      if (date) {
+        filterState.setDateRange(date, date);
+      }
+
+      // Show filters panel
+      setShowFilters(true);
+
+      // Clear URL params
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Data fetching
   const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats } =
@@ -450,7 +486,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
   const uniqueStatuts = useMemo(
     () => [
-      { value: 'en_attente', label: 'En attente' },
+      { value: 'en_attente', label: 'Prévu' },
       { value: 'paye', label: 'Payé' },
       { value: 'en_retard', label: 'En retard' },
     ],
@@ -524,7 +560,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           <div className="flex items-center justify-between mb-2">
             <Clock className="w-8 h-8 text-yellow-600" />
             <span className="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full">
-              En Attente
+              Prévu
             </span>
           </div>
           <h3 className="text-2xl font-bold text-slate-900">
