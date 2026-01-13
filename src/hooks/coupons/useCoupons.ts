@@ -77,7 +77,7 @@ export interface UseCouponsReturn {
 
 export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
   const {
-    pageSize = 50,
+    pageSize = 200, // ~20-40 grouped écheances per page
     filters = {},
     sortBy = 'date_echeance',
     sortOrder = 'asc',
@@ -103,7 +103,8 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
       const { data, error: queryError } = await supabase
         .from('coupons_optimized')
         .select('*')
-        .order(sortBy, { ascending: sortOrder === 'asc' });
+        .order(sortBy, { ascending: sortOrder === 'asc' })
+        .range(0, 9999); // Override Supabase default limit of 1000
 
       if (queryError) throw queryError;
 
@@ -196,11 +197,8 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     return result;
   }, [allCoupons, filters]);
 
-  // Calculate total count based on unique dates in filtered results
-  const totalCount = useMemo(() => {
-    const uniqueDates = new Set(filteredCoupons.map(c => c.date_echeance));
-    return uniqueDates.size;
-  }, [filteredCoupons]);
+  // Total count is number of coupons (for pagination math)
+  const totalCount = useMemo(() => filteredCoupons.length, [filteredCoupons]);
 
   // Apply pagination CLIENT-SIDE
   const paginatedCoupons = useMemo(() => {
