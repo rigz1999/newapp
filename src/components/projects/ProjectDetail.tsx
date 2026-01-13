@@ -603,7 +603,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         let message = `✅ Projet et écheanciers mis à jour!\n\n`;
         message += `📊 ${projectTranches.length} tranche(s) traitée(s):\n`;
         message += `• Souscriptions recalculées: ${totalUpdated}\n`;
-        message += `• Coupons en attente supprimés: ${totalDeleted}\n`;
+        message += `• Coupons prévus supprimés: ${totalDeleted}\n`;
         message += `• Nouveaux coupons créés: ${totalCreated}`;
 
         if (failed.length > 0) {

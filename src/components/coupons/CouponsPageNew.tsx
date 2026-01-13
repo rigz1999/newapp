@@ -486,7 +486,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
   const uniqueStatuts = useMemo(
     () => [
-      { value: 'en_attente', label: 'En attente' },
+      { value: 'en_attente', label: 'Prévu' },
       { value: 'paye', label: 'Payé' },
       { value: 'en_retard', label: 'En retard' },
     ],
@@ -560,7 +560,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           <div className="flex items-center justify-between mb-2">
             <Clock className="w-8 h-8 text-yellow-600" />
             <span className="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full">
-              En Attente
+              Prévu
             </span>
           </div>
           <h3 className="text-2xl font-bold text-slate-900">

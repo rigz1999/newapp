@@ -28,6 +28,9 @@ const TrancheEditPage = lazy(() =>
 const EcheancierPage = lazy(() =>
   import('./components/coupons/EcheancierPage').then(m => ({ default: m.EcheancierPage }))
 );
+const EcheanceDetailPage = lazy(() =>
+  import('./components/coupons/EcheanceDetailPage').then(m => ({ default: m.EcheanceDetailPage }))
+);
 const Coupons = lazy(() => import('./components/coupons/CouponsPageNew'));
 const Investors = lazy(() => import('./components/investors/Investors'));
 const Subscriptions = lazy(() => import('./components/subscriptions/Subscriptions'));
@@ -180,6 +183,16 @@ function App(): JSX.Element {
                   <ErrorBoundary>
                     <Suspense fallback={<LoadingFallback />}>
                       <EcheancierPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="echeance/:projectId/:trancheId/:date"
+                element={
+                  <ErrorBoundary>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <EcheanceDetailPage />
                     </Suspense>
                   </ErrorBoundary>
                 }

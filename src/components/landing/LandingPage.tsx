@@ -630,7 +630,7 @@ export function LandingPage(): JSX.Element {
               <div className="mockup-container shadow-xl">
                 <img
                   src="/images/coupons.png"
-                  alt="Tableau de gestion des coupons Finixar avec filtres par statut (En Attente, Payés, En Retard), montants détaillés et recherche avancée"
+                  alt="Tableau de gestion des coupons Finixar avec filtres par statut (Prévu, Payés, En Retard), montants détaillés et recherche avancée"
                   loading="lazy"
                   width="900"
                   height="600"
@@ -647,7 +647,7 @@ export function LandingPage(): JSX.Element {
                 Centralisez vos coupons et échéances.
               </h2>
               <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                Visualisez tous vos coupons en un coup d'œil. Suivez les statuts (En Attente, Payés,
+                Visualisez tous vos coupons en un coup d'œil. Suivez les statuts (Prévu, Payés,
                 En Retard), les montants et les échéances pour garantir un suivi parfait de vos
                 paiements.
               </p>
@@ -661,7 +661,7 @@ export function LandingPage(): JSX.Element {
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-[#2E62FF] mt-0.5 flex-shrink-0" />
                   <span className="text-slate-700">
-                    Suivi des statuts en temps réel (En Attente, Payés, En Retard)
+                    Suivi des statuts en temps réel (Prévu, Payés, En Retard)
                   </span>
                 </li>
                 <li className="flex items-start gap-3">

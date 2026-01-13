@@ -53,6 +53,22 @@ export const PAYMENT_STATUS = {
   CANCELLED: 'annulé',
 } as const;
 
+/**
+ * Coupon/Échéance status values
+ * Note: Database stores 'en_attente' but UI displays as 'Prévu'
+ */
+export const COUPON_STATUS = {
+  PLANNED: 'en_attente',  // Displayed as "Prévu"
+  PAID: 'paye',           // Displayed as "Payé"
+  OVERDUE: 'en_retard',   // Displayed as "En retard"
+} as const;
+
+export const COUPON_STATUS_LABELS = {
+  en_attente: 'Prévu',
+  paye: 'Payé',
+  en_retard: 'En retard',
+} as const;
+
 export const RIB_STATUS = {
   MISSING: 'manquant',
   PENDING: 'en_attente',
