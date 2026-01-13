@@ -14,11 +14,13 @@ import {
   Download,
   Loader2,
   TrendingUp,
+  Upload,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { QuickPaymentModal } from './QuickPaymentModal';
 import { SimplePaymentModal } from './SimplePaymentModal';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
+import { PaymentProofUpload } from '../payments/PaymentProofUpload';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { isValidShortId } from '../../utils/shortId';
 import * as ExcelJS from 'exceljs';
@@ -71,6 +73,7 @@ export function EcheanceDetailPage() {
   const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<Record<string, unknown> | null>(null);
   const [paymentProofs, setPaymentProofs] = useState<Record<string, unknown>[]>([]);
   const [singlePaymentEcheance, setSinglePaymentEcheance] = useState<EcheanceItem | null>(null);
+  const [uploadingProofPayment, setUploadingProofPayment] = useState<Record<string, unknown> | null>(null);
 
   // Stats
   const [stats, setStats] = useState({
@@ -276,6 +279,27 @@ export function EcheanceDetailPage() {
 
     setSelectedPaymentForProof(paymentData);
     setPaymentProofs(proofsData || []);
+  };
+
+  const handleUploadProof = async (echeance: EcheanceItem) => {
+    if (!echeance.paiement_id) return;
+
+    // Fetch the payment with its related data for upload modal
+    const { data: paymentData } = await supabase
+      .from('paiements')
+      .select(`
+        id,
+        montant,
+        date_paiement,
+        tranche:tranches(tranche_name),
+        investisseur:investisseurs(nom_raison_sociale)
+      `)
+      .eq('id', echeance.paiement_id)
+      .single();
+
+    if (paymentData) {
+      setUploadingProofPayment(paymentData);
+    }
   };
 
   const exportToExcel = async () => {
@@ -596,13 +620,22 @@ export function EcheanceDetailPage() {
                       </td>
                       <td className="px-6 py-5 text-right">
                         {echeance.statut === 'paye' && echeance.paiement_id ? (
-                          <button
-                            onClick={() => handleViewPaymentProof(echeance)}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-200"
-                          >
-                            <FileText className="w-4 h-4" />
-                            Justificatif
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleViewPaymentProof(echeance)}
+                              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-200"
+                            >
+                              <FileText className="w-4 h-4" />
+                              Justificatif
+                            </button>
+                            <button
+                              onClick={() => handleUploadProof(echeance)}
+                              className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors border border-transparent hover:border-emerald-200"
+                              title="Ajouter un justificatif"
+                            >
+                              <Upload className="w-4 h-4" />
+                            </button>
+                          </div>
                         ) : (
                           <button
                             onClick={() => setSinglePaymentEcheance(echeance)}
@@ -672,6 +705,24 @@ export function EcheanceDetailPage() {
           onClose={() => setSinglePaymentEcheance(null)}
           onSuccess={() => {
             setSinglePaymentEcheance(null);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Upload Proof Modal */}
+      {uploadingProofPayment && (
+        <PaymentProofUpload
+          payment={uploadingProofPayment as {
+            id: string;
+            montant: number;
+            date_paiement: string;
+            tranche: { tranche_name: string };
+            investisseur: { nom_raison_sociale: string } | null;
+          }}
+          onClose={() => setUploadingProofPayment(null)}
+          onSuccess={() => {
+            setUploadingProofPayment(null);
             fetchData();
           }}
         />
