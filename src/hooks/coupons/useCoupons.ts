@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
 
@@ -46,6 +46,12 @@ export interface UseCouponsOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
+export interface FilterOptions {
+  projets: { value: string; label: string }[];
+  tranches: { value: string; label: string }[];
+  cgps: { value: string; label: string }[];
+}
+
 export interface UseCouponsReturn {
   coupons: Coupon[];
   loading: boolean;
@@ -61,6 +67,7 @@ export interface UseCouponsReturn {
     payes: { count: number; total: number };
     enRetard: { count: number; total: number };
   };
+  filterOptions: FilterOptions;
 }
 
 export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
@@ -71,10 +78,10 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     sortOrder = 'asc',
   } = options;
 
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  // Store ALL coupons (unfiltered)
+  const [allCoupons, setAllCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [stats, setStats] = useState({
     enAttente: { count: 0, total: 0 },
@@ -82,110 +89,44 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     enRetard: { count: 0, total: 0 },
   });
 
-  const fetchCoupons = useCallback(async () => {
+  // Fetch ALL data once (no filters applied server-side)
+  const fetchAllCoupons = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Build base query
-      let query = supabase
+      const { data, error: queryError } = await supabase
         .from('coupons_optimized')
-        .select('*', { count: 'exact' });
-
-      // Apply filters
-      if (filters.search) {
-        query = query.or(
-          `investisseur_nom.ilike.%${filters.search}%,` +
-          `projet_nom.ilike.%${filters.search}%,` +
-          `tranche_nom.ilike.%${filters.search}%,` +
-          `investisseur_id_display.ilike.%${filters.search}%`
-        );
-      }
-
-      if (filters.statut && filters.statut.length > 0) {
-        query = query.in('statut_calculated', filters.statut);
-      }
-
-      if (filters.projets && filters.projets.length > 0) {
-        query = query.in('projet_nom', filters.projets);
-      }
-
-      if (filters.tranches && filters.tranches.length > 0) {
-        query = query.in('tranche_nom', filters.tranches);
-      }
-
-      if (filters.cgps && filters.cgps.length > 0) {
-        query = query.in('investisseur_cgp', filters.cgps);
-      }
-
-      if (filters.dateStart) {
-        query = query.gte('date_echeance', filters.dateStart);
-      }
-
-      if (filters.dateEnd) {
-        query = query.lte('date_echeance', filters.dateEnd);
-      }
-
-      // Apply sorting
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
-      // Apply pagination
-      const start = (page - 1) * pageSize;
-      const end = start + pageSize - 1;
-      query = query.range(start, end);
-
-      const { data, error: queryError } = await query;
+        .select('*')
+        .order(sortBy, { ascending: sortOrder === 'asc' });
 
       if (queryError) throw queryError;
 
-      setCoupons(data || []);
+      setAllCoupons(data || []);
 
-      // Count unique échéance dates (not investor rows)
-      // Need to run a separate query to get all matching records and count unique dates
-      let countQuery = supabase
-        .from('coupons_optimized')
-        .select('date_echeance');
+      // Calculate stats from all data
+      const enAttenteData = (data || []).filter(c => c.statut_calculated === 'en_attente');
+      const payesData = (data || []).filter(c => c.statut_calculated === 'paye');
+      const enRetardData = (data || []).filter(c => c.statut_calculated === 'en_retard');
 
-      // Apply same filters to count query
-      if (filters.search) {
-        countQuery = countQuery.or(
-          `investisseur_nom.ilike.%${filters.search}%,` +
-          `projet_nom.ilike.%${filters.search}%,` +
-          `tranche_nom.ilike.%${filters.search}%,` +
-          `investisseur_id_display.ilike.%${filters.search}%`
-        );
-      }
+      const uniqueEnAttenteDates = new Set(enAttenteData.map(c => c.date_echeance));
+      const uniquePayesDates = new Set(payesData.map(c => c.date_echeance));
+      const uniqueEnRetardDates = new Set(enRetardData.map(c => c.date_echeance));
 
-      if (filters.statut && filters.statut.length > 0) {
-        countQuery = countQuery.in('statut_calculated', filters.statut);
-      }
-
-      if (filters.projets && filters.projets.length > 0) {
-        countQuery = countQuery.in('projet_nom', filters.projets);
-      }
-
-      if (filters.tranches && filters.tranches.length > 0) {
-        countQuery = countQuery.in('tranche_nom', filters.tranches);
-      }
-
-      if (filters.cgps && filters.cgps.length > 0) {
-        countQuery = countQuery.in('investisseur_cgp', filters.cgps);
-      }
-
-      if (filters.dateStart) {
-        countQuery = countQuery.gte('date_echeance', filters.dateStart);
-      }
-
-      if (filters.dateEnd) {
-        countQuery = countQuery.lte('date_echeance', filters.dateEnd);
-      }
-
-      const { data: allMatchingData } = await countQuery;
-      const uniqueDates = new Set(allMatchingData?.map(c => c.date_echeance) || []);
-      setTotalCount(uniqueDates.size);
-
-      // Fetch stats separately (without pagination)
-      await fetchStats();
+      setStats({
+        enAttente: {
+          count: uniqueEnAttenteDates.size,
+          total: enAttenteData.reduce((sum, c) => sum + c.montant_net, 0),
+        },
+        payes: {
+          count: uniquePayesDates.size,
+          total: payesData.reduce((sum, c) => sum + (c.montant_paye || c.montant_net), 0),
+        },
+        enRetard: {
+          count: uniqueEnRetardDates.size,
+          total: enRetardData.reduce((sum, c) => sum + c.montant_net, 0),
+        },
+      });
     } catch (err) {
       console.error('Error fetching coupons:', err);
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
@@ -193,63 +134,101 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     } finally {
       setLoading(false);
     }
-  }, [filters, page, pageSize, sortBy, sortOrder]);
+  }, [sortBy, sortOrder]);
 
-  const fetchStats = async () => {
-    try {
-      // Fetch aggregated stats - need date_echeance to count unique dates
-      const { data: enAttenteData } = await supabase
-        .from('coupons_optimized')
-        .select('montant_net, date_echeance')
-        .eq('statut_calculated', 'en_attente');
+  // Apply filters CLIENT-SIDE (instant, no network request)
+  const filteredCoupons = useMemo(() => {
+    let result = [...allCoupons];
 
-      const { data: payesData } = await supabase
-        .from('coupons_optimized')
-        .select('montant_paye, montant_net, date_echeance')
-        .eq('statut_calculated', 'paye');
-
-      const { data: enRetardData } = await supabase
-        .from('coupons_optimized')
-        .select('montant_net, date_echeance')
-        .eq('statut_calculated', 'en_retard');
-
-      // Count unique échéance dates (not investor rows)
-      // Example: 10 investors, 3 échéances = count 3 (not 30)
-      const uniqueEnAttenteDates = new Set(enAttenteData?.map(c => c.date_echeance) || []);
-      const uniquePayesDates = new Set(payesData?.map(c => c.date_echeance) || []);
-      const uniqueEnRetardDates = new Set(enRetardData?.map(c => c.date_echeance) || []);
-
-      setStats({
-        enAttente: {
-          count: uniqueEnAttenteDates.size,
-          total: enAttenteData?.reduce((sum, c) => sum + c.montant_net, 0) || 0,
-        },
-        payes: {
-          count: uniquePayesDates.size,
-          total: payesData?.reduce((sum, c) => sum + (c.montant_paye || c.montant_net), 0) || 0,
-        },
-        enRetard: {
-          count: uniqueEnRetardDates.size,
-          total: enRetardData?.reduce((sum, c) => sum + c.montant_net, 0) || 0,
-        },
-      });
-    } catch (err) {
-      console.error('Error fetching stats:', err);
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter(c =>
+        c.investisseur_nom?.toLowerCase().includes(searchLower) ||
+        c.projet_nom?.toLowerCase().includes(searchLower) ||
+        c.tranche_nom?.toLowerCase().includes(searchLower)
+      );
     }
-  };
 
-  const refresh = async () => {
-    await fetchCoupons();
-  };
+    // Status filter
+    if (filters.statut && filters.statut.length > 0) {
+      result = result.filter(c => filters.statut!.includes(c.statut_calculated));
+    }
 
+    // Projects filter
+    if (filters.projets && filters.projets.length > 0) {
+      result = result.filter(c => filters.projets!.includes(c.projet_nom));
+    }
+
+    // Tranches filter
+    if (filters.tranches && filters.tranches.length > 0) {
+      result = result.filter(c => filters.tranches!.includes(c.tranche_nom));
+    }
+
+    // CGP filter
+    if (filters.cgps && filters.cgps.length > 0) {
+      result = result.filter(c => c.investisseur_cgp && filters.cgps!.includes(c.investisseur_cgp));
+    }
+
+    // Date range filter
+    if (filters.dateStart) {
+      result = result.filter(c => c.date_echeance >= filters.dateStart!);
+    }
+    if (filters.dateEnd) {
+      result = result.filter(c => c.date_echeance <= filters.dateEnd!);
+    }
+
+    return result;
+  }, [allCoupons, filters]);
+
+  // Calculate total count based on unique dates in filtered results
+  const totalCount = useMemo(() => {
+    const uniqueDates = new Set(filteredCoupons.map(c => c.date_echeance));
+    return uniqueDates.size;
+  }, [filteredCoupons]);
+
+  // Apply pagination CLIENT-SIDE
+  const paginatedCoupons = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredCoupons.slice(start, end);
+  }, [filteredCoupons, page, pageSize]);
+
+  // Extract filter options from ALL data (not filtered)
+  const filterOptions = useMemo<FilterOptions>(() => {
+    const projets = Array.from(new Set(allCoupons.map(c => c.projet_nom).filter(Boolean)))
+      .sort()
+      .map(p => ({ value: p, label: p }));
+
+    const tranches = Array.from(new Set(allCoupons.map(c => c.tranche_nom).filter(Boolean)))
+      .sort()
+      .map(t => ({ value: t, label: t }));
+
+    const cgps = Array.from(new Set(allCoupons.map(c => c.investisseur_cgp).filter(Boolean)))
+      .sort()
+      .map(cgp => ({ value: cgp!, label: cgp! }));
+
+    return { projets, tranches, cgps };
+  }, [allCoupons]);
+
+  const refresh = useCallback(async () => {
+    await fetchAllCoupons();
+  }, [fetchAllCoupons]);
+
+  // Reset page when filters change
   useEffect(() => {
-    fetchCoupons();
-  }, [fetchCoupons]);
+    setPage(1);
+  }, [filters]);
+
+  // Fetch data once on mount
+  useEffect(() => {
+    fetchAllCoupons();
+  }, [fetchAllCoupons]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return {
-    coupons,
+    coupons: paginatedCoupons,
     loading,
     error,
     totalCount,
@@ -259,5 +238,6 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     setPage,
     refresh,
     stats,
+    filterOptions,
   };
 }

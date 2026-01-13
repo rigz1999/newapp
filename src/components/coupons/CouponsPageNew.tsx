@@ -36,47 +36,46 @@ interface CouponsPageNewProps {
 export function CouponsPageNew(_props: CouponsPageNewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // View state
-  const [showFilters, setShowFilters] = useState(false);
+  // Read URL params synchronously for initial filter state
+  const initialFilters = useMemo(() => {
+    const status = searchParams.get('status');
+    const tranche = searchParams.get('tranche');
+    const date = searchParams.get('date');
 
-  // Filter state
-  const filterState = useCouponFilters();
+    const filters: { statut?: string[]; tranches?: string[]; dateStart?: string; dateEnd?: string } = {};
 
-  // Apply URL filters from dashboard alerts (deep linking)
+    if (status) filters.statut = [status];
+    if (tranche) filters.tranches = [tranche];
+    if (date) {
+      filters.dateStart = date;
+      filters.dateEnd = date;
+    }
+
+    return filters;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // View state - show filters if URL params present
+  const [showFilters, setShowFilters] = useState(() => {
+    return !!(searchParams.get('status') || searchParams.get('tranche') || searchParams.get('date'));
+  });
+
+  // Filter state - initialize with URL params
+  const filterState = useCouponFilters(initialFilters);
+
+  // Clear URL params after reading (without triggering re-render)
   useEffect(() => {
     const status = searchParams.get('status');
     const tranche = searchParams.get('tranche');
     const date = searchParams.get('date');
 
     if (status || tranche || date) {
-      // Clear existing filters first
-      filterState.clearFilters();
-
-      // Apply status filter (e.g., 'en_retard', 'en_attente')
-      if (status) {
-        filterState.setStatut([status]);
-      }
-
-      // Apply tranche filter
-      if (tranche) {
-        filterState.setTranches([tranche]);
-      }
-
-      // Apply date filter
-      if (date) {
-        filterState.setDateRange(date, date);
-      }
-
-      // Show filters panel
-      setShowFilters(true);
-
       // Clear URL params
       setSearchParams({}, { replace: true });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Data fetching
-  const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats } =
+  const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats, filterOptions } =
     useCoupons({
       pageSize: 50,
       filters: filterState.filters,
@@ -467,22 +466,10 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
     }
   };
 
-  // Extract unique values for filters
-  const uniqueProjets = useMemo(
-    () =>
-      Array.from(new Set(coupons.map(c => c.projet_nom)))
-        .sort()
-        .map(p => ({ value: p, label: p })),
-    [coupons]
-  );
-
-  const uniqueTranches = useMemo(
-    () =>
-      Array.from(new Set(coupons.map(c => c.tranche_nom)))
-        .sort()
-        .map(t => ({ value: t, label: t })),
-    [coupons]
-  );
+  // Use filter options from hook (fetched separately, not affected by current filters)
+  const uniqueProjets = filterOptions.projets;
+  const uniqueTranches = filterOptions.tranches;
+  const uniqueCGPs = filterOptions.cgps;
 
   const uniqueStatuts = useMemo(
     () => [
@@ -491,14 +478,6 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       { value: 'en_retard', label: 'En retard' },
     ],
     []
-  );
-
-  const uniqueCGPs = useMemo(
-    () =>
-      Array.from(new Set(coupons.map(c => c.investisseur_cgp).filter(Boolean)))
-        .sort()
-        .map(cgp => ({ value: cgp!, label: cgp! })),
-    [coupons]
   );
 
   if (loading) {
