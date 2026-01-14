@@ -21,4 +21,9 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.env.loadtest
 .migration-credentials.txt
+
+# Load test results
+load-tests/results/
+*.json
