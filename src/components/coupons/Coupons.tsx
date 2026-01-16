@@ -908,21 +908,19 @@ export function Coupons() {
                                           <p className="text-sm font-medium text-slate-900">
                                             {coupon.investisseur_nom}
                                           </p>
+                                          {(coupon.investisseur_cgp || !coupon.has_rib) && (
                                           <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                                            <span>{coupon.investisseur_id_display}</span>
                                             {coupon.investisseur_cgp && (
-                                              <>
-                                                <span>•</span>
-                                                <span className="text-amber-700">CGP: {coupon.investisseur_cgp}</span>
-                                              </>
+                                              <span className="text-amber-700">CGP: {coupon.investisseur_cgp}</span>
                                             )}
                                             {!coupon.has_rib && (
                                               <>
-                                                <span>•</span>
+                                                {coupon.investisseur_cgp && <span>•</span>}
                                                 <span className="text-finixar-red">⚠️ RIB manquant</span>
                                               </>
                                             )}
                                           </div>
+                                        )}
                                         </div>
                                       </div>
 
@@ -991,7 +989,6 @@ export function Coupons() {
                 <h4 className="text-sm font-semibold text-slate-900 mb-3">Investisseur</h4>
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-slate-900">{selectedCoupon.investisseur_nom}</p>
-                  <p className="text-xs text-slate-600">ID: {selectedCoupon.investisseur_id_display}</p>
                   <p className="text-xs text-slate-600">Email: {selectedCoupon.investisseur_email}</p>
                   {selectedCoupon.investisseur_cgp && (
                     <p className="text-xs text-slate-600">CGP: {selectedCoupon.investisseur_cgp}</p>
