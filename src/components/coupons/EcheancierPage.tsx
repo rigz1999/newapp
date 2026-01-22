@@ -1185,9 +1185,6 @@ export function EcheancierPage() {
                                                   .nom_raison_sociale
                                               }
                                             </p>
-                                            <p className="text-xs text-slate-500">
-                                              {echeance.souscription.id_souscription}
-                                            </p>
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-6">
