@@ -195,22 +195,23 @@ export function LandingPage(): JSX.Element {
           display: block;
         }
 
-        /* Vertical mockup - taller aspect ratio with zoomed content */
-        .mockup-container-vertical {
+        /* Large mockup - bigger container for clearer content */
+        .mockup-container-large {
           background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
           border-radius: 12px;
           border: 1px solid #e2e8f0;
           overflow: hidden;
-          max-width: 600px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          max-width: 1100px;
           margin: 0 auto;
-          aspect-ratio: 4 / 5;
         }
 
-        .mockup-container-vertical img {
-          width: 130%;
+        .mockup-container-large img {
+          width: 100%;
           height: auto;
           display: block;
-          transform: translateX(-8%) translateY(-2%);
         }
       `}</style>
 
@@ -642,10 +643,10 @@ export function LandingPage(): JSX.Element {
           </div>
 
           {/* Block B: Coupon Management - Reversed */}
-          <div className="grid lg:grid-cols-2 gap-16 items-center mb-32">
+          <div className="grid lg:grid-cols-[1.2fr_1fr] gap-12 items-center mb-32">
             {/* Image Side */}
             <div className="order-2 lg:order-1">
-              <div className="mockup-container-vertical shadow-xl">
+              <div className="mockup-container-large shadow-xl">
                 <img
                   src="/images/coupons.png"
                   alt="Tableau de gestion des coupons Finixar avec filtres par statut (Prévu, Payés, En Retard), montants détaillés et recherche avancée"
