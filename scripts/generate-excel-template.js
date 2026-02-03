@@ -80,7 +80,14 @@ async function generateTemplate() {
   instructionsSheet.getCell(`A${row}`).font = { bold: true };
   row++;
 
-  const requiredPhysical = ['• Quantité, Montant', '• Nom(s), Prénom(s)', '• E-mail'];
+  const requiredPhysical = [
+    '• Quantité, Montant',
+    '• Nom(s), Prénom(s)',
+    '• E-mail, Téléphone',
+    '• Date de naissance, Lieu de naissance',
+    '• Adresse, Résidence Fiscale',
+    '• Date de Transfert',
+  ];
   requiredPhysical.forEach(field => {
     instructionsSheet.getCell(`A${row}`).value = field;
     row++;
@@ -93,9 +100,10 @@ async function generateTemplate() {
 
   const requiredMoral = [
     '• Quantité, Montant',
-    '• Raison sociale',
-    '• N° SIREN (9 chiffres)',
-    '• E-mail du représentant légal',
+    '• Raison sociale, N° SIREN (9 chiffres)',
+    '• E-mail du représentant légal, Téléphone',
+    '• Adresse du siège social',
+    '• Date de Transfert',
   ];
   requiredMoral.forEach(field => {
     instructionsSheet.getCell(`A${row}`).value = field;
@@ -111,9 +119,8 @@ async function generateTemplate() {
   const formats = [
     '• Dates : jj/mm/aaaa (exemple : 15/03/1980)',
     '• E-mail : doit contenir un @',
-    '• SIREN : exactement 9 chiffres',
+    '• SIREN : exactement 9 chiffres (personnes morales uniquement)',
     '• Téléphone : numéros avec ou sans +',
-    '• PPE : Oui ou Non',
     '• Montants : nombres décimaux acceptés',
   ];
   formats.forEach(format => {
@@ -142,13 +149,12 @@ async function generateTemplate() {
     properties: { tabColor: { argb: 'FF10B981' } },
   });
 
-  // Configuration des colonnes pour Personnes Physiques
+  // Configuration des colonnes pour Personnes Physiques (optimized - only fields used by import)
   const physicalColumns = [
     { header: 'Quantité *', key: 'quantite', width: 12 },
     { header: 'Montant *', key: 'montant', width: 15 },
     { header: 'Nom(s) *', key: 'nom', width: 20 },
     { header: 'Prénom(s) *', key: 'prenom', width: 20 },
-    { header: "Nom d'usage", key: 'nom_usage', width: 20 },
     { header: 'E-mail *', key: 'email', width: 30 },
     { header: 'Téléphone *', key: 'telephone', width: 18 },
     { header: 'Né(e) le *', key: 'date_naissance', width: 15 },
@@ -156,20 +162,13 @@ async function generateTemplate() {
     { header: 'Département de naissance', key: 'dept_naissance', width: 25 },
     { header: 'Adresse du domicile *', key: 'adresse', width: 35 },
     { header: 'Résidence Fiscale 1 *', key: 'residence_fiscale', width: 25 },
-    { header: 'PPE *', key: 'ppe', width: 10 },
-    { header: 'Catégorisation *', key: 'categorisation', width: 20 },
     { header: 'Date de Transfert *', key: 'date_transfert', width: 18 },
-    { header: 'Date de Validation BS', key: 'date_validation', width: 20 },
-    { header: 'PEA / PEA-PME', key: 'pea', width: 18 },
-    { header: 'Numéro de Compte PEA / PEA-PME', key: 'numero_pea', width: 30 },
     { header: 'CGP', key: 'cgp', width: 25 },
     { header: 'E-mail du CGP', key: 'email_cgp', width: 30 },
-    { header: 'Code du CGP', key: 'code_cgp', width: 15 },
-    { header: 'Siren du CGP', key: 'siren_cgp', width: 15 },
   ];
 
   // Titre de section Personnes Physiques
-  registreSheet.mergeCells('A1:V1');
+  registreSheet.mergeCells('A1:N1');
   const ppTitle = registreSheet.getCell('A1');
   ppTitle.value = 'Personnes Physiques';
   ppTitle.font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -203,7 +202,6 @@ async function generateTemplate() {
       montant: 10000,
       nom: 'Dupont',
       prenom: 'Jean',
-      nom_usage: '',
       email: 'jean.dupont@exemple.fr',
       telephone: '+33612345678',
       date_naissance: '15/03/1980',
@@ -211,23 +209,15 @@ async function generateTemplate() {
       dept_naissance: '75 - Paris',
       adresse: '123 Rue de la République, 75001 Paris',
       residence_fiscale: 'France',
-      ppe: 'Non',
-      categorisation: 'Client Professionnel',
       date_transfert: '01/01/2024',
-      date_validation: '05/01/2024',
-      pea: 'Oui',
-      numero_pea: 'PEA123456789',
       cgp: 'Cabinet Dupuis',
       email_cgp: 'contact@cabinet-dupuis.fr',
-      code_cgp: 'CGP001',
-      siren_cgp: '123456789',
     },
     {
       quantite: 50,
       montant: 5000,
       nom: 'Martin',
       prenom: 'Sophie',
-      nom_usage: '',
       email: 'sophie.martin@exemple.fr',
       telephone: '0687654321',
       date_naissance: '22/07/1975',
@@ -235,16 +225,9 @@ async function generateTemplate() {
       dept_naissance: '69 - Rhône',
       adresse: '45 Avenue des Champs, 69001 Lyon',
       residence_fiscale: 'France',
-      ppe: 'Non',
-      categorisation: 'Client Non Professionnel',
       date_transfert: '01/01/2024',
-      date_validation: '05/01/2024',
-      pea: 'Non',
-      numero_pea: '',
       cgp: '',
       email_cgp: '',
-      code_cgp: '',
-      siren_cgp: '',
     },
   ];
 
@@ -289,7 +272,7 @@ async function generateTemplate() {
   const moralStartRow = 17;
 
   // Titre de section Personnes Morales
-  registreSheet.mergeCells(`A${moralStartRow}:V${moralStartRow}`);
+  registreSheet.mergeCells(`A${moralStartRow}:M${moralStartRow}`);
   const pmTitle = registreSheet.getCell(`A${moralStartRow}`);
   pmTitle.value = 'Personnes Morales';
   pmTitle.font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -300,7 +283,7 @@ async function generateTemplate() {
   };
   pmTitle.alignment = { vertical: 'middle', horizontal: 'center' };
 
-  // Configuration des colonnes pour Personnes Morales
+  // Configuration des colonnes pour Personnes Morales (optimized - only fields used by import)
   const moralColumns = [
     { header: 'Quantité *', key: 'quantite', width: 12 },
     { header: 'Montant *', key: 'montant', width: 15 },
@@ -311,18 +294,10 @@ async function generateTemplate() {
     { header: 'Nom du représentant légal', key: 'nom_rep', width: 25 },
     { header: 'Téléphone *', key: 'telephone', width: 18 },
     { header: 'Adresse du siège social *', key: 'adresse', width: 40 },
-    { header: 'Résidence Fiscale 1 du représentant légal', key: 'residence_fiscale', width: 35 },
     { header: 'Département de naissance du représentant', key: 'dept_naissance', width: 35 },
-    { header: 'PPE *', key: 'ppe', width: 10 },
-    { header: 'Catégorisation *', key: 'categorisation', width: 20 },
     { header: 'Date de Transfert *', key: 'date_transfert', width: 18 },
-    { header: 'Date de Validation BS', key: 'date_validation', width: 20 },
-    { header: 'PEA / PEA-PME', key: 'pea', width: 18 },
-    { header: 'Numéro de Compte PEA / PEA-PME', key: 'numero_pea', width: 30 },
     { header: 'CGP', key: 'cgp', width: 25 },
     { header: 'E-mail du CGP', key: 'email_cgp', width: 30 },
-    { header: 'Code du CGP', key: 'code_cgp', width: 15 },
-    { header: 'Siren du CGP', key: 'siren_cgp', width: 15 },
   ];
 
   // En-têtes Personnes Morales
@@ -353,18 +328,10 @@ async function generateTemplate() {
       nom_rep: 'Dubois',
       telephone: '+33123456789',
       adresse: '10 Boulevard des Entreprises, 92000 Nanterre',
-      residence_fiscale: 'France',
       dept_naissance: '75 - Paris',
-      ppe: 'Non',
-      categorisation: 'Contrepartie Éligible',
       date_transfert: '01/01/2024',
-      date_validation: '05/01/2024',
-      pea: 'Non',
-      numero_pea: '',
       cgp: 'Cabinet Finance Pro',
       email_cgp: 'info@financepro.fr',
-      code_cgp: 'CGP100',
-      siren_cgp: '987654321',
     },
     {
       quantite: 200,
@@ -376,18 +343,10 @@ async function generateTemplate() {
       nom_rep: 'Leroy',
       telephone: '0145678901',
       adresse: '25 Rue de la Tech, 69002 Lyon',
-      residence_fiscale: 'France',
       dept_naissance: '69 - Rhône',
-      ppe: 'Non',
-      categorisation: 'Client Professionnel',
       date_transfert: '01/01/2024',
-      date_validation: '05/01/2024',
-      pea: 'Non',
-      numero_pea: '',
       cgp: '',
       email_cgp: '',
-      code_cgp: '',
-      siren_cgp: '',
     },
   ];
 
@@ -428,33 +387,7 @@ async function generateTemplate() {
     });
   }
 
-  // === Validations de données ===
-
-  // Validation PPE (Oui/Non) pour Personnes Physiques
-  registreSheet.getColumn(13).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
-    if (rowNumber > 2 && rowNumber < 15) {
-      // Lignes de données PP
-      cell.dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: ['"Oui,Non"'],
-      };
-    }
-  });
-
-  // Validation PPE (Oui/Non) pour Personnes Morales
-  registreSheet.getColumn(12).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
-    if (rowNumber > moralStartRow + 1 && rowNumber < moralStartRow + 14) {
-      // Lignes de données PM
-      cell.dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: ['"Oui,Non"'],
-      };
-    }
-  });
-
-  // Note : Les validations plus complexes (e-mail, SIREN, etc.) sont gérées côté serveur
+  // Note : Les validations complexes (e-mail, SIREN, etc.) sont gérées côté serveur
   // car ExcelJS a des limitations avec les validations personnalisées
 
   // Protéger les en-têtes uniquement
@@ -513,7 +446,6 @@ async function generateTemplate() {
     ],
     ['Nom(s) *', "Nom(s) de famille de l'investisseur. Exemple : Dupont"],
     ['Prénom(s) *', "Prénom(s) de l'investisseur. Exemple : Jean"],
-    ["Nom d'usage", "Nom d'usage si différent du nom de famille. Optionnel."],
     ['E-mail *', 'Adresse e-mail valide. Doit contenir un @. Exemple : jean.dupont@exemple.fr'],
     ['Téléphone *', 'Numéro de téléphone. Format : +33612345678 ou 0612345678'],
     ['Né(e) le *', 'Date de naissance au format jj/mm/aaaa. Exemple : 15/03/1980'],
@@ -524,25 +456,12 @@ async function generateTemplate() {
       'Adresse complète du domicile. Exemple : 123 Rue de la République, 75001 Paris',
     ],
     ['Résidence Fiscale 1 *', 'Pays de résidence fiscale principal. Exemple : France'],
-    ['PPE *', 'Personne Politiquement Exposée. Valeurs possibles : Oui ou Non'],
-    [
-      'Catégorisation *',
-      'Catégorie MiFID. Exemples : Client Professionnel, Client Non Professionnel, Contrepartie Éligible',
-    ],
     [
       'Date de Transfert *',
-      'Date de transfert/souscription. Format : jj/mm/aaaa. Exemple : 01/01/2024',
+      "Date de transfert/souscription (utilisée comme date d'émission). Format : jj/mm/aaaa. Exemple : 01/01/2024",
     ],
-    [
-      'Date de Validation BS',
-      'Date de validation par le back-office. Format : jj/mm/aaaa. Optionnel.',
-    ],
-    ['PEA / PEA-PME', 'Compte PEA actif. Valeurs : Oui, Non, ou vide'],
-    ['Numéro de Compte PEA / PEA-PME', 'Numéro du compte PEA si applicable. Optionnel.'],
     ['CGP', 'Nom du Conseiller en Gestion de Patrimoine. Optionnel.'],
     ['E-mail du CGP', 'Adresse e-mail du CGP. Optionnel.'],
-    ['Code du CGP', 'Code identifiant du CGP. Optionnel.'],
-    ['Siren du CGP', 'Numéro SIREN du CGP (9 chiffres). Optionnel.'],
   ];
 
   physicalHelp.forEach(([field, description]) => {
@@ -583,29 +502,15 @@ async function generateTemplate() {
       'Adresse complète du siège social. Exemple : 10 Boulevard des Entreprises, 92000 Nanterre',
     ],
     [
-      'Résidence Fiscale 1 du représentant légal',
-      'Pays de résidence fiscale du représentant. Exemple : France',
-    ],
-    [
       'Département de naissance du représentant',
       'Département de naissance du représentant légal. Exemple : 75 - Paris',
     ],
-    ['PPE *', 'Représentant Politiquement Exposé. Valeurs possibles : Oui ou Non'],
-    ['Catégorisation *', 'Catégorie MiFID. Exemples : Client Professionnel, Contrepartie Éligible'],
     [
       'Date de Transfert *',
-      'Date de transfert/souscription. Format : jj/mm/aaaa. Exemple : 01/01/2024',
+      "Date de transfert/souscription (utilisée comme date d'émission). Format : jj/mm/aaaa. Exemple : 01/01/2024",
     ],
-    [
-      'Date de Validation BS',
-      'Date de validation par le back-office. Format : jj/mm/aaaa. Optionnel.',
-    ],
-    ['PEA / PEA-PME', 'Compte PEA-PME actif. Valeurs : Oui, Non, ou vide'],
-    ['Numéro de Compte PEA / PEA-PME', 'Numéro du compte PEA-PME si applicable. Optionnel.'],
     ['CGP', 'Nom du Conseiller en Gestion de Patrimoine. Optionnel.'],
     ['E-mail du CGP', 'Adresse e-mail du CGP. Optionnel.'],
-    ['Code du CGP', 'Code identifiant du CGP. Optionnel.'],
-    ['Siren du CGP', 'Numéro SIREN du CGP (9 chiffres). Optionnel.'],
   ];
 
   moralHelp.forEach(([field, description]) => {
