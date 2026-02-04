@@ -765,7 +765,7 @@ export function TrancheWizard({
 
   const handleBackToUpload = (): void => {
     setPreviewData(null);
-    setCsvFile(null);
+    // Keep the file so user doesn't have to re-upload
     setError('');
   };
 
