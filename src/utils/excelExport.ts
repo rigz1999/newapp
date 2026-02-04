@@ -147,19 +147,19 @@ export async function downloadRegistreTemplate(): Promise<void> {
       properties: { tabColor: { argb: colors.headerBg } },
     });
 
-    // Physical persons columns (reduced - no birth info)
+    // Physical persons columns - headers match standard format profile exactly
     const physicalColumns = [
-      { header: 'Quantite *', key: 'quantite', width: 12 },
+      { header: 'Quantité *', key: 'quantite', width: 12 },
       { header: 'Montant *', key: 'montant', width: 14 },
-      { header: 'Nom *', key: 'nom', width: 18 },
-      { header: 'Prenom *', key: 'prenom', width: 18 },
+      { header: 'Nom(s) *', key: 'nom', width: 18 },
+      { header: 'Prénom(s) *', key: 'prenom', width: 18 },
       { header: 'E-mail *', key: 'email', width: 28 },
-      { header: 'Telephone *', key: 'telephone', width: 16 },
-      { header: 'Adresse *', key: 'adresse', width: 35 },
-      { header: 'Residence Fiscale *', key: 'residence_fiscale', width: 18 },
+      { header: 'Téléphone *', key: 'telephone', width: 16 },
+      { header: 'Adresse du domicile *', key: 'adresse', width: 35 },
+      { header: 'Résidence Fiscale 1 *', key: 'residence_fiscale', width: 22 },
       { header: 'Date de Transfert *', key: 'date_transfert', width: 18 },
       { header: 'CGP', key: 'cgp', width: 20 },
-      { header: 'E-mail CGP', key: 'email_cgp', width: 25 },
+      { header: 'E-mail du CGP', key: 'email_cgp', width: 25 },
     ];
 
     // Physical persons section title
@@ -238,20 +238,20 @@ export async function downloadRegistreTemplate(): Promise<void> {
     // === Legal entities section ===
     const moralStartRow = 26;
 
-    // Legal entities columns (keep representative names, remove birth dept)
+    // Legal entities columns - headers match standard format profile exactly
     const moralColumns = [
-      { header: 'Quantite *', key: 'quantite', width: 12 },
+      { header: 'Quantité *', key: 'quantite', width: 12 },
       { header: 'Montant *', key: 'montant', width: 14 },
       { header: 'Raison sociale *', key: 'raison_sociale', width: 25 },
-      { header: 'SIREN *', key: 'siren', width: 14 },
-      { header: 'E-mail representant *', key: 'email_rep', width: 28 },
-      { header: 'Prenom representant', key: 'prenom_rep', width: 18 },
-      { header: 'Nom representant', key: 'nom_rep', width: 18 },
-      { header: 'Telephone *', key: 'telephone', width: 16 },
-      { header: 'Adresse siege *', key: 'adresse', width: 35 },
+      { header: 'N° SIREN *', key: 'siren', width: 14 },
+      { header: 'E-mail du représentant légal *', key: 'email_rep', width: 32 },
+      { header: 'Prénom du représentant légal', key: 'prenom_rep', width: 24 },
+      { header: 'Nom du représentant légal', key: 'nom_rep', width: 22 },
+      { header: 'Téléphone *', key: 'telephone', width: 16 },
+      { header: 'Adresse du siège social *', key: 'adresse', width: 35 },
       { header: 'Date de Transfert *', key: 'date_transfert', width: 18 },
       { header: 'CGP', key: 'cgp', width: 20 },
-      { header: 'E-mail CGP', key: 'email_cgp', width: 25 },
+      { header: 'E-mail du CGP', key: 'email_cgp', width: 25 },
     ];
 
     const pmColCount = moralColumns.length;
@@ -353,17 +353,17 @@ export async function downloadRegistreTemplate(): Promise<void> {
     helpRow++;
 
     const physicalHelp = [
-      ['Quantite *', "Nombre d'obligations souscrites"],
+      ['Quantité *', "Nombre d'obligations souscrites"],
       ['Montant *', 'Montant total investi en euros'],
-      ['Nom *', "Nom de famille de l'investisseur"],
-      ['Prenom *', "Prenom de l'investisseur"],
+      ['Nom(s) *', "Nom(s) de famille de l'investisseur"],
+      ['Prénom(s) *', "Prénom(s) de l'investisseur"],
       ['E-mail *', 'Adresse e-mail valide'],
-      ['Telephone *', 'Numero avec ou sans indicatif'],
-      ['Adresse *', 'Adresse complete du domicile'],
-      ['Residence Fiscale *', 'Pays de residence fiscale'],
+      ['Téléphone *', 'Numéro avec ou sans indicatif (+33)'],
+      ['Adresse du domicile *', 'Adresse complète du domicile'],
+      ['Résidence Fiscale 1 *', 'Pays de résidence fiscale (ex: France)'],
       ['Date de Transfert *', 'Date de souscription (jj/mm/aaaa)'],
       ['CGP', 'Conseiller en Gestion de Patrimoine (optionnel)'],
-      ['E-mail CGP', 'E-mail du CGP (optionnel)'],
+      ['E-mail du CGP', 'E-mail du CGP (optionnel)'],
     ];
 
     physicalHelp.forEach(([field, description]) => {
@@ -385,18 +385,18 @@ export async function downloadRegistreTemplate(): Promise<void> {
     helpRow++;
 
     const moralHelp = [
-      ['Quantite *', "Nombre d'obligations souscrites"],
+      ['Quantité *', "Nombre d'obligations souscrites"],
       ['Montant *', 'Montant total investi en euros'],
-      ['Raison sociale *', 'Denomination sociale de la societe'],
-      ['SIREN *', 'Numero SIREN (9 chiffres)'],
-      ['E-mail representant *', 'E-mail du representant legal'],
-      ['Prenom representant', 'Prenom du representant (optionnel)'],
-      ['Nom representant', 'Nom du representant (optionnel)'],
-      ['Telephone *', 'Numero de telephone de la societe'],
-      ['Adresse siege *', 'Adresse complete du siege social'],
+      ['Raison sociale *', 'Dénomination sociale de la société'],
+      ['N° SIREN *', 'Numéro SIREN (9 chiffres)'],
+      ['E-mail du représentant légal *', 'E-mail du représentant légal'],
+      ['Prénom du représentant légal', 'Prénom du représentant (optionnel)'],
+      ['Nom du représentant légal', 'Nom du représentant (optionnel)'],
+      ['Téléphone *', 'Numéro de téléphone de la société'],
+      ['Adresse du siège social *', 'Adresse complète du siège social'],
       ['Date de Transfert *', 'Date de souscription (jj/mm/aaaa)'],
       ['CGP', 'Conseiller en Gestion de Patrimoine (optionnel)'],
-      ['E-mail CGP', 'E-mail du CGP (optionnel)'],
+      ['E-mail du CGP', 'E-mail du CGP (optionnel)'],
     ];
 
     moralHelp.forEach(([field, description]) => {
