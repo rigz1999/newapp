@@ -7,6 +7,7 @@ import {
   DollarSign,
   ArrowLeft,
   Edit2,
+  Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -56,6 +57,28 @@ export function ImportPreviewModal({
     previewData.investors_preview
   );
   const [editingRow, setEditingRow] = useState<number | null>(null);
+  const [deletedIndices, setDeletedIndices] = useState<Set<number>>(new Set());
+
+  // Filter out deleted investors for display and calculations
+  const visibleInvestors = editedInvestors.filter((_, index) => !deletedIndices.has(index));
+  const displayedTotalInvestors = previewData.total_investors - deletedIndices.size;
+  const displayedTotalSouscriptions = previewData.total_souscriptions - deletedIndices.size;
+  const displayedTotalMontant = visibleInvestors.reduce((sum, inv) => sum + inv.montant_investi, 0);
+
+  const handleDeleteInvestor = (index: number): void => {
+    setDeletedIndices(prev => new Set([...prev, index]));
+    if (editingRow === index) {
+      setEditingRow(null);
+    }
+  };
+
+  const handleRestoreInvestor = (index: number): void => {
+    setDeletedIndices(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(index);
+      return newSet;
+    });
+  };
 
   const formatCurrency = (amount: number): string =>
     new Intl.NumberFormat('fr-FR', {
@@ -76,7 +99,9 @@ export function ImportPreviewModal({
   };
 
   const exportEditedInvestors = (): EditedInvestor[] =>
-    editedInvestors.map((inv, index) => ({ ...inv, index }));
+    editedInvestors
+      .map((inv, index) => ({ ...inv, index }))
+      .filter((_, index) => !deletedIndices.has(index));
 
   return (
     <div className="fixed inset-0 z-[70] overflow-y-auto">
@@ -150,7 +175,12 @@ export function ImportPreviewModal({
                   <div>
                     <p className="text-sm text-slate-600">Investisseurs</p>
                     <p className="text-2xl font-bold text-slate-900">
-                      {previewData.total_investors}
+                      {displayedTotalInvestors}
+                      {deletedIndices.size > 0 && (
+                        <span className="text-sm font-normal text-slate-500 ml-1">
+                          (-{deletedIndices.size})
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -163,7 +193,12 @@ export function ImportPreviewModal({
                   <div>
                     <p className="text-sm text-slate-600">Souscriptions</p>
                     <p className="text-2xl font-bold text-slate-900">
-                      {previewData.total_souscriptions}
+                      {displayedTotalSouscriptions}
+                      {deletedIndices.size > 0 && (
+                        <span className="text-sm font-normal text-slate-500 ml-1">
+                          (-{deletedIndices.size})
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -176,7 +211,7 @@ export function ImportPreviewModal({
                   <div>
                     <p className="text-sm text-slate-600">Montant total</p>
                     <p className="text-xl font-bold text-slate-900">
-                      {formatCurrency(previewData.total_montant)}
+                      {formatCurrency(displayedTotalMontant)}
                     </p>
                   </div>
                 </div>
@@ -211,108 +246,141 @@ export function ImportPreviewModal({
                       <th className="px-5 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         Titres
                       </th>
+                      <th className="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider w-12">
+
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {editedInvestors.map((investor, index) => (
-                      <tr
-                        key={index}
-                        className={`hover:bg-slate-50 transition-colors ${editingRow === index ? 'bg-blue-50' : ''}`}
-                      >
-                        <td className="px-5 py-3 text-sm">
-                          {editingRow === index ? (
-                            <input
-                              type="text"
-                              value={investor.nom}
-                              onChange={e => handleInvestorEdit(index, 'nom', e.target.value)}
-                              className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              disabled={isProcessing}
-                            />
-                          ) : (
-                            <button
-                              onClick={() => setEditingRow(index)}
-                              className="text-left w-full hover:text-blue-600 flex items-center gap-2"
-                              disabled={isProcessing}
-                            >
-                              <Edit2 className="w-3 h-3 text-slate-400" />
-                              <span>{investor.nom}</span>
-                            </button>
-                          )}
-                        </td>
-                        <td className="px-5 py-3 text-sm">
-                          {editingRow === index ? (
-                            <select
-                              value={investor.type}
-                              onChange={e => handleInvestorEdit(index, 'type', e.target.value)}
-                              className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              disabled={isProcessing}
-                            >
-                              <option value="physique">Physique</option>
-                              <option value="morale">Morale</option>
-                            </select>
-                          ) : (
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                investor.type === 'physique'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-purple-100 text-purple-800'
-                              }`}
-                            >
-                              {investor.type === 'physique' ? 'Physique' : 'Morale'}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3 text-sm text-right">
-                          {editingRow === index ? (
-                            <input
-                              type="number"
-                              value={investor.montant_investi}
-                              onChange={e =>
-                                handleInvestorEdit(
-                                  index,
-                                  'montant_investi',
-                                  parseFloat(e.target.value) || 0
-                                )
-                              }
-                              className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
-                              disabled={isProcessing}
-                            />
-                          ) : (
-                            <span className="font-medium text-slate-900">
-                              {formatCurrency(investor.montant_investi)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3 text-sm text-right">
-                          {editingRow === index ? (
-                            <div className="flex items-center justify-end gap-2">
+                    {editedInvestors.map((investor, index) => {
+                      const isDeleted = deletedIndices.has(index);
+                      return (
+                        <tr
+                          key={index}
+                          className={`transition-colors ${
+                            isDeleted
+                              ? 'bg-red-50 opacity-60'
+                              : editingRow === index
+                                ? 'bg-blue-50'
+                                : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          <td className={`px-5 py-3 text-sm ${isDeleted ? 'line-through' : ''}`}>
+                            {editingRow === index && !isDeleted ? (
+                              <input
+                                type="text"
+                                value={investor.nom}
+                                onChange={e => handleInvestorEdit(index, 'nom', e.target.value)}
+                                className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                disabled={isProcessing}
+                              />
+                            ) : (
+                              <button
+                                onClick={() => !isDeleted && setEditingRow(index)}
+                                className={`text-left w-full flex items-center gap-2 ${isDeleted ? 'cursor-default' : 'hover:text-blue-600'}`}
+                                disabled={isProcessing || isDeleted}
+                              >
+                                {!isDeleted && <Edit2 className="w-3 h-3 text-slate-400" />}
+                                <span>{investor.nom}</span>
+                              </button>
+                            )}
+                          </td>
+                          <td className={`px-5 py-3 text-sm ${isDeleted ? 'line-through' : ''}`}>
+                            {editingRow === index && !isDeleted ? (
+                              <select
+                                value={investor.type}
+                                onChange={e => handleInvestorEdit(index, 'type', e.target.value)}
+                                className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                disabled={isProcessing}
+                              >
+                                <option value="physique">Physique</option>
+                                <option value="morale">Morale</option>
+                              </select>
+                            ) : (
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  investor.type === 'physique'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-purple-100 text-purple-800'
+                                }`}
+                              >
+                                {investor.type === 'physique' ? 'Physique' : 'Morale'}
+                              </span>
+                            )}
+                          </td>
+                          <td className={`px-5 py-3 text-sm text-right ${isDeleted ? 'line-through' : ''}`}>
+                            {editingRow === index && !isDeleted ? (
                               <input
                                 type="number"
-                                value={investor.nombre_obligations}
+                                value={investor.montant_investi}
                                 onChange={e =>
                                   handleInvestorEdit(
                                     index,
-                                    'nombre_obligations',
+                                    'montant_investi',
                                     parseFloat(e.target.value) || 0
                                   )
                                 }
-                                className="w-20 px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                                className="w-full px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
                                 disabled={isProcessing}
                               />
+                            ) : (
+                              <span className="font-medium text-slate-900">
+                                {formatCurrency(investor.montant_investi)}
+                              </span>
+                            )}
+                          </td>
+                          <td className={`px-5 py-3 text-sm text-right ${isDeleted ? 'line-through' : ''}`}>
+                            {editingRow === index && !isDeleted ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <input
+                                  type="number"
+                                  value={investor.nombre_obligations}
+                                  onChange={e =>
+                                    handleInvestorEdit(
+                                      index,
+                                      'nombre_obligations',
+                                      parseFloat(e.target.value) || 0
+                                    )
+                                  }
+                                  className="w-20 px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                                  disabled={isProcessing}
+                                />
+                                <button
+                                  onClick={() => setEditingRow(null)}
+                                  className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                                  disabled={isProcessing}
+                                >
+                                  ✓
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-slate-600">{investor.nombre_obligations}</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-3 text-center">
+                            {isDeleted ? (
                               <button
-                                onClick={() => setEditingRow(null)}
-                                className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                                onClick={() => handleRestoreInvestor(index)}
                                 disabled={isProcessing}
+                                className="p-1.5 text-green-600 hover:bg-green-100 rounded transition-colors disabled:opacity-50"
+                                title="Restaurer"
                               >
-                                ✓
+                                <CheckCircle className="w-4 h-4" />
                               </button>
-                            </div>
-                          ) : (
-                            <span className="text-slate-600">{investor.nombre_obligations}</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                            ) : (
+                              <button
+                                onClick={() => handleDeleteInvestor(index)}
+                                disabled={isProcessing}
+                                className="p-1.5 text-red-500 hover:bg-red-100 rounded transition-colors disabled:opacity-50"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
