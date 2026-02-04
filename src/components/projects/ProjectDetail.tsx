@@ -1176,7 +1176,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               setShowTrancheWizard(false);
               setEditingTranche(null);
             }}
-            onSuccess={(message) => {
+            onSuccess={(message, _projectId) => {
               setShowTrancheWizard(false);
               setEditingTranche(null);
               fetchProjectData();

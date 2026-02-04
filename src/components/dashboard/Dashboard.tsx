@@ -14,6 +14,7 @@ import { DashboardRecentPayments } from './DashboardRecentPayments';
 import { DashboardChart } from './DashboardChart';
 import { formatCurrency } from '../../utils/formatters';
 import { logger } from '../../utils/logger';
+import { toast } from '../../utils/toast';
 import {
   generateAlerts,
   type Alert,
@@ -831,9 +832,19 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       {showTrancheWizard && (
         <TrancheWizard
           onClose={() => setShowTrancheWizard(false)}
-          onSuccess={() => {
+          onSuccess={(message, projectId) => {
             setShowTrancheWizard(false);
-            fetchData();
+            if (message) {
+              toast.success(message);
+            } else {
+              toast.success('Tranche créée avec succès');
+            }
+            // Navigate to the project page after successful import
+            if (projectId) {
+              navigate(`/projets/${projectId}`);
+            } else {
+              fetchData();
+            }
           }}
         />
       )}
