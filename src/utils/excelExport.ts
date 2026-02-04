@@ -20,8 +20,31 @@ export async function loadExcelJS(): Promise<typeof ExcelJS> {
   }
 
   const module = await import('exceljs');
-  // Handle both ESM default export and CommonJS module formats
-  excelJSCache = (module.default || module) as typeof ExcelJS;
+
+  // Debug: log the module structure
+  console.log('ExcelJS module keys:', Object.keys(module));
+  console.log('ExcelJS module.default:', module.default);
+  console.log('ExcelJS module.Workbook:', (module as Record<string, unknown>).Workbook);
+
+  // The module might have Workbook at different levels depending on bundler
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mod = module as any;
+
+  if (mod.Workbook) {
+    excelJSCache = mod as typeof ExcelJS;
+  } else if (mod.default?.Workbook) {
+    excelJSCache = mod.default as typeof ExcelJS;
+  } else if (mod.default && typeof mod.default === 'object') {
+    // Check all keys on default for Workbook
+    excelJSCache = mod.default as typeof ExcelJS;
+  } else {
+    // Last resort: the entire module
+    excelJSCache = mod as typeof ExcelJS;
+  }
+
+  console.log('ExcelJS resolved cache:', excelJSCache);
+  console.log('ExcelJS Workbook constructor:', excelJSCache?.Workbook);
+
   return excelJSCache;
 }
 
@@ -29,8 +52,13 @@ export async function loadExcelJS(): Promise<typeof ExcelJS> {
  * Create a new Excel workbook (lazy-loaded)
  */
 export async function createWorkbook(): Promise<ExcelJS.Workbook> {
-  const ExcelJS = await loadExcelJS();
-  return new ExcelJS.Workbook();
+  const ExcelJSModule = await loadExcelJS();
+  if (!ExcelJSModule?.Workbook) {
+    throw new Error(
+      `ExcelJS Workbook not found. Module structure: ${JSON.stringify(Object.keys(ExcelJSModule || {}))}`
+    );
+  }
+  return new ExcelJSModule.Workbook();
 }
 
 /**
