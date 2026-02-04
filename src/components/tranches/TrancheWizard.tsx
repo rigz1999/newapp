@@ -97,7 +97,7 @@ interface PreviewData {
 
 interface TrancheWizardProps {
   onClose: () => void;
-  onSuccess: (message?: string) => void;
+  onSuccess: (message?: string, projectId?: string) => void;
   preselectedProjectId?: string;
   editingTranche?: Tranche | null;
   isEditMode?: boolean;
@@ -623,7 +623,7 @@ export function TrancheWizard({
             `Coupons créés: ${regenerateResult.created_coupons}`;
 
           onClose();
-          onSuccess(successMsg);
+          onSuccess(successMsg, editingTranche.projet_id);
         } else {
           logger.warn('Écheancier non régénéré:', regenerateResult.error);
           const successMsg =
@@ -631,7 +631,7 @@ export function TrancheWizard({
             `Note: ${regenerateResult.error || 'Écheancier non généré (paramètres manquants)'}`;
 
           onClose();
-          onSuccess(successMsg);
+          onSuccess(successMsg, editingTranche.projet_id);
         }
       } catch (regenerateError: unknown) {
         logger.error(new Error('Erreur régénération écheancier'), { error: regenerateError });
@@ -640,7 +640,7 @@ export function TrancheWizard({
           `Note: Impossible de régénérer l'écheancier automatiquement.`;
 
         onClose();
-        onSuccess(successMsg);
+        onSuccess(successMsg, editingTranche.projet_id);
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la mise à jour';
@@ -858,7 +858,7 @@ export function TrancheWizard({
 
               setPreviewData(null); // Close preview modal
               onClose();
-              onSuccess(successMsg);
+              onSuccess(successMsg, selectedProjectId);
 
               if (result.errors && result.errors.length > 0) {
                 logger.warn("Erreurs d'import", { errors: result.errors });
