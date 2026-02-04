@@ -112,8 +112,8 @@ export async function downloadRegistreTemplate(): Promise<void> {
     const instructions = [
       '1. Ouvrez l\'onglet "Registre" en bas de l\'ecran',
       '2. Remplissez les sections "Personnes Physiques" et "Personnes Morales"',
-      "3. Les champs marques d'un asterisque (*) sont obligatoires",
-      '4. Ne modifiez pas les en-tetes de colonnes',
+      '3. IMPORTANT: Ne modifiez pas les en-tetes de colonnes (sinon l\'import echouera)',
+      '4. Consultez l\'onglet "Aide" pour connaitre les champs obligatoires',
       '5. Une fois termine, enregistrez et importez le fichier dans Finixar',
     ];
 
@@ -147,17 +147,17 @@ export async function downloadRegistreTemplate(): Promise<void> {
       properties: { tabColor: { argb: colors.headerBg } },
     });
 
-    // Physical persons columns - headers match standard format profile exactly
+    // Physical persons columns - headers MUST match standard format profile exactly (no asterisks!)
     const physicalColumns = [
-      { header: 'Quantité *', key: 'quantite', width: 12 },
-      { header: 'Montant *', key: 'montant', width: 14 },
-      { header: 'Nom(s) *', key: 'nom', width: 18 },
-      { header: 'Prénom(s) *', key: 'prenom', width: 18 },
-      { header: 'E-mail *', key: 'email', width: 28 },
-      { header: 'Téléphone *', key: 'telephone', width: 16 },
-      { header: 'Adresse du domicile *', key: 'adresse', width: 35 },
-      { header: 'Résidence Fiscale 1 *', key: 'residence_fiscale', width: 22 },
-      { header: 'Date de Transfert *', key: 'date_transfert', width: 18 },
+      { header: 'Quantité', key: 'quantite', width: 12 },
+      { header: 'Montant', key: 'montant', width: 14 },
+      { header: 'Nom(s)', key: 'nom', width: 18 },
+      { header: 'Prénom(s)', key: 'prenom', width: 18 },
+      { header: 'E-mail', key: 'email', width: 28 },
+      { header: 'Téléphone', key: 'telephone', width: 16 },
+      { header: 'Adresse du domicile', key: 'adresse', width: 35 },
+      { header: 'Résidence Fiscale 1', key: 'residence_fiscale', width: 22 },
+      { header: 'Date de Transfert', key: 'date_transfert', width: 18 },
       { header: 'CGP', key: 'cgp', width: 20 },
       { header: 'E-mail du CGP', key: 'email_cgp', width: 25 },
     ];
@@ -238,18 +238,18 @@ export async function downloadRegistreTemplate(): Promise<void> {
     // === Legal entities section ===
     const moralStartRow = 26;
 
-    // Legal entities columns - headers match standard format profile exactly
+    // Legal entities columns - headers MUST match standard format profile exactly (no asterisks!)
     const moralColumns = [
-      { header: 'Quantité *', key: 'quantite', width: 12 },
-      { header: 'Montant *', key: 'montant', width: 14 },
-      { header: 'Raison sociale *', key: 'raison_sociale', width: 25 },
-      { header: 'N° SIREN *', key: 'siren', width: 14 },
-      { header: 'E-mail du représentant légal *', key: 'email_rep', width: 32 },
+      { header: 'Quantité', key: 'quantite', width: 12 },
+      { header: 'Montant', key: 'montant', width: 14 },
+      { header: 'Raison sociale', key: 'raison_sociale', width: 25 },
+      { header: 'N° SIREN', key: 'siren', width: 14 },
+      { header: 'E-mail du représentant légal', key: 'email_rep', width: 32 },
       { header: 'Prénom du représentant légal', key: 'prenom_rep', width: 24 },
       { header: 'Nom du représentant légal', key: 'nom_rep', width: 22 },
-      { header: 'Téléphone *', key: 'telephone', width: 16 },
-      { header: 'Adresse du siège social *', key: 'adresse', width: 35 },
-      { header: 'Date de Transfert *', key: 'date_transfert', width: 18 },
+      { header: 'Téléphone', key: 'telephone', width: 16 },
+      { header: 'Adresse du siège social', key: 'adresse', width: 35 },
+      { header: 'Date de Transfert', key: 'date_transfert', width: 18 },
       { header: 'CGP', key: 'cgp', width: 20 },
       { header: 'E-mail du CGP', key: 'email_cgp', width: 25 },
     ];
@@ -353,15 +353,15 @@ export async function downloadRegistreTemplate(): Promise<void> {
     helpRow++;
 
     const physicalHelp = [
-      ['Quantité *', "Nombre d'obligations souscrites"],
-      ['Montant *', 'Montant total investi en euros'],
-      ['Nom(s) *', "Nom(s) de famille de l'investisseur"],
-      ['Prénom(s) *', "Prénom(s) de l'investisseur"],
-      ['E-mail *', 'Adresse e-mail valide'],
-      ['Téléphone *', 'Numéro avec ou sans indicatif (+33)'],
-      ['Adresse du domicile *', 'Adresse complète du domicile'],
-      ['Résidence Fiscale 1 *', 'Pays de résidence fiscale (ex: France)'],
-      ['Date de Transfert *', 'Date de souscription (jj/mm/aaaa)'],
+      ['Quantité (obligatoire)', "Nombre d'obligations souscrites"],
+      ['Montant (obligatoire)', 'Montant total investi en euros'],
+      ['Nom(s) (obligatoire)', "Nom(s) de famille de l'investisseur"],
+      ['Prénom(s) (obligatoire)', "Prénom(s) de l'investisseur"],
+      ['E-mail (obligatoire)', 'Adresse e-mail valide'],
+      ['Téléphone', 'Numéro avec ou sans indicatif (+33)'],
+      ['Adresse du domicile', 'Adresse complète du domicile'],
+      ['Résidence Fiscale 1', 'Pays de résidence fiscale (ex: France)'],
+      ['Date de Transfert (obligatoire)', 'Date de souscription (jj/mm/aaaa) - utilisée comme date d\'émission'],
       ['CGP', 'Conseiller en Gestion de Patrimoine (optionnel)'],
       ['E-mail du CGP', 'E-mail du CGP (optionnel)'],
     ];
@@ -385,16 +385,16 @@ export async function downloadRegistreTemplate(): Promise<void> {
     helpRow++;
 
     const moralHelp = [
-      ['Quantité *', "Nombre d'obligations souscrites"],
-      ['Montant *', 'Montant total investi en euros'],
-      ['Raison sociale *', 'Dénomination sociale de la société'],
-      ['N° SIREN *', 'Numéro SIREN (9 chiffres)'],
-      ['E-mail du représentant légal *', 'E-mail du représentant légal'],
+      ['Quantité (obligatoire)', "Nombre d'obligations souscrites"],
+      ['Montant (obligatoire)', 'Montant total investi en euros'],
+      ['Raison sociale (obligatoire)', 'Dénomination sociale de la société'],
+      ['N° SIREN (obligatoire)', 'Numéro SIREN (9 chiffres)'],
+      ['E-mail du représentant légal (obligatoire)', 'E-mail du représentant légal'],
       ['Prénom du représentant légal', 'Prénom du représentant (optionnel)'],
       ['Nom du représentant légal', 'Nom du représentant (optionnel)'],
-      ['Téléphone *', 'Numéro de téléphone de la société'],
-      ['Adresse du siège social *', 'Adresse complète du siège social'],
-      ['Date de Transfert *', 'Date de souscription (jj/mm/aaaa)'],
+      ['Téléphone', 'Numéro de téléphone de la société'],
+      ['Adresse du siège social', 'Adresse complète du siège social'],
+      ['Date de Transfert (obligatoire)', 'Date de souscription (jj/mm/aaaa) - utilisée comme date d\'émission'],
       ['CGP', 'Conseiller en Gestion de Patrimoine (optionnel)'],
       ['E-mail du CGP', 'E-mail du CGP (optionnel)'],
     ];
