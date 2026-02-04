@@ -19,6 +19,7 @@ import { Tooltip } from '../common/Tooltip';
 import { logger } from '../../utils/logger';
 import { ImportPreviewModal } from './ImportPreviewModal';
 import { TrancheEditPage } from './TrancheEditPage';
+import { downloadRegistreTemplate } from '../../utils/excelExport';
 
 interface Project {
   id: string;
@@ -1202,14 +1203,14 @@ export function TrancheWizard({
                         Téléchargez notre modèle Excel pré-formaté avec validation intégrée pour
                         garantir un import sans erreur.
                       </p>
-                      <a
-                        href="/templates/Modele_Registre_Titres.xlsx"
-                        download="Modele_Registre_Titres.xlsx"
+                      <button
+                        type="button"
+                        onClick={() => downloadRegistreTemplate()}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                       >
                         <Download className="w-4 h-4" />
                         Télécharger le modèle Excel
-                      </a>
+                      </button>
                     </div>
                   </div>
                 </div>
