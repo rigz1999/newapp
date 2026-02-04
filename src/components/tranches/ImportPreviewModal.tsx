@@ -131,7 +131,7 @@ export function ImportPreviewModal({
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:bg-slate-50"
                   />
                   {previewData.extracted_date_emission && (
-                    <p className="text-xs text-green-600 mt-1">✓ Extraite du CSV</p>
+                    <p className="text-xs text-green-600 mt-1">✓ Extraite automatiquement</p>
                   )}
                   {!previewData.extracted_date_emission && editedDateEmission && (
                     <p className="text-xs text-blue-600 mt-1">Modifiée manuellement</p>

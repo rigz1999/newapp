@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
   X,
@@ -145,6 +145,21 @@ export function TrancheWizard({
   >([]);
   const [searchInvestorQuery, setSearchInvestorQuery] = useState('');
 
+  // Refs for auto-scroll
+  const fileConfirmRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll helper
+  const scrollToElement = (ref: React.RefObject<HTMLDivElement | null>) => {
+    if (ref.current && scrollContainerRef.current) {
+      setTimeout(() => {
+        ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+  };
+
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -154,6 +169,20 @@ export function TrancheWizard({
       setSelectedProjectId(preselectedProjectId);
     }
   }, [preselectedProjectId]);
+
+  // Auto-scroll to progress bar when processing starts
+  useEffect(() => {
+    if (processing && !isEditMode) {
+      scrollToElement(progressRef);
+    }
+  }, [processing, isEditMode]);
+
+  // Auto-scroll to error when it appears
+  useEffect(() => {
+    if (error) {
+      scrollToElement(errorRef);
+    }
+  }, [error]);
 
   useEffect(() => {
     if (editingTranche && isEditMode) {
@@ -914,7 +943,7 @@ export function TrancheWizard({
           </div>
 
           {/* Body - Scrollable */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
             {/* Project selection */}
             <div>
               <label className="block text-sm font-semibold text-slate-900 mb-2">
@@ -1221,13 +1250,15 @@ export function TrancheWizard({
                     if (files && files.length > 0) {
                       setCsvFile(files[0]);
                       setError('');
+                      // Auto-scroll to file confirmation
+                      setTimeout(() => scrollToElement(fileConfirmRef), 150);
                     }
                   }}
                   label="Sélectionner le fichier (CSV ou Excel)"
                   description="Le fichier sera importé automatiquement"
                 />
                 {csvFile && (
-                  <div className="mt-4 flex items-center justify-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div ref={fileConfirmRef} className="mt-4 flex items-center justify-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                     <span className="text-sm text-slate-700 font-medium flex-1 text-left">
                       {csvFile.name}
@@ -1247,7 +1278,7 @@ export function TrancheWizard({
 
             {/* Progress bar */}
             {processing && !isEditMode && (
-              <div className="space-y-2">
+              <div ref={progressRef} className="space-y-2">
                 <div className="flex justify-between text-sm text-slate-600">
                   <span>
                     {isProcessingOnServer ? (
@@ -1276,7 +1307,7 @@ export function TrancheWizard({
 
             {/* Error message */}
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div ref={errorRef} className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
