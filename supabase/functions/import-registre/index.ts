@@ -354,11 +354,34 @@ const parseXLSXFile = async (file: File): Promise<string> => {
     cellNF: false,
   });
 
-  // Use first sheet
-  const firstSheetName = workbook.SheetNames[0];
-  console.log(`  Using sheet: ${firstSheetName}`);
+  console.log(`  Available sheets: ${workbook.SheetNames.join(', ')}`);
 
-  const worksheet = workbook.Sheets[firstSheetName];
+  // Try to find the "Registre" sheet first (used by our template)
+  // Fall back to first sheet if not found
+  let sheetName = workbook.SheetNames[0];
+
+  // Look for common data sheet names
+  const dataSheetNames = ['Registre', 'registre', 'Data', 'data', 'Données', 'données', 'Sheet1'];
+  for (const name of dataSheetNames) {
+    if (workbook.SheetNames.includes(name)) {
+      sheetName = name;
+      break;
+    }
+  }
+
+  // Also skip known non-data sheets if we're still on the first sheet
+  const nonDataSheets = ['Instructions', 'instructions', 'Aide', 'aide', 'Help', 'help'];
+  if (nonDataSheets.includes(sheetName) && workbook.SheetNames.length > 1) {
+    // Find first sheet that's not a known non-data sheet
+    const dataSheet = workbook.SheetNames.find(name => !nonDataSheets.includes(name));
+    if (dataSheet) {
+      sheetName = dataSheet;
+    }
+  }
+
+  console.log(`  Using sheet: ${sheetName}`);
+
+  const worksheet = workbook.Sheets[sheetName];
   const rows = xlsxSheetToRows(worksheet);
 
   console.log(`  Parsed ${rows.length} rows from XLSX`);
