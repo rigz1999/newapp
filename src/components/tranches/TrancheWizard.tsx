@@ -850,11 +850,7 @@ export function TrancheWizard({
             logger.info('Import terminé', { result });
 
             if (result.success && result.createdSouscriptions > 0) {
-              const successMsg =
-                `Import terminé!\n` +
-                `${result.createdSouscriptions || 0} souscriptions créées\n` +
-                `${result.createdInvestisseurs || 0} nouveaux investisseurs\n` +
-                `${result.updatedInvestisseurs || 0} investisseurs mis à jour`;
+              const successMsg = `${result.createdSouscriptions} souscription${result.createdSouscriptions > 1 ? 's' : ''} importée${result.createdSouscriptions > 1 ? 's' : ''}`;
 
               setPreviewData(null); // Close preview modal
               onClose();
