@@ -5,19 +5,32 @@
 // Uses static import for compatibility with WebContainer/bolt.new
 // ============================================
 
-import * as ExcelJS from 'exceljs';
+import * as ExcelJSModule from 'exceljs';
+
+// Debug: Log what we got from the import
+console.warn('ExcelJS import:', ExcelJSModule);
+console.warn('ExcelJS keys:', Object.keys(ExcelJSModule));
+console.warn('ExcelJS.default:', (ExcelJSModule as Record<string, unknown>).default);
+console.warn('ExcelJS.Workbook:', ExcelJSModule.Workbook);
+
+// Handle different module formats
+const ExcelJS: typeof ExcelJSModule = ExcelJSModule.Workbook
+  ? ExcelJSModule
+  : ((ExcelJSModule as Record<string, unknown>).default as typeof ExcelJSModule) || ExcelJSModule;
 
 /**
  * Create a new Excel workbook
  */
-export async function createWorkbook(): Promise<ExcelJS.Workbook> {
+export function createWorkbook(): ExcelJSModule.Workbook {
+  console.warn('Creating workbook with:', ExcelJS);
+  console.warn('Workbook constructor:', ExcelJS.Workbook);
   return new ExcelJS.Workbook();
 }
 
 /**
  * Export workbook to blob
  */
-export async function workbookToBlob(workbook: ExcelJS.Workbook): Promise<Blob> {
+export async function workbookToBlob(workbook: ExcelJSModule.Workbook): Promise<Blob> {
   const buffer = await workbook.xlsx.writeBuffer();
   return new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -43,11 +56,11 @@ export function downloadExcelFile(blob: Blob, filename: string): void {
  * Creates workbook, generates file, and triggers download
  */
 export async function exportToExcel(
-  setupWorkbook: (workbook: ExcelJS.Workbook) => Promise<void> | void,
+  setupWorkbook: (workbook: ExcelJSModule.Workbook) => Promise<void> | void,
   filename: string
 ): Promise<void> {
-  const workbook = await createWorkbook();
-  await setupWorkbook(workbook);
+  const workbook = createWorkbook();
+  await Promise.resolve(setupWorkbook(workbook));
   const blob = await workbookToBlob(workbook);
   downloadExcelFile(blob, filename);
 }
@@ -56,7 +69,7 @@ export async function exportToExcel(
  * Generate and download the registre import template
  */
 export async function downloadRegistreTemplate(): Promise<void> {
-  await exportToExcel(async workbook => {
+  await exportToExcel(workbook => {
     workbook.creator = 'Finixar';
     workbook.created = new Date();
 
