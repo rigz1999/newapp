@@ -20,8 +20,9 @@ export async function loadExcelJS(): Promise<typeof ExcelJS> {
   }
 
   const module = await import('exceljs');
-  excelJSCache = module;
-  return module;
+  // Handle both ESM default export and CommonJS module formats
+  excelJSCache = (module.default || module) as typeof ExcelJS;
+  return excelJSCache;
 }
 
 /**
