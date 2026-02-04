@@ -72,77 +72,7 @@ export async function downloadRegistreTemplate(): Promise<void> {
     workbook.creator = 'Finixar';
     workbook.created = new Date();
 
-    // ===== Sheet 1: Instructions =====
-    const instructionsSheet = workbook.addWorksheet('Instructions', {
-      properties: { tabColor: { argb: colors.headerBg } },
-    });
-
-    instructionsSheet.getColumn(1).width = 80;
-
-    // Title
-    instructionsSheet.mergeCells('A1:A2');
-    const titleCell = instructionsSheet.getCell('A1');
-    titleCell.value = 'MODELE REGISTRE DES TITRES';
-    titleCell.font = { size: 18, bold: true, color: { argb: colors.sectionTitle } };
-    titleCell.alignment = { vertical: 'middle', horizontal: 'left' };
-
-    let row = 4;
-
-    instructionsSheet.getCell(`A${row}`).value = 'A propos de ce modele';
-    instructionsSheet.getCell(`A${row}`).font = {
-      size: 12,
-      bold: true,
-      color: { argb: colors.sectionTitle },
-    };
-    row++;
-
-    instructionsSheet.getCell(`A${row}`).value =
-      "Ce modele Excel vous permet d'importer votre registre des titres dans Finixar.";
-    instructionsSheet.getCell(`A${row}`).alignment = { wrapText: true };
-    row += 2;
-
-    instructionsSheet.getCell(`A${row}`).value = "Instructions d'utilisation";
-    instructionsSheet.getCell(`A${row}`).font = {
-      size: 12,
-      bold: true,
-      color: { argb: colors.sectionTitle },
-    };
-    row++;
-
-    const instructions = [
-      '1. Ouvrez l\'onglet "Registre" en bas de l\'ecran',
-      '2. Remplissez les sections "Personnes Physiques" et "Personnes Morales"',
-      "3. Les champs marques d'un asterisque (*) sont obligatoires",
-      '4. Ne modifiez pas les en-tetes de colonnes',
-      '5. Une fois termine, enregistrez et importez le fichier dans Finixar',
-    ];
-
-    instructions.forEach(instruction => {
-      instructionsSheet.getCell(`A${row}`).value = instruction;
-      row++;
-    });
-    row++;
-
-    instructionsSheet.getCell(`A${row}`).value = 'Formats attendus';
-    instructionsSheet.getCell(`A${row}`).font = {
-      size: 12,
-      bold: true,
-      color: { argb: colors.sectionTitle },
-    };
-    row++;
-
-    const formats = [
-      'Dates : jj/mm/aaaa (exemple : 01/01/2024)',
-      'E-mail : format valide avec @',
-      'SIREN : exactement 9 chiffres',
-      'Telephone : avec ou sans indicatif (+33)',
-    ];
-    formats.forEach(format => {
-      instructionsSheet.getCell(`A${row}`).value = `- ${format}`;
-      row++;
-    });
-
-    // ===== Sheet 2: Registre (data entry) =====
+    // ===== Sheet 1: Registre (data entry) - MUST BE FIRST for parser =====
     const registreSheet = workbook.addWorksheet('Registre', {
       properties: { tabColor: { argb: colors.headerBg } },
     });
@@ -405,6 +335,75 @@ export async function downloadRegistreTemplate(): Promise<void> {
       helpSheet.getCell(`B${helpRow}`).value = description;
       helpSheet.getCell(`B${helpRow}`).font = { size: 10 };
       helpRow++;
+    });
+
+    // ===== Sheet 3: Instructions =====
+    const instructionsSheet = workbook.addWorksheet('Instructions', {
+      properties: { tabColor: { argb: colors.headerBg } },
+    });
+
+    instructionsSheet.getColumn(1).width = 80;
+
+    // Title
+    instructionsSheet.mergeCells('A1:A2');
+    const titleCell = instructionsSheet.getCell('A1');
+    titleCell.value = 'MODELE REGISTRE DES TITRES';
+    titleCell.font = { size: 18, bold: true, color: { argb: colors.sectionTitle } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'left' };
+
+    let instrRow = 4;
+
+    instructionsSheet.getCell(`A${instrRow}`).value = 'A propos de ce modele';
+    instructionsSheet.getCell(`A${instrRow}`).font = {
+      size: 12,
+      bold: true,
+      color: { argb: colors.sectionTitle },
+    };
+    instrRow++;
+
+    instructionsSheet.getCell(`A${instrRow}`).value =
+      "Ce modele Excel vous permet d'importer votre registre des titres dans Finixar.";
+    instructionsSheet.getCell(`A${instrRow}`).alignment = { wrapText: true };
+    instrRow += 2;
+
+    instructionsSheet.getCell(`A${instrRow}`).value = "Instructions d'utilisation";
+    instructionsSheet.getCell(`A${instrRow}`).font = {
+      size: 12,
+      bold: true,
+      color: { argb: colors.sectionTitle },
+    };
+    instrRow++;
+
+    const instructions = [
+      '1. Remplissez les sections "Personnes Physiques" et "Personnes Morales" dans l\'onglet Registre',
+      "2. Les champs marques d'un asterisque (*) sont obligatoires",
+      '3. Ne modifiez pas les en-tetes de colonnes',
+      '4. Une fois termine, enregistrez et importez le fichier dans Finixar',
+    ];
+
+    instructions.forEach(instruction => {
+      instructionsSheet.getCell(`A${instrRow}`).value = instruction;
+      instrRow++;
+    });
+    instrRow++;
+
+    instructionsSheet.getCell(`A${instrRow}`).value = 'Formats attendus';
+    instructionsSheet.getCell(`A${instrRow}`).font = {
+      size: 12,
+      bold: true,
+      color: { argb: colors.sectionTitle },
+    };
+    instrRow++;
+
+    const formats = [
+      'Dates : jj/mm/aaaa (exemple : 01/01/2024)',
+      'E-mail : format valide avec @',
+      'SIREN : exactement 9 chiffres',
+      'Telephone : avec ou sans indicatif (+33)',
+    ];
+    formats.forEach(format => {
+      instructionsSheet.getCell(`A${instrRow}`).value = `- ${format}`;
+      instrRow++;
     });
   }, 'Modele_Registre_Titres.xlsx');
 }
