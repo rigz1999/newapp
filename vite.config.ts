@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    exclude: ['lucide-react', 'jspdf', 'jspdf-autotable', 'exceljs'],
+    exclude: ['lucide-react', 'jspdf', 'jspdf-autotable'],
+    // Note: exceljs removed from exclude for WebContainer/bolt.new compatibility
   },
   build: {
     rollupOptions: {
