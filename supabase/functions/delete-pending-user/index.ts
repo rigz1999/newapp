@@ -28,23 +28,37 @@ Deno.serve(async (req: Request) => {
 
     console.log('Deleting user:', userId);
 
-    // Step 1: Sign out user from all devices/sessions
-    // This invalidates all refresh tokens
-    const { error: signOutError } = await supabaseAdmin.auth.admin.signOut(userId);
-    if (signOutError) {
-      console.error('Error signing out user:', signOutError);
-      // Continue anyway - we still want to delete the user
+    // First verify the user exists before attempting deletion
+    const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+    if (getUserError) {
+      console.error('Error fetching user:', getUserError);
+      throw new Error(`User not found or cannot be accessed: ${getUserError.message}`);
     }
 
-    // Step 2: Delete user from auth.users (this will cascade to profiles and memberships)
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (!existingUser?.user) {
+      console.error('User not found:', userId);
+      throw new Error('User not found');
+    }
+
+    console.log('Found user to delete:', existingUser.user.email);
+
+    // Delete user from auth.users (this will cascade to profiles and memberships)
+    // Note: Deleting a user automatically invalidates all their sessions, so no need to sign them out first
+    const { data: deleteData, error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
       console.error('Error deleting user:', deleteError);
       throw deleteError;
     }
 
-    console.log('User deleted successfully:', userId);
+    // Verify deletion was successful by checking the response
+    if (!deleteData?.user) {
+      console.error('Delete operation did not return expected user data');
+      throw new Error('Delete operation failed - no confirmation received');
+    }
+
+    console.log('User deleted successfully:', userId, 'email:', deleteData.user.email);
 
     return new Response(
       JSON.stringify({ success: true, message: 'User deleted successfully' }),
