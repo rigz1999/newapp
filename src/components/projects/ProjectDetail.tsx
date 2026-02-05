@@ -1639,8 +1639,6 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             onClose={() => {
               setShowCalendarExport(false);
               setCalendarExportScope({});
-              // Refresh project data to update outdated flag if needed
-              fetchProjectData();
             }}
             projectId={calendarExportScope.projectId}
             trancheId={calendarExportScope.trancheId}
