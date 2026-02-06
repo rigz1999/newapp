@@ -52,13 +52,24 @@ Deno.serve(async (req: Request) => {
       throw deleteError;
     }
 
-    // Verify deletion was successful by checking the response
-    if (!deleteData?.user) {
-      console.error('Delete operation did not return expected user data');
-      throw new Error('Delete operation failed - no confirmation received');
+    console.log('Delete API response:', JSON.stringify(deleteData));
+
+    // IMPORTANT: Verify the user was actually deleted by trying to fetch them again
+    const { data: verifyUser, error: verifyError } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+    if (verifyUser?.user) {
+      console.error('User still exists after delete call!', verifyUser.user.email);
+      throw new Error('Delete operation failed - user still exists after deletion attempt');
     }
 
-    console.log('User deleted successfully:', userId, 'email:', deleteData.user.email);
+    // If we get a "user not found" error, that confirms deletion worked
+    if (verifyError && verifyError.message.includes('not found')) {
+      console.log('Verified: User successfully deleted:', userId);
+    } else if (verifyError) {
+      console.log('Verify check returned error (may be ok):', verifyError.message);
+    }
+
+    console.log('User deleted successfully:', userId);
 
     return new Response(
       JSON.stringify({ success: true, message: 'User deleted successfully' }),

@@ -103,6 +103,7 @@ export default function AdminPanel() {
   const [selectedUserDetail, setSelectedUserDetail] = useState<UserDetail | null>(null);
   const [newOrgName, setNewOrgName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['invitations', 'pending', 'super-admins', 'organizations'])
@@ -324,6 +325,7 @@ export default function AdminPanel() {
     }
 
     logger.info('Attempting to remove member', { item: deletingItem });
+    setIsDeleting(true);
 
     try {
       const { data, error: funcError } = await supabase.functions.invoke('delete-pending-user', {
@@ -334,7 +336,22 @@ export default function AdminPanel() {
         throw funcError;
       }
       if (data?.error) {
-        throw new Error(data.error);
+        // Check if user not found - this means orphaned membership, delete it directly
+        if (data.error.includes('User not found') || data.error.includes('not found')) {
+          logger.info('User not found in auth, cleaning up orphaned membership', {
+            membershipId: deletingItem.id,
+          });
+          const { error: membershipDeleteError } = await supabase
+            .from('memberships')
+            .delete()
+            .eq('id', deletingItem.id);
+
+          if (membershipDeleteError) {
+            throw new Error(`Failed to clean up membership: ${membershipDeleteError.message}`);
+          }
+        } else {
+          throw new Error(data.error);
+        }
       }
 
       logger.info('Member and user account deleted successfully');
@@ -356,6 +373,8 @@ export default function AdminPanel() {
         type: 'error',
       });
       setShowAlertModal(true);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -792,12 +811,15 @@ export default function AdminPanel() {
       <DeleteConfirmModal
         isOpen={showRemoveUserModal}
         onClose={() => {
-          setShowRemoveUserModal(false);
-          setDeletingItem(null);
+          if (!isDeleting) {
+            setShowRemoveUserModal(false);
+            setDeletingItem(null);
+          }
         }}
         onConfirm={handleRemoveMember}
         title="Supprimer l'utilisateur"
         message="⚠️ Êtes-vous sûr de vouloir supprimer cet utilisateur ? Le compte sera définitivement supprimé. Cette action est irréversible."
+        isLoading={isDeleting}
       />
 
       <UserDetailModal
@@ -1149,6 +1171,7 @@ interface DeleteConfirmModalProps {
   onConfirm: () => void | Promise<void>;
   title: string;
   message: string;
+  isLoading?: boolean;
 }
 
 function DeleteConfirmModal({
@@ -1157,6 +1180,7 @@ function DeleteConfirmModal({
   onConfirm,
   title,
   message,
+  isLoading = false,
 }: DeleteConfirmModalProps): JSX.Element | null {
   if (!isOpen) {
     return null;
@@ -1165,7 +1189,7 @@ function DeleteConfirmModal({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+      onClick={isLoading ? undefined : onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="delete-confirm-modal-title"
@@ -1191,15 +1215,17 @@ function DeleteConfirmModal({
         <div className="flex gap-3 mt-6">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+            disabled={isLoading}
+            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Annuler
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2 bg-finixar-action-delete text-white rounded-lg hover:bg-finixar-action-delete-hover transition-colors"
+            disabled={isLoading}
+            className="flex-1 px-4 py-2 bg-finixar-action-delete text-white rounded-lg hover:bg-finixar-action-delete-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Confirmer
+            {isLoading ? 'Suppression...' : 'Confirmer'}
           </button>
         </div>
       </div>
