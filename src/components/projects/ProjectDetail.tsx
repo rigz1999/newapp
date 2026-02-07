@@ -120,7 +120,7 @@ interface AlertState {
 export function ProjectDetail({ organization: _organization }: ProjectDetailProps) {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { user, isSuperAdmin } = useAuth();
+  const { user, isSuperAdmin, userRole } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [tranches, setTranches] = useState<Tranche[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -738,7 +738,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/projets')}
+              onClick={() => navigate(userRole === 'emetteur' ? '/' : '/projets')}
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
               title="Retour aux projets"
               aria-label="Retour à la liste des projets"

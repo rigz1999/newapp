@@ -33,6 +33,15 @@ interface EmetteurProject {
   latest_actualite: { text: string; date: string; author: string } | null;
 }
 
+const ACCENT_COLORS = [
+  'border-l-blue-500',
+  'border-l-emerald-500',
+  'border-l-amber-500',
+  'border-l-rose-500',
+  'border-l-cyan-500',
+  'border-l-orange-500',
+];
+
 export default function EmetteurDashboard() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<EmetteurProject[]>([]);
@@ -151,8 +160,7 @@ export default function EmetteurDashboard() {
   const getDaysUntil = (dateString: string) => {
     const target = new Date(dateString);
     const now = new Date();
-    const diff = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
+    return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   const truncateText = (text: string, maxLength: number) => {
@@ -174,225 +182,203 @@ export default function EmetteurDashboard() {
 
   if (error) {
     return (
-      <div className="max-w-lg mx-auto mt-16">
+      <div className="px-6 py-6">
         <ErrorMessage message={error} />
       </div>
     );
   }
 
-  const firstName = userProfile?.full_name?.split(' ')[0] || 'Utilisateur';
+  const firstName = userProfile?.full_name?.split(' ')[0] || '';
   const totalNextPayment = projects.reduce((sum, p) => sum + (p.next_payment_amount || 0), 0);
-  const nearestPaymentDate = projects
+  const nearestPayment = projects
     .filter((p) => p.next_payment_date)
-    .sort((a, b) => new Date(a.next_payment_date!).getTime() - new Date(b.next_payment_date!).getTime())[0]
-    ?.next_payment_date;
+    .sort((a, b) => new Date(a.next_payment_date!).getTime() - new Date(b.next_payment_date!).getTime())[0];
   const totalRecentActivity = projects.reduce((sum, p) => sum + p.recent_actualites, 0);
 
   if (projects.length === 0) {
     return (
-      <div className="max-w-lg mx-auto text-center py-24 px-6">
-        <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <FolderOpen className="w-10 h-10 text-slate-400" />
+      <div className="px-6 py-6">
+        <div className="max-w-md mx-auto text-center py-20">
+          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <FolderOpen className="w-8 h-8 text-slate-400" />
+          </div>
+          <h2 className="text-lg font-semibold text-slate-900 mb-2">Aucun projet assigne</h2>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            L'administrateur de votre organisation doit vous inviter sur un projet.
+          </p>
         </div>
-        <h2 className="text-xl font-semibold text-slate-900 mb-2">Aucun projet assigne</h2>
-        <p className="text-slate-500 leading-relaxed">
-          Vous n'avez pas encore de projets assignes. L'administrateur de votre organisation
-          doit vous inviter sur un projet pour que vous puissiez y acceder.
-        </p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 px-2">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">
-          Bonjour, {firstName}
-        </h1>
-        <p className="text-slate-500 mt-1">
-          Voici un apercu de vos {projects.length} projet{projects.length > 1 ? 's' : ''}
-        </p>
+    <div className="px-6 py-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {firstName ? `Bonjour, ${firstName}` : 'Mes Projets'}
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {projects.length} projet{projects.length > 1 ? 's' : ''} actif{projects.length > 1 ? 's' : ''}
+          </p>
+        </div>
       </div>
 
-      {(totalNextPayment > 0 || totalRecentActivity > 0) && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-                <FolderOpen className="w-4.5 h-4.5 text-blue-600" />
-              </div>
-              <span className="text-sm text-slate-500">Projets actifs</span>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-slate-500">Projets actifs</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{projects.length}</p>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{projects.length}</p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
-                <Banknote className="w-4.5 h-4.5 text-amber-600" />
-              </div>
-              <span className="text-sm text-slate-500">Prochain coupon</span>
+            <div className="p-2.5 bg-blue-50 rounded-lg">
+              <FolderOpen className="w-5 h-5 text-blue-600" />
             </div>
-            {nearestPaymentDate ? (
-              <>
-                <p className="text-2xl font-bold text-slate-900">
-                  {formatCurrency(totalNextPayment)}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {formatDate(nearestPaymentDate)}
-                  {' '}
-                  <span className="text-amber-600 font-medium">
-                    ({getDaysUntil(nearestPaymentDate)}j)
-                  </span>
-                </p>
-              </>
-            ) : (
-              <p className="text-sm text-slate-400">Aucun coupon prevu</p>
-            )}
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                <MessageSquare className="w-4.5 h-4.5 text-emerald-600" />
-              </div>
-              <span className="text-sm text-slate-500">Activite recente</span>
-            </div>
-            <p className="text-2xl font-bold text-slate-900">{totalRecentActivity}</p>
-            <p className="text-xs text-slate-500 mt-1">actualites cette semaine</p>
           </div>
         </div>
-      )}
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-slate-500">Prochain coupon</p>
+              {nearestPayment?.next_payment_date ? (
+                <>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">
+                    {formatCurrency(totalNextPayment)}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {formatDate(nearestPayment.next_payment_date)}
+                    <span className="text-amber-600 font-medium ml-1">
+                      ({getDaysUntil(nearestPayment.next_payment_date)}j)
+                    </span>
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-slate-400 mt-2">Aucun coupon prevu</p>
+              )}
+            </div>
+            <div className="p-2.5 bg-amber-50 rounded-lg">
+              <Banknote className="w-5 h-5 text-amber-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-slate-500">Actualites cette semaine</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{totalRecentActivity}</p>
+            </div>
+            <div className="p-2.5 bg-emerald-50 rounded-lg">
+              <MessageSquare className="w-5 h-5 text-emerald-600" />
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="space-y-4">
-        {projects.map((project) => {
-          const daysUntilPayment = project.next_payment_date
-            ? getDaysUntil(project.next_payment_date)
-            : null;
-          const isPaymentSoon = daysUntilPayment !== null && daysUntilPayment <= 14;
+        <h2 className="text-lg font-semibold text-slate-900">Projets</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {projects.map((project, index) => {
+            const daysUntilPayment = project.next_payment_date
+              ? getDaysUntil(project.next_payment_date)
+              : null;
+            const isPaymentSoon = daysUntilPayment !== null && daysUntilPayment <= 14;
+            const accentColor = ACCENT_COLORS[index % ACCENT_COLORS.length];
 
-          return (
-            <Link
-              key={project.projet_id}
-              to={`/emetteur/projets/${project.projet_id}`}
-              className="block group"
-            >
-              <div className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200 overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-lg font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
-                          {project.projet_name}
-                        </h3>
-                        {project.recent_actualites > 0 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 flex-shrink-0">
-                            <Megaphone className="w-3 h-3" />
-                            {project.recent_actualites} nouvelle{project.recent_actualites > 1 ? 's' : ''}
-                          </span>
+            return (
+              <Link
+                key={project.projet_id}
+                to={`/emetteur/projets/${project.projet_id}`}
+                className="block group"
+              >
+                <div
+                  className={`bg-white rounded-xl shadow-sm border border-slate-200 border-l-4 ${accentColor} hover:shadow-md hover:border-slate-300 transition-all duration-200 overflow-hidden`}
+                >
+                  <div className="p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5">
+                          <h3 className="text-base font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                            {project.projet_name}
+                          </h3>
+                          {project.recent_actualites > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 flex-shrink-0">
+                              <Megaphone className="w-3 h-3" />
+                              {project.recent_actualites}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">{project.org_name}</p>
+                      </div>
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <ArrowRight className="w-4 h-4 text-slate-400" />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-4">
+                      {project.montant_global != null && (
+                        <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                          <Banknote className="w-3.5 h-3.5 text-slate-400" />
+                          {formatCurrency(project.montant_global)}
+                        </div>
+                      )}
+                      {project.taux_interet != null && (
+                        <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                          <TrendingUp className="w-3.5 h-3.5 text-slate-400" />
+                          {project.taux_interet}%
+                        </div>
+                      )}
+                      {project.date_emission && (
+                        <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          {formatDate(project.date_emission)}
+                        </div>
+                      )}
+                    </div>
+
+                    {(project.next_payment_date || project.latest_actualite) && (
+                      <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                        {project.next_payment_date && (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Clock
+                                className={`w-3.5 h-3.5 ${isPaymentSoon ? 'text-amber-500' : 'text-slate-400'}`}
+                              />
+                              <span className="text-xs text-slate-500">Prochain coupon</span>
+                            </div>
+                            <div className="text-right">
+                              <span className={`text-sm font-semibold ${isPaymentSoon ? 'text-amber-700' : 'text-slate-900'}`}>
+                                {formatCurrency(project.next_payment_amount || 0)}
+                              </span>
+                              <span className="text-xs text-slate-500 ml-2">
+                                {formatDate(project.next_payment_date)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {project.latest_actualite && (
+                          <div className="flex items-start gap-2">
+                            <MessageSquare className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs text-slate-700 truncate">
+                                {truncateText(project.latest_actualite.text, 60)}
+                              </p>
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                {project.latest_actualite.author} {getRelativeTime(project.latest_actualite.date)}
+                              </p>
+                            </div>
+                          </div>
                         )}
                       </div>
-                      <p className="text-sm text-slate-500">{project.org_name}</p>
-                    </div>
-
-                    <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                        <ArrowRight className="w-4 h-4 text-blue-600" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
-                    {project.montant_global != null && (
-                      <div className="flex items-center gap-2">
-                        <Banknote className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm text-slate-600">
-                          {formatCurrency(project.montant_global)}
-                        </span>
-                      </div>
-                    )}
-                    {project.taux_interet != null && (
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm text-slate-600">{project.taux_interet}%</span>
-                      </div>
-                    )}
-                    {project.date_emission && (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm text-slate-600">
-                          Emis le {formatDate(project.date_emission)}
-                        </span>
-                      </div>
                     )}
                   </div>
-
-                  {(project.next_payment_date || project.latest_actualite) && (
-                    <div className="mt-5 pt-5 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {project.next_payment_date && (
-                        <div
-                          className={`rounded-lg px-4 py-3 ${
-                            isPaymentSoon
-                              ? 'bg-amber-50 border border-amber-200'
-                              : 'bg-slate-50 border border-slate-100'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <Clock
-                              className={`w-3.5 h-3.5 ${
-                                isPaymentSoon ? 'text-amber-600' : 'text-slate-500'
-                              }`}
-                            />
-                            <span
-                              className={`text-xs font-medium ${
-                                isPaymentSoon ? 'text-amber-700' : 'text-slate-500'
-                              }`}
-                            >
-                              Prochain coupon
-                              {daysUntilPayment !== null && (
-                                <span className="ml-1">
-                                  dans {daysUntilPayment}j
-                                </span>
-                              )}
-                            </span>
-                          </div>
-                          <p
-                            className={`text-base font-semibold ${
-                              isPaymentSoon ? 'text-amber-900' : 'text-slate-900'
-                            }`}
-                          >
-                            {formatCurrency(project.next_payment_amount || 0)}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {formatDate(project.next_payment_date)}
-                          </p>
-                        </div>
-                      )}
-
-                      {project.latest_actualite && (
-                        <div className="bg-slate-50 border border-slate-100 rounded-lg px-4 py-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <MessageSquare className="w-3.5 h-3.5 text-slate-500" />
-                            <span className="text-xs font-medium text-slate-500">
-                              Derniere actualite
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-800 line-clamp-1">
-                            {truncateText(project.latest_actualite.text, 80)}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {project.latest_actualite.author}{' '}
-                            {getRelativeTime(project.latest_actualite.date)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
-              </div>
-            </Link>
-          );
-        })}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
