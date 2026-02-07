@@ -28,48 +28,54 @@ Deno.serve(async (req: Request) => {
 
     console.log('Deleting user:', userId);
 
-    // First verify the user exists before attempting deletion
+    // First check if the user exists in auth.users
     const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
 
-    if (getUserError) {
-      console.error('Error fetching user:', getUserError);
-      throw new Error(`User not found or cannot be accessed: ${getUserError.message}`);
+    const userExistsInAuth = !getUserError && existingUser?.user;
+
+    if (userExistsInAuth) {
+      console.log('Found user to delete:', existingUser.user.email);
+
+      // Delete user from auth.users
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+      if (deleteError) {
+        console.error('Error deleting user:', deleteError);
+        throw deleteError;
+      }
+
+      console.log('Auth user deleted');
+    } else {
+      console.log('User not found in auth.users, will clean up orphaned data');
     }
 
-    if (!existingUser?.user) {
-      console.error('User not found:', userId);
-      throw new Error('User not found');
+    // Manually clean up memberships and profiles since CASCADE is unreliable
+    // This handles both normal deletion and orphaned data cleanup
+    const { error: membershipError } = await supabaseAdmin
+      .from('memberships')
+      .delete()
+      .eq('user_id', userId);
+
+    if (membershipError) {
+      console.error('Error deleting memberships:', membershipError);
+      // Don't throw - continue to try profile deletion
+    } else {
+      console.log('Memberships deleted for user:', userId);
     }
 
-    console.log('Found user to delete:', existingUser.user.email);
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
 
-    // Delete user from auth.users (this will cascade to profiles and memberships)
-    // Note: Deleting a user automatically invalidates all their sessions, so no need to sign them out first
-    const { data: deleteData, error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-    if (deleteError) {
-      console.error('Error deleting user:', deleteError);
-      throw deleteError;
+    if (profileError) {
+      console.error('Error deleting profile:', profileError);
+      // Don't throw - the main deletion may have still worked
+    } else {
+      console.log('Profile deleted for user:', userId);
     }
 
-    console.log('Delete API response:', JSON.stringify(deleteData));
-
-    // IMPORTANT: Verify the user was actually deleted by trying to fetch them again
-    const { data: verifyUser, error: verifyError } = await supabaseAdmin.auth.admin.getUserById(userId);
-
-    if (verifyUser?.user) {
-      console.error('User still exists after delete call!', verifyUser.user.email);
-      throw new Error('Delete operation failed - user still exists after deletion attempt');
-    }
-
-    // If we get a "user not found" error, that confirms deletion worked
-    if (verifyError && verifyError.message.includes('not found')) {
-      console.log('Verified: User successfully deleted:', userId);
-    } else if (verifyError) {
-      console.log('Verify check returned error (may be ok):', verifyError.message);
-    }
-
-    console.log('User deleted successfully:', userId);
+    console.log('User deletion complete:', userId);
 
     return new Response(
       JSON.stringify({ success: true, message: 'User deleted successfully' }),
