@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../hooks/useAuth';
 import { toast } from '../../utils/toast';
 import { Spinner } from '../common/Spinner';
 import { logger } from '../../utils/logger';
@@ -69,7 +68,9 @@ export default function InviteEmetteurModal({
         .eq('id', projectId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       const projectData = data as unknown as ProjectOrganization;
       setProjectOrgId(projectData.org_id);
@@ -87,9 +88,11 @@ export default function InviteEmetteurModal({
         p_org_id: projectOrgId!,
       });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       const emetteursData = (data || []) as EmetteurData[];
-      const emetteurs = emetteursData.map((item) => item.emetteur_name);
+      const emetteurs = emetteursData.map(item => item.emetteur_name);
       setAvailableEmetteurs(emetteurs);
 
       if (projectEmetteur && emetteurs.includes(projectEmetteur)) {
@@ -134,14 +137,17 @@ export default function InviteEmetteurModal({
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       toast.success('Invitation envoyée avec succès');
       onSuccess();
       onClose();
     } catch (error) {
       logger.error('Error inviting emetteur', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'envoi de l\'invitation';
+      const errorMessage =
+        error instanceof Error ? error.message : "Erreur lors de l'envoi de l'invitation";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -155,7 +161,7 @@ export default function InviteEmetteurModal({
     >
       <div
         className="bg-white rounded-lg max-w-md w-full max-h-[90vh] shadow-xl flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
@@ -174,113 +180,106 @@ export default function InviteEmetteurModal({
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="p-6 space-y-4 overflow-y-auto flex-1">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Émetteur
-            </label>
-            {loadingEmetteurs ? (
-              <div className="flex justify-center py-2">
-                <Spinner size="sm" />
-              </div>
-            ) : (
-              <>
-                {!isCustom && availableEmetteurs.length > 0 && (
-                  <select
-                    value={selectedEmetteur}
-                    onChange={(e) => {
-                      if (e.target.value === '__custom__') {
-                        setIsCustom(true);
-                        setSelectedEmetteur('');
-                      } else {
-                        setSelectedEmetteur(e.target.value);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required={!isCustom}
-                  >
-                    <option value="">Sélectionnez un émetteur</option>
-                    {availableEmetteurs.map((emetteur) => (
-                      <option key={emetteur} value={emetteur}>
-                        {emetteur}
-                      </option>
-                    ))}
-                    <option value="__custom__">➕ Autre émetteur...</option>
-                  </select>
-                )}
-
-                {(isCustom || availableEmetteurs.length === 0) && (
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={customEmetteurName}
-                      onChange={(e) => setCustomEmetteurName(e.target.value)}
-                      placeholder="Nom de l'émetteur"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Émetteur</label>
+              {loadingEmetteurs ? (
+                <div className="flex justify-center py-2">
+                  <Spinner size="sm" />
+                </div>
+              ) : (
+                <>
+                  {!isCustom && availableEmetteurs.length > 0 && (
+                    <select
+                      value={selectedEmetteur}
+                      onChange={e => {
+                        if (e.target.value === '__custom__') {
+                          setIsCustom(true);
+                          setSelectedEmetteur('');
+                        } else {
+                          setSelectedEmetteur(e.target.value);
+                        }
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                    {availableEmetteurs.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsCustom(false);
-                          setCustomEmetteurName('');
-                        }}
-                        className="text-sm text-blue-600 hover:text-blue-700"
-                      >
-                        ← Choisir depuis la liste
-                      </button>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+                      required={!isCustom}
+                    >
+                      <option value="">Sélectionnez un émetteur</option>
+                      {availableEmetteurs.map(emetteur => (
+                        <option key={emetteur} value={emetteur}>
+                          {emetteur}
+                        </option>
+                      ))}
+                      <option value="__custom__">➕ Autre émetteur...</option>
+                    </select>
+                  )}
 
-          <div className="grid grid-cols-2 gap-4">
+                  {(isCustom || availableEmetteurs.length === 0) && (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={customEmetteurName}
+                        onChange={e => setCustomEmetteurName(e.target.value)}
+                        placeholder="Nom de l'émetteur"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                      {availableEmetteurs.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustom(false);
+                            setCustomEmetteurName('');
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-700"
+                        >
+                          ← Choisir depuis la liste
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={e => setFirstName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={e => setLastName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Prénom
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nom
-              </label>
-              <input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
+
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <p className="text-sm text-blue-800">
+                L'émetteur recevra un email pour activer son accès et pourra consulter le calendrier
+                de paiement et les actualités du projet.
+              </p>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-            <p className="text-sm text-blue-800">
-              L'émetteur recevra un email pour activer son accès et pourra consulter le calendrier de paiement et les actualités du projet.
-            </p>
-          </div>
           </div>
 
           <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50">

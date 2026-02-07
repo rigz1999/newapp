@@ -16,9 +16,15 @@ const formatTimestamp = (timestamp: number) => {
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  if (minutes < 1) return 'À l\'instant';
-  if (minutes < 60) return `Il y a ${minutes} min`;
-  if (hours < 24) return `Il y a ${hours}h`;
+  if (minutes < 1) {
+    return "À l'instant";
+  }
+  if (minutes < 60) {
+    return `Il y a ${minutes} min`;
+  }
+  if (hours < 24) {
+    return `Il y a ${hours}h`;
+  }
   return `Il y a ${days}j`;
 };
 
@@ -93,9 +99,7 @@ export function RecentFilters({
                         {formatTimestamp(recent.timestamp)}
                       </span>
                       {recent.usageCount > 1 && (
-                        <span className="text-xs text-slate-500">
-                          Utilisé {recent.usageCount}x
-                        </span>
+                        <span className="text-xs text-slate-500">Utilisé {recent.usageCount}x</span>
                       )}
                     </div>
                   </div>
@@ -122,18 +126,14 @@ export function RecentFilters({
               const percentage = (count / analytics.totalUses) * 100;
               return (
                 <div key={field} className="flex items-center gap-2">
-                  <span className="text-xs text-slate-600 w-20 truncate capitalize">
-                    {field}
-                  </span>
+                  <span className="text-xs text-slate-600 w-20 truncate capitalize">{field}</span>
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-finixar-teal rounded-full transition-all"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
-                  <span className="text-xs text-slate-500 w-12 text-right">
-                    {count} fois
-                  </span>
+                  <span className="text-xs text-slate-500 w-12 text-right">{count} fois</span>
                 </div>
               );
             })}

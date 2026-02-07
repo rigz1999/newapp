@@ -14,7 +14,7 @@ function sendToAnalytics(metric: Metric): void {
 
   // Log to console in development
   if (import.meta.env.DEV) {
-    console.log(`[Web Vitals] ${name}:`, {
+    logger.debug(`[Web Vitals] ${name}:`, {
       value: Math.round(value),
       rating,
       delta: Math.round(delta),

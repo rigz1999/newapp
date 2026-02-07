@@ -14,7 +14,6 @@ import { copyToClipboard } from '../../utils/clipboard';
 import { isUUID, slugify } from '../../utils/slugify';
 import { isValidShortId } from '../../utils/shortId';
 import { Tooltip } from '../common/Tooltip';
-import { Copy } from 'lucide-react';
 import { EcheancierModal } from '../coupons/EcheancierModal';
 import { PaymentsModal } from '../payments/PaymentsModal';
 import { ProjectActualites } from './ProjectActualites';
@@ -38,7 +37,7 @@ import {
   ChevronDown,
   ChevronRight,
   Mail,
-  MoreVertical,
+  Copy,
 } from 'lucide-react';
 import { DashboardSkeleton } from '../common/Skeleton';
 
@@ -120,7 +119,7 @@ interface AlertState {
 export function ProjectDetail({ organization: _organization }: ProjectDetailProps) {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { user, isSuperAdmin, userRole, loading: authLoading } = useAuth();
+  const { isSuperAdmin, userRole, loading: authLoading } = useAuth();
   const readOnly = authLoading || userRole === 'emetteur';
   const [project, setProject] = useState<Project | null>(null);
   const [tranches, setTranches] = useState<Tranche[]>([]);
@@ -166,8 +165,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   }>({ isOpen: false, tranche: null });
 
   const TRANCHES_LIMIT = 5;
-  const SUBSCRIPTIONS_LIMIT = 5;
-  const PAYMENTS_LIMIT = 5;  // ✅ AJOUT
+  const _SUBSCRIPTIONS_LIMIT = 5;
+  const _PAYMENTS_LIMIT = 5;
 
   const [stats, setStats] = useState({
     totalLeve: 0,
@@ -196,7 +195,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   }, [showActionsDropdown]);
 
   const fetchProjectData = async () => {
-    if (!projectId) return;
+    if (!projectId) {
+      return;
+    }
 
     setLoading(true);
 
@@ -219,13 +220,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         actualProjectId = projectByShortId.id;
       } else if (!isUUID(projectId)) {
         // It's a slug, find the project by slugified name
-        const { data: allProjects } = await supabase
-          .from('projets')
-          .select('id, projet');
+        const { data: allProjects } = await supabase.from('projets').select('id, projet');
 
-        const matchingProject = allProjects?.find(
-          p => slugify(p.projet) === projectId
-        );
+        const matchingProject = allProjects?.find(p => slugify(p.projet) === projectId);
 
         if (!matchingProject) {
           throw new Error('Projet non trouvé');
@@ -234,18 +231,35 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         actualProjectId = matchingProject.id;
       }
 
-      const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] = await Promise.all([
-        supabase.from('projets').select('*').eq('id', actualProjectId).maybeSingle(),
-        supabase.from('tranches').select('*').eq('projet_id', actualProjectId).order('date_emission', { ascending: true }),
-        supabase.from('souscriptions').select(`
+      const [projectRes, tranchesRes, subscriptionsRes, paymentsRes, prochainsCouponsRes] =
+        await Promise.all([
+          supabase.from('projets').select('*').eq('id', actualProjectId).maybeSingle(),
+          supabase
+            .from('tranches')
+            .select('*')
+            .eq('projet_id', actualProjectId)
+            .order('date_emission', { ascending: true }),
+          supabase
+            .from('souscriptions')
+            .select(
+              `
           id, id_souscription, date_souscription, nombre_obligations, montant_investi,
           coupon_net, investisseur_id, cgp,
           investisseur:investisseurs(nom_raison_sociale, cgp),
           tranche:tranches(tranche_name, date_emission)
-        `).eq('projet_id', actualProjectId).order('date_souscription', { ascending: false }),
-        supabase.from('paiements').select('id, id_paiement, type, montant, date_paiement, statut').eq('projet_id', actualProjectId).order('date_paiement', { ascending: false }),
-        supabase.from('v_prochains_coupons').select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut')
-      ]);
+        `
+            )
+            .eq('projet_id', actualProjectId)
+            .order('date_souscription', { ascending: false }),
+          supabase
+            .from('paiements')
+            .select('id, id_paiement, type, montant, date_paiement, statut')
+            .eq('projet_id', actualProjectId)
+            .order('date_paiement', { ascending: false }),
+          supabase
+            .from('v_prochains_coupons')
+            .select('souscription_id, date_prochain_coupon, montant_prochain_coupon, statut'),
+        ]);
 
       // Check for outdated calendar exports (safe check - table might not exist yet)
       let calendarExportsRes = { data: null };
@@ -262,10 +276,18 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       }
 
       // Vérifier les erreurs
-      if (projectRes.error) throw projectRes.error;
-      if (tranchesRes.error) throw tranchesRes.error;
-      if (subscriptionsRes.error) throw subscriptionsRes.error;
-      if (paymentsRes.error) throw paymentsRes.error;
+      if (projectRes.error) {
+        throw projectRes.error;
+      }
+      if (tranchesRes.error) {
+        throw tranchesRes.error;
+      }
+      if (subscriptionsRes.error) {
+        throw subscriptionsRes.error;
+      }
+      if (paymentsRes.error) {
+        throw paymentsRes.error;
+      }
 
       const projectData = projectRes.data;
       const tranchesData = tranchesRes.data || [];
@@ -278,14 +300,16 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         tranches: tranchesData.length,
         souscriptions: subscriptionsData.length,
         paiements: paymentsData.length,
-        coupons: prochainsCouponsData.length
+        coupons: prochainsCouponsData.length,
       });
 
       const subscriptionsWithCoupons = subscriptionsData.map((sub: any) => {
-        const prochainCoupon = prochainsCouponsData.find((pc: any) => pc.souscription_id === sub.id);
+        const prochainCoupon = prochainsCouponsData.find(
+          (pc: any) => pc.souscription_id === sub.id
+        );
         return {
           ...sub,
-          prochain_coupon: prochainCoupon || null
+          prochain_coupon: prochainCoupon || null,
         };
       });
 
@@ -296,20 +320,31 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       setHasOutdatedExport(!!calendarExportsRes.data);
 
       if (subscriptionsWithCoupons.length > 0) {
-        const totalLeve = subscriptionsWithCoupons.reduce((sum, sub) => sum + Number(sub.montant_investi || 0), 0);
+        const totalLeve = subscriptionsWithCoupons.reduce(
+          (sum, sub) => sum + Number(sub.montant_investi || 0),
+          0
+        );
         const uniqueInvestors = new Set(subscriptionsWithCoupons.map(s => s.investisseur_id)).size;
 
         const upcomingCoupons = subscriptionsWithCoupons
           .filter(s => s.prochain_coupon?.date_prochain_coupon)
-          .sort((a, b) =>
-            new Date(a.prochain_coupon!.date_prochain_coupon).getTime() -
-            new Date(b.prochain_coupon!.date_prochain_coupon).getTime()
+          .sort(
+            (a, b) =>
+              new Date(a.prochain_coupon!.date_prochain_coupon).getTime() -
+              new Date(b.prochain_coupon!.date_prochain_coupon).getTime()
           );
 
         const nextCoupon = upcomingCoupons[0];
         const nextCouponAmount = upcomingCoupons
-          .filter((s: any) => s.prochain_coupon?.date_prochain_coupon === nextCoupon?.prochain_coupon?.date_prochain_coupon)
-          .reduce((sum: number, s: any) => sum + Number(s.prochain_coupon.montant_prochain_coupon || 0), 0);
+          .filter(
+            (s: any) =>
+              s.prochain_coupon?.date_prochain_coupon ===
+              nextCoupon?.prochain_coupon?.date_prochain_coupon
+          )
+          .reduce(
+            (sum: number, s: any) => sum + Number(s.prochain_coupon.montant_prochain_coupon || 0),
+            0
+          );
 
         setStats({
           totalLeve,
@@ -332,16 +367,15 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           nextCouponDate: null,
           nextCouponAmount: 0,
         });
-        
+
         logger.warn('Aucune souscription trouvée');
       }
-
     } catch (error: any) {
       logger.error(new Error('Erreur chargement'), { error });
       setAlertState({
         isOpen: true,
         title: 'Erreur',
-        message: 'Erreur lors du chargement des données: ' + error.message,
+        message: `Erreur lors du chargement des données: ${error.message}`,
         type: 'error',
       });
     } finally {
@@ -349,44 +383,49 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return '-';
+    if (!dateString) {
+      return '-';
+    }
     return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
   const formatFrequence = (freq: string | null) => {
-    if (!freq) return '-';
+    if (!freq) {
+      return '-';
+    }
     const map: Record<string, string> = {
-      'mensuelle': 'Mensuelle',
-      'trimestrielle': 'Trimestrielle',
-      'semestrielle': 'Semestrielle',
-      'annuelle': 'Annuelle',
+      mensuelle: 'Mensuelle',
+      trimestrielle: 'Trimestrielle',
+      semestrielle: 'Semestrielle',
+      annuelle: 'Annuelle',
       // Support old masculine forms for backward compatibility
-      'mensuel': 'Mensuelle',
-      'trimestriel': 'Trimestrielle',
-      'semestriel': 'Semestrielle',
-      'annuel': 'Annuelle'
+      mensuel: 'Mensuelle',
+      trimestriel: 'Trimestrielle',
+      semestriel: 'Semestrielle',
+      annuel: 'Annuelle',
     };
     return map[freq.toLowerCase()] || freq;
   };
 
   // Normalize periodicite to feminine form for form editing
   const normalizePeriodicite = (freq: string | null) => {
-    if (!freq) return null;
+    if (!freq) {
+      return null;
+    }
     const normalized: Record<string, string> = {
-      'mensuel': 'mensuelle',
-      'trimestriel': 'trimestrielle',
-      'semestriel': 'semestrielle',
-      'annuel': 'annuelle'
+      mensuel: 'mensuelle',
+      trimestriel: 'trimestrielle',
+      semestriel: 'semestrielle',
+      annuel: 'annuelle',
     };
     return normalized[freq.toLowerCase()] || freq;
   };
@@ -397,17 +436,21 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   };
 
   const confirmDeleteTranche = async () => {
-    if (!deleteConfirm.tranche) return;
+    if (!deleteConfirm.tranche) {
+      return;
+    }
 
     try {
       const { error } = await supabase.from('tranches').delete().eq('id', deleteConfirm.tranche.id);
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       toast.success('Tranche supprimée avec succès');
       fetchProjectData();
     } catch (err: any) {
       logger.error(err instanceof Error ? err : new Error('Error deleting tranche'));
-      toast.error('Erreur lors de la suppression : ' + err.message);
+      toast.error(`Erreur lors de la suppression : ${err.message}`);
     }
   };
 
@@ -423,15 +466,21 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   };
 
   const handleUpdateProject = async () => {
-    if (!project) return;
+    if (!project) {
+      return;
+    }
 
     const hasFinancialChanges =
-      editedProject.periodicite_coupons !== undefined && normalizePeriodicite(editedProject.periodicite_coupons) !== normalizePeriodicite(project.periodicite_coupons) ||
-      editedProject.taux_nominal !== undefined && editedProject.taux_nominal !== project.taux_nominal ||
-      editedProject.duree_mois !== undefined && editedProject.duree_mois !== project.duree_mois;
+      (editedProject.periodicite_coupons !== undefined &&
+        normalizePeriodicite(editedProject.periodicite_coupons) !==
+          normalizePeriodicite(project.periodicite_coupons)) ||
+      (editedProject.taux_nominal !== undefined &&
+        editedProject.taux_nominal !== project.taux_nominal) ||
+      (editedProject.duree_mois !== undefined && editedProject.duree_mois !== project.duree_mois);
 
     if (hasFinancialChanges && subscriptions.length > 0) {
-      const confirmMsg = `ATTENTION : Vous modifiez des paramètres financiers critiques.\n\n` +
+      const confirmMsg =
+        `ATTENTION : Vous modifiez des paramètres financiers critiques.\n\n` +
         `Cela va automatiquement :\n` +
         `• Mettre à jour toutes les tranches du projet\n` +
         `• Recalculer tous les coupons nets\n` +
@@ -459,27 +508,54 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
       // Filter to only include editable fields (exclude id, created_at, etc.)
       const updateData: any = {};
-      if (editedProject.projet !== undefined) updateData.projet = editedProject.projet;
-      if (editedProject.emetteur !== undefined) updateData.emetteur = editedProject.emetteur;
-      if (editedProject.siren_emetteur !== undefined) updateData.siren_emetteur = editedProject.siren_emetteur;
-      if (editedProject.nom_representant !== undefined) updateData.nom_representant = editedProject.nom_representant;
-      if (editedProject.prenom_representant !== undefined) updateData.prenom_representant = editedProject.prenom_representant;
-      if (editedProject.email_representant !== undefined) updateData.email_representant = editedProject.email_representant;
-      if (editedProject.representant_masse !== undefined) updateData.representant_masse = editedProject.representant_masse;
-      if (editedProject.email_rep_masse !== undefined) updateData.email_rep_masse = editedProject.email_rep_masse;
-      if (editedProject.taux_nominal !== undefined) updateData.taux_nominal = editedProject.taux_nominal;
-      if (editedProject.periodicite_coupons !== undefined) updateData.periodicite_coupons = editedProject.periodicite_coupons;
-      if (editedProject.duree_mois !== undefined) updateData.duree_mois = editedProject.duree_mois;
-      if (editedProject.date_emission !== undefined) updateData.date_emission = editedProject.date_emission;
-      if (editedProject.base_interet !== undefined) updateData.base_interet = editedProject.base_interet;
-      if (editedProject.type !== undefined) updateData.type = editedProject.type;
+      if (editedProject.projet !== undefined) {
+        updateData.projet = editedProject.projet;
+      }
+      if (editedProject.emetteur !== undefined) {
+        updateData.emetteur = editedProject.emetteur;
+      }
+      if (editedProject.siren_emetteur !== undefined) {
+        updateData.siren_emetteur = editedProject.siren_emetteur;
+      }
+      if (editedProject.nom_representant !== undefined) {
+        updateData.nom_representant = editedProject.nom_representant;
+      }
+      if (editedProject.prenom_representant !== undefined) {
+        updateData.prenom_representant = editedProject.prenom_representant;
+      }
+      if (editedProject.email_representant !== undefined) {
+        updateData.email_representant = editedProject.email_representant;
+      }
+      if (editedProject.representant_masse !== undefined) {
+        updateData.representant_masse = editedProject.representant_masse;
+      }
+      if (editedProject.email_rep_masse !== undefined) {
+        updateData.email_rep_masse = editedProject.email_rep_masse;
+      }
+      if (editedProject.taux_nominal !== undefined) {
+        updateData.taux_nominal = editedProject.taux_nominal;
+      }
+      if (editedProject.periodicite_coupons !== undefined) {
+        updateData.periodicite_coupons = editedProject.periodicite_coupons;
+      }
+      if (editedProject.duree_mois !== undefined) {
+        updateData.duree_mois = editedProject.duree_mois;
+      }
+      if (editedProject.date_emission !== undefined) {
+        updateData.date_emission = editedProject.date_emission;
+      }
+      if (editedProject.base_interet !== undefined) {
+        updateData.base_interet = editedProject.base_interet;
+      }
+      if (editedProject.type !== undefined) {
+        updateData.type = editedProject.type;
+      }
 
-      const { error } = await supabase
-        .from('projets')
-        .update(updateData)
-        .eq('id', project!.id);
+      const { error } = await supabase.from('projets').update(updateData).eq('id', project!.id);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       logger.info('Project updated in database');
 
@@ -512,7 +588,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           setAlertState({
             isOpen: true,
             title: 'Avertissement',
-            message: 'Projet mis à jour, mais impossible de régénérer les écheanciers automatiquement.',
+            message:
+              'Projet mis à jour, mais impossible de régénérer les écheanciers automatiquement.',
             type: 'warning',
           });
           return;
@@ -535,7 +612,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
         // Regenerate echeancier for each tranche IN PARALLEL for better performance
         // Process all tranches in parallel
-        const regenerationPromises = projectTranches.map(async (tranche) => {
+        const regenerationPromises = projectTranches.map(async tranche => {
           logger.debug(`Regenerating tranche: ${tranche.tranche_name}`);
 
           try {
@@ -548,7 +625,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             );
 
             if (invokeError) {
-              logger.error(new Error(`Error invoking regenerate-echeancier for ${tranche.tranche_name}`), { error: invokeError });
+              logger.error(
+                new Error(`Error invoking regenerate-echeancier for ${tranche.tranche_name}`),
+                { error: invokeError }
+              );
               throw invokeError;
             }
 
@@ -582,7 +662,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               };
             }
           } catch (fetchError: any) {
-            logger.error(new Error(`Error regenerating ${tranche.tranche_name}`), { error: fetchError });
+            logger.error(new Error(`Error regenerating ${tranche.tranche_name}`), {
+              error: fetchError,
+            });
             return {
               success: false,
               tranche: tranche.tranche_name,
@@ -607,7 +689,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           failed: failed.length,
           souscriptionsUpdated: totalUpdated,
           couponsDeleted: totalDeleted,
-          couponsCreated: totalCreated
+          couponsCreated: totalCreated,
         });
 
         // Refresh project data
@@ -645,17 +727,19 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       setAlertState({
         isOpen: true,
         title: 'Erreur',
-        message: 'Erreur lors de la mise à jour : ' + err.message,
+        message: `Erreur lors de la mise à jour : ${err.message}`,
         type: 'error',
       });
     }
   };
 
   const handleUpdateSubscription = async () => {
-    if (!editingSubscription) return;
+    if (!editingSubscription) {
+      return;
+    }
 
     try {
-      const { error} = await supabase
+      const { error } = await supabase
         .from('souscriptions')
         .update({
           montant_investi: editingSubscription.montant_investi,
@@ -664,7 +748,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         } as never)
         .eq('id', editingSubscription.id);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       setShowEditSubscription(false);
       setEditingSubscription(null);
@@ -680,7 +766,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       setAlertState({
         isOpen: true,
         title: 'Erreur',
-        message: 'Erreur lors de la mise à jour : ' + err.message,
+        message: `Erreur lors de la mise à jour : ${err.message}`,
         type: 'error',
       });
     }
@@ -694,12 +780,11 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       type: 'confirm',
       onConfirm: async () => {
         try {
-          const { error } = await supabase
-            .from('souscriptions')
-            .delete()
-            .eq('id', sub.id);
+          const { error } = await supabase.from('souscriptions').delete().eq('id', sub.id);
 
-          if (error) throw error;
+          if (error) {
+            throw error;
+          }
 
           setAlertState({
             isOpen: true,
@@ -713,7 +798,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           setAlertState({
             isOpen: true,
             title: 'Erreur',
-            message: 'Erreur lors de la suppression : ' + err.message,
+            message: `Erreur lors de la suppression : ${err.message}`,
             type: 'error',
           });
         }
@@ -780,7 +865,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                     onClick={() => {
                       setEditedProject({
                         ...project,
-                        periodicite_coupons: normalizePeriodicite(project.periodicite_coupons)
+                        periodicite_coupons: normalizePeriodicite(project.periodicite_coupons),
                       });
                       setShowEditProject(true);
                       setShowActionsDropdown(false);
@@ -830,8 +915,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               <AlertTriangle className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
               <div className="ml-3 flex-1">
                 <p className="text-sm text-amber-700">
-                  L'échéancier a été modifié depuis votre dernier export au calendrier.
-                  {' '}
+                  L'échéancier a été modifié depuis votre dernier export au calendrier.{' '}
                   <button
                     onClick={() => {
                       setCalendarExportScope({
@@ -855,7 +939,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-slate-600 text-sm">Montant total levé</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">{formatCurrency(stats.totalLeve)}</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">
+                  {formatCurrency(stats.totalLeve)}
+                </p>
               </div>
               <div className="p-2 bg-green-50 rounded-lg" aria-hidden="true">
                 <TrendingUp className="w-5 h-5 text-finixar-green" />
@@ -910,7 +996,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-slate-600">SIREN</p>
-              <p className="text-base font-medium text-slate-900">{project.siren_emetteur || '-'}</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.siren_emetteur || '-'}
+              </p>
             </div>
             <div>
               <p className="text-sm text-slate-600">Représentant</p>
@@ -922,13 +1010,18 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </div>
             <div>
               <p className="text-sm text-slate-600">Email Représentant</p>
-              <p className="text-base font-medium text-slate-900">{project.email_representant || '-'}</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.email_representant || '-'}
+              </p>
             </div>
             <div>
               <p className="text-sm text-slate-600">Type d'obligation</p>
               <p className="text-base font-medium text-slate-900">
-                {project.type === 'obligations_simples' ? 'Obligations simples' : 
-                 project.type === 'obligations_convertibles' ? 'Obligations convertibles' : '-'}
+                {project.type === 'obligations_simples'
+                  ? 'Obligations simples'
+                  : project.type === 'obligations_convertibles'
+                    ? 'Obligations convertibles'
+                    : '-'}
               </p>
             </div>
             <div>
@@ -991,16 +1084,25 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           ) : (
             <>
               <div className="space-y-2">
-                {(showAllTranches ? tranches : tranches.slice(0, TRANCHES_LIMIT)).map((tranche) => {
+                {(showAllTranches ? tranches : tranches.slice(0, TRANCHES_LIMIT)).map(tranche => {
                   const trancheSubscriptions = subscriptions.filter(
-                    (s) => s.tranche.tranche_name === tranche.tranche_name
+                    s => s.tranche.tranche_name === tranche.tranche_name
                   );
-                  const totalInvested = trancheSubscriptions.reduce((sum, s) => sum + s.montant_investi, 0);
-                  const totalCoupons = trancheSubscriptions.reduce((sum, s) => sum + s.coupon_net, 0);
+                  const totalInvested = trancheSubscriptions.reduce(
+                    (sum, s) => sum + s.montant_investi,
+                    0
+                  );
+                  const totalCoupons = trancheSubscriptions.reduce(
+                    (sum, s) => sum + s.coupon_net,
+                    0
+                  );
                   const isExpanded = expandedTrancheIds.has(tranche.id);
 
                   return (
-                    <div key={tranche.id} className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-all">
+                    <div
+                      key={tranche.id}
+                      className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-all"
+                    >
                       {/* Header cliquable */}
                       <button
                         onClick={() => toggleTrancheExpand(tranche.id)}
@@ -1010,11 +1112,19 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                       >
                         <div className="flex items-center gap-4 flex-1">
                           {isExpanded ? (
-                            <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" aria-hidden="true" />
+                            <ChevronDown
+                              className="w-5 h-5 text-slate-400 flex-shrink-0"
+                              aria-hidden="true"
+                            />
                           ) : (
-                            <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" aria-hidden="true" />
+                            <ChevronRight
+                              className="w-5 h-5 text-slate-400 flex-shrink-0"
+                              aria-hidden="true"
+                            />
                           )}
-                          <span className="text-sm font-semibold text-slate-900 min-w-[160px]">{tranche.tranche_name}</span>
+                          <span className="text-sm font-semibold text-slate-900 min-w-[160px]">
+                            {tranche.tranche_name}
+                          </span>
                           <span className="flex items-center gap-1 text-xs text-slate-600">
                             <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
                             {formatDate(tranche.date_emission)}
@@ -1025,13 +1135,17 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           </span>
                           <span className="flex items-center gap-1 text-xs text-slate-600">
                             <UserCircle className="w-3.5 h-3.5" aria-hidden="true" />
-                            {trancheSubscriptions.length} souscription{trancheSubscriptions.length > 1 ? 's' : ''}
+                            {trancheSubscriptions.length} souscription
+                            {trancheSubscriptions.length > 1 ? 's' : ''}
                           </span>
                         </div>
                         {!readOnly && (
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <div
+                            className="flex items-center gap-1"
+                            onClick={e => e.stopPropagation()}
+                          >
                             <button
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
                                 setCalendarExportScope({
                                   trancheId: tranche.id,
@@ -1047,7 +1161,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                               <Calendar className="w-4 h-4" aria-hidden="true" />
                             </button>
                             <button
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
                                 navigate(`/tranches/${tranche.id}/edit`);
                               }}
@@ -1058,7 +1172,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                               <Edit className="w-4 h-4" aria-hidden="true" />
                             </button>
                             <button
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
                                 handleDeleteTranche(tranche);
                               }}
@@ -1080,54 +1194,90 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                               Aucune souscription pour cette tranche
                             </p>
                           ) : (
-                            <div className="space-y-2" role="table" aria-label="Souscriptions de la tranche">
+                            <div
+                              className="space-y-2"
+                              role="table"
+                              aria-label="Souscriptions de la tranche"
+                            >
                               {/* Header du tableau */}
-                              <div className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase tracking-wider pb-2 px-3" role="row">
-                                <span className="flex-1" role="columnheader">Investisseur</span>
-                                <span className="w-32 text-center" role="columnheader">CGP</span>
-                                <span className="w-32 text-right" role="columnheader">Montant investi</span>
-                                <span className="w-32 text-right" role="columnheader">Coupon net</span>
+                              <div
+                                className="flex items-center justify-between text-xs font-semibold text-slate-600 uppercase tracking-wider pb-2 px-3"
+                                role="row"
+                              >
+                                <span className="flex-1" role="columnheader">
+                                  Investisseur
+                                </span>
+                                <span className="w-32 text-center" role="columnheader">
+                                  CGP
+                                </span>
+                                <span className="w-32 text-right" role="columnheader">
+                                  Montant investi
+                                </span>
+                                <span className="w-32 text-right" role="columnheader">
+                                  Coupon net
+                                </span>
                               </div>
 
                               {/* Lignes de souscriptions */}
-                              {trancheSubscriptions.map((sub) => (
+                              {trancheSubscriptions.map(sub => (
                                 <div
                                   key={sub.id}
                                   className={`flex items-center justify-between py-2.5 px-3 bg-white rounded-lg border border-slate-100 transition-all ${readOnly ? '' : 'hover:border-blue-200 hover:bg-blue-50 cursor-pointer'}`}
-                                  onClick={readOnly ? undefined : () => {
-                                    setEditingSubscription(sub);
-                                    setShowEditSubscription(true);
-                                  }}
+                                  onClick={
+                                    readOnly
+                                      ? undefined
+                                      : () => {
+                                          setEditingSubscription(sub);
+                                          setShowEditSubscription(true);
+                                        }
+                                  }
                                   title={readOnly ? undefined : 'Cliquer pour modifier'}
                                   role="row"
                                   tabIndex={readOnly ? undefined : 0}
-                                  onKeyDown={readOnly ? undefined : (e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      setEditingSubscription(sub);
-                                      setShowEditSubscription(true);
-                                    }
-                                  }}
+                                  onKeyDown={
+                                    readOnly
+                                      ? undefined
+                                      : e => {
+                                          if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            setEditingSubscription(sub);
+                                            setShowEditSubscription(true);
+                                          }
+                                        }
+                                  }
                                 >
-                                  <span className="flex-1 text-sm font-medium text-slate-900" role="cell">
+                                  <span
+                                    className="flex-1 text-sm font-medium text-slate-900"
+                                    role="cell"
+                                  >
                                     {sub.investisseur?.nom_raison_sociale || 'N/A'}
                                   </span>
-                                  <span className="w-32 text-center text-xs text-amber-700 font-medium" role="cell">
+                                  <span
+                                    className="w-32 text-center text-xs text-amber-700 font-medium"
+                                    role="cell"
+                                  >
                                     {sub.cgp || sub.investisseur?.cgp || '-'}
                                   </span>
-                                  <span className="w-32 text-right text-sm font-semibold text-finixar-green" role="cell">
+                                  <span
+                                    className="w-32 text-right text-sm font-semibold text-finixar-green"
+                                    role="cell"
+                                  >
                                     {formatCurrency(sub.montant_investi)}
                                   </span>
-                                  <span className="w-32 text-right text-sm font-medium text-slate-700" role="cell">
+                                  <span
+                                    className="w-32 text-right text-sm font-medium text-slate-700"
+                                    role="cell"
+                                  >
                                     {formatCurrency(sub.coupon_net)}
                                   </span>
                                 </div>
                               ))}
-                              
+
                               {/* Ligne de total */}
                               <div className="flex items-center justify-between pt-3 mt-2 border-t border-slate-300 px-3">
                                 <span className="flex-1 text-sm font-bold text-slate-900">
-                                  TOTAL ({trancheSubscriptions.length} investisseur{trancheSubscriptions.length > 1 ? 's' : ''})
+                                  TOTAL ({trancheSubscriptions.length} investisseur
+                                  {trancheSubscriptions.length > 1 ? 's' : ''})
                                 </span>
                                 <span className="w-32"></span>
                                 <span className="w-32 text-right text-base font-bold text-green-700">
@@ -1163,18 +1313,20 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         <EcheancierCard
           projectId={projectId!}
           tranches={tranches}
-          onPaymentClick={readOnly ? () => {} : (_trancheId) => {
-            setShowPaymentWizard(true);
-          }}
+          onPaymentClick={
+            readOnly
+              ? () => {}
+              : _trancheId => {
+                  setShowPaymentWizard(true);
+                }
+          }
           onViewAll={() => {
             setShowEcheancierModal(true);
           }}
         />
 
         {/* ✅ SECTION REMPLACÉE - Commentaires du projet */}
-        {project && (
-          <ProjectActualites projectId={projectId!} orgId={project.org_id} />
-        )}
+        {project && <ProjectActualites projectId={projectId!} orgId={project.org_id} />}
 
         {showTrancheWizard && (
           <TrancheWizard
@@ -1204,378 +1356,548 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         )}
 
         {showEditProject && project && (
-          <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="edit-project-title">
+          <div
+            className="fixed inset-0 z-50 overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-project-title"
+          >
             {/* Backdrop */}
-            <div className="fixed inset-0 bg-black/50" onClick={() => setShowEditProject(false)} aria-hidden="true" />
+            <div
+              className="fixed inset-0 bg-black/50"
+              onClick={() => setShowEditProject(false)}
+              aria-hidden="true"
+            />
 
             {/* Centered Container */}
             <div className="flex min-h-full items-center justify-center p-4">
-              <div className="relative bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 id="edit-project-title" className="text-xl font-bold text-slate-900">Modifier le Projet</h3>
-                    <p className="text-sm text-slate-600 mt-1">Mettre à jour les informations du projet</p>
-                  </div>
-                  <button onClick={() => setShowEditProject(false)} className="text-slate-400 hover:text-slate-600" aria-label="Fermer la fenêtre de modification">
-                    <X className="w-6 h-6" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto bg-white">
-                <div className="p-6">
-                {(normalizePeriodicite(editedProject.periodicite_coupons) !== normalizePeriodicite(project.periodicite_coupons) ||
-                  editedProject.taux_nominal !== project.taux_nominal ||
-                  editedProject.duree_mois !== project.duree_mois) &&
-                  subscriptions.length > 0 && (
-                  <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3" role="alert">
-                    <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                    <div className="text-sm text-orange-800">
-                      <p className="font-semibold mb-1">Modification de paramètres financiers détectée</p>
-                      <p>Les coupons et échéances de toutes les souscriptions seront automatiquement recalculés.</p>
+              <div
+                className="relative bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 id="edit-project-title" className="text-xl font-bold text-slate-900">
+                        Modifier le Projet
+                      </h3>
+                      <p className="text-sm text-slate-600 mt-1">
+                        Mettre à jour les informations du projet
+                      </p>
                     </div>
+                    <button
+                      onClick={() => setShowEditProject(false)}
+                      className="text-slate-400 hover:text-slate-600"
+                      aria-label="Fermer la fenêtre de modification"
+                    >
+                      <X className="w-6 h-6" aria-hidden="true" />
+                    </button>
                   </div>
-                )}
+                </div>
 
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
-                      Informations Générales
-                    </h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label htmlFor="edit-projet-name" className="block text-sm font-medium text-slate-900 mb-2">Nom du projet</label>
-                        <input
-                          id="edit-projet-name"
-                          type="text"
-                          value={editedProject.projet || ''}
-                          onChange={(e) => setEditedProject({ ...editedProject, projet: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="edit-emetteur" className="block text-sm font-medium text-slate-900 mb-2">Émetteur</label>
-                          <input
-                            id="edit-emetteur"
-                            type="text"
-                            value={editedProject.emetteur || ''}
-                            onChange={(e) => setEditedProject({ ...editedProject, emetteur: e.target.value })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="edit-siren" className="block text-sm font-medium text-slate-900 mb-2">SIREN</label>
-                          <input
-                            id="edit-siren"
-                            type="text"
-                            value={editedProject.siren_emetteur?.toString() || ''}
-                            onChange={(e) => setEditedProject({ ...editedProject, siren_emetteur: parseInt(e.target.value) || null })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label htmlFor="edit-type" className="block text-sm font-medium text-slate-900 mb-2">Type d'obligation</label>
-                        <select
-                          id="edit-type"
-                          value={editedProject.type || ''}
-                          onChange={(e) => setEditedProject({ ...editedProject, type: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                <div className="flex-1 overflow-y-auto bg-white">
+                  <div className="p-6">
+                    {(normalizePeriodicite(editedProject.periodicite_coupons) !==
+                      normalizePeriodicite(project.periodicite_coupons) ||
+                      editedProject.taux_nominal !== project.taux_nominal ||
+                      editedProject.duree_mois !== project.duree_mois) &&
+                      subscriptions.length > 0 && (
+                        <div
+                          className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg flex gap-3"
+                          role="alert"
                         >
-                          <option value="obligations_simples">Obligations simples</option>
-                          <option value="obligations_convertibles">Obligations convertibles</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
-                      Paramètres Financiers
-                    </h4>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="edit-taux-nominal" className="block text-sm font-medium text-slate-900 mb-2">
-                            Taux Nominal (%)
-                          </label>
-                          <input
-                            id="edit-taux-nominal"
-                            type="number"
-                            step="0.01"
-                            value={editedProject.taux_nominal?.toString() || ''}
-                            onChange={(e) => setEditedProject({ ...editedProject, taux_nominal: parseFloat(e.target.value) || null })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                          <AlertTriangle
+                            className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5"
+                            aria-hidden="true"
                           />
+                          <div className="text-sm text-orange-800">
+                            <p className="font-semibold mb-1">
+                              Modification de paramètres financiers détectée
+                            </p>
+                            <p>
+                              Les coupons et échéances de toutes les souscriptions seront
+                              automatiquement recalculés.
+                            </p>
+                          </div>
                         </div>
+                      )}
 
-                        <div>
-                          <label htmlFor="edit-periodicite" className="block text-sm font-medium text-slate-900 mb-2">
-                            Périodicité des Coupons
-                          </label>
-                          <select
-                            id="edit-periodicite"
-                            value={editedProject.periodicite_coupons || ''}
-                            onChange={(e) => setEditedProject({ ...editedProject, periodicite_coupons: e.target.value })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                          >
-                            <option value="">Sélectionner...</option>
-                            <option value="mensuelle">Mensuelle</option>
-                            <option value="trimestrielle">Trimestrielle</option>
-                            <option value="semestrielle">Semestrielle</option>
-                            <option value="annuelle">Annuelle</option>
-                          </select>
-                        </div>
-                      </div>
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+                          Informations Générales
+                        </h4>
+                        <div className="space-y-4">
+                          <div>
+                            <label
+                              htmlFor="edit-projet-name"
+                              className="block text-sm font-medium text-slate-900 mb-2"
+                            >
+                              Nom du projet
+                            </label>
+                            <input
+                              id="edit-projet-name"
+                              type="text"
+                              value={editedProject.projet || ''}
+                              onChange={e =>
+                                setEditedProject({ ...editedProject, projet: e.target.value })
+                              }
+                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                            />
+                          </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="edit-duree-mois" className="block text-sm font-medium text-slate-900 mb-2">
-                            Maturité (mois)
-                          </label>
-                          <input
-                            id="edit-duree-mois"
-                            type="number"
-                            value={editedProject.duree_mois?.toString() || ''}
-                            onChange={(e) => setEditedProject({ ...editedProject, duree_mois: parseInt(e.target.value) || null })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                            placeholder="Ex: 24"
-                          />
-                        </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label
+                                htmlFor="edit-emetteur"
+                                className="block text-sm font-medium text-slate-900 mb-2"
+                              >
+                                Émetteur
+                              </label>
+                              <input
+                                id="edit-emetteur"
+                                type="text"
+                                value={editedProject.emetteur || ''}
+                                onChange={e =>
+                                  setEditedProject({ ...editedProject, emetteur: e.target.value })
+                                }
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                              />
+                            </div>
 
-                        <div>
-                          <label htmlFor="edit-base-interet" className="block text-sm font-medium text-slate-900 mb-2">
-                            Base de calcul
-                          </label>
-                          <select
-                            id="edit-base-interet"
-                            value={editedProject.base_interet?.toString() || '360'}
-                            onChange={(e) => setEditedProject({ ...editedProject, base_interet: parseInt(e.target.value) })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                          >
-                            <option value="360">360 jours</option>
-                            <option value="365">365 jours</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                            <div>
+                              <label
+                                htmlFor="edit-siren"
+                                className="block text-sm font-medium text-slate-900 mb-2"
+                              >
+                                SIREN
+                              </label>
+                              <input
+                                id="edit-siren"
+                                type="text"
+                                value={editedProject.siren_emetteur?.toString() || ''}
+                                onChange={e =>
+                                  setEditedProject({
+                                    ...editedProject,
+                                    siren_emetteur: parseInt(e.target.value) || null,
+                                  })
+                                }
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                              />
+                            </div>
+                          </div>
 
-                  <div>
-                    <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
-                      Représentants
-                    </h4>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="edit-prenom-rep" className="block text-sm font-medium text-slate-900 mb-2">Prénom représentant</label>
-                          <input
-                            id="edit-prenom-rep"
-                            type="text"
-                            value={editedProject.prenom_representant || ''}
-                            onChange={(e) => setEditedProject({ ...editedProject, prenom_representant: e.target.value })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="edit-nom-rep" className="block text-sm font-medium text-slate-900 mb-2">Nom représentant</label>
-                          <input
-                            id="edit-nom-rep"
-                            type="text"
-                            value={editedProject.nom_representant || ''}
-                            onChange={(e) => setEditedProject({ ...editedProject, nom_representant: e.target.value })}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                          />
+                          <div>
+                            <label
+                              htmlFor="edit-type"
+                              className="block text-sm font-medium text-slate-900 mb-2"
+                            >
+                              Type d'obligation
+                            </label>
+                            <select
+                              id="edit-type"
+                              value={editedProject.type || ''}
+                              onChange={e =>
+                                setEditedProject({ ...editedProject, type: e.target.value })
+                              }
+                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                            >
+                              <option value="obligations_simples">Obligations simples</option>
+                              <option value="obligations_convertibles">
+                                Obligations convertibles
+                              </option>
+                            </select>
+                          </div>
                         </div>
                       </div>
 
                       <div>
-                        <label htmlFor="edit-email-rep" className="block text-sm font-medium text-slate-900 mb-2">Email représentant</label>
-                        <input
-                          id="edit-email-rep"
-                          type="email"
-                          value={editedProject.email_representant || ''}
-                          onChange={(e) => setEditedProject({ ...editedProject, email_representant: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                        />
+                        <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+                          Paramètres Financiers
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label
+                                htmlFor="edit-taux-nominal"
+                                className="block text-sm font-medium text-slate-900 mb-2"
+                              >
+                                Taux Nominal (%)
+                              </label>
+                              <input
+                                id="edit-taux-nominal"
+                                type="number"
+                                step="0.01"
+                                value={editedProject.taux_nominal?.toString() || ''}
+                                onChange={e =>
+                                  setEditedProject({
+                                    ...editedProject,
+                                    taux_nominal: parseFloat(e.target.value) || null,
+                                  })
+                                }
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                              />
+                            </div>
+
+                            <div>
+                              <label
+                                htmlFor="edit-periodicite"
+                                className="block text-sm font-medium text-slate-900 mb-2"
+                              >
+                                Périodicité des Coupons
+                              </label>
+                              <select
+                                id="edit-periodicite"
+                                value={editedProject.periodicite_coupons || ''}
+                                onChange={e =>
+                                  setEditedProject({
+                                    ...editedProject,
+                                    periodicite_coupons: e.target.value,
+                                  })
+                                }
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                              >
+                                <option value="">Sélectionner...</option>
+                                <option value="mensuelle">Mensuelle</option>
+                                <option value="trimestrielle">Trimestrielle</option>
+                                <option value="semestrielle">Semestrielle</option>
+                                <option value="annuelle">Annuelle</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label
+                                htmlFor="edit-duree-mois"
+                                className="block text-sm font-medium text-slate-900 mb-2"
+                              >
+                                Maturité (mois)
+                              </label>
+                              <input
+                                id="edit-duree-mois"
+                                type="number"
+                                value={editedProject.duree_mois?.toString() || ''}
+                                onChange={e =>
+                                  setEditedProject({
+                                    ...editedProject,
+                                    duree_mois: parseInt(e.target.value) || null,
+                                  })
+                                }
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                                placeholder="Ex: 24"
+                              />
+                            </div>
+
+                            <div>
+                              <label
+                                htmlFor="edit-base-interet"
+                                className="block text-sm font-medium text-slate-900 mb-2"
+                              >
+                                Base de calcul
+                              </label>
+                              <select
+                                id="edit-base-interet"
+                                value={editedProject.base_interet?.toString() || '360'}
+                                onChange={e =>
+                                  setEditedProject({
+                                    ...editedProject,
+                                    base_interet: parseInt(e.target.value),
+                                  })
+                                }
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                              >
+                                <option value="360">360 jours</option>
+                                <option value="365">365 jours</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
                       <div>
-                        <label htmlFor="edit-rep-masse" className="block text-sm font-medium text-slate-900 mb-2">Représentant de la masse</label>
-                        <input
-                          id="edit-rep-masse"
-                          type="text"
-                          value={editedProject.representant_masse || ''}
-                          onChange={(e) => setEditedProject({ ...editedProject, representant_masse: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                        />
-                      </div>
+                        <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+                          Représentants
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label
+                                htmlFor="edit-prenom-rep"
+                                className="block text-sm font-medium text-slate-900 mb-2"
+                              >
+                                Prénom représentant
+                              </label>
+                              <input
+                                id="edit-prenom-rep"
+                                type="text"
+                                value={editedProject.prenom_representant || ''}
+                                onChange={e =>
+                                  setEditedProject({
+                                    ...editedProject,
+                                    prenom_representant: e.target.value,
+                                  })
+                                }
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                              />
+                            </div>
+                            <div>
+                              <label
+                                htmlFor="edit-nom-rep"
+                                className="block text-sm font-medium text-slate-900 mb-2"
+                              >
+                                Nom représentant
+                              </label>
+                              <input
+                                id="edit-nom-rep"
+                                type="text"
+                                value={editedProject.nom_representant || ''}
+                                onChange={e =>
+                                  setEditedProject({
+                                    ...editedProject,
+                                    nom_representant: e.target.value,
+                                  })
+                                }
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                              />
+                            </div>
+                          </div>
 
-                      <div>
-                        <label htmlFor="edit-email-rep-masse" className="block text-sm font-medium text-slate-900 mb-2">Email représentant de la masse</label>
-                        <input
-                          id="edit-email-rep-masse"
-                          type="email"
-                          value={editedProject.email_rep_masse || ''}
-                          onChange={(e) => setEditedProject({ ...editedProject, email_rep_masse: e.target.value })}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                        />
+                          <div>
+                            <label
+                              htmlFor="edit-email-rep"
+                              className="block text-sm font-medium text-slate-900 mb-2"
+                            >
+                              Email représentant
+                            </label>
+                            <input
+                              id="edit-email-rep"
+                              type="email"
+                              value={editedProject.email_representant || ''}
+                              onChange={e =>
+                                setEditedProject({
+                                  ...editedProject,
+                                  email_representant: e.target.value,
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                            />
+                          </div>
+
+                          <div>
+                            <label
+                              htmlFor="edit-rep-masse"
+                              className="block text-sm font-medium text-slate-900 mb-2"
+                            >
+                              Représentant de la masse
+                            </label>
+                            <input
+                              id="edit-rep-masse"
+                              type="text"
+                              value={editedProject.representant_masse || ''}
+                              onChange={e =>
+                                setEditedProject({
+                                  ...editedProject,
+                                  representant_masse: e.target.value,
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                            />
+                          </div>
+
+                          <div>
+                            <label
+                              htmlFor="edit-email-rep-masse"
+                              className="block text-sm font-medium text-slate-900 mb-2"
+                            >
+                              Email représentant de la masse
+                            </label>
+                            <input
+                              id="edit-email-rep-masse"
+                              type="email"
+                              value={editedProject.email_rep_masse || ''}
+                              onChange={e =>
+                                setEditedProject({
+                                  ...editedProject,
+                                  email_rep_masse: e.target.value,
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                            />
+                          </div>
+                        </div>
                       </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={() => setShowEditProject(false)}
+                        className="flex-1 px-4 py-2 text-sm font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        onClick={handleUpdateProject}
+                        className="flex-1 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+                      >
+                        Enregistrer
+                      </button>
                     </div>
                   </div>
                 </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setShowEditProject(false)}
-                    className="flex-1 px-4 py-2 text-sm font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={handleUpdateProject}
-                    className="flex-1 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
-                  >
-                    Enregistrer
-                  </button>
-                </div>
-                </div>
-              </div>
               </div>
             </div>
           </div>
         )}
 
         {showEditSubscription && editingSubscription && (
-          <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="edit-subscription-title">
+          <div
+            className="fixed inset-0 z-50 overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-subscription-title"
+          >
             {/* Backdrop */}
-            <div className="fixed inset-0 bg-black/50" onClick={() => {
-              setShowEditSubscription(false);
-              setEditingSubscription(null);
-            }} aria-hidden="true" />
+            <div
+              className="fixed inset-0 bg-black/50"
+              onClick={() => {
+                setShowEditSubscription(false);
+                setEditingSubscription(null);
+              }}
+              aria-hidden="true"
+            />
 
             {/* Centered Container */}
             <div className="flex min-h-full items-center justify-center p-4">
-              <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 id="edit-subscription-title" className="text-xl font-bold text-slate-900">Modifier la Souscription</h3>
-                    <p className="text-sm text-slate-600 mt-1">
-                      {editingSubscription.investisseur?.nom_raison_sociale || 'N/A'}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowEditSubscription(false);
-                      setEditingSubscription(null);
-                    }}
-                    className="text-slate-400 hover:text-slate-600"
-                    aria-label="Fermer la fenêtre de modification"
-                  >
-                    <X className="w-6 h-6" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto bg-white">
-                <div className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="edit-date-souscription" className="block text-sm font-medium text-slate-900 mb-2">
-                      Date de souscription
-                    </label>
-                    <input
-                      id="edit-date-souscription"
-                      type="date"
-                      value={editingSubscription.date_souscription || ''}
-                      onChange={(e) =>
-                        setEditingSubscription({
-                          ...editingSubscription,
-                          date_souscription: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="edit-montant-investi" className="block text-sm font-medium text-slate-900 mb-2">
-                      Montant investi (€)
-                    </label>
-                    <input
-                      id="edit-montant-investi"
-                      type="number"
-                      step="0.01"
-                      value={editingSubscription.montant_investi || ''}
-                      onChange={(e) =>
-                        setEditingSubscription({
-                          ...editingSubscription,
-                          montant_investi: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="edit-nombre-obligations" className="block text-sm font-medium text-slate-900 mb-2">
-                      Nombre d'obligations
-                    </label>
-                    <input
-                      id="edit-nombre-obligations"
-                      type="number"
-                      value={editingSubscription.nombre_obligations || ''}
-                      onChange={(e) =>
-                        setEditingSubscription({
-                          ...editingSubscription,
-                          nombre_obligations: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-                    />
-                  </div>
-
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Tranche :</span>
-                      <span className="font-medium text-slate-900">
-                        {editingSubscription.tranche.tranche_name}
-                      </span>
+              <div
+                className="relative bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden flex flex-col max-h-[90vh]"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 id="edit-subscription-title" className="text-xl font-bold text-slate-900">
+                        Modifier la Souscription
+                      </h3>
+                      <p className="text-sm text-slate-600 mt-1">
+                        {editingSubscription.investisseur?.nom_raison_sociale || 'N/A'}
+                      </p>
                     </div>
-                    <div className="flex justify-between text-sm mt-2">
-                      <span className="text-slate-600">Coupon net :</span>
-                      <span className="font-medium text-slate-900">
-                        {formatCurrency(editingSubscription.coupon_net)}
-                      </span>
-                    </div>
+                    <button
+                      onClick={() => {
+                        setShowEditSubscription(false);
+                        setEditingSubscription(null);
+                      }}
+                      className="text-slate-400 hover:text-slate-600"
+                      aria-label="Fermer la fenêtre de modification"
+                    >
+                      <X className="w-6 h-6" aria-hidden="true" />
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => {
-                      setShowEditSubscription(false);
-                      setEditingSubscription(null);
-                    }}
-                    className="flex-1 px-4 py-2 text-sm font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    onClick={handleUpdateSubscription}
-                    className="flex-1 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
-                  >
-                    Enregistrer
-                  </button>
+                <div className="flex-1 overflow-y-auto bg-white">
+                  <div className="p-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label
+                          htmlFor="edit-date-souscription"
+                          className="block text-sm font-medium text-slate-900 mb-2"
+                        >
+                          Date de souscription
+                        </label>
+                        <input
+                          id="edit-date-souscription"
+                          type="date"
+                          value={editingSubscription.date_souscription || ''}
+                          onChange={e =>
+                            setEditingSubscription({
+                              ...editingSubscription,
+                              date_souscription: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="edit-montant-investi"
+                          className="block text-sm font-medium text-slate-900 mb-2"
+                        >
+                          Montant investi (€)
+                        </label>
+                        <input
+                          id="edit-montant-investi"
+                          type="number"
+                          step="0.01"
+                          value={editingSubscription.montant_investi || ''}
+                          onChange={e =>
+                            setEditingSubscription({
+                              ...editingSubscription,
+                              montant_investi: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="edit-nombre-obligations"
+                          className="block text-sm font-medium text-slate-900 mb-2"
+                        >
+                          Nombre d'obligations
+                        </label>
+                        <input
+                          id="edit-nombre-obligations"
+                          type="number"
+                          value={editingSubscription.nombre_obligations || ''}
+                          onChange={e =>
+                            setEditingSubscription({
+                              ...editingSubscription,
+                              nombre_obligations: parseInt(e.target.value) || 0,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                        />
+                      </div>
+
+                      <div className="p-4 bg-slate-50 rounded-lg">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Tranche :</span>
+                          <span className="font-medium text-slate-900">
+                            {editingSubscription.tranche.tranche_name}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm mt-2">
+                          <span className="text-slate-600">Coupon net :</span>
+                          <span className="font-medium text-slate-900">
+                            {formatCurrency(editingSubscription.coupon_net)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={() => {
+                          setShowEditSubscription(false);
+                          setEditingSubscription(null);
+                        }}
+                        className="flex-1 px-4 py-2 text-sm font-medium border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        onClick={handleUpdateSubscription}
+                        className="flex-1 px-4 py-2 text-sm font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+                      >
+                        Enregistrer
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                </div>
-              </div>
               </div>
             </div>
           </div>
@@ -1595,7 +1917,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           <SubscriptionsModal
             subscriptions={subscriptions}
             onClose={() => setShowSubscriptionsModal(false)}
-            onEdit={(sub) => {
+            onEdit={sub => {
               setEditingSubscription(sub);
               setShowEditSubscription(true);
             }}
@@ -1610,7 +1932,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             tranches={tranches}
             subscriptions={subscriptions}
             onClose={() => setShowTranchesModal(false)}
-            onEdit={(tranche) => {
+            onEdit={tranche => {
               navigate(`/tranches/${tranche.id}/edit`);
             }}
             onDelete={handleDeleteTranche}

@@ -9,7 +9,9 @@ const isDev = import.meta.env.DEV;
 
 export const logger = {
   log: (...args: any[]) => {
-    if (isDev) console.log('[App]', ...args);
+    if (isDev) {
+      console.log('[App]', ...args);
+    }
   },
 
   error: (error: Error | string, context?: Record<string, any>) => {
@@ -33,12 +35,14 @@ export const logger = {
   },
 
   warn: (...args: any[]) => {
-    if (isDev) console.warn('[Warning]', ...args);
+    if (isDev) {
+      console.warn('[Warning]', ...args);
+    }
 
     // Also send warnings to Sentry (lower priority)
-    const message = args.map(arg =>
-      typeof arg === 'string' ? arg : JSON.stringify(arg)
-    ).join(' ');
+    const message = args
+      .map(arg => (typeof arg === 'string' ? arg : JSON.stringify(arg)))
+      .join(' ');
 
     Sentry.captureMessage(message, {
       level: 'warning',
@@ -46,11 +50,15 @@ export const logger = {
   },
 
   info: (...args: any[]) => {
-    if (isDev) console.info('[Info]', ...args);
+    if (isDev) {
+      console.info('[Info]', ...args);
+    }
   },
 
   debug: (...args: any[]) => {
-    if (isDev) console.debug('[Debug]', ...args);
+    if (isDev) {
+      console.debug('[Debug]', ...args);
+    }
   },
 
   // New method: Add breadcrumb for context

@@ -38,14 +38,12 @@ export function MultiSelectFilter({
   };
 
   const selectedLabels = options
-    .filter((opt) => selectedValues.includes(opt.value))
-    .map((opt) => opt.label);
+    .filter(opt => selectedValues.includes(opt.value))
+    .map(opt => opt.label);
 
   return (
     <div className={`relative ${className}`}>
-      <label className="block text-sm font-medium text-slate-700 mb-2">
-        {label}
-      </label>
+      <label className="block text-sm font-medium text-slate-700 mb-2">{label}</label>
 
       {/* Dropdown Button */}
       <button
@@ -60,7 +58,9 @@ export function MultiSelectFilter({
               : `${selectedLabels.length} sélectionné${selectedLabels.length > 1 ? 's' : ''}`
             : placeholder}
         </span>
-        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {/* Selected Tags */}
@@ -74,8 +74,10 @@ export function MultiSelectFilter({
               {label}
               <button
                 onClick={() => {
-                  const value = options.find((opt) => opt.label === label)?.value;
-                  if (value) onRemove(value);
+                  const value = options.find(opt => opt.label === label)?.value;
+                  if (value) {
+                    onRemove(value);
+                  }
                 }}
                 className="hover:bg-blue-200 rounded-full p-0.5"
               >
@@ -96,19 +98,14 @@ export function MultiSelectFilter({
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
 
           {/* Options */}
           <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
             {options.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-slate-500">
-                Aucune option disponible
-              </div>
+              <div className="px-3 py-2 text-sm text-slate-500">Aucune option disponible</div>
             ) : (
-              options.map((option) => {
+              options.map(option => {
                 const isSelected = selectedValues.includes(option.value);
                 return (
                   <button

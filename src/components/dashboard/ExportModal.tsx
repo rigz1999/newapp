@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, FileText, Euro, Calendar, AlertTriangle, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, FileText, Euro, Calendar, AlertTriangle, Download, ChevronDown } from 'lucide-react';
 import Decimal from 'decimal.js';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { supabase } from '../../lib/supabase';
-
-type ExcelJS = any;
-type JsPDF = any;
+import { logger } from '../../utils/logger';
 
 interface JsPDFWithAutoTable {
   text: (text: string, x: number, y: number, options?: any) => void;
@@ -14,7 +12,15 @@ interface JsPDFWithAutoTable {
   setFillColor: (r: number, g: number, b: number) => void;
   setFont: (font: string, style: string) => void;
   rect: (x: number, y: number, width: number, height: number, style?: string) => void;
-  roundedRect: (x: number, y: number, width: number, height: number, rx: number, ry: number, style?: string) => void;
+  roundedRect: (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    rx: number,
+    ry: number,
+    style?: string
+  ) => void;
   addPage: () => void;
   setPage: (page: number) => void;
   save: (filename: string) => void;
@@ -34,8 +40,8 @@ interface JsPDFWithAutoTable {
 const formatCurrencyForPDF = (amount: number): string => {
   // Get formatted currency and replace all non-breaking spaces with regular spaces
   const formatted = formatCurrency(amount)
-    .replace(/\u00A0/g, ' ')  // Replace non-breaking space
-    .replace(/\s+/g, ' ')     // Normalize multiple spaces to single space
+    .replace(/\u00A0/g, ' ') // Replace non-breaking space
+    .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
     .trim();
   return formatted;
 };
@@ -43,28 +49,33 @@ const formatCurrencyForPDF = (amount: number): string => {
 // Translate alert types to French
 const translateAlertType = (type: string): string => {
   const translations: Record<string, string> = {
-    'late_payment': 'Paiement en retard',
-    'deadline': 'Échéance',
-    'missing_rib': 'RIB manquant',
-    'upcoming_coupon': 'Coupon à venir',
-    'warning': 'Avertissement',
-    'error': 'Erreur',
-    'info': 'Information'
+    late_payment: 'Paiement en retard',
+    deadline: 'Échéance',
+    missing_rib: 'RIB manquant',
+    upcoming_coupon: 'Coupon à venir',
+    warning: 'Avertissement',
+    error: 'Erreur',
+    info: 'Information',
   };
   return translations[type] || type;
 };
 
 // Fix text spacing issues in PDF (removes extra spaces between characters)
-const fixTextForPDF = (text: string): string => {
-  return text
-    .replace(/\u00A0/g, ' ')  // Replace non-breaking space
-    .replace(/\s+/g, ' ')     // Normalize multiple spaces
+const fixTextForPDF = (text: string): string =>
+  text
+    .replace(/\u00A0/g, ' ') // Replace non-breaking space
+    .replace(/\s+/g, ' ') // Normalize multiple spaces
     .trim();
-};
 
 type ExportPreset = 'complet' | 'paiements' | 'coupons' | 'alertes' | 'custom';
 type ExportFormat = 'excel' | 'pdf';
-type DateRangePreset = 'this_week' | 'this_month' | 'last_3_months' | 'last_6_months' | 'this_year' | 'custom';
+type DateRangePreset =
+  | 'this_week'
+  | 'this_month'
+  | 'last_3_months'
+  | 'last_6_months'
+  | 'this_year'
+  | 'custom';
 type CouponRangePreset = 'next_7_days' | 'next_30_days' | 'next_90_days' | 'next_6_months';
 
 interface ExportOptions {
@@ -146,7 +157,7 @@ const PRESET_CONFIGS: Record<ExportPreset, Partial<ExportOptions>> = {
 };
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
-const getMonthAgoString = (months: number) => {
+const _getMonthAgoString = (months: number) => {
   const date = new Date();
   date.setMonth(date.getMonth() - months);
   return date.toISOString().split('T')[0];
@@ -181,7 +192,12 @@ const DEFAULT_OPTIONS: ExportOptions = {
   couponsEndDate: get30DaysFromNowString(),
 };
 
-export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: ExportModalProps) {
+export function ExportModal({
+  isOpen,
+  onClose,
+  organizationId: _organizationId,
+  dashboardData,
+}: ExportModalProps) {
   const [selectedPreset, setSelectedPreset] = useState<ExportPreset>('complet');
   const [format, setFormat] = useState<ExportFormat>('excel');
   const [showCustomize, setShowCustomize] = useState(false);
@@ -203,7 +219,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             setShowCustomize(true);
           }
         }
-      } catch (e) {
+      } catch (_e) {
         // Ignore errors
       }
     }
@@ -218,7 +234,9 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
   // Handle ESC key to close modal
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !exporting) {
@@ -245,7 +263,9 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         return { start: start.toISOString().split('T')[0], end };
       }
       case 'this_month': {
-        const start = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        const start = new Date(today.getFullYear(), today.getMonth(), 1)
+          .toISOString()
+          .split('T')[0];
         return { start, end };
       }
       case 'last_3_months': {
@@ -326,13 +346,15 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
     if (options.includePayments) {
       let query = supabase
         .from('paiements')
-        .select(`
+        .select(
+          `
           id, id_paiement, montant, date_paiement, statut,
           tranche:tranches(
             tranche_name,
             projet:projets(projet)
           )
-        `)
+        `
+        )
         .order('date_paiement', { ascending: false });
 
       if (options.paymentsStartDate && options.paymentsDateRange !== 'all') {
@@ -346,20 +368,24 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       }
 
       const { data, error } = await query;
-      if (!error && data) payments = data;
+      if (!error && data) {
+        payments = data;
+      }
     }
 
     // Fetch filtered coupons
     if (options.includeCoupons) {
       let query = supabase
         .from('souscriptions')
-        .select(`
+        .select(
+          `
           id, tranche_id, prochaine_date_coupon, coupon_brut, investisseur_id,
           tranche:tranches(
             tranche_name, projet_id,
             projet:projets(projet)
           )
-        `)
+        `
+        )
         .order('prochaine_date_coupon', { ascending: true });
 
       // Always filter for future coupons based on the selected range
@@ -375,11 +401,13 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         // Group by tranche and date
         const grouped = data.reduce((acc: any[], coupon: any) => {
           const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
-          const existing = acc.find((c) => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
+          const existing = acc.find(c => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
 
           if (existing) {
             existing.investor_count += 1;
-            existing.coupon_brut = new Decimal(existing.coupon_brut).plus(new Decimal(coupon.coupon_brut)).toNumber();
+            existing.coupon_brut = new Decimal(existing.coupon_brut)
+              .plus(new Decimal(coupon.coupon_brut))
+              .toNumber();
           } else {
             acc.push({ ...coupon, investor_count: 1 });
           }
@@ -406,7 +434,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         JSON.stringify({
           preset: selectedPreset,
           format,
-          options: showCustomize ? options : undefined
+          options: showCustomize ? options : undefined,
         })
       );
 
@@ -416,16 +444,16 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         await exportToPDF();
       }
     } catch (error) {
-      console.error('Export error:', error);
-      let errorMessage = 'Une erreur est survenue lors de l\'export.';
+      logger.error('Export error:', error);
+      let errorMessage = "Une erreur est survenue lors de l'export.";
 
       if (error instanceof Error) {
         if (error.message.includes('fetch') || error.message.includes('network')) {
           errorMessage = 'Erreur de connexion. Vérifiez votre connexion internet et réessayez.';
         } else if (error.message.includes('permission')) {
-          errorMessage = 'Erreur de permission. Vous n\'avez pas accès à ces données.';
+          errorMessage = "Erreur de permission. Vous n'avez pas accès à ces données.";
         } else if (error.message.includes('quota') || error.message.includes('storage')) {
-          errorMessage = 'Espace de stockage insuffisant. Libérez de l\'espace et réessayez.';
+          errorMessage = "Espace de stockage insuffisant. Libérez de l'espace et réessayez.";
         }
       }
 
@@ -447,158 +475,167 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       setExportProgress(40);
 
       const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Dashboard';
-    workbook.created = new Date();
+      workbook.creator = 'Dashboard';
+      workbook.created = new Date();
 
-    // Statistics sheet
-    if (options.includeStats) {
-      const statsSheet = workbook.addWorksheet('Statistiques');
-      statsSheet.columns = [
-        { header: 'Métrique', key: 'metric', width: 30 },
-        { header: 'Valeur', key: 'value', width: 20 },
-      ];
+      // Statistics sheet
+      if (options.includeStats) {
+        const statsSheet = workbook.addWorksheet('Statistiques');
+        statsSheet.columns = [
+          { header: 'Métrique', key: 'metric', width: 30 },
+          { header: 'Valeur', key: 'value', width: 20 },
+        ];
 
-      statsSheet.addRows([
-        { metric: 'Montant total investi', value: formatCurrency(dashboardData.stats.totalInvested) },
-        { metric: 'Coupons payés ce mois', value: formatCurrency(dashboardData.stats.couponsPaidThisMonth) },
-        { metric: 'Projets actifs', value: dashboardData.stats.activeProjects },
-        { metric: 'Coupons à venir (90j)', value: dashboardData.stats.upcomingCoupons },
-      ]);
+        statsSheet.addRows([
+          {
+            metric: 'Montant total investi',
+            value: formatCurrency(dashboardData.stats.totalInvested),
+          },
+          {
+            metric: 'Coupons payés ce mois',
+            value: formatCurrency(dashboardData.stats.couponsPaidThisMonth),
+          },
+          { metric: 'Projets actifs', value: dashboardData.stats.activeProjects },
+          { metric: 'Coupons à venir (90j)', value: dashboardData.stats.upcomingCoupons },
+        ]);
 
-      // Style header
-      statsSheet.getRow(1).font = { bold: true };
-      statsSheet.getRow(1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF1F5EEA' },
-      };
-      statsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    }
+        // Style header
+        statsSheet.getRow(1).font = { bold: true };
+        statsSheet.getRow(1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF1F5EEA' },
+        };
+        statsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      }
 
-    // Payments sheet
-    if (options.includePayments && payments.length > 0) {
-      const paymentsSheet = workbook.addWorksheet('Paiements');
-      paymentsSheet.columns = [
-        { header: 'ID', key: 'id', width: 15 },
-        { header: 'Tranche', key: 'tranche', width: 25 },
-        { header: 'Montant', key: 'montant', width: 15 },
-        { header: 'Date', key: 'date', width: 15 },
-        { header: 'Statut', key: 'statut', width: 15 },
-      ];
+      // Payments sheet
+      if (options.includePayments && payments.length > 0) {
+        const paymentsSheet = workbook.addWorksheet('Paiements');
+        paymentsSheet.columns = [
+          { header: 'ID', key: 'id', width: 15 },
+          { header: 'Tranche', key: 'tranche', width: 25 },
+          { header: 'Montant', key: 'montant', width: 15 },
+          { header: 'Date', key: 'date', width: 15 },
+          { header: 'Statut', key: 'statut', width: 15 },
+        ];
 
-      payments.forEach((payment) => {
-        paymentsSheet.addRow({
-          id: payment.id_paiement || payment.id,
-          tranche: payment.tranche?.tranche_name || 'N/A',
-          montant: formatCurrency(payment.montant),
-          date: formatDate(payment.date_paiement),
-          statut: payment.statut,
+        payments.forEach(payment => {
+          paymentsSheet.addRow({
+            id: payment.id_paiement || payment.id,
+            tranche: payment.tranche?.tranche_name || 'N/A',
+            montant: formatCurrency(payment.montant),
+            date: formatDate(payment.date_paiement),
+            statut: payment.statut,
+          });
         });
-      });
 
-      // Style header
-      paymentsSheet.getRow(1).font = { bold: true };
-      paymentsSheet.getRow(1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF1F5EEA' },
-      };
-      paymentsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    }
+        // Style header
+        paymentsSheet.getRow(1).font = { bold: true };
+        paymentsSheet.getRow(1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF1F5EEA' },
+        };
+        paymentsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      }
 
-    // Coupons sheet
-    if (options.includeCoupons && coupons.length > 0) {
-      const couponsSheet = workbook.addWorksheet('Coupons à venir');
-      couponsSheet.columns = [
-        { header: 'Projet', key: 'projet', width: 25 },
-        { header: 'Tranche', key: 'tranche', width: 25 },
-        { header: 'Montant', key: 'montant', width: 15 },
-        { header: 'Date échéance', key: 'date', width: 15 },
-        { header: 'Investisseurs', key: 'investors', width: 15 },
-        { header: 'Jours restants', key: 'days', width: 15 },
-      ];
+      // Coupons sheet
+      if (options.includeCoupons && coupons.length > 0) {
+        const couponsSheet = workbook.addWorksheet('Coupons à venir');
+        couponsSheet.columns = [
+          { header: 'Projet', key: 'projet', width: 25 },
+          { header: 'Tranche', key: 'tranche', width: 25 },
+          { header: 'Montant', key: 'montant', width: 15 },
+          { header: 'Date échéance', key: 'date', width: 15 },
+          { header: 'Investisseurs', key: 'investors', width: 15 },
+          { header: 'Jours restants', key: 'days', width: 15 },
+        ];
 
-      coupons.forEach((coupon) => {
-        const daysUntil = Math.ceil(
-          (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-        );
+        coupons.forEach(coupon => {
+          const daysUntil = Math.ceil(
+            (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) /
+              (1000 * 60 * 60 * 24)
+          );
 
-        couponsSheet.addRow({
-          projet: coupon.tranche?.projet?.projet || 'N/A',
-          tranche: coupon.tranche?.tranche_name || 'N/A',
-          montant: formatCurrency(parseFloat(coupon.coupon_brut.toString())),
-          date: formatDate(coupon.prochaine_date_coupon),
-          investors: coupon.investor_count || 1,
-          days: daysUntil,
+          couponsSheet.addRow({
+            projet: coupon.tranche?.projet?.projet || 'N/A',
+            tranche: coupon.tranche?.tranche_name || 'N/A',
+            montant: formatCurrency(parseFloat(coupon.coupon_brut.toString())),
+            date: formatDate(coupon.prochaine_date_coupon),
+            investors: coupon.investor_count || 1,
+            days: daysUntil,
+          });
         });
-      });
 
-      // Style header
-      couponsSheet.getRow(1).font = { bold: true };
-      couponsSheet.getRow(1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF1F5EEA' },
-      };
-      couponsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    }
+        // Style header
+        couponsSheet.getRow(1).font = { bold: true };
+        couponsSheet.getRow(1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF1F5EEA' },
+        };
+        couponsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      }
 
-    // Alerts sheet
-    if (options.includeAlerts && dashboardData.alerts.length > 0) {
-      const alertsSheet = workbook.addWorksheet('Alertes');
-      alertsSheet.columns = [
-        { header: 'Type', key: 'type', width: 20 },
-        { header: 'Message', key: 'message', width: 60 },
-      ];
+      // Alerts sheet
+      if (options.includeAlerts && dashboardData.alerts.length > 0) {
+        const alertsSheet = workbook.addWorksheet('Alertes');
+        alertsSheet.columns = [
+          { header: 'Type', key: 'type', width: 20 },
+          { header: 'Message', key: 'message', width: 60 },
+        ];
 
-      dashboardData.alerts.forEach((alert) => {
-        alertsSheet.addRow({
-          type: alert.type,
-          message: alert.message,
+        dashboardData.alerts.forEach(alert => {
+          alertsSheet.addRow({
+            type: alert.type,
+            message: alert.message,
+          });
         });
-      });
 
-      // Style header
-      alertsSheet.getRow(1).font = { bold: true };
-      alertsSheet.getRow(1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFEF4444' },
-      };
-      alertsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    }
+        // Style header
+        alertsSheet.getRow(1).font = { bold: true };
+        alertsSheet.getRow(1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFEF4444' },
+        };
+        alertsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      }
 
-    // Chart data sheet
-    if (options.includeChart && dashboardData.monthlyData.length > 0) {
-      const chartSheet = workbook.addWorksheet('Données mensuelles');
-      chartSheet.columns = [
-        { header: 'Mois', key: 'month', width: 15 },
-        { header: 'Montant', key: 'amount', width: 20 },
-        { header: 'Cumulé', key: 'cumulative', width: 20 },
-      ];
+      // Chart data sheet
+      if (options.includeChart && dashboardData.monthlyData.length > 0) {
+        const chartSheet = workbook.addWorksheet('Données mensuelles');
+        chartSheet.columns = [
+          { header: 'Mois', key: 'month', width: 15 },
+          { header: 'Montant', key: 'amount', width: 20 },
+          { header: 'Cumulé', key: 'cumulative', width: 20 },
+        ];
 
-      dashboardData.monthlyData.forEach((data) => {
-        chartSheet.addRow({
-          month: data.month,
-          amount: formatCurrency(data.amount),
-          cumulative: formatCurrency(data.cumulative || 0),
+        dashboardData.monthlyData.forEach(data => {
+          chartSheet.addRow({
+            month: data.month,
+            amount: formatCurrency(data.amount),
+            cumulative: formatCurrency(data.cumulative || 0),
+          });
         });
-      });
 
-      // Style header
-      chartSheet.getRow(1).font = { bold: true };
-      chartSheet.getRow(1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF1F5EEA' },
-      };
-      chartSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    }
+        // Style header
+        chartSheet.getRow(1).font = { bold: true };
+        chartSheet.getRow(1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF1F5EEA' },
+        };
+        chartSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      }
 
       // Generate and download
       setExportProgress(80);
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -611,7 +648,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         onClose();
       }, 500);
     } catch (error) {
-      console.error('Excel export error:', error);
+      logger.error('Excel export error:', error);
       setExportProgress(0);
       throw error; // Re-throw to be caught by handleExport
     }
@@ -623,7 +660,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
     try {
       const [jsPDFModule, autoTableModule] = await Promise.all([
         import('jspdf'),
-        import('jspdf-autotable')
+        import('jspdf-autotable'),
       ]);
       const jsPDF = jsPDFModule.default;
       const autoTable = autoTableModule.default;
@@ -638,11 +675,11 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
       // Consistent spacing constants
       const SPACING = {
-        SECTION: 10,        // Between major sections
-        TITLE: 6,           // After section titles
-        ELEMENT: 6,         // Between elements
-        SMALL: 3,           // Small gaps within related items
-        MARGIN: 15          // Left/right margins
+        SECTION: 10, // Between major sections
+        TITLE: 6, // After section titles
+        ELEMENT: 6, // Between elements
+        SMALL: 3, // Small gaps within related items
+        MARGIN: 15, // Left/right margins
       };
 
       // Professional Header with background
@@ -658,452 +695,538 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
       // Period and date
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      const periodLabel = options.paymentsDateRange === 'this_week' ? 'Cette semaine' :
-                         options.paymentsDateRange === 'this_month' ? 'Ce mois' :
-                         options.paymentsDateRange === 'last_3_months' ? '3 derniers mois' :
-                         options.paymentsDateRange === 'last_6_months' ? '6 derniers mois' :
-                         options.paymentsDateRange === 'this_year' ? 'Cette année' : 'Période personnalisée';
+      const periodLabel =
+        options.paymentsDateRange === 'this_week'
+          ? 'Cette semaine'
+          : options.paymentsDateRange === 'this_month'
+            ? 'Ce mois'
+            : options.paymentsDateRange === 'last_3_months'
+              ? '3 derniers mois'
+              : options.paymentsDateRange === 'last_6_months'
+                ? '6 derniers mois'
+                : options.paymentsDateRange === 'this_year'
+                  ? 'Cette année'
+                  : 'Période personnalisée';
       doc.text(`Période: ${periodLabel}`, 15, 23);
       doc.text(`Généré le: ${formatDate(new Date().toISOString().split('T')[0])}`, 15, 29);
 
       yPos = 45;
 
-    // Statistics - Card Style
-    if (options.includeStats) {
-      // Reset text color
-      doc.setTextColor(51, 65, 85); // slate-700
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Statistiques globales', SPACING.MARGIN, yPos);
-      yPos += SPACING.TITLE;
-
-      // Stats cards in 2x2 grid
-      const cardWidth = (pageWidth - (SPACING.MARGIN * 2) - SPACING.SMALL) / 2;
-      const cardHeight = 22;
-      const gap = SPACING.SMALL;
-
-      const stats = [
-        {
-          label: 'Montant total investi',
-          value: formatCurrencyForPDF(dashboardData.stats.totalInvested),
-          color: [59, 130, 246] // blue-500
-        },
-        {
-          label: 'Coupons payés ce mois',
-          value: formatCurrencyForPDF(dashboardData.stats.couponsPaidThisMonth),
-          color: [16, 185, 129] // emerald-500
-        },
-        {
-          label: 'Projets actifs',
-          value: dashboardData.stats.activeProjects.toString(),
-          color: [168, 85, 247] // purple-500
-        },
-        {
-          label: 'Coupons à venir (90j)',
-          value: dashboardData.stats.upcomingCoupons.toString(),
-          color: [249, 115, 22] // orange-500
-        }
-      ];
-
-      stats.forEach((stat, index) => {
-        const col = index % 2;
-        const row = Math.floor(index / 2);
-        const x = SPACING.MARGIN + (col * (cardWidth + gap));
-        const y = yPos + (row * (cardHeight + gap));
-
-        // Card background
-        doc.setFillColor(stat.color[0], stat.color[1], stat.color[2]);
-        doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
-
-        // Label
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.text(stat.label, x + 4, y + 6);
-
-        // Value
-        doc.setFontSize(13);
+      // Statistics - Card Style
+      if (options.includeStats) {
+        // Reset text color
+        doc.setTextColor(51, 65, 85); // slate-700
+        doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text(stat.value, x + 4, y + 16);
-      });
+        doc.text('Statistiques globales', SPACING.MARGIN, yPos);
+        yPos += SPACING.TITLE;
 
-      yPos += (cardHeight * 2) + gap + SPACING.SECTION;
-    }
+        // Stats cards in 2x2 grid
+        const cardWidth = (pageWidth - SPACING.MARGIN * 2 - SPACING.SMALL) / 2;
+        const cardHeight = 22;
+        const gap = SPACING.SMALL;
 
-    // Activity summary section - NEW
-    if (options.includeStats && payments.length > 0) {
-      if (yPos > 220) {
-        doc.addPage();
-        yPos = 25;
+        const stats = [
+          {
+            label: 'Montant total investi',
+            value: formatCurrencyForPDF(dashboardData.stats.totalInvested),
+            color: [59, 130, 246], // blue-500
+          },
+          {
+            label: 'Coupons payés ce mois',
+            value: formatCurrencyForPDF(dashboardData.stats.couponsPaidThisMonth),
+            color: [16, 185, 129], // emerald-500
+          },
+          {
+            label: 'Projets actifs',
+            value: dashboardData.stats.activeProjects.toString(),
+            color: [168, 85, 247], // purple-500
+          },
+          {
+            label: 'Coupons à venir (90j)',
+            value: dashboardData.stats.upcomingCoupons.toString(),
+            color: [249, 115, 22], // orange-500
+          },
+        ];
+
+        stats.forEach((stat, index) => {
+          const col = index % 2;
+          const row = Math.floor(index / 2);
+          const x = SPACING.MARGIN + col * (cardWidth + gap);
+          const y = yPos + row * (cardHeight + gap);
+
+          // Card background
+          doc.setFillColor(stat.color[0], stat.color[1], stat.color[2]);
+          doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'F');
+
+          // Label
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+          doc.text(stat.label, x + 4, y + 6);
+
+          // Value
+          doc.setFontSize(13);
+          doc.setFont('helvetica', 'bold');
+          doc.text(stat.value, x + 4, y + 16);
+        });
+
+        yPos += cardHeight * 2 + gap + SPACING.SECTION;
       }
 
-      doc.setTextColor(51, 65, 85);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Activité de la période', SPACING.MARGIN, yPos);
-      yPos += SPACING.TITLE;
-
-      // Calculate summary statistics from filtered payments
-      const totalPayments = payments.length;
-      const totalAmount = payments.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
-      const completedPayments = payments.filter(p => p.statut?.toLowerCase() === 'payé' || p.statut?.toLowerCase() === 'paid').length;
-      const pendingPayments = payments.filter(p => p.statut?.toLowerCase() === 'en attente' || p.statut?.toLowerCase() === 'pending').length;
-      const latePayments = payments.filter(p => p.statut?.toLowerCase()?.includes('retard') || p.statut?.toLowerCase()?.includes('late')).length;
-      const completionRate = totalPayments > 0 ? Math.round((completedPayments / totalPayments) * 100) : 0;
-      const averagePayment = totalPayments > 0 ? totalAmount / totalPayments : 0;
-
-      // Activity box with light background
-      const boxHeight = (latePayments > 0 || pendingPayments > 0) ? 28 : 18;
-      doc.setFillColor(248, 250, 252); // slate-50
-      doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), boxHeight, 2, 2, 'F');
-
-      doc.setTextColor(71, 85, 105); // slate-600
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-
-      let lineY = yPos + 4;
-      doc.text(`Paiements traités: ${totalPayments} paiements - ${formatCurrencyForPDF(totalAmount)}`, SPACING.MARGIN + 3, lineY);
-      lineY += 5;
-      doc.text(`Taux de complétion: ${completionRate}% (${completedPayments}/${totalPayments})`, SPACING.MARGIN + 3, lineY);
-      lineY += 5;
-      doc.text(`Paiement moyen: ${formatCurrencyForPDF(averagePayment)}`, SPACING.MARGIN + 3, lineY);
-      lineY += 5;
-
-      if (latePayments > 0 || pendingPayments > 0) {
-        doc.setTextColor(239, 68, 68); // red-500
-        doc.setFont('helvetica', 'bold');
-        doc.text(`Points d'attention:`, SPACING.MARGIN + 3, lineY);
-        doc.setFont('helvetica', 'normal');
-        lineY += 5;
-        if (latePayments > 0) {
-          doc.text(`  • ${latePayments} paiement${latePayments > 1 ? 's' : ''} en retard`, SPACING.MARGIN + 3, lineY);
-          lineY += 5;
-        }
-        if (pendingPayments > 0) {
-          doc.text(`  • ${pendingPayments} paiement${pendingPayments > 1 ? 's' : ''} en attente`, SPACING.MARGIN + 3, lineY);
-        }
-      }
-
-      yPos += boxHeight + SPACING.SECTION;
-    }
-
-    // Recent payments (last 15)
-    if (options.includePayments && payments.length > 0) {
-      if (yPos > 240) {
-        doc.addPage();
-        yPos = 25;
-      }
-
-      doc.setTextColor(51, 65, 85);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Derniers paiements', SPACING.MARGIN, yPos);
-      yPos += SPACING.TITLE;
-
-      // Limit to last 15 payments for display
-      const displayPayments = payments.slice(0, 15);
-
-      autoTable(doc, {
-        startY: yPos,
-        head: [['Projet', 'Montant', 'Date', 'Statut']],
-        body: displayPayments.map((p) => [
-          fixTextForPDF(p.tranche?.projet?.projet || p.tranche?.tranche_name || 'N/A'),
-          formatCurrencyForPDF(p.montant),
-          formatDate(p.date_paiement),
-          fixTextForPDF(p.statut),
-        ]),
-        theme: 'striped',
-        headStyles: {
-          fillColor: [31, 94, 234],
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          fontSize: 10,
-          cellPadding: 5
-        },
-        bodyStyles: {
-          fontSize: 9,
-          cellPadding: 4
-        },
-        alternateRowStyles: {
-          fillColor: [248, 250, 252] // slate-50
-        },
-        margin: { left: SPACING.MARGIN, right: SPACING.MARGIN },
-        styles: {
-          lineColor: [226, 232, 240], // slate-200
-          lineWidth: 0.1
-        }
-      });
-
-      yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + SPACING.ELEMENT;
-
-      // Summary box after payments table
-      const allPayments = payments; // This includes all filtered payments
-      const totalAllPayments = allPayments.length;
-      const totalAllAmount = allPayments.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
-      const completedAll = allPayments.filter(p => p.statut?.toLowerCase() === 'payé' || p.statut?.toLowerCase() === 'paid').length;
-      const pendingAll = allPayments.filter(p => p.statut?.toLowerCase() === 'en attente' || p.statut?.toLowerCase() === 'pending').length;
-      const lateAll = allPayments.filter(p => p.statut?.toLowerCase()?.includes('retard') || p.statut?.toLowerCase()?.includes('late')).length;
-
-      doc.setFillColor(248, 250, 252); // slate-50
-      doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 13, 2, 2, 'F');
-
-      doc.setTextColor(71, 85, 105);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Résumé de la période', SPACING.MARGIN + 3, yPos + 4);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`• Total paiements: ${totalAllPayments}`, SPACING.MARGIN + 3, yPos + 8);
-      doc.text(`• Montant total: ${formatCurrencyForPDF(totalAllAmount)}`, 70, yPos + 8);
-      doc.text(`• Complétés: ${completedAll} (${Math.round((completedAll/totalAllPayments)*100)}%)`, SPACING.MARGIN + 3, yPos + 11);
-      if (pendingAll > 0) doc.text(`• En attente: ${pendingAll}`, 70, yPos + 11);
-      if (lateAll > 0) {
-        doc.setTextColor(239, 68, 68);
-        doc.text(`• En retard: ${lateAll}`, 120, yPos + 11);
-      }
-
-      yPos += 13 + SPACING.ELEMENT;
-
-      if (displayPayments.length < totalAllPayments) {
-        doc.setTextColor(100, 116, 139); // slate-500
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'italic');
-        doc.text(`(Affichage des 15 derniers paiements sur ${totalAllPayments} au total)`, SPACING.MARGIN, yPos);
-        yPos += SPACING.ELEMENT;
-      }
-    }
-
-    // Coupons - Grouped by project
-    if (options.includeCoupons && coupons.length > 0) {
-      if (yPos > 240) {
-        doc.addPage();
-        yPos = 25;
-      }
-
-      doc.setTextColor(51, 65, 85);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      const couponDays = options.couponsRange === 'next_7_days' ? '7 prochains jours' :
-                        options.couponsRange === 'next_30_days' ? '30 prochains jours' :
-                        options.couponsRange === 'next_90_days' ? '90 prochains jours' :
-                        options.couponsRange === 'next_6_months' ? '6 prochains mois' : 'Période personnalisée';
-      doc.text(`Coupons à venir - par projet (${couponDays})`, SPACING.MARGIN, yPos);
-      yPos += SPACING.TITLE;
-
-      // Group coupons by project
-      const couponsByProject = coupons.reduce((acc: any, coupon: any) => {
-        const projectName = fixTextForPDF(coupon.tranche?.projet?.projet || 'N/A');
-        if (!acc[projectName]) {
-          acc[projectName] = {
-            projectName,
-            coupons: [],
-            totalAmount: 0,
-            count: 0
-          };
-        }
-        acc[projectName].coupons.push(coupon);
-        acc[projectName].totalAmount += parseFloat(coupon.coupon_brut.toString());
-        acc[projectName].count += 1;
-        return acc;
-      }, {});
-
-      const projectGroups = Object.values(couponsByProject);
-
-      // Display each project group
-      projectGroups.forEach((group: any, index: number) => {
-        if (yPos > 250) {
+      // Activity summary section - NEW
+      if (options.includeStats && payments.length > 0) {
+        if (yPos > 220) {
           doc.addPage();
           yPos = 25;
         }
 
-        // Project header with colored background
-        doc.setFillColor(168, 85, 247); // purple-500
-        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 8, 2, 2, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
+        doc.setTextColor(51, 65, 85);
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text(group.projectName, SPACING.MARGIN + 3, yPos + 6);
-        yPos += 8;
+        doc.text('Activité de la période', SPACING.MARGIN, yPos);
+        yPos += SPACING.TITLE;
 
-        // Project details
-        doc.setFillColor(250, 245, 255); // purple-50
-        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 14, 2, 2, 'F');
-        doc.setTextColor(71, 85, 105);
-        doc.setFontSize(9);
+        // Calculate summary statistics from filtered payments
+        const totalPayments = payments.length;
+        const totalAmount = payments.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
+        const completedPayments = payments.filter(
+          p => p.statut?.toLowerCase() === 'payé' || p.statut?.toLowerCase() === 'paid'
+        ).length;
+        const pendingPayments = payments.filter(
+          p => p.statut?.toLowerCase() === 'en attente' || p.statut?.toLowerCase() === 'pending'
+        ).length;
+        const latePayments = payments.filter(
+          p =>
+            p.statut?.toLowerCase()?.includes('retard') || p.statut?.toLowerCase()?.includes('late')
+        ).length;
+        const completionRate =
+          totalPayments > 0 ? Math.round((completedPayments / totalPayments) * 100) : 0;
+        const averagePayment = totalPayments > 0 ? totalAmount / totalPayments : 0;
+
+        // Activity box with light background
+        const boxHeight = latePayments > 0 || pendingPayments > 0 ? 28 : 18;
+        doc.setFillColor(248, 250, 252); // slate-50
+        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, boxHeight, 2, 2, 'F');
+
+        doc.setTextColor(71, 85, 105); // slate-600
+        doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
 
-        const nextCoupon = group.coupons.sort((a: any, b: any) =>
-          new Date(a.prochaine_date_coupon).getTime() - new Date(b.prochaine_date_coupon).getTime()
-        )[0];
-        const daysUntilNext = Math.ceil(
-          (new Date(nextCoupon.prochaine_date_coupon).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        let lineY = yPos + 4;
+        doc.text(
+          `Paiements traités: ${totalPayments} paiements - ${formatCurrencyForPDF(totalAmount)}`,
+          SPACING.MARGIN + 3,
+          lineY
+        );
+        lineY += 5;
+        doc.text(
+          `Taux de complétion: ${completionRate}% (${completedPayments}/${totalPayments})`,
+          SPACING.MARGIN + 3,
+          lineY
+        );
+        lineY += 5;
+        doc.text(
+          `Paiement moyen: ${formatCurrencyForPDF(averagePayment)}`,
+          SPACING.MARGIN + 3,
+          lineY
+        );
+        lineY += 5;
+
+        if (latePayments > 0 || pendingPayments > 0) {
+          doc.setTextColor(239, 68, 68); // red-500
+          doc.setFont('helvetica', 'bold');
+          doc.text(`Points d'attention:`, SPACING.MARGIN + 3, lineY);
+          doc.setFont('helvetica', 'normal');
+          lineY += 5;
+          if (latePayments > 0) {
+            doc.text(
+              `  • ${latePayments} paiement${latePayments > 1 ? 's' : ''} en retard`,
+              SPACING.MARGIN + 3,
+              lineY
+            );
+            lineY += 5;
+          }
+          if (pendingPayments > 0) {
+            doc.text(
+              `  • ${pendingPayments} paiement${pendingPayments > 1 ? 's' : ''} en attente`,
+              SPACING.MARGIN + 3,
+              lineY
+            );
+          }
+        }
+
+        yPos += boxHeight + SPACING.SECTION;
+      }
+
+      // Recent payments (last 15)
+      if (options.includePayments && payments.length > 0) {
+        if (yPos > 240) {
+          doc.addPage();
+          yPos = 25;
+        }
+
+        doc.setTextColor(51, 65, 85);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Derniers paiements', SPACING.MARGIN, yPos);
+        yPos += SPACING.TITLE;
+
+        // Limit to last 15 payments for display
+        const displayPayments = payments.slice(0, 15);
+
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Projet', 'Montant', 'Date', 'Statut']],
+          body: displayPayments.map(p => [
+            fixTextForPDF(p.tranche?.projet?.projet || p.tranche?.tranche_name || 'N/A'),
+            formatCurrencyForPDF(p.montant),
+            formatDate(p.date_paiement),
+            fixTextForPDF(p.statut),
+          ]),
+          theme: 'striped',
+          headStyles: {
+            fillColor: [31, 94, 234],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10,
+            cellPadding: 5,
+          },
+          bodyStyles: {
+            fontSize: 9,
+            cellPadding: 4,
+          },
+          alternateRowStyles: {
+            fillColor: [248, 250, 252], // slate-50
+          },
+          margin: { left: SPACING.MARGIN, right: SPACING.MARGIN },
+          styles: {
+            lineColor: [226, 232, 240], // slate-200
+            lineWidth: 0.1,
+          },
+        });
+
+        yPos = (doc as JsPDFWithAutoTable).lastAutoTable.finalY + SPACING.ELEMENT;
+
+        // Summary box after payments table
+        const allPayments = payments; // This includes all filtered payments
+        const totalAllPayments = allPayments.length;
+        const totalAllAmount = allPayments.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
+        const completedAll = allPayments.filter(
+          p => p.statut?.toLowerCase() === 'payé' || p.statut?.toLowerCase() === 'paid'
+        ).length;
+        const pendingAll = allPayments.filter(
+          p => p.statut?.toLowerCase() === 'en attente' || p.statut?.toLowerCase() === 'pending'
+        ).length;
+        const lateAll = allPayments.filter(
+          p =>
+            p.statut?.toLowerCase()?.includes('retard') || p.statut?.toLowerCase()?.includes('late')
+        ).length;
+
+        doc.setFillColor(248, 250, 252); // slate-50
+        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, 13, 2, 2, 'F');
+
+        doc.setTextColor(71, 85, 105);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Résumé de la période', SPACING.MARGIN + 3, yPos + 4);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`• Total paiements: ${totalAllPayments}`, SPACING.MARGIN + 3, yPos + 8);
+        doc.text(`• Montant total: ${formatCurrencyForPDF(totalAllAmount)}`, 70, yPos + 8);
+        doc.text(
+          `• Complétés: ${completedAll} (${Math.round((completedAll / totalAllPayments) * 100)}%)`,
+          SPACING.MARGIN + 3,
+          yPos + 11
+        );
+        if (pendingAll > 0) {
+          doc.text(`• En attente: ${pendingAll}`, 70, yPos + 11);
+        }
+        if (lateAll > 0) {
+          doc.setTextColor(239, 68, 68);
+          doc.text(`• En retard: ${lateAll}`, 120, yPos + 11);
+        }
+
+        yPos += 13 + SPACING.ELEMENT;
+
+        if (displayPayments.length < totalAllPayments) {
+          doc.setTextColor(100, 116, 139); // slate-500
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'italic');
+          doc.text(
+            `(Affichage des 15 derniers paiements sur ${totalAllPayments} au total)`,
+            SPACING.MARGIN,
+            yPos
+          );
+          yPos += SPACING.ELEMENT;
+        }
+      }
+
+      // Coupons - Grouped by project
+      if (options.includeCoupons && coupons.length > 0) {
+        if (yPos > 240) {
+          doc.addPage();
+          yPos = 25;
+        }
+
+        doc.setTextColor(51, 65, 85);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        const couponDays =
+          options.couponsRange === 'next_7_days'
+            ? '7 prochains jours'
+            : options.couponsRange === 'next_30_days'
+              ? '30 prochains jours'
+              : options.couponsRange === 'next_90_days'
+                ? '90 prochains jours'
+                : options.couponsRange === 'next_6_months'
+                  ? '6 prochains mois'
+                  : 'Période personnalisée';
+        doc.text(`Coupons à venir - par projet (${couponDays})`, SPACING.MARGIN, yPos);
+        yPos += SPACING.TITLE;
+
+        // Group coupons by project
+        const couponsByProject = coupons.reduce((acc: any, coupon: any) => {
+          const projectName = fixTextForPDF(coupon.tranche?.projet?.projet || 'N/A');
+          if (!acc[projectName]) {
+            acc[projectName] = {
+              projectName,
+              coupons: [],
+              totalAmount: 0,
+              count: 0,
+            };
+          }
+          acc[projectName].coupons.push(coupon);
+          acc[projectName].totalAmount += parseFloat(coupon.coupon_brut.toString());
+          acc[projectName].count += 1;
+          return acc;
+        }, {});
+
+        const projectGroups = Object.values(couponsByProject);
+
+        // Display each project group
+        projectGroups.forEach((group: any, _index: number) => {
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 25;
+          }
+
+          // Project header with colored background
+          doc.setFillColor(168, 85, 247); // purple-500
+          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, 8, 2, 2, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text(group.projectName, SPACING.MARGIN + 3, yPos + 6);
+          yPos += 8;
+
+          // Project details
+          doc.setFillColor(250, 245, 255); // purple-50
+          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, 14, 2, 2, 'F');
+          doc.setTextColor(71, 85, 105);
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+
+          const nextCoupon = group.coupons.sort(
+            (a: any, b: any) =>
+              new Date(a.prochaine_date_coupon).getTime() -
+              new Date(b.prochaine_date_coupon).getTime()
+          )[0];
+          const daysUntilNext = Math.ceil(
+            (new Date(nextCoupon.prochaine_date_coupon).getTime() - new Date().getTime()) /
+              (1000 * 60 * 60 * 24)
+          );
+
+          doc.text(
+            `• ${group.count} coupon${group.count > 1 ? 's' : ''} - ${formatCurrencyForPDF(group.totalAmount)} total`,
+            SPACING.MARGIN + 3,
+            yPos + 5
+          );
+          doc.text(
+            `• Prochain: ${formatDate(nextCoupon.prochaine_date_coupon)} (dans ${daysUntilNext} jour${daysUntilNext > 1 ? 's' : ''})`,
+            SPACING.MARGIN + 3,
+            yPos + 10
+          );
+
+          if (group.count > 1) {
+            const subsequentDates = group.coupons
+              .slice(1, 3)
+              .map((c: any) => formatDate(c.prochaine_date_coupon))
+              .join(', ');
+            if (subsequentDates) {
+              doc.setFontSize(8);
+              doc.setTextColor(100, 116, 139);
+              // Only show if there are subsequent dates
+            }
+          }
+
+          yPos += 14 + SPACING.SMALL;
+        });
+
+        // Summary section
+        yPos += SPACING.SMALL;
+        const totalCoupons = coupons.length;
+        const totalCouponAmount = coupons.reduce(
+          (sum, c) => sum + parseFloat(c.coupon_brut.toString()),
+          0
         );
 
-        doc.text(`• ${group.count} coupon${group.count > 1 ? 's' : ''} - ${formatCurrencyForPDF(group.totalAmount)} total`, SPACING.MARGIN + 3, yPos + 5);
-        doc.text(`• Prochain: ${formatDate(nextCoupon.prochaine_date_coupon)} (dans ${daysUntilNext} jour${daysUntilNext > 1 ? 's' : ''})`, SPACING.MARGIN + 3, yPos + 10);
+        doc.setFillColor(248, 250, 252); // slate-50
+        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, 12, 2, 2, 'F');
+        doc.setTextColor(71, 85, 105);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text(
+          `TOTAL: ${totalCoupons} coupon${totalCoupons > 1 ? 's' : ''} - ${formatCurrencyForPDF(totalCouponAmount)}`,
+          SPACING.MARGIN + 5,
+          yPos + 5
+        );
+        doc.setFont('helvetica', 'normal');
+        doc.text(
+          `${projectGroups.length} projet${projectGroups.length > 1 ? 's' : ''}`,
+          SPACING.MARGIN + 5,
+          yPos + 9
+        );
 
-        if (group.count > 1) {
-          const subsequentDates = group.coupons
-            .slice(1, 3)
-            .map((c: any) => formatDate(c.prochaine_date_coupon))
-            .join(', ');
-          if (subsequentDates) {
+        yPos += 12 + SPACING.SECTION;
+      }
+
+      // Alerts - Grouped by severity
+      if (options.includeAlerts && dashboardData.alerts.length > 0) {
+        if (yPos > 240) {
+          doc.addPage();
+          yPos = 25;
+        }
+
+        doc.setTextColor(51, 65, 85);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Alertes (${dashboardData.alerts.length} au total)`, SPACING.MARGIN, yPos);
+        yPos += SPACING.TITLE;
+
+        // Categorize alerts by severity
+        const criticalAlerts = dashboardData.alerts.filter(
+          a =>
+            a.type?.toLowerCase().includes('retard') ||
+            a.type?.toLowerCase().includes('late') ||
+            a.type?.toLowerCase().includes('manquant') ||
+            a.type?.toLowerCase().includes('missing') ||
+            a.severity === 'critical'
+        );
+
+        const warningAlerts = dashboardData.alerts.filter(
+          a =>
+            !criticalAlerts.includes(a) &&
+            (a.type?.toLowerCase().includes('échéance') ||
+              a.type?.toLowerCase().includes('deadline') ||
+              a.type?.toLowerCase().includes('warning') ||
+              a.type?.toLowerCase().includes('avertissement') ||
+              a.severity === 'warning')
+        );
+
+        const infoAlerts = dashboardData.alerts.filter(
+          a => !criticalAlerts.includes(a) && !warningAlerts.includes(a)
+        );
+
+        // Critical section
+        if (criticalAlerts.length > 0) {
+          doc.setFillColor(239, 68, 68); // red-500
+          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, 7, 2, 2, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text(
+            `CRITIQUE - Action immédiate requise (${criticalAlerts.length})`,
+            SPACING.MARGIN + 3,
+            yPos + 5
+          );
+          yPos += 7 + SPACING.SMALL;
+
+          criticalAlerts.forEach(alert => {
+            if (yPos > 265) {
+              doc.addPage();
+              yPos = 25;
+            }
+            doc.setFillColor(254, 242, 242); // red-50
+            doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, 8, 2, 2, 'F');
+            doc.setTextColor(153, 27, 27); // red-900
             doc.setFontSize(8);
-            doc.setTextColor(100, 116, 139);
-            // Only show if there are subsequent dates
-          }
+            doc.setFont('helvetica', 'bold');
+            doc.text(translateAlertType(alert.type), SPACING.MARGIN + 3, yPos + 3);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(71, 85, 105);
+            doc.text(fixTextForPDF(alert.message), SPACING.MARGIN + 3, yPos + 6);
+            yPos += 8 + SPACING.SMALL;
+          });
+
+          yPos += SPACING.SMALL;
         }
 
-        yPos += 14 + SPACING.SMALL;
-      });
-
-      // Summary section
-      yPos += SPACING.SMALL;
-      const totalCoupons = coupons.length;
-      const totalCouponAmount = coupons.reduce((sum, c) => sum + parseFloat(c.coupon_brut.toString()), 0);
-
-      doc.setFillColor(248, 250, 252); // slate-50
-      doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 12, 2, 2, 'F');
-      doc.setTextColor(71, 85, 105);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`TOTAL: ${totalCoupons} coupon${totalCoupons > 1 ? 's' : ''} - ${formatCurrencyForPDF(totalCouponAmount)}`, SPACING.MARGIN + 5, yPos + 5);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${projectGroups.length} projet${projectGroups.length > 1 ? 's' : ''}`, SPACING.MARGIN + 5, yPos + 9);
-
-      yPos += 12 + SPACING.SECTION;
-    }
-
-    // Alerts - Grouped by severity
-    if (options.includeAlerts && dashboardData.alerts.length > 0) {
-      if (yPos > 240) {
-        doc.addPage();
-        yPos = 25;
-      }
-
-      doc.setTextColor(51, 65, 85);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Alertes (${dashboardData.alerts.length} au total)`, SPACING.MARGIN, yPos);
-      yPos += SPACING.TITLE;
-
-      // Categorize alerts by severity
-      const criticalAlerts = dashboardData.alerts.filter(a =>
-        a.type?.toLowerCase().includes('retard') ||
-        a.type?.toLowerCase().includes('late') ||
-        a.type?.toLowerCase().includes('manquant') ||
-        a.type?.toLowerCase().includes('missing') ||
-        a.severity === 'critical'
-      );
-
-      const warningAlerts = dashboardData.alerts.filter(a =>
-        !criticalAlerts.includes(a) &&
-        (a.type?.toLowerCase().includes('échéance') ||
-         a.type?.toLowerCase().includes('deadline') ||
-         a.type?.toLowerCase().includes('warning') ||
-         a.type?.toLowerCase().includes('avertissement') ||
-         a.severity === 'warning')
-      );
-
-      const infoAlerts = dashboardData.alerts.filter(a =>
-        !criticalAlerts.includes(a) && !warningAlerts.includes(a)
-      );
-
-      // Critical section
-      if (criticalAlerts.length > 0) {
-        doc.setFillColor(239, 68, 68); // red-500
-        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 7, 2, 2, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`CRITIQUE - Action immédiate requise (${criticalAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
-        yPos += 7 + SPACING.SMALL;
-
-        criticalAlerts.forEach((alert) => {
-          if (yPos > 265) {
+        // Warning section
+        if (warningAlerts.length > 0) {
+          if (yPos > 240) {
             doc.addPage();
             yPos = 25;
           }
-          doc.setFillColor(254, 242, 242); // red-50
-          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 8, 2, 2, 'F');
-          doc.setTextColor(153, 27, 27); // red-900
-          doc.setFontSize(8);
+          doc.setFillColor(245, 158, 11); // amber-500
+          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, 7, 2, 2, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(9);
           doc.setFont('helvetica', 'bold');
-          doc.text(translateAlertType(alert.type), SPACING.MARGIN + 3, yPos + 3);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(71, 85, 105);
-          doc.text(fixTextForPDF(alert.message), SPACING.MARGIN + 3, yPos + 6);
-          yPos += 8 + SPACING.SMALL;
-        });
+          doc.text(`AVERTISSEMENT (${warningAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
+          yPos += 7 + SPACING.SMALL;
 
-        yPos += SPACING.SMALL;
-      }
+          warningAlerts.forEach(alert => {
+            if (yPos > 265) {
+              doc.addPage();
+              yPos = 25;
+            }
+            doc.setFillColor(254, 252, 232); // amber-50
+            doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, 8, 2, 2, 'F');
+            doc.setTextColor(120, 53, 15); // amber-900
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.text(translateAlertType(alert.type), SPACING.MARGIN + 3, yPos + 3);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(71, 85, 105);
+            doc.text(fixTextForPDF(alert.message), SPACING.MARGIN + 3, yPos + 6);
+            yPos += 8 + SPACING.SMALL;
+          });
 
-      // Warning section
-      if (warningAlerts.length > 0) {
-        if (yPos > 240) {
-          doc.addPage();
-          yPos = 25;
+          yPos += SPACING.SMALL;
         }
-        doc.setFillColor(245, 158, 11); // amber-500
-        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 7, 2, 2, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`AVERTISSEMENT (${warningAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
-        yPos += 7 + SPACING.SMALL;
 
-        warningAlerts.forEach((alert) => {
-          if (yPos > 265) {
+        // Info section
+        if (infoAlerts.length > 0) {
+          if (yPos > 240) {
             doc.addPage();
             yPos = 25;
           }
-          doc.setFillColor(254, 252, 232); // amber-50
-          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 8, 2, 2, 'F');
-          doc.setTextColor(120, 53, 15); // amber-900
-          doc.setFontSize(8);
+          doc.setFillColor(59, 130, 246); // blue-500
+          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, 7, 2, 2, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(9);
           doc.setFont('helvetica', 'bold');
-          doc.text(translateAlertType(alert.type), SPACING.MARGIN + 3, yPos + 3);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(71, 85, 105);
-          doc.text(fixTextForPDF(alert.message), SPACING.MARGIN + 3, yPos + 6);
-          yPos += 8 + SPACING.SMALL;
-        });
+          doc.text(`INFORMATION (${infoAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
+          yPos += 7 + SPACING.SMALL;
 
-        yPos += SPACING.SMALL;
-      }
-
-      // Info section
-      if (infoAlerts.length > 0) {
-        if (yPos > 240) {
-          doc.addPage();
-          yPos = 25;
+          infoAlerts.forEach(alert => {
+            if (yPos > 265) {
+              doc.addPage();
+              yPos = 25;
+            }
+            doc.setFillColor(239, 246, 255); // blue-50
+            doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - SPACING.MARGIN * 2, 8, 2, 2, 'F');
+            doc.setTextColor(30, 58, 138); // blue-900
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.text(translateAlertType(alert.type), SPACING.MARGIN + 3, yPos + 3);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(71, 85, 105);
+            doc.text(fixTextForPDF(alert.message), SPACING.MARGIN + 3, yPos + 6);
+            yPos += 8 + SPACING.SMALL;
+          });
         }
-        doc.setFillColor(59, 130, 246); // blue-500
-        doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 7, 2, 2, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`INFORMATION (${infoAlerts.length})`, SPACING.MARGIN + 3, yPos + 5);
-        yPos += 7 + SPACING.SMALL;
-
-        infoAlerts.forEach((alert) => {
-          if (yPos > 265) {
-            doc.addPage();
-            yPos = 25;
-          }
-          doc.setFillColor(239, 246, 255); // blue-50
-          doc.roundedRect(SPACING.MARGIN, yPos, pageWidth - (SPACING.MARGIN * 2), 8, 2, 2, 'F');
-          doc.setTextColor(30, 58, 138); // blue-900
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'bold');
-          doc.text(translateAlertType(alert.type), SPACING.MARGIN + 3, yPos + 3);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(71, 85, 105);
-          doc.text(fixTextForPDF(alert.message), SPACING.MARGIN + 3, yPos + 6);
-          yPos += 8 + SPACING.SMALL;
-        });
       }
-    }
 
       // Add footer with page numbers
       const pageCount = doc.internal.getNumberOfPages();
@@ -1114,12 +1237,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         doc.setPage(i);
         const pageSize = doc.internal.pageSize;
         const pageHeight = pageSize.height;
-        doc.text(
-          `Page ${i} sur ${pageCount}`,
-          pageWidth / 2,
-          pageHeight - 10,
-          { align: 'center' }
-        );
+        doc.text(`Page ${i} sur ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
       }
 
       // Save PDF
@@ -1131,7 +1249,7 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
         onClose();
       }, 500);
     } catch (error) {
-      console.error('PDF export error:', error);
+      logger.error('PDF export error:', error);
       setExportProgress(0);
       throw error; // Re-throw to be caught by handleExport
     }
@@ -1142,22 +1260,34 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
     let couponsCount = 0;
     let sections = 0;
 
-    if (options.includeStats) sections++;
-    if (options.includeAlerts && dashboardData.alerts.length > 0) sections++;
-    if (options.includeChart && dashboardData.monthlyData.length > 0) sections++;
+    if (options.includeStats) {
+      sections++;
+    }
+    if (options.includeAlerts && dashboardData.alerts.length > 0) {
+      sections++;
+    }
+    if (options.includeChart && dashboardData.monthlyData.length > 0) {
+      sections++;
+    }
 
     if (options.includePayments) {
-      paymentsCount = options.paymentsLimit > 0
-        ? Math.min(options.paymentsLimit, dashboardData.recentPayments.length)
-        : dashboardData.recentPayments.length;
-      if (paymentsCount > 0) sections++;
+      paymentsCount =
+        options.paymentsLimit > 0
+          ? Math.min(options.paymentsLimit, dashboardData.recentPayments.length)
+          : dashboardData.recentPayments.length;
+      if (paymentsCount > 0) {
+        sections++;
+      }
     }
 
     if (options.includeCoupons) {
-      couponsCount = options.couponsLimit > 0
-        ? Math.min(options.couponsLimit, dashboardData.upcomingCoupons.length)
-        : dashboardData.upcomingCoupons.length;
-      if (couponsCount > 0) sections++;
+      couponsCount =
+        options.couponsLimit > 0
+          ? Math.min(options.couponsLimit, dashboardData.upcomingCoupons.length)
+          : dashboardData.upcomingCoupons.length;
+      if (couponsCount > 0) {
+        sections++;
+      }
     }
 
     return { paymentsCount, couponsCount, sections };
@@ -1165,14 +1295,19 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
 
   const preview = getPreviewData();
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
       onClick={onClose}
     >
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-slate-200">
           <div className="flex justify-between items-start">
@@ -1203,10 +1338,16 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
               }`}
             >
               <div className="flex flex-col items-center text-center gap-2">
-                <div className={`p-2 rounded-lg ${selectedPreset === 'complet' ? 'bg-blue-500' : 'bg-slate-100'}`}>
-                  <FileText className={`w-5 h-5 ${selectedPreset === 'complet' ? 'text-white' : 'text-slate-600'}`} />
+                <div
+                  className={`p-2 rounded-lg ${selectedPreset === 'complet' ? 'bg-blue-500' : 'bg-slate-100'}`}
+                >
+                  <FileText
+                    className={`w-5 h-5 ${selectedPreset === 'complet' ? 'text-white' : 'text-slate-600'}`}
+                  />
                 </div>
-                <span className={`text-sm font-semibold ${selectedPreset === 'complet' ? 'text-blue-900' : 'text-slate-900'}`}>
+                <span
+                  className={`text-sm font-semibold ${selectedPreset === 'complet' ? 'text-blue-900' : 'text-slate-900'}`}
+                >
                   Synthèse complète
                 </span>
               </div>
@@ -1221,10 +1362,16 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
               }`}
             >
               <div className="flex flex-col items-center text-center gap-2">
-                <div className={`p-2 rounded-lg ${selectedPreset === 'paiements' ? 'bg-emerald-500' : 'bg-slate-100'}`}>
-                  <Euro className={`w-5 h-5 ${selectedPreset === 'paiements' ? 'text-white' : 'text-slate-600'}`} />
+                <div
+                  className={`p-2 rounded-lg ${selectedPreset === 'paiements' ? 'bg-emerald-500' : 'bg-slate-100'}`}
+                >
+                  <Euro
+                    className={`w-5 h-5 ${selectedPreset === 'paiements' ? 'text-white' : 'text-slate-600'}`}
+                  />
                 </div>
-                <span className={`text-sm font-semibold ${selectedPreset === 'paiements' ? 'text-emerald-900' : 'text-slate-900'}`}>
+                <span
+                  className={`text-sm font-semibold ${selectedPreset === 'paiements' ? 'text-emerald-900' : 'text-slate-900'}`}
+                >
                   Paiements
                 </span>
               </div>
@@ -1239,10 +1386,16 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
               }`}
             >
               <div className="flex flex-col items-center text-center gap-2">
-                <div className={`p-2 rounded-lg ${selectedPreset === 'coupons' ? 'bg-purple-500' : 'bg-slate-100'}`}>
-                  <Calendar className={`w-5 h-5 ${selectedPreset === 'coupons' ? 'text-white' : 'text-slate-600'}`} />
+                <div
+                  className={`p-2 rounded-lg ${selectedPreset === 'coupons' ? 'bg-purple-500' : 'bg-slate-100'}`}
+                >
+                  <Calendar
+                    className={`w-5 h-5 ${selectedPreset === 'coupons' ? 'text-white' : 'text-slate-600'}`}
+                  />
                 </div>
-                <span className={`text-sm font-semibold ${selectedPreset === 'coupons' ? 'text-purple-900' : 'text-slate-900'}`}>
+                <span
+                  className={`text-sm font-semibold ${selectedPreset === 'coupons' ? 'text-purple-900' : 'text-slate-900'}`}
+                >
                   Coupons
                 </span>
               </div>
@@ -1257,10 +1410,16 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
               }`}
             >
               <div className="flex flex-col items-center text-center gap-2">
-                <div className={`p-2 rounded-lg ${selectedPreset === 'alertes' ? 'bg-orange-500' : 'bg-slate-100'}`}>
-                  <AlertTriangle className={`w-5 h-5 ${selectedPreset === 'alertes' ? 'text-white' : 'text-slate-600'}`} />
+                <div
+                  className={`p-2 rounded-lg ${selectedPreset === 'alertes' ? 'bg-orange-500' : 'bg-slate-100'}`}
+                >
+                  <AlertTriangle
+                    className={`w-5 h-5 ${selectedPreset === 'alertes' ? 'text-white' : 'text-slate-600'}`}
+                  />
                 </div>
-                <span className={`text-sm font-semibold ${selectedPreset === 'alertes' ? 'text-orange-900' : 'text-slate-900'}`}>
+                <span
+                  className={`text-sm font-semibold ${selectedPreset === 'alertes' ? 'text-orange-900' : 'text-slate-900'}`}
+                >
                   Alertes
                 </span>
               </div>
@@ -1299,7 +1458,9 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
             onClick={() => setShowCustomize(!showCustomize)}
             className="w-full mb-4 text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center justify-center gap-1.5 py-2"
           >
-            <ChevronDown className={`w-4 h-4 transition-transform ${showCustomize ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${showCustomize ? 'rotate-180' : ''}`}
+            />
             {showCustomize ? 'Masquer les options' : 'Personnaliser'}
           </button>
 
@@ -1307,10 +1468,12 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
           {showCustomize && (
             <div className="mb-5 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
               <div>
-                <label className="text-xs font-semibold text-slate-700 mb-2 block">Période des paiements</label>
+                <label className="text-xs font-semibold text-slate-700 mb-2 block">
+                  Période des paiements
+                </label>
                 <select
                   value={options.paymentsDateRange}
-                  onChange={(e) => handlePaymentsDateRangeChange(e.target.value as DateRangePreset)}
+                  onChange={e => handlePaymentsDateRangeChange(e.target.value as DateRangePreset)}
                   className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="this_week">Cette semaine (7 jours)</option>
@@ -1322,10 +1485,14 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 mb-2 block">Affichage des paiements</label>
+                <label className="text-xs font-semibold text-slate-700 mb-2 block">
+                  Affichage des paiements
+                </label>
                 <select
                   value={options.paymentsLimit}
-                  onChange={(e) => setOptions({ ...options, paymentsLimit: parseInt(e.target.value) })}
+                  onChange={e =>
+                    setOptions({ ...options, paymentsLimit: parseInt(e.target.value) })
+                  }
                   className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="15">15 derniers (recommandé)</option>
@@ -1336,10 +1503,12 @@ export function ExportModal({ isOpen, onClose, organizationId, dashboardData }: 
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 mb-2 block">Coupons à venir</label>
+                <label className="text-xs font-semibold text-slate-700 mb-2 block">
+                  Coupons à venir
+                </label>
                 <select
                   value={options.couponsRange}
-                  onChange={(e) => handleCouponsRangeChange(e.target.value as CouponRangePreset)}
+                  onChange={e => handleCouponsRangeChange(e.target.value as CouponRangePreset)}
                   className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="next_7_days">7 prochains jours</option>

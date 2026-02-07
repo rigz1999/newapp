@@ -11,7 +11,7 @@ export interface ValidationRule {
   min?: number;
   max?: number;
   email?: boolean;
-  custom?: (value: any) => boolean;
+  custom?: (value: unknown) => boolean;
   message?: string;
 }
 
@@ -21,8 +21,8 @@ export interface ValidationResult {
 }
 
 // Valider une valeur selon des règles
-export function validateField(value: any, rules: ValidationRule): ValidationResult {
-  if (rules.required && (!value || value.toString().trim() === '')) {
+export function validateField(value: unknown, rules: ValidationRule): ValidationResult {
+  if (rules.required && (!value || String(value).trim() === '')) {
     return { isValid: false, error: rules.message || 'Ce champ est obligatoire' };
   }
 
@@ -30,19 +30,19 @@ export function validateField(value: any, rules: ValidationRule): ValidationResu
     return { isValid: true }; // Si pas required et vide, c'est ok
   }
 
-  const stringValue = value.toString();
+  const stringValue = String(value);
 
   if (rules.minLength && stringValue.length < rules.minLength) {
     return {
       isValid: false,
-      error: rules.message || `Minimum ${rules.minLength} caractères requis`
+      error: rules.message || `Minimum ${rules.minLength} caractères requis`,
     };
   }
 
   if (rules.maxLength && stringValue.length > rules.maxLength) {
     return {
       isValid: false,
-      error: rules.message || `Maximum ${rules.maxLength} caractères autorisés`
+      error: rules.message || `Maximum ${rules.maxLength} caractères autorisés`,
     };
   }
 
@@ -60,14 +60,14 @@ export function validateField(value: any, rules: ValidationRule): ValidationResu
   if (rules.min !== undefined && Number(value) < rules.min) {
     return {
       isValid: false,
-      error: rules.message || `La valeur doit être au moins ${rules.min}`
+      error: rules.message || `La valeur doit être au moins ${rules.min}`,
     };
   }
 
   if (rules.max !== undefined && Number(value) > rules.max) {
     return {
       isValid: false,
-      error: rules.message || `La valeur ne peut pas dépasser ${rules.max}`
+      error: rules.message || `La valeur ne peut pas dépasser ${rules.max}`,
     };
   }
 
@@ -80,13 +80,13 @@ export function validateField(value: any, rules: ValidationRule): ValidationResu
 
 // Valider un formulaire entier
 export function validateForm(
-  data: Record<string, any>,
+  data: Record<string, unknown>,
   rules: Record<string, ValidationRule>
 ): { isValid: boolean; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
   let isValid = true;
 
-  Object.keys(rules).forEach((field) => {
+  Object.keys(rules).forEach(field => {
     const result = validateField(data[field], rules[field]);
     if (!result.isValid) {
       errors[field] = result.error || 'Erreur de validation';
@@ -104,22 +104,22 @@ export const commonRules = {
   name: { required: true, minLength: 2, maxLength: 100, message: 'Nom invalide' },
   phone: {
     pattern: /^[0-9]{10}$/,
-    message: 'Numéro de téléphone invalide (10 chiffres)'
+    message: 'Numéro de téléphone invalide (10 chiffres)',
   },
   siren: {
     required: true,
     pattern: /^[0-9]{9}$/,
-    message: 'SIREN invalide (9 chiffres)'
+    message: 'SIREN invalide (9 chiffres)',
   },
   amount: {
     required: true,
     min: 0,
-    message: 'Montant invalide'
+    message: 'Montant invalide',
   },
   percentage: {
     required: true,
     min: 0,
     max: 100,
-    message: 'Pourcentage invalide (0-100)'
-  }
+    message: 'Pourcentage invalide (0-100)',
+  },
 };

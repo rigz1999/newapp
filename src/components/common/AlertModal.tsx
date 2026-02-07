@@ -23,7 +23,9 @@ export function AlertModal({
   cancelText = 'Annuler',
   isLoading = false,
 }: AlertModalProps) {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const getIcon = () => {
     if (isLoading) {
@@ -69,12 +71,13 @@ export function AlertModal({
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]"
       onClick={!isLoading ? onClose : undefined}
     >
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-md w-full"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="p-6">
           <div className="flex flex-col items-center text-center">
-            <div className={`${getBgColor()} rounded-full p-3 mb-4`}>
-              {getIcon()}
-            </div>
+            <div className={`${getBgColor()} rounded-full p-3 mb-4`}>{getIcon()}</div>
 
             <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
 
@@ -97,8 +100,8 @@ export function AlertModal({
                   type === 'error' || type === 'warning'
                     ? 'bg-finixar-red hover:bg-red-700'
                     : type === 'success'
-                    ? 'bg-finixar-green hover:bg-green-700'
-                    : 'bg-slate-900 hover:bg-slate-800'
+                      ? 'bg-finixar-green hover:bg-green-700'
+                      : 'bg-slate-900 hover:bg-slate-800'
                 }`}
               >
                 {confirmText}

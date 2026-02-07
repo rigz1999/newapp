@@ -28,6 +28,7 @@ import * as ExcelJS from 'exceljs';
 import { toast } from '../../utils/toast';
 import { supabase } from '../../lib/supabase';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { logger } from '../../utils/logger';
 
 interface CouponsPageNewProps {
   organization?: { id: string; name: string; role: string };
@@ -42,10 +43,19 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
     const tranche = searchParams.get('tranche');
     const date = searchParams.get('date');
 
-    const filters: { statut?: string[]; tranches?: string[]; dateStart?: string; dateEnd?: string } = {};
+    const filters: {
+      statut?: string[];
+      tranches?: string[];
+      dateStart?: string;
+      dateEnd?: string;
+    } = {};
 
-    if (status) filters.statut = [status];
-    if (tranche) filters.tranches = [tranche];
+    if (status) {
+      filters.statut = [status];
+    }
+    if (tranche) {
+      filters.tranches = [tranche];
+    }
     if (date) {
       filters.dateStart = date;
       filters.dateEnd = date;
@@ -55,9 +65,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // View state - show filters if URL params present
-  const [showFilters, setShowFilters] = useState(() => {
-    return !!(searchParams.get('status') || searchParams.get('tranche') || searchParams.get('date'));
-  });
+  const [showFilters, setShowFilters] = useState(
+    () => !!(searchParams.get('status') || searchParams.get('tranche') || searchParams.get('date'))
+  );
 
   // Filter state - initialize with URL params
   const filterState = useCouponFilters(initialFilters);
@@ -75,10 +85,20 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Data fetching
-  const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats, filterOptions } =
-    useCoupons({
-      filters: filterState.filters,
-    });
+  const {
+    coupons,
+    loading,
+    totalCount,
+    page,
+    pageSize,
+    totalPages,
+    setPage,
+    refresh,
+    stats,
+    filterOptions,
+  } = useCoupons({
+    filters: filterState.filters,
+  });
 
   // Selection state
   const [selectedCoupons, setSelectedCoupons] = useState<Set<string>>(new Set());
@@ -219,7 +239,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               .remove(filesToDelete);
 
             if (storageError) {
-              console.error('Error deleting storage files:', storageError);
+              logger.error('Error deleting storage files:', storageError);
               // Don't throw - continue with deletion even if storage cleanup fails
             }
           }
@@ -261,7 +281,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         'Le coupon a été marqué comme non payé et tous les enregistrements associés ont été supprimés.'
       );
     } catch (err: unknown) {
-      console.error('Error marking as unpaid:', err);
+      logger.error('Error marking as unpaid:', err);
       const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
       toast.error(`Erreur lors de la mise à jour: ${errorMessage}`);
     } finally {
@@ -352,7 +372,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                   .remove(filesToDelete);
 
                 if (storageError) {
-                  console.error('Error deleting storage files:', storageError);
+                  logger.error('Error deleting storage files:', storageError);
                 }
               }
             }
@@ -385,7 +405,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
           successCount++;
         } catch (err) {
-          console.error('Error unmarking coupon:', coupon.id, err);
+          logger.error('Error unmarking coupon:', coupon.id, err);
           failCount++;
         }
       }
@@ -406,7 +426,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         );
       }
     } catch (err: unknown) {
-      console.error('Error in bulk unmark:', err);
+      logger.error('Error in bulk unmark:', err);
       const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
       toast.error(`Erreur lors de la mise à jour: ${errorMessage}`);
     } finally {
@@ -431,9 +451,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         'Montant Brut': c.montant_brut,
         'Montant Net': c.montant_net,
         'Remboursement Nominal': c.is_last_echeance ? c.montant_investi : 0,
-        'Total à Payer': c.is_last_echeance
-          ? c.montant_net + c.montant_investi
-          : c.montant_net,
+        'Total à Payer': c.is_last_echeance ? c.montant_net + c.montant_investi : c.montant_net,
         Statut: c.statut_calculated,
         'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
       }));
@@ -462,7 +480,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
       toast.success(`${coupons.length} coupons exportés`);
     } catch (error) {
-      console.error('Error exporting Excel:', error);
+      logger.error('Error exporting Excel:', error);
       toast.error("Erreur lors de l'export");
     } finally {
       setExportingExcel(false);
@@ -838,7 +856,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                     <div>
                       <p className="text-xs text-purple-600">Total à Payer</p>
                       <p className="text-sm font-bold text-purple-900">
-                        {formatCurrency(selectedCoupon.montant_net + selectedCoupon.montant_investi)}
+                        {formatCurrency(
+                          selectedCoupon.montant_net + selectedCoupon.montant_investi
+                        )}
                       </p>
                     </div>
                   </div>

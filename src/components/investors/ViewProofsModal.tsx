@@ -2,6 +2,7 @@ import { X, Download, Eye, Trash2, AlertTriangle, ZoomIn } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useState, useEffect } from 'react';
 import { AlertModal } from '../common/Modals';
+import { logger } from '../../utils/logger';
 
 interface ViewProofsModalProps {
   payment: any;
@@ -10,9 +11,18 @@ interface ViewProofsModalProps {
   onProofDeleted: () => void;
 }
 
-export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: ViewProofsModalProps) {
+export function ViewProofsModal({
+  payment,
+  proofs,
+  onClose,
+  onProofDeleted,
+}: ViewProofsModalProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<{ proofId: string; fileUrl: string; fileName: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    proofId: string;
+    fileUrl: string;
+    fileName: string;
+  } | null>(null);
   const [selectedProofForPreview, setSelectedProofForPreview] = useState<any | null>(null);
   const [markAsUnpaid, setMarkAsUnpaid] = useState(false);
 
@@ -54,25 +64,23 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'EUR',
     }).format(amount);
-  };
 
   const handleDeleteProof = async (proofId: string, fileUrl: string) => {
     setDeleting(proofId);
     try {
       // Delete from database first
-      const { error: dbError } = await supabase
-        .from('payment_proofs')
-        .delete()
-        .eq('id', proofId);
+      const { error: dbError } = await supabase.from('payment_proofs').delete().eq('id', proofId);
 
       if (dbError) {
-        console.error('Database deletion error:', dbError);
-        throw new Error(`Échec de la suppression du justificatif: ${dbError.message}. Vérifiez que vous avez les permissions nécessaires (rôle admin requis).`);
+        logger.error('Database deletion error:', dbError);
+        throw new Error(
+          `Échec de la suppression du justificatif: ${dbError.message}. Vérifiez que vous avez les permissions nécessaires (rôle admin requis).`
+        );
       }
 
       // Then try to delete from storage (but don't fail if storage deletion fails)
@@ -85,7 +93,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
           .remove([filePath]);
 
         if (storageError) {
-          console.warn('Storage deletion warning:', storageError);
+          logger.warn('Storage deletion warning:', storageError);
           // Don't throw, just log - file might already be deleted or path might be wrong
         }
       }
@@ -105,7 +113,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
             statut: newStatus,
             paiement_id: null,
             date_paiement: null,
-            montant_paye: null
+            montant_paye: null,
           })
           .eq('paiement_id', payment.id);
       }
@@ -113,7 +121,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
       setAlertModalConfig({
         title: 'Succès',
         message: 'Le justificatif a été supprimé avec succès.',
-        type: 'success'
+        type: 'success',
       });
       setShowAlertModal(true);
 
@@ -122,11 +130,13 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
         setTimeout(() => onClose(), 1000);
       }
     } catch (err: any) {
-      console.error('Delete proof error:', err);
+      logger.error('Delete proof error:', err);
       setAlertModalConfig({
         title: 'Erreur de suppression',
-        message: err.message || 'Erreur lors de la suppression du justificatif. Vérifiez que vous avez les permissions nécessaires.',
-        type: 'error'
+        message:
+          err.message ||
+          'Erreur lors de la suppression du justificatif. Vérifiez que vous avez les permissions nécessaires.',
+        type: 'error',
       });
       setShowAlertModal(true);
     } finally {
@@ -138,8 +148,14 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
-        <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        onClick={onClose}
+      >
+        <div
+          className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          onClick={e => e.stopPropagation()}
+        >
           <div className="p-6 border-b border-slate-200">
             <div className="flex justify-between items-start">
               <div>
@@ -160,8 +176,11 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
             ) : (
               <>
                 <div className="space-y-4 mb-6">
-                  {proofs.map((proof) => (
-                    <div key={proof.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                  {proofs.map(proof => (
+                    <div
+                      key={proof.id}
+                      className="border border-slate-200 rounded-lg overflow-hidden"
+                    >
                       {/* Image Preview */}
                       {proof.file_url && (
                         <div className="relative bg-slate-50 flex items-center justify-center p-4">
@@ -170,7 +189,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
                             alt={proof.file_name}
                             className="max-h-48 w-auto rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
                             onClick={() => setSelectedProofForPreview(proof)}
-                            onError={(e) => {
+                            onError={e => {
                               // If image fails to load, hide it
                               e.currentTarget.style.display = 'none';
                             }}
@@ -191,17 +210,19 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
                           <div className="flex-1">
                             <p className="font-medium text-slate-900">{proof.file_name}</p>
                             <p className="text-sm text-slate-500 mt-1">
-                              Téléchargé: {new Date(proof.validated_at).toLocaleDateString('fr-FR', {
+                              Téléchargé:{' '}
+                              {new Date(proof.validated_at).toLocaleDateString('fr-FR', {
                                 day: '2-digit',
                                 month: 'short',
                                 year: 'numeric',
                                 hour: '2-digit',
-                                minute: '2-digit'
+                                minute: '2-digit',
                               })}
                             </p>
                             {proof.extracted_data && (
                               <p className="text-xs text-slate-600 mt-1">
-                                Montant: {formatCurrency(proof.extracted_data.montant)} • Confiance: {proof.confidence}%
+                                Montant: {formatCurrency(proof.extracted_data.montant)} • Confiance:{' '}
+                                {proof.confidence}%
                               </p>
                             )}
                           </div>
@@ -221,12 +242,20 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
                               <Download className="w-5 h-5" />
                             </button>
                             <button
-                              onClick={() => setConfirmDelete({ proofId: proof.id, fileUrl: proof.file_url, fileName: proof.file_name })}
+                              onClick={() =>
+                                setConfirmDelete({
+                                  proofId: proof.id,
+                                  fileUrl: proof.file_url,
+                                  fileName: proof.file_name,
+                                })
+                              }
                               disabled={deleting === proof.id}
                               className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Supprimer"
                             >
-                              <Trash2 className={`w-5 h-5 ${deleting === proof.id ? 'animate-pulse' : ''}`} />
+                              <Trash2
+                                className={`w-5 h-5 ${deleting === proof.id ? 'animate-pulse' : ''}`}
+                              />
                             </button>
                           </div>
                         </div>
@@ -265,9 +294,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
             <p className="text-slate-600 mb-2">
               Êtes-vous sûr de vouloir supprimer ce justificatif ?
             </p>
-            <p className="text-sm font-medium text-slate-900 mb-4">
-              {confirmDelete.fileName}
-            </p>
+            <p className="text-sm font-medium text-slate-900 mb-4">{confirmDelete.fileName}</p>
 
             {proofs.length === 1 && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
@@ -278,12 +305,10 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
                   <input
                     type="checkbox"
                     checked={markAsUnpaid}
-                    onChange={(e) => setMarkAsUnpaid(e.target.checked)}
+                    onChange={e => setMarkAsUnpaid(e.target.checked)}
                     className="mt-0.5 w-4 h-4 text-finixar-teal border-slate-300 rounded focus:ring-finixar-teal"
                   />
-                  <span className="text-sm text-slate-700">
-                    Marquer le paiement comme non payé
-                  </span>
+                  <span className="text-sm text-slate-700">Marquer le paiement comme non payé</span>
                 </label>
               </div>
             )}
@@ -332,20 +357,24 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
               <div className="text-white">
                 <h3 className="font-semibold text-lg">{selectedProofForPreview.file_name}</h3>
                 <p className="text-sm text-slate-300">
-                  Téléchargé: {new Date(selectedProofForPreview.validated_at).toLocaleDateString('fr-FR', {
+                  Téléchargé:{' '}
+                  {new Date(selectedProofForPreview.validated_at).toLocaleDateString('fr-FR', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric',
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
                   })}
                 </p>
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
-                    downloadFile(selectedProofForPreview.file_url, selectedProofForPreview.file_name);
+                    downloadFile(
+                      selectedProofForPreview.file_url,
+                      selectedProofForPreview.file_name
+                    );
                   }}
                   className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg transition-colors"
                   title="Télécharger"
@@ -353,7 +382,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
                   <Download className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     window.open(selectedProofForPreview.file_url, '_blank');
                   }}
@@ -375,7 +404,7 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
             {/* Image */}
             <div
               className="flex-1 flex items-center justify-center overflow-auto"
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
             >
               <img
                 src={selectedProofForPreview.file_url}
@@ -388,10 +417,10 @@ export function ViewProofsModal({ payment, proofs, onClose, onProofDeleted }: Vi
             {selectedProofForPreview.extracted_data && (
               <div className="mt-4 bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-4 text-white">
                 <p className="text-sm">
-                  <span className="font-semibold">Données extraites:</span>{' '}
-                  Montant: {formatCurrency(selectedProofForPreview.extracted_data.montant)} •
-                  Date: {selectedProofForPreview.extracted_data.date} •
-                  Confiance: {selectedProofForPreview.confidence}%
+                  <span className="font-semibold">Données extraites:</span> Montant:{' '}
+                  {formatCurrency(selectedProofForPreview.extracted_data.montant)} • Date:{' '}
+                  {selectedProofForPreview.extracted_data.date} • Confiance:{' '}
+                  {selectedProofForPreview.confidence}%
                 </p>
               </div>
             )}

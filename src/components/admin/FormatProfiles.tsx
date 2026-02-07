@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { FileSpreadsheet, Plus, Eye, Edit2, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 import { TableSkeleton } from '../common/Skeleton';
 import { AlertModal } from '../common/Modals';
+import { logger } from '../../utils/logger';
 
 interface FormatProfile {
   id: string;
@@ -71,7 +72,7 @@ export default function FormatProfiles(): JSX.Element {
       setProfiles(profilesData || []);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      console.error('Erreur chargement données:', error);
+      logger.error('Erreur chargement données:', error);
       showAlert('Erreur', errorMessage, 'error');
     } finally {
       setLoading(false);

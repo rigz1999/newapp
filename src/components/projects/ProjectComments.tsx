@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { sanitizeHTML } from '../../utils/sanitizer';
+import { logger } from '../../utils/logger';
 
 interface Comment {
   id: string;
@@ -93,7 +94,7 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
       }
       setComments(data || []);
     } catch (error) {
-      console.error('Error fetching comments:', error);
+      logger.error('Error fetching comments:', error);
     } finally {
       setLoading(false);
     }
@@ -121,7 +122,7 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
       setNewComment('');
       await fetchComments();
     } catch (error) {
-      console.error('Error posting comment:', error);
+      logger.error('Error posting comment:', error);
       alert('Erreur lors de la publication du commentaire');
     } finally {
       setSubmitting(false);
@@ -149,7 +150,7 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
       setEditText('');
       await fetchComments();
     } catch (error) {
-      console.error('Error updating comment:', error);
+      logger.error('Error updating comment:', error);
       alert('Erreur lors de la modification du commentaire');
     }
   };
@@ -169,7 +170,7 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
       setCommentToDelete(null);
       await fetchComments();
     } catch (error) {
-      console.error('Error deleting comment:', error);
+      logger.error('Error deleting comment:', error);
       alert('Erreur lors de la suppression du commentaire');
     }
   };

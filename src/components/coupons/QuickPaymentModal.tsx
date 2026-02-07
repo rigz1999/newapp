@@ -1,8 +1,19 @@
 import { useState, useEffect } from 'react';
-import { X, Upload, Calendar, FileText, AlertCircle, ArrowLeft, FolderOpen, BarChart3, Lock } from 'lucide-react';
+import {
+  X,
+  Upload,
+  Calendar,
+  FileText,
+  AlertCircle,
+  ArrowLeft,
+  FolderOpen,
+  BarChart3,
+  Lock,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { logger } from '../../utils/logger';
 
 interface QuickPaymentModalProps {
   preselectedProjectId?: string;
@@ -56,12 +67,16 @@ export function QuickPaymentModal({
   preselectedTrancheName,
   preselectedEcheanceDate,
   onClose,
-  onSuccess
+  onSuccess,
 }: QuickPaymentModalProps) {
   // Determine initial step
   const getInitialStep = (): WizardStep => {
-    if (preselectedEcheanceDate) return 'payment';
-    if (preselectedTrancheId) return 'echeance';
+    if (preselectedEcheanceDate) {
+      return 'payment';
+    }
+    if (preselectedTrancheId) {
+      return 'echeance';
+    }
     return 'select';
   };
 
@@ -93,21 +108,22 @@ export function QuickPaymentModal({
   // AI-first proof upload
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [fileUrls, setFileUrls] = useState<Map<string, string>>(new Map());
-  const [analyzing, setAnalyzing] = useState(false);
-  const [aiMatches, setAiMatches] = useState<Map<string, {investorId: string, investorName: string, confidence: number, isManual: boolean}>>(new Map());
-  const [analyzed, setAnalyzed] = useState(false);
+  const [_analyzing, setAnalyzing] = useState(false);
+  const [aiMatches, setAiMatches] = useState<
+    Map<string, { investorId: string; investorName: string; confidence: number; isManual: boolean }>
+  >(new Map());
+  const [_analyzed, setAnalyzed] = useState(false);
 
   // Derived state
   const selectedEcheanceData = echeanceGroups.find(g => g.date === selectedEcheanceDate);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
-  };
 
   // Load projects on mount
   useEffect(() => {
@@ -163,10 +179,7 @@ export function QuickPaymentModal({
 
   const loadProjects = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('projets')
-      .select('id, projet')
-      .order('projet');
+    const { data, error } = await supabase.from('projets').select('id, projet').order('projet');
 
     if (!error && data) {
       setProjects(data);
@@ -175,11 +188,7 @@ export function QuickPaymentModal({
   };
 
   const fetchProjectName = async (projectId: string) => {
-    const { data } = await supabase
-      .from('projets')
-      .select('projet')
-      .eq('id', projectId)
-      .single();
+    const { data } = await supabase.from('projets').select('projet').eq('id', projectId).single();
     if (data) {
       setDisplayProjectName(data.projet);
     }
@@ -228,7 +237,8 @@ export function QuickPaymentModal({
 
     const { data, error } = await supabase
       .from('coupons_echeances')
-      .select(`
+      .select(
+        `
         id,
         date_echeance,
         montant_coupon,
@@ -243,7 +253,8 @@ export function QuickPaymentModal({
           investisseurs!inner(nom_raison_sociale),
           tranches!inner(projet_id, projets!inner(org_id))
         )
-      `)
+      `
+      )
       .in('souscription_id', souscriptionIds)
       .order('date_echeance');
 
@@ -261,48 +272,58 @@ export function QuickPaymentModal({
       const now = new Date();
       now.setHours(0, 0, 0, 0);
 
-      const groups: EcheanceGroup[] = Array.from(grouped.entries()).map(([date, echs]) => {
-        const totalCount = echs.length;
-        const paidCount = echs.filter(e => e.statut === 'paye').length;
-        const unpaidCount = totalCount - paidCount;
+      const groups: EcheanceGroup[] = Array.from(grouped.entries())
+        .map(([date, echs]) => {
+          const totalCount = echs.length;
+          const paidCount = echs.filter(e => e.statut === 'paye').length;
+          const unpaidCount = totalCount - paidCount;
 
-        // Only calculate totals for unpaid
-        const unpaidEchs = echs.filter(e => e.statut !== 'paye');
-        const totalNet = unpaidEchs.reduce((sum, e) => sum + Number(e.souscriptions.coupon_net), 0);
-        const totalBrut = unpaidEchs.reduce((sum, e) => sum + Number(e.souscriptions.coupon_brut), 0);
+          // Only calculate totals for unpaid
+          const unpaidEchs = echs.filter(e => e.statut !== 'paye');
+          const totalNet = unpaidEchs.reduce(
+            (sum, e) => sum + Number(e.souscriptions.coupon_net),
+            0
+          );
+          const totalBrut = unpaidEchs.reduce(
+            (sum, e) => sum + Number(e.souscriptions.coupon_brut),
+            0
+          );
 
-        const echeanceDate = new Date(date);
-        echeanceDate.setHours(0, 0, 0, 0);
+          const echeanceDate = new Date(date);
+          echeanceDate.setHours(0, 0, 0, 0);
 
-        let statut: 'en_retard' | 'a_venir' | 'partiellement_paye' = 'a_venir';
-        let daysOverdue = 0;
+          let statut: 'en_retard' | 'a_venir' | 'partiellement_paye' = 'a_venir';
+          let daysOverdue = 0;
 
-        if (unpaidCount === 0) {
-          // All paid, don't include in list
-          return null;
-        }
+          if (unpaidCount === 0) {
+            // All paid, don't include in list
+            return null;
+          }
 
-        if (echeanceDate < now) {
-          statut = 'en_retard';
-          daysOverdue = Math.floor((now.getTime() - echeanceDate.getTime()) / (1000 * 60 * 60 * 24));
-        } else if (paidCount > 0) {
-          statut = 'partiellement_paye';
-        }
+          if (echeanceDate < now) {
+            statut = 'en_retard';
+            daysOverdue = Math.floor(
+              (now.getTime() - echeanceDate.getTime()) / (1000 * 60 * 60 * 24)
+            );
+          } else if (paidCount > 0) {
+            statut = 'partiellement_paye';
+          }
 
-        return {
-          date,
-          tranche_id: echs[0].souscriptions.tranche_id,
-          projet_id: echs[0].souscriptions.tranches.projet_id,
-          org_id: echs[0].souscriptions.tranches.projets.org_id,
-          totalNet,
-          totalBrut,
-          totalCount,
-          paidCount,
-          unpaidCount,
-          statut,
-          daysOverdue,
-        };
-      }).filter(Boolean) as EcheanceGroup[];
+          return {
+            date,
+            tranche_id: echs[0].souscriptions.tranche_id,
+            projet_id: echs[0].souscriptions.tranches.projet_id,
+            org_id: echs[0].souscriptions.tranches.projets.org_id,
+            totalNet,
+            totalBrut,
+            totalCount,
+            paidCount,
+            unpaidCount,
+            statut,
+            daysOverdue,
+          };
+        })
+        .filter(Boolean) as EcheanceGroup[];
 
       setEcheanceGroups(groups);
     }
@@ -328,7 +349,8 @@ export function QuickPaymentModal({
 
     const { data, error } = await supabase
       .from('coupons_echeances')
-      .select(`
+      .select(
+        `
         id,
         souscription_id,
         souscriptions!inner(
@@ -338,7 +360,8 @@ export function QuickPaymentModal({
           coupon_brut,
           investisseurs!inner(nom_raison_sociale)
         )
-      `)
+      `
+      )
       .in('souscription_id', souscriptionIds)
       .eq('date_echeance', date)
       .neq('statut', 'paye');
@@ -380,7 +403,9 @@ export function QuickPaymentModal({
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+    if (files.length === 0) {
+      return;
+    }
 
     // Validate file sizes
     const oversizedFiles = files.filter(f => f.size > 5 * 1024 * 1024);
@@ -403,14 +428,12 @@ export function QuickPaymentModal({
           .upload(fileName, file);
 
         if (uploadError) {
-          console.error('Error uploading file:', uploadError);
+          logger.error('Error uploading file:', uploadError);
           toast.warning(`Erreur lors du téléchargement de ${file.name}`);
           continue;
         }
 
-        const { data: urlData } = supabase.storage
-          .from('payment-proofs')
-          .getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
 
         newFileUrls.set(file.name, urlData.publicUrl);
       }
@@ -419,16 +442,16 @@ export function QuickPaymentModal({
       setFileUrls(newFileUrls);
       setAnalyzed(false); // Reset analyzed state when new files are added
     } catch (err) {
-      console.error('Error uploading files:', err);
+      logger.error('Error uploading files:', err);
       setError('Erreur lors du téléchargement des fichiers');
     } finally {
       setProcessing(false);
     }
   };
 
-  const handleAnalyzeWithAI = async () => {
+  const _handleAnalyzeWithAI = async () => {
     if (uploadedFiles.length === 0) {
-      setError('Veuillez d\'abord télécharger des fichiers');
+      setError("Veuillez d'abord télécharger des fichiers");
       return;
     }
 
@@ -443,11 +466,13 @@ export function QuickPaymentModal({
         investorName: inv.investisseur_nom,
         expectedAmount: inv.montant_net,
         investorId: inv.investisseur_id,
-        echeanceId: inv.echeance_id
+        echeanceId: inv.echeance_id,
       }));
 
       // Call analyze-payment Edge Function
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('No session found');
       }
@@ -462,20 +487,23 @@ export function QuickPaymentModal({
           },
           body: JSON.stringify({
             fileUrls: fileUrlsList,
-            expectedPayments
+            expectedPayments,
           }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.erreur || 'Erreur lors de l\'analyse');
+        throw new Error(errorData.erreur || "Erreur lors de l'analyse");
       }
 
       const result = await response.json();
 
       // Process matches
-      const newMatches = new Map<string, {investorId: string, investorName: string, confidence: number, isManual: boolean}>();
+      const newMatches = new Map<
+        string,
+        { investorId: string; investorName: string; confidence: number; isManual: boolean }
+      >();
 
       if (result.correspondances && Array.isArray(result.correspondances)) {
         result.correspondances.forEach((match: any, index: number) => {
@@ -485,7 +513,7 @@ export function QuickPaymentModal({
               investorId: match.attendu.investorId,
               investorName: match.attendu.investorName,
               confidence: match.confiance || 0,
-              isManual: false
+              isManual: false,
             });
           }
         });
@@ -495,23 +523,25 @@ export function QuickPaymentModal({
       setAnalyzed(true);
       toast.success('Analyse terminée !');
     } catch (err: any) {
-      console.error('Error analyzing files:', err);
-      setError('Erreur lors de l\'analyse IA: ' + err.message);
+      logger.error('Error analyzing files:', err);
+      setError(`Erreur lors de l'analyse IA: ${err.message}`);
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const handleManualAssignment = (fileName: string, investorId: string) => {
+  const _handleManualAssignment = (fileName: string, investorId: string) => {
     const investor = investors.find(i => i.investisseur_id === investorId);
-    if (!investor) return;
+    if (!investor) {
+      return;
+    }
 
     const newMatches = new Map(aiMatches);
     newMatches.set(fileName, {
       investorId: investor.investisseur_id,
       investorName: investor.investisseur_nom,
       confidence: 100,
-      isManual: true
+      isManual: true,
     });
     setAiMatches(newMatches);
   };
@@ -580,7 +610,9 @@ export function QuickPaymentModal({
           .select()
           .single();
 
-        if (paiementError) throw paiementError;
+        if (paiementError) {
+          throw paiementError;
+        }
 
         // Find all files assigned to this investor based on AI matches
         const assignedFiles: string[] = [];
@@ -596,18 +628,16 @@ export function QuickPaymentModal({
           const file = uploadedFiles.find(f => f.name === fileName);
 
           if (proofUrl && file && paiement) {
-            const { error: proofError } = await supabase
-              .from('payment_proofs')
-              .insert({
-                paiement_id: paiement.id,
-                file_url: proofUrl,
-                file_name: file.name,
-                file_size: file.size,
-                validated_at: new Date().toISOString(),
-              });
+            const { error: proofError } = await supabase.from('payment_proofs').insert({
+              paiement_id: paiement.id,
+              file_url: proofUrl,
+              file_name: file.name,
+              file_size: file.size,
+              validated_at: new Date().toISOString(),
+            });
 
             if (proofError) {
-              console.error('Error linking proof:', proofError);
+              logger.error('Error linking proof:', proofError);
             }
           }
         }
@@ -623,7 +653,9 @@ export function QuickPaymentModal({
           } as never)
           .eq('id', investor.echeance_id);
 
-        if (echeanceError) throw echeanceError;
+        if (echeanceError) {
+          throw echeanceError;
+        }
       }
 
       toast.success(
@@ -637,8 +669,8 @@ export function QuickPaymentModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      console.error('Error recording payment:', err);
-      setError(err.message || 'Erreur lors de l\'enregistrement du paiement');
+      logger.error('Error recording payment:', err);
+      setError(err.message || "Erreur lors de l'enregistrement du paiement");
     } finally {
       setProcessing(false);
     }
@@ -656,7 +688,7 @@ export function QuickPaymentModal({
     >
       <div
         className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-6 border-b border-slate-200 flex items-center justify-between">
@@ -689,18 +721,14 @@ export function QuickPaymentModal({
                   <p className="text-sm text-blue-900 flex items-center gap-1.5">
                     <FolderOpen className="w-3.5 h-3.5" />
                     <span className="font-semibold">Projet:</span> {displayProjectName}
-                    {preselectedProjectId && (
-                      <Lock className="w-3 h-3 ml-1 text-blue-600" />
-                    )}
+                    {preselectedProjectId && <Lock className="w-3 h-3 ml-1 text-blue-600" />}
                   </p>
                 )}
                 {displayTrancheName && (
                   <p className="text-sm text-blue-900 flex items-center gap-1.5">
                     <BarChart3 className="w-3.5 h-3.5" />
                     <span className="font-semibold">Tranche:</span> {displayTrancheName}
-                    {preselectedTrancheId && (
-                      <Lock className="w-3 h-3 ml-1 text-blue-600" />
-                    )}
+                    {preselectedTrancheId && <Lock className="w-3 h-3 ml-1 text-blue-600" />}
                   </p>
                 )}
               </div>
@@ -712,36 +740,36 @@ export function QuickPaymentModal({
             <>
               {/* Project Selection */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Projet
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Projet</label>
                 <select
                   value={selectedProjectId}
-                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  onChange={e => setSelectedProjectId(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={loading || !!preselectedProjectId}
                 >
                   <option value="">Sélectionnez un projet</option>
                   {projects.map(p => (
-                    <option key={p.id} value={p.id}>{p.projet}</option>
+                    <option key={p.id} value={p.id}>
+                      {p.projet}
+                    </option>
                   ))}
                 </select>
               </div>
 
               {/* Tranche Selection */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Tranche
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Tranche</label>
                 <select
                   value={selectedTrancheId}
-                  onChange={(e) => setSelectedTrancheId(e.target.value)}
+                  onChange={e => setSelectedTrancheId(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
                   disabled={!selectedProjectId || loading || !!preselectedTrancheId}
                 >
                   <option value="">Sélectionnez une tranche</option>
                   {tranches.map(t => (
-                    <option key={t.id} value={t.id}>{t.tranche_name}</option>
+                    <option key={t.id} value={t.id}>
+                      {t.tranche_name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -795,19 +823,24 @@ export function QuickPaymentModal({
                                     })}
                                   </p>
                                   <p className="text-xs text-red-700 mt-1">
-                                    🔴 En retard - {group.daysOverdue} jour{group.daysOverdue! > 1 ? 's' : ''}
+                                    🔴 En retard - {group.daysOverdue} jour
+                                    {group.daysOverdue! > 1 ? 's' : ''}
                                   </p>
                                   {group.paidCount > 0 && (
                                     <p className="text-xs text-slate-600 mt-1">
-                                      {group.unpaidCount} non payé{group.unpaidCount > 1 ? 's' : ''} ({group.paidCount}/{group.totalCount} payés)
+                                      {group.unpaidCount} non payé{group.unpaidCount > 1 ? 's' : ''}{' '}
+                                      ({group.paidCount}/{group.totalCount} payés)
                                     </p>
                                   )}
                                 </div>
                                 <div className="text-right">
                                   <p className="text-sm text-slate-600">
-                                    {group.unpaidCount} investisseur{group.unpaidCount > 1 ? 's' : ''}
+                                    {group.unpaidCount} investisseur
+                                    {group.unpaidCount > 1 ? 's' : ''}
                                   </p>
-                                  <p className="font-bold text-slate-900">{formatCurrency(group.totalNet)}</p>
+                                  <p className="font-bold text-slate-900">
+                                    {formatCurrency(group.totalNet)}
+                                  </p>
                                 </div>
                               </div>
                             </button>
@@ -820,7 +853,8 @@ export function QuickPaymentModal({
                   {echeanceGroups.filter(g => g.statut === 'partiellement_paye').length > 0 && (
                     <div className="mb-6">
                       <h5 className="text-sm font-semibold text-orange-700 mb-3">
-                        Partiellement payées ({echeanceGroups.filter(g => g.statut === 'partiellement_paye').length})
+                        Partiellement payées (
+                        {echeanceGroups.filter(g => g.statut === 'partiellement_paye').length})
                       </h5>
                       <div className="space-y-2">
                         {echeanceGroups
@@ -844,14 +878,18 @@ export function QuickPaymentModal({
                                     })}
                                   </p>
                                   <p className="text-xs text-slate-600 mt-1">
-                                    {group.unpaidCount} non payé{group.unpaidCount > 1 ? 's' : ''} ({group.paidCount}/{group.totalCount} payés)
+                                    {group.unpaidCount} non payé{group.unpaidCount > 1 ? 's' : ''} (
+                                    {group.paidCount}/{group.totalCount} payés)
                                   </p>
                                 </div>
                                 <div className="text-right">
                                   <p className="text-sm text-slate-600">
-                                    {group.unpaidCount} investisseur{group.unpaidCount > 1 ? 's' : ''}
+                                    {group.unpaidCount} investisseur
+                                    {group.unpaidCount > 1 ? 's' : ''}
                                   </p>
-                                  <p className="font-bold text-slate-900">{formatCurrency(group.totalNet)}</p>
+                                  <p className="font-bold text-slate-900">
+                                    {formatCurrency(group.totalNet)}
+                                  </p>
                                 </div>
                               </div>
                             </button>
@@ -890,9 +928,12 @@ export function QuickPaymentModal({
                                 </div>
                                 <div className="text-right">
                                   <p className="text-sm text-slate-600">
-                                    {group.unpaidCount} investisseur{group.unpaidCount > 1 ? 's' : ''}
+                                    {group.unpaidCount} investisseur
+                                    {group.unpaidCount > 1 ? 's' : ''}
                                   </p>
-                                  <p className="font-bold text-slate-900">{formatCurrency(group.totalNet)}</p>
+                                  <p className="font-bold text-slate-900">
+                                    {formatCurrency(group.totalNet)}
+                                  </p>
                                 </div>
                               </div>
                             </button>
@@ -923,7 +964,9 @@ export function QuickPaymentModal({
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-blue-900">{investors.length} investisseur{investors.length > 1 ? 's' : ''}</p>
+                      <p className="text-sm text-blue-900">
+                        {investors.length} investisseur{investors.length > 1 ? 's' : ''}
+                      </p>
                       <p className="text-lg font-bold text-blue-600">
                         {formatCurrency(investors.reduce((sum, i) => sum + i.montant_net, 0))}
                       </p>
@@ -948,7 +991,9 @@ export function QuickPaymentModal({
                       onClick={toggleAllInvestors}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
-                      {selectedInvestors.size === investors.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+                      {selectedInvestors.size === investors.length
+                        ? 'Tout désélectionner'
+                        : 'Tout sélectionner'}
                     </button>
                   </div>
 
@@ -979,7 +1024,8 @@ export function QuickPaymentModal({
                   {/* Selected total */}
                   <div className="mt-3 p-3 bg-slate-50 rounded-lg flex items-center justify-between">
                     <span className="text-sm font-medium text-slate-700">
-                      Montant sélectionné ({selectedInvestors.size}/{investors.length} investisseurs)
+                      Montant sélectionné ({selectedInvestors.size}/{investors.length}{' '}
+                      investisseurs)
                     </span>
                     <span className="text-lg font-bold text-slate-900">
                       {formatCurrency(selectedTotal)}
@@ -1000,7 +1046,7 @@ export function QuickPaymentModal({
                 <input
                   type="date"
                   value={datePaiement}
-                  onChange={(e) => setDatePaiement(e.target.value)}
+                  onChange={e => setDatePaiement(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -1015,7 +1061,7 @@ export function QuickPaymentModal({
                 </label>
                 <textarea
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  onChange={e => setNote(e.target.value)}
                   rows={3}
                   placeholder="Informations complémentaires..."
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -1061,7 +1107,8 @@ export function QuickPaymentModal({
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-slate-700">
-                        {uploadedFiles.length} fichier{uploadedFiles.length > 1 ? 's' : ''} téléchargé{uploadedFiles.length > 1 ? 's' : ''}
+                        {uploadedFiles.length} fichier{uploadedFiles.length > 1 ? 's' : ''}{' '}
+                        téléchargé{uploadedFiles.length > 1 ? 's' : ''}
                       </p>
                       {/* DISABLED - AI ANALYSIS BUTTON (can be re-enabled later)
                       {!analyzed && (
@@ -1087,13 +1134,16 @@ export function QuickPaymentModal({
                     </div>
 
                     <div className="border border-slate-300 rounded-lg divide-y divide-slate-200 max-h-80 overflow-y-auto">
-                      {uploadedFiles.map((file) => {
+                      {uploadedFiles.map(file => {
                         const match = aiMatches.get(file.name);
-                        const confidenceColor = match && !match.isManual
-                          ? match.confidence > 80 ? 'text-green-700 bg-green-100'
-                          : match.confidence > 60 ? 'text-yellow-700 bg-yellow-100'
-                          : 'text-orange-700 bg-orange-100'
-                          : '';
+                        const _confidenceColor =
+                          match && !match.isManual
+                            ? match.confidence > 80
+                              ? 'text-green-700 bg-green-100'
+                              : match.confidence > 60
+                                ? 'text-yellow-700 bg-yellow-100'
+                                : 'text-orange-700 bg-orange-100'
+                            : '';
 
                         return (
                           <div key={file.name} className="p-3 bg-slate-50">
