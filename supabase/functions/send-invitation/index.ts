@@ -5,8 +5,13 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-// Use app subdomain for invitation links
 const APP_URL = 'https://app.finixar.com'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 interface InvitationRequest {
   email: string
@@ -18,31 +23,21 @@ interface InvitationRequest {
 }
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      },
-    })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Get the authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       throw new Error('No authorization header')
     }
 
-    // Extract and decode JWT to get user info
     const token = authHeader.replace('Bearer ', '')
 
     let user: { id: string; email: string }
 
     try {
-      // Decode JWT payload (format: header.payload.signature)
       const parts = token.split('.')
       if (parts.length !== 3) {
         throw new Error('Invalid token format')
@@ -50,7 +45,6 @@ serve(async (req) => {
 
       const payload = JSON.parse(atob(parts[1]))
 
-      // Extract user info from JWT claims
       user = {
         id: payload.sub,
         email: payload.email,
@@ -66,7 +60,6 @@ serve(async (req) => {
       throw new Error('Invalid token')
     }
 
-    // Create admin client for database operations
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
@@ -74,15 +67,12 @@ serve(async (req) => {
       }
     })
 
-    // Parse request body
     const { email, firstName, lastName, role, orgId, orgName }: InvitationRequest = await req.json()
 
-    // Check if user is super admin (by email) or org admin
     const SUPER_ADMIN_EMAIL = 'zrig.ayman@gmail.com'
     const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL
 
     if (!isSuperAdmin) {
-      // Verify user is admin of the organization
       const { data: membership } = await supabaseAdmin
         .from('memberships')
         .select('role')
@@ -95,14 +85,20 @@ serve(async (req) => {
       }
     }
 
-    // Generate secure token
+    // Fetch inviter's name for personalization
+    const { data: inviterProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+
+    const inviterName = inviterProfile?.full_name || user.email
+
     const token_string = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '')
 
-    // Set expiration to 7 days from now
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
 
-    // Create invitation in database
     const { data: invitation, error: invitationError } = await supabaseAdmin
       .from('invitations')
       .insert({
@@ -122,10 +118,13 @@ serve(async (req) => {
       throw new Error(`Failed to create invitation: ${invitationError.message}`)
     }
 
-    // Create invitation link
     const invitationLink = `${APP_URL}/invitation/accept?token=${token_string}`
 
-    // Send email via Resend
+    const roleLabel = role === 'admin' ? 'Administrateur' : 'Membre'
+    const roleDescription = role === 'admin'
+      ? 'Gestion compl\u00e8te de l\u2019organisation et des membres'
+      : 'Consultation des projets et donn\u00e9es de l\u2019organisation'
+
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -135,274 +134,147 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Finixar <support@finixar.com>',
         to: [email],
-        subject: `Invitation à rejoindre ${orgName}`,
-        html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <style>
-                * {
-                  margin: 0;
-                  padding: 0;
-                  box-sizing: border-box;
-                }
-                body {
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                  line-height: 1.6;
-                  color: #1e293b;
-                  background-color: #f1f5f9;
-                  padding: 40px 20px;
-                }
-                .container {
-                  max-width: 600px;
-                  margin: 0 auto;
-                  background: white;
-                  border-radius: 12px;
-                  overflow: hidden;
-                  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-                }
-                .header {
-                  background: #1e40af;
-                  color: white;
-                  padding: 48px 40px;
-                  text-align: center;
-                }
-                .header h1 {
-                  font-size: 32px;
-                  font-weight: 700;
-                  margin-bottom: 12px;
-                  letter-spacing: -0.5px;
-                }
-                .header p {
-                  font-size: 16px;
-                  opacity: 0.95;
-                  font-weight: 400;
-                }
-                .content {
-                  padding: 48px 40px;
-                }
-                .greeting {
-                  font-size: 18px;
-                  color: #0f172a;
-                  margin-bottom: 24px;
-                  font-weight: 500;
-                }
-                .message {
-                  font-size: 16px;
-                  color: #475569;
-                  margin-bottom: 32px;
-                  line-height: 1.7;
-                }
-                .info-card {
-                  background: #f8fafc;
-                  border: 2px solid #e2e8f0;
-                  border-radius: 10px;
-                  padding: 28px;
-                  margin: 32px 0;
-                }
-                .info-item {
-                  display: flex;
-                  align-items: flex-start;
-                  margin-bottom: 16px;
-                  font-size: 15px;
-                }
-                .info-item:last-child {
-                  margin-bottom: 0;
-                }
-                .info-icon {
-                  width: 20px;
-                  height: 20px;
-                  margin-right: 14px;
-                  margin-top: 2px;
-                  flex-shrink: 0;
-                }
-                .info-label {
-                  font-weight: 600;
-                  color: #0f172a;
-                  margin-right: 8px;
-                  min-width: 110px;
-                }
-                .info-value {
-                  color: #475569;
-                  flex: 1;
-                }
-                .role-badge {
-                  display: inline-block;
-                  background: ${role === 'admin' ? '#7c3aed' : '#059669'};
-                  color: white;
-                  padding: 8px 18px;
-                  border-radius: 6px;
-                  font-size: 14px;
-                  font-weight: 600;
-                  margin-left: 4px;
-                }
-                .cta-container {
-                  text-align: center;
-                  margin: 40px 0;
-                }
-                .button {
-                  display: inline-block;
-                  background: #2563eb;
-                  color: #ffffff !important;
-                  padding: 18px 48px;
-                  text-decoration: none;
-                  border-radius: 8px;
-                  font-weight: 600;
-                  font-size: 16px;
-                  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
-                  transition: all 0.3s ease;
-                }
-                .button:hover {
-                  background: #1d4ed8;
-                  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.5);
-                }
-                .link-box {
-                  background: #f8fafc;
-                  border: 1px solid #e2e8f0;
-                  border-radius: 8px;
-                  padding: 18px;
-                  margin: 28px 0;
-                }
-                .link-box p {
-                  color: #64748b;
-                  font-size: 13px;
-                  margin-bottom: 10px;
-                  font-weight: 500;
-                }
-                .link-box a {
-                  color: #2563eb;
-                  word-break: break-all;
-                  font-size: 13px;
-                  text-decoration: none;
-                }
-                .expiry-notice {
-                  background: #fff7ed;
-                  border: 1px solid #fed7aa;
-                  border-left: 4px solid #f97316;
-                  border-radius: 8px;
-                  padding: 18px;
-                  margin: 28px 0;
-                }
-                .expiry-notice-content {
-                  display: flex;
-                  align-items: flex-start;
-                }
-                .expiry-icon {
-                  width: 20px;
-                  height: 20px;
-                  margin-right: 12px;
-                  margin-top: 2px;
-                  flex-shrink: 0;
-                }
-                .expiry-text {
-                  color: #9a3412;
-                  font-size: 14px;
-                  line-height: 1.6;
-                }
-                .footer {
-                  background: #f8fafc;
-                  padding: 36px 40px;
-                  text-align: center;
-                  border-top: 1px solid #e2e8f0;
-                }
-                .footer-logo {
-                  font-size: 24px;
-                  font-weight: 700;
-                  color: #1e40af;
-                  margin-bottom: 8px;
-                }
-                .footer p {
-                  color: #64748b;
-                  font-size: 14px;
-                  margin-bottom: 6px;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <!-- Header -->
-                <div class="header">
-                  <h1>Bienvenue sur Finixar</h1>
-                  <p>Invitation à rejoindre une organisation</p>
-                </div>
+        subject: `${inviterName} vous invite \u00e0 rejoindre ${orgName}`,
+        text: `Bonjour ${firstName},\n\n${inviterName} vous invite \u00e0 rejoindre ${orgName} sur Finixar en tant que ${roleLabel}.\n\n${roleDescription}.\n\nAcceptez l\u2019invitation en suivant ce lien :\n${invitationLink}\n\nCe lien expire dans 7 jours.\n\nSi vous n\u2019attendiez pas cette invitation, vous pouvez ignorer cet email.\n\n--\nFinixar \u00b7 Plateforme de gestion d\u2019investissements\nsupport@finixar.com`,
+        html: `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <!--[if !mso]><!-->
+  <style>
+    body { margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+  </style>
+  <!--<![endif]-->
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <!-- Preheader (hidden preview text) -->
+  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
+    ${firstName}, ${inviterName} vous attend sur Finixar \u2014 acceptez votre invitation pour rejoindre ${orgName}.
+    &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
+  </div>
 
-                <!-- Content -->
-                <div class="content">
-                  <div class="greeting">
-                    Bonjour <strong>${firstName} ${lastName}</strong>,
-                  </div>
+  <!-- Outer wrapper -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f1f5f9;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
 
-                  <div class="message">
-                    Vous avez été invité(e) à rejoindre <strong>${orgName}</strong> sur la plateforme Finixar avec le rôle de<span class="role-badge">${role === 'admin' ? 'Administrateur' : 'Membre'}</span>
-                  </div>
+        <!-- Container -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);">
 
-                  <!-- Info Card -->
-                  <div class="info-card">
-                    <div class="info-item">
-                      <svg class="info-icon" fill="none" stroke="#3b82f6" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                      </svg>
-                      <span class="info-label">Email :</span>
-                      <span class="info-value">${email}</span>
-                    </div>
-                    <div class="info-item">
-                      <svg class="info-icon" fill="none" stroke="#3b82f6" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                      </svg>
-                      <span class="info-label">Organisation :</span>
-                      <span class="info-value">${orgName}</span>
-                    </div>
-                    <div class="info-item">
-                      <svg class="info-icon" fill="none" stroke="#3b82f6" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                      </svg>
-                      <span class="info-label">Rôle :</span>
-                      <span class="info-value">${role === 'admin' ? 'Administrateur - Accès complet à la gestion' : 'Membre - Accès aux données de l\'organisation'}</span>
-                    </div>
-                  </div>
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #1e40af; padding: 40px 40px 36px; text-align: center;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Rejoignez ${orgName}</h1>
+              <p style="margin: 10px 0 0; font-size: 15px; color: rgba(255,255,255,0.9); font-weight: 400;">Invitation sur Finixar</p>
+            </td>
+          </tr>
 
-                  <div class="message">
-                    Pour activer votre compte et définir votre mot de passe, veuillez cliquer sur le bouton ci-dessous :
-                  </div>
+          <!-- Body -->
+          <tr>
+            <td style="padding: 40px 40px 16px;">
+              <p style="margin: 0 0 24px; font-size: 17px; color: #0f172a; font-weight: 500;">
+                Bonjour ${firstName},
+              </p>
+              <p style="margin: 0 0 28px; font-size: 15px; line-height: 1.7; color: #475569;">
+                <strong style="color: #0f172a;">${inviterName}</strong> vous invite \u00e0 rejoindre
+                <strong style="color: #0f172a;">${orgName}</strong> sur Finixar.
+              </p>
 
-                  <!-- CTA Button -->
-                  <div class="cta-container">
-                    <a href="${invitationLink}" class="button" style="color: #ffffff;">
-                      Activer mon compte
-                    </a>
-                  </div>
+              <!-- Role -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 28px;">
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px 24px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="padding-right: 14px; vertical-align: middle;">
+                          <div style="display: inline-block; background-color: ${role === 'admin' ? '#7c3aed' : '#059669'}; color: #ffffff; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;">
+                            ${roleLabel}
+                          </div>
+                        </td>
+                        <td style="vertical-align: middle;">
+                          <span style="font-size: 14px; color: #475569;">${roleDescription}</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
 
-                  <!-- Alternative Link -->
-                  <div class="link-box">
-                    <p>Ou copiez ce lien dans votre navigateur :</p>
-                    <a href="${invitationLink}">${invitationLink}</a>
-                  </div>
+              <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.7; color: #475569;">
+                Cliquez sur le bouton ci-dessous pour cr\u00e9er votre compte et rejoindre l\u2019\u00e9quipe :
+              </p>
+            </td>
+          </tr>
 
-                  <!-- Expiry Notice -->
-                  <div class="expiry-notice">
-                    <div class="expiry-notice-content">
-                      <svg class="expiry-icon" fill="none" stroke="#f97316" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                      <div class="expiry-text">
-                        <strong>Important :</strong> Cette invitation expire dans 7 jours. Veuillez activer votre compte rapidement.
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          <!-- CTA -->
+          <tr>
+            <td align="center" style="padding: 16px 40px 32px;">
+              <!--[if mso]>
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${invitationLink}" style="height:52px;v-text-anchor:middle;width:260px;" arcsize="15%" fillcolor="#2563eb" strokecolor="#2563eb" strokeweight="0">
+                <w:anchorlock/>
+                <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:600;">Accepter l\u2019invitation</center>
+              </v:roundrect>
+              <![endif]-->
+              <!--[if !mso]><!-->
+              <a href="${invitationLink}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3); mso-padding-alt: 0;">
+                Accepter l\u2019invitation
+              </a>
+              <!--<![endif]-->
+            </td>
+          </tr>
 
-                <!-- Footer -->
-                <div class="footer">
-                  <div class="footer-logo">Finixar</div>
-                  <p>Plateforme de gestion d'investissements</p>
-                  <p style="margin-top: 18px; color: #94a3b8;">Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email en toute sécurité.</p>
-                </div>
-              </div>
-            </body>
-          </html>
-        `,
+          <!-- Fallback link -->
+          <tr>
+            <td style="padding: 0 40px 16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+                    <p style="margin: 0 0 8px; font-size: 12px; color: #64748b; font-weight: 500;">Ou copiez ce lien dans votre navigateur :</p>
+                    <a href="${invitationLink}" style="font-size: 12px; color: #2563eb; text-decoration: none; word-break: break-all;">${invitationLink}</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Expiry notice -->
+          <tr>
+            <td style="padding: 0 40px 36px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #f97316; border-radius: 8px; padding: 14px 16px;">
+                    <p style="margin: 0; font-size: 13px; color: #9a3412; line-height: 1.5;">
+                      Cette invitation expire dans <strong>7 jours</strong>. Pass\u00e9 ce d\u00e9lai, demandez \u00e0 votre administrateur de vous renvoyer une invitation.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 28px 40px; text-align: center;">
+              <p style="margin: 0 0 4px; font-size: 20px; font-weight: 700; color: #1e40af;">Finixar</p>
+              <p style="margin: 0 0 16px; font-size: 13px; color: #64748b;">Plateforme de gestion d\u2019investissements</p>
+              <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
+                Si vous n\u2019attendiez pas cette invitation, ignorez cet email.<br>
+                Une question\u00a0? Contactez <a href="mailto:support@finixar.com" style="color: #64748b; text-decoration: underline;">support@finixar.com</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Container -->
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
       }),
     })
 
@@ -422,7 +294,7 @@ serve(async (req) => {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          ...corsHeaders,
         },
       }
     )
@@ -442,7 +314,7 @@ serve(async (req) => {
         status: 400,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          ...corsHeaders,
         },
       }
     )
