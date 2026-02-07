@@ -281,7 +281,16 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
         {/* Navigation - No scroll */}
         <div className="flex-1 px-4">
           <nav className="space-y-1">
-            {isEmetteur ? (
+            {isLoading ? (
+              <>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className={`flex items-center gap-2 px-3 py-2 ${isCollapsed ? 'justify-center' : ''}`}>
+                    <div className="w-4 h-4 rounded bg-slate-700 animate-pulse flex-shrink-0" />
+                    {!isCollapsed && <div className="h-3 rounded bg-slate-700 animate-pulse flex-1" />}
+                  </div>
+                ))}
+              </>
+            ) : isEmetteur ? (
               <>
                 <NavItem to="/" icon={Home} label="Mes Projets" />
                 <div className="border-t border-slate-700 my-2"></div>
@@ -348,7 +357,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                     {userProfile?.full_name || 'Utilisateur'}
                   </p>
                   <p className="text-xs text-slate-400 capitalize whitespace-nowrap">
-                    {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : isEmetteur ? 'Émetteur' : 'Membre'}
+                    {isLoading ? <span className="inline-block w-12 h-3 bg-slate-700 rounded animate-pulse" /> : isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : isEmetteur ? 'Émetteur' : 'Membre'}
                   </p>
                 </div>
               )}
