@@ -569,8 +569,114 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Invitations Section */}
+      {/* Organizations Section */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+        <button
+          onClick={() => toggleSection('organizations')}
+          className="w-full p-6 border-b border-slate-200 flex items-center justify-between hover:bg-slate-50 transition-colors"
+          aria-expanded={expandedSections.has('organizations')}
+          aria-label={`${expandedSections.has('organizations') ? 'Réduire' : 'Développer'} la section des organisations`}
+        >
+          <div className="flex items-center gap-2">
+            {expandedSections.has('organizations') ? (
+              <ChevronUp className="w-5 h-5 text-slate-600" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-slate-600" aria-hidden="true" />
+            )}
+            <Building2 className="w-6 h-6 text-slate-900" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-slate-900">
+              Organisations ({filteredOrganizations.length})
+            </h2>
+          </div>
+        </button>
+
+        {expandedSections.has('organizations') && (
+          <div className="divide-y divide-slate-200">
+            {filteredOrganizations.length === 0 ? (
+              <div className="p-12 text-center">
+                <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" aria-hidden="true" />
+                <p className="text-slate-600 mb-2">Aucune organisation trouvée</p>
+                <button
+                  onClick={() => setShowNewOrgModal(true)}
+                  className="text-slate-900 hover:underline text-sm"
+                  aria-label="Créer une nouvelle organisation"
+                >
+                  Créer une organisation
+                </button>
+              </div>
+            ) : (
+              filteredOrganizations.map(org => {
+                const orgMemberships = memberships.filter(m => m.org_id === org.id);
+                const isExpanded = expandedOrgs.has(org.id);
+                return (
+                  <OrganizationRow
+                    key={org.id}
+                    organization={org}
+                    memberships={orgMemberships}
+                    isExpanded={isExpanded}
+                    onToggle={() => toggleOrgExpanded(org.id)}
+                    onEdit={() => openEditModal(org)}
+                    onDelete={confirmDeleteOrganization}
+                    onRemoveMember={confirmRemoveMember}
+                    onViewUser={showUserDetail}
+                  />
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Super Admins Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+        <button
+          onClick={() => toggleSection('super-admins')}
+          className="w-full p-6 bg-purple-50 flex items-center justify-between hover:bg-purple-100 transition-colors"
+          aria-expanded={expandedSections.has('super-admins')}
+          aria-label={`${expandedSections.has('super-admins') ? 'Réduire' : 'Développer'} la section du super administrateur`}
+        >
+          <div className="flex items-center gap-2">
+            {expandedSections.has('super-admins') ? (
+              <ChevronUp className="w-5 h-5 text-slate-600" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-slate-600" aria-hidden="true" />
+            )}
+            <Shield className="w-6 h-6 text-purple-600" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-slate-900">
+              Super Administrateur ({superAdminCount})
+            </h2>
+          </div>
+        </button>
+
+        {expandedSections.has('super-admins') && (
+          <div className="divide-y divide-slate-200">
+            <div className="p-6 bg-purple-50/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center"
+                    aria-hidden="true"
+                  >
+                    <Shield className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-900">Super Administrateur Système</p>
+                    <p className="text-sm text-slate-600">Accès total à toutes les organisations</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+                    Super Admin - Accès Total
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Invitations Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         <div className="w-full p-6 bg-blue-50 flex items-center justify-between">
           <button
             onClick={() => toggleSection('invitations')}
@@ -660,112 +766,6 @@ export default function AdminPanel() {
                   </div>
                 </div>
               ))
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Super Admins Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
-        <button
-          onClick={() => toggleSection('super-admins')}
-          className="w-full p-6 bg-purple-50 flex items-center justify-between hover:bg-purple-100 transition-colors"
-          aria-expanded={expandedSections.has('super-admins')}
-          aria-label={`${expandedSections.has('super-admins') ? 'Réduire' : 'Développer'} la section du super administrateur`}
-        >
-          <div className="flex items-center gap-2">
-            {expandedSections.has('super-admins') ? (
-              <ChevronUp className="w-5 h-5 text-slate-600" aria-hidden="true" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-slate-600" aria-hidden="true" />
-            )}
-            <Shield className="w-6 h-6 text-purple-600" aria-hidden="true" />
-            <h2 className="text-xl font-bold text-slate-900">
-              Super Administrateur ({superAdminCount})
-            </h2>
-          </div>
-        </button>
-
-        {expandedSections.has('super-admins') && (
-          <div className="divide-y divide-slate-200">
-            <div className="p-6 bg-purple-50/50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center"
-                    aria-hidden="true"
-                  >
-                    <Shield className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">Super Administrateur Système</p>
-                    <p className="text-sm text-slate-600">Accès total à toutes les organisations</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
-                    Super Admin - Accès Total
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Organizations Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        <button
-          onClick={() => toggleSection('organizations')}
-          className="w-full p-6 border-b border-slate-200 flex items-center justify-between hover:bg-slate-50 transition-colors"
-          aria-expanded={expandedSections.has('organizations')}
-          aria-label={`${expandedSections.has('organizations') ? 'Réduire' : 'Développer'} la section des organisations`}
-        >
-          <div className="flex items-center gap-2">
-            {expandedSections.has('organizations') ? (
-              <ChevronUp className="w-5 h-5 text-slate-600" aria-hidden="true" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-slate-600" aria-hidden="true" />
-            )}
-            <Building2 className="w-6 h-6 text-slate-900" aria-hidden="true" />
-            <h2 className="text-xl font-bold text-slate-900">
-              Organisations ({filteredOrganizations.length})
-            </h2>
-          </div>
-        </button>
-
-        {expandedSections.has('organizations') && (
-          <div className="divide-y divide-slate-200">
-            {filteredOrganizations.length === 0 ? (
-              <div className="p-12 text-center">
-                <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" aria-hidden="true" />
-                <p className="text-slate-600 mb-2">Aucune organisation trouvée</p>
-                <button
-                  onClick={() => setShowNewOrgModal(true)}
-                  className="text-slate-900 hover:underline text-sm"
-                  aria-label="Créer une nouvelle organisation"
-                >
-                  Créer une organisation
-                </button>
-              </div>
-            ) : (
-              filteredOrganizations.map(org => {
-                const orgMemberships = memberships.filter(m => m.org_id === org.id);
-                const isExpanded = expandedOrgs.has(org.id);
-                return (
-                  <OrganizationRow
-                    key={org.id}
-                    organization={org}
-                    memberships={orgMemberships}
-                    isExpanded={isExpanded}
-                    onToggle={() => toggleOrgExpanded(org.id)}
-                    onEdit={() => openEditModal(org)}
-                    onDelete={confirmDeleteOrganization}
-                    onRemoveMember={confirmRemoveMember}
-                    onViewUser={showUserDetail}
-                  />
-                );
-              })
             )}
           </div>
         )}
