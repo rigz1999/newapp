@@ -34,8 +34,8 @@ interface Actualite {
   is_edited: boolean;
   user: {
     full_name: string;
-  };
-  user_id: string;
+  } | null;
+  user_id: string | null;
   attachments: Attachment[];
 }
 
@@ -559,7 +559,7 @@ export function ProjectActualitesPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-semibold text-lg text-slate-900">
-                            {actualite.user?.full_name || 'Utilisateur'}
+                            {actualite.user?.full_name || 'Utilisateur supprimé'}
                           </span>
                           <span className="text-sm text-slate-500">
                             {getRelativeTime(actualite.created_at)}

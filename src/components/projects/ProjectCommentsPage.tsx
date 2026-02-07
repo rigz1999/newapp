@@ -24,8 +24,8 @@ interface Comment {
   is_edited: boolean;
   user: {
     full_name: string;
-  };
-  user_id: string;
+  } | null;
+  user_id: string | null;
 }
 
 interface Project {
@@ -435,7 +435,7 @@ export function ProjectCommentsPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-semibold text-lg text-slate-900">
-                            {comment.user?.full_name || 'Utilisateur'}
+                            {comment.user?.full_name || 'Utilisateur supprimé'}
                           </span>
                           <span className="text-sm text-slate-500">
                             {getRelativeTime(comment.created_at)}
