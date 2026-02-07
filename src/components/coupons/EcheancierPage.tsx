@@ -1058,9 +1058,12 @@ export function EcheancierPage() {
                                     + Nominal
                                   </span>
                                 )}
-                                <p className="text-sm font-semibold text-slate-900">
-                                  {formatCurrency(dateGroup.totalNet + dateGroup.totalNominal)}
-                                </p>
+                                <div className="text-right">
+                                  <p className="text-xs text-slate-500">Net</p>
+                                  <p className="text-sm font-semibold text-slate-900">
+                                    {formatCurrency(dateGroup.totalNet + dateGroup.totalNominal)}
+                                  </p>
+                                </div>
                                 {(() => {
                                   const totalCount = dateGroup.echeances.length;
                                   const paidCount = dateGroup.echeances.filter(
