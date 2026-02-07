@@ -5,10 +5,12 @@ import {
   TrendingUp,
   Banknote,
   MessageSquare,
-  ArrowRight,
+  ArrowUpRight,
   Clock,
   FolderOpen,
   Megaphone,
+  ChevronRight,
+  Percent,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
@@ -33,13 +35,31 @@ interface EmetteurProject {
   latest_actualite: { text: string; date: string; author: string } | null;
 }
 
-const ACCENT_COLORS = [
-  'border-l-blue-500',
-  'border-l-emerald-500',
-  'border-l-amber-500',
-  'border-l-rose-500',
-  'border-l-cyan-500',
-  'border-l-orange-500',
+const ACCENT_GRADIENTS = [
+  'from-blue-500 to-blue-600',
+  'from-emerald-500 to-emerald-600',
+  'from-amber-500 to-amber-600',
+  'from-rose-500 to-rose-600',
+  'from-cyan-500 to-cyan-600',
+  'from-orange-500 to-orange-600',
+];
+
+const ACCENT_BG_LIGHT = [
+  'bg-blue-50',
+  'bg-emerald-50',
+  'bg-amber-50',
+  'bg-rose-50',
+  'bg-cyan-50',
+  'bg-orange-50',
+];
+
+const ACCENT_TEXT = [
+  'text-blue-700',
+  'text-emerald-700',
+  'text-amber-700',
+  'text-rose-700',
+  'text-cyan-700',
+  'text-orange-700',
 ];
 
 export default function EmetteurDashboard() {
@@ -170,6 +190,15 @@ export default function EmetteurDashboard() {
     return cleaned.substring(0, maxLength) + '...';
   };
 
+  const getUrgencyLabel = (days: number) => {
+    if (days < 0) return { text: 'En retard', className: 'bg-red-100 text-red-700' };
+    if (days === 0) return { text: "Aujourd'hui", className: 'bg-red-100 text-red-700' };
+    if (days <= 3) return { text: `${days}j`, className: 'bg-red-100 text-red-700' };
+    if (days <= 14) return { text: `${days}j`, className: 'bg-amber-100 text-amber-700' };
+    if (days <= 30) return { text: `${days}j`, className: 'bg-blue-100 text-blue-700' };
+    return { text: `${days}j`, className: 'bg-slate-100 text-slate-600' };
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
@@ -183,7 +212,7 @@ export default function EmetteurDashboard() {
 
   if (error) {
     return (
-      <div className="px-6 py-6">
+      <div className="max-w-5xl mx-auto px-6 py-8">
         <ErrorMessage message={error} />
       </div>
     );
@@ -193,19 +222,25 @@ export default function EmetteurDashboard() {
   const totalNextPayment = projects.reduce((sum, p) => sum + (p.next_payment_amount || 0), 0);
   const nearestPayment = projects
     .filter((p) => p.next_payment_date)
-    .sort((a, b) => new Date(a.next_payment_date!).getTime() - new Date(b.next_payment_date!).getTime())[0];
+    .sort(
+      (a, b) =>
+        new Date(a.next_payment_date!).getTime() - new Date(b.next_payment_date!).getTime()
+    )[0];
   const totalRecentActivity = projects.reduce((sum, p) => sum + p.recent_actualites, 0);
+  const nearestDays = nearestPayment?.next_payment_date
+    ? getDaysUntil(nearestPayment.next_payment_date)
+    : null;
 
   if (projects.length === 0) {
     return (
-      <div className="px-6 py-6">
-        <div className="max-w-md mx-auto text-center py-20">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <FolderOpen className="w-8 h-8 text-slate-400" />
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="max-w-md mx-auto text-center py-24">
+          <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-200">
+            <FolderOpen className="w-9 h-9 text-slate-300" />
           </div>
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">Aucun projet assigne</h2>
-          <p className="text-sm text-slate-500 leading-relaxed">
-            L'administrateur de votre organisation doit vous inviter sur un projet.
+          <h2 className="text-xl font-semibold text-slate-900 mb-3">Aucun projet assigne</h2>
+          <p className="text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">
+            L'administrateur de votre organisation doit vous inviter sur un projet pour commencer.
           </p>
         </div>
       </div>
@@ -213,173 +248,204 @@ export default function EmetteurDashboard() {
   }
 
   return (
-    <div className="px-6 py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            {firstName ? `Bonjour, ${firstName}` : 'Mes Projets'}
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {projects.length} projet{projects.length > 1 ? 's' : ''} actif{projects.length > 1 ? 's' : ''}
-          </p>
-        </div>
+    <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+          {firstName ? `Bonjour, ${firstName}` : 'Mes Projets'}
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Vue d'ensemble de vos {projects.length} projet{projects.length > 1 ? 's' : ''}
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-500">Projets actifs</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{projects.length}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 transition-shadow hover:shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <FolderOpen className="w-[18px] h-[18px] text-blue-600" />
             </div>
-            <div className="p-2.5 bg-blue-50 rounded-lg">
-              <FolderOpen className="w-5 h-5 text-blue-600" />
+            <div>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Projets</p>
+              <p className="text-2xl font-semibold text-slate-900 leading-tight mt-0.5">
+                {projects.length}
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-500">Prochain coupon</p>
+        <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 transition-shadow hover:shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+              <Banknote className="w-[18px] h-[18px] text-amber-600" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                Prochain coupon
+              </p>
               {nearestPayment?.next_payment_date ? (
-                <>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <p className="text-2xl font-semibold text-slate-900 leading-tight">
                     {formatCurrency(totalNextPayment)}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {formatDate(nearestPayment.next_payment_date)}
-                    <span className="text-amber-600 font-medium ml-1">
-                      ({getDaysUntil(nearestPayment.next_payment_date)}j)
+                  {nearestDays !== null && (
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${getUrgencyLabel(nearestDays).className}`}
+                    >
+                      {getUrgencyLabel(nearestDays).text}
                     </span>
-                  </p>
-                </>
+                  )}
+                </div>
               ) : (
-                <p className="text-sm text-slate-400 mt-2">Aucun coupon prevu</p>
+                <p className="text-sm text-slate-400 mt-0.5">--</p>
               )}
-            </div>
-            <div className="p-2.5 bg-amber-50 rounded-lg">
-              <Banknote className="w-5 h-5 text-amber-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-slate-500">Actualites cette semaine</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{totalRecentActivity}</p>
+        <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 transition-shadow hover:shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+              <MessageSquare className="w-[18px] h-[18px] text-emerald-600" />
             </div>
-            <div className="p-2.5 bg-emerald-50 rounded-lg">
-              <MessageSquare className="w-5 h-5 text-emerald-600" />
+            <div>
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                Actualites
+              </p>
+              <div className="flex items-baseline gap-1.5 mt-0.5">
+                <p className="text-2xl font-semibold text-slate-900 leading-tight">
+                  {totalRecentActivity}
+                </p>
+                <span className="text-xs text-slate-400">cette semaine</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">Projets</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {projects.map((project, index) => {
-            const daysUntilPayment = project.next_payment_date
-              ? getDaysUntil(project.next_payment_date)
-              : null;
-            const isPaymentSoon = daysUntilPayment !== null && daysUntilPayment <= 14;
-            const accentColor = ACCENT_COLORS[index % ACCENT_COLORS.length];
+      <div className="space-y-3">
+        {projects.map((project, index) => {
+          const daysUntilPayment = project.next_payment_date
+            ? getDaysUntil(project.next_payment_date)
+            : null;
+          const accentGradient = ACCENT_GRADIENTS[index % ACCENT_GRADIENTS.length];
+          const accentBg = ACCENT_BG_LIGHT[index % ACCENT_BG_LIGHT.length];
+          const accentText = ACCENT_TEXT[index % ACCENT_TEXT.length];
 
-            return (
-              <Link
-                key={project.projet_id}
-                to={`/emetteur/projets/${project.projet_id}`}
-                className="block group"
-              >
-                <div
-                  className={`bg-white rounded-xl shadow-sm border border-slate-200 border-l-4 ${accentColor} hover:shadow-md hover:border-slate-300 transition-all duration-200 overflow-hidden`}
-                >
-                  <div className="p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5">
-                          <h3 className="text-base font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
-                            {project.projet_name}
-                          </h3>
-                          {project.recent_actualites > 0 && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 flex-shrink-0">
-                              <Megaphone className="w-3 h-3" />
-                              {project.recent_actualites}
+          return (
+            <Link
+              key={project.projet_id}
+              to={`/emetteur/projets/${project.projet_id}`}
+              className="block group"
+            >
+              <div className="bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 hover:shadow-md transition-all duration-200 overflow-hidden">
+                <div className="p-5 sm:p-6">
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${accentGradient} flex items-center justify-center flex-shrink-0 shadow-sm`}
+                    >
+                      <span className="text-white font-semibold text-sm">
+                        {project.projet_name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2.5">
+                        <h3 className="text-[15px] font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                          {project.projet_name}
+                        </h3>
+                        {project.recent_actualites > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 flex-shrink-0 tracking-wide">
+                            <Megaphone className="w-2.5 h-2.5" />
+                            {project.recent_actualites} nouveau
+                            {project.recent_actualites > 1 ? 'x' : ''}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">{project.org_name}</p>
+
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3">
+                        {project.montant_global != null && (
+                          <div className="flex items-center gap-1.5">
+                            <Banknote className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="text-sm font-medium text-slate-700">
+                              {formatCurrency(project.montant_global)}
                             </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5">{project.org_name}</p>
-                      </div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        <ArrowRight className="w-4 h-4 text-slate-400" />
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-center gap-4">
-                      {project.montant_global != null && (
-                        <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                          <Banknote className="w-3.5 h-3.5 text-slate-400" />
-                          {formatCurrency(project.montant_global)}
-                        </div>
-                      )}
-                      {project.taux_interet != null && (
-                        <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                          <TrendingUp className="w-3.5 h-3.5 text-slate-400" />
-                          {project.taux_interet}%
-                        </div>
-                      )}
-                      {project.date_emission && (
-                        <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          {formatDate(project.date_emission)}
-                        </div>
-                      )}
-                    </div>
-
-                    {(project.next_payment_date || project.latest_actualite) && (
-                      <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                        {project.next_payment_date && (
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Clock
-                                className={`w-3.5 h-3.5 ${isPaymentSoon ? 'text-amber-500' : 'text-slate-400'}`}
-                              />
-                              <span className="text-xs text-slate-500">Prochain coupon</span>
-                            </div>
-                            <div className="text-right">
-                              <span className={`text-sm font-semibold ${isPaymentSoon ? 'text-amber-700' : 'text-slate-900'}`}>
-                                {formatCurrency(project.next_payment_amount || 0)}
-                              </span>
-                              <span className="text-xs text-slate-500 ml-2">
-                                {formatDate(project.next_payment_date)}
-                              </span>
-                            </div>
                           </div>
                         )}
-
-                        {project.latest_actualite && (
-                          <div className="flex items-start gap-2">
-                            <MessageSquare className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs text-slate-700 truncate">
-                                {truncateText(project.latest_actualite.text, 60)}
-                              </p>
-                              <p className="text-xs text-slate-400 mt-0.5">
-                                {project.latest_actualite.author} {getRelativeTime(project.latest_actualite.date)}
-                              </p>
-                            </div>
+                        {project.taux_interet != null && (
+                          <div className="flex items-center gap-1.5">
+                            <Percent className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="text-sm font-medium text-slate-700">
+                              {project.taux_interet}%
+                            </span>
+                          </div>
+                        )}
+                        {project.date_emission && (
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="text-sm text-slate-600">
+                              {formatDate(project.date_emission)}
+                            </span>
                           </div>
                         )}
                       </div>
-                    )}
+                    </div>
+
+                    <div className="flex items-center gap-1 text-slate-400 group-hover:text-blue-500 transition-colors flex-shrink-0 pt-1">
+                      <span className="text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                        Ouvrir
+                      </span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
                   </div>
+
+                  {(project.next_payment_date || project.latest_actualite) && (
+                    <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-3">
+                      {project.next_payment_date && (
+                        <div
+                          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg ${accentBg} flex-shrink-0`}
+                        >
+                          <Clock className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-600">Prochain coupon</span>
+                            <span className={`text-sm font-semibold ${accentText}`}>
+                              {formatCurrency(project.next_payment_amount || 0)}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              {formatDate(project.next_payment_date)}
+                            </span>
+                            {daysUntilPayment !== null && (
+                              <span
+                                className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold ${getUrgencyLabel(daysUntilPayment).className}`}
+                              >
+                                {getUrgencyLabel(daysUntilPayment).text}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {project.latest_actualite && (
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <MessageSquare className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                          <p className="text-xs text-slate-600 truncate">
+                            <span className="font-medium">
+                              {project.latest_actualite.author}
+                            </span>{' '}
+                            {truncateText(project.latest_actualite.text, 50)}
+                          </p>
+                          <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0">
+                            {getRelativeTime(project.latest_actualite.date)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </Link>
-            );
-          })}
-        </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
