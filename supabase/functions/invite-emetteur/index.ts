@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
         if (existingAssignment.user_id === existingUser.id) {
           throw new Error('Cet utilisateur est déjà émetteur sur ce projet');
         }
-        throw new Error('Ce projet a déjà un émetteur assigné. Veuillez d'abord retirer l'émetteur actuel.');
+        throw new Error(`Ce projet a déjà un émetteur assigné. Veuillez d'abord retirer l'émetteur actuel.`);
       }
 
       // Create membership if none exists — never overwrite existing roles
@@ -250,7 +250,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (existingProjectEmetteur) {
-      throw new Error('Ce projet a déjà un émetteur assigné. Veuillez d'abord retirer l'émetteur actuel.');
+      throw new Error(`Ce projet a déjà un émetteur assigné. Veuillez d'abord retirer l'émetteur actuel.`);
     }
 
     // Check if there's already a pending invitation for this email + project
