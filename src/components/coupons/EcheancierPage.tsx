@@ -97,8 +97,8 @@ interface EcheanceData {
 export function EcheancierPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { userRole } = useAuth();
-  const readOnly = userRole === 'emetteur';
+  const { userRole, loading: authLoading } = useAuth();
+  const readOnly = authLoading || userRole === 'emetteur';
 
   const [echeances, setEcheances] = useState<Echeance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -967,6 +967,12 @@ export function EcheancierPage() {
                     </button>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
+                        <p className="text-sm text-slate-500">Total brut</p>
+                        <p className="text-lg font-semibold text-slate-900">
+                          {formatCurrency(trancheGroup.totalBrut)}
+                        </p>
+                      </div>
+                      <div className="text-right">
                         <p className="text-sm text-slate-500">Total net</p>
                         <p className="text-lg font-semibold text-slate-900">
                           {formatCurrency(trancheGroup.totalNet)}
@@ -1206,6 +1212,12 @@ export function EcheancierPage() {
                                               </p>
                                             </div>
                                           )}
+                                          <div className="text-right">
+                                            <p className="text-xs text-slate-500">Coupon brut</p>
+                                            <p className="text-sm font-semibold text-slate-900">
+                                              {formatCurrency(echeance.souscription.coupon_brut)}
+                                            </p>
+                                          </div>
                                           <div className="text-right">
                                             <p className="text-xs text-slate-500">Coupon net</p>
                                             <p className="text-sm font-semibold text-slate-900">

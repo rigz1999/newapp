@@ -120,8 +120,8 @@ interface AlertState {
 export function ProjectDetail({ organization: _organization }: ProjectDetailProps) {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { user, isSuperAdmin, userRole } = useAuth();
-  const readOnly = userRole === 'emetteur';
+  const { user, isSuperAdmin, userRole, loading: authLoading } = useAuth();
+  const readOnly = authLoading || userRole === 'emetteur';
   const [project, setProject] = useState<Project | null>(null);
   const [tranches, setTranches] = useState<Tranche[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
