@@ -85,15 +85,6 @@ serve(async (req) => {
       }
     }
 
-    // Fetch inviter's name for personalization
-    const { data: inviterProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .single()
-
-    const inviterName = inviterProfile?.full_name || user.email
-
     const token_string = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '')
 
     const expiresAt = new Date()
@@ -134,8 +125,8 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Finixar <support@finixar.com>',
         to: [email],
-        subject: `${inviterName} vous invite \u00e0 rejoindre ${orgName}`,
-        text: `Bonjour ${firstName},\n\n${inviterName} vous invite \u00e0 rejoindre ${orgName} sur Finixar en tant que ${roleLabel}.\n\n${roleDescription}.\n\nAcceptez l\u2019invitation en suivant ce lien :\n${invitationLink}\n\nCe lien expire dans 7 jours.\n\nSi vous n\u2019attendiez pas cette invitation, vous pouvez ignorer cet email.\n\n--\nFinixar \u00b7 Plateforme de gestion d\u2019investissements\nsupport@finixar.com`,
+        subject: `${orgName} vous invite \u00e0 rejoindre Finixar`,
+        text: `Bonjour ${firstName},\n\n${orgName} vous invite \u00e0 rejoindre son espace sur Finixar en tant que ${roleLabel}.\n\n${roleDescription}.\n\nAcceptez l\u2019invitation en suivant ce lien :\n${invitationLink}\n\nCe lien expire dans 7 jours.\n\nSi vous n\u2019attendiez pas cette invitation, vous pouvez ignorer cet email.\n\n--\nFinixar \u00b7 Plateforme de gestion d\u2019investissements\nsupport@finixar.com`,
         html: `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -152,7 +143,7 @@ serve(async (req) => {
 <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
   <!-- Preheader (hidden preview text) -->
   <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
-    ${firstName}, ${inviterName} vous attend sur Finixar \u2014 acceptez votre invitation pour rejoindre ${orgName}.
+    ${firstName}, ${orgName} vous attend sur Finixar \u2014 acceptez votre invitation.
     &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
   </div>
 
@@ -179,8 +170,8 @@ serve(async (req) => {
                 Bonjour ${firstName},
               </p>
               <p style="margin: 0 0 28px; font-size: 15px; line-height: 1.7; color: #475569;">
-                <strong style="color: #0f172a;">${inviterName}</strong> vous invite \u00e0 rejoindre
-                <strong style="color: #0f172a;">${orgName}</strong> sur Finixar.
+                <strong style="color: #0f172a;">${orgName}</strong> vous invite \u00e0 rejoindre
+                son espace sur Finixar.
               </p>
 
               <!-- Role -->

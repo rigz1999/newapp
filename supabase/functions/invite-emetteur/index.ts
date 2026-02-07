@@ -98,15 +98,6 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Fetch inviter's name for personalization
-    const { data: inviterProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .single();
-
-    const inviterName = inviterProfile?.full_name || user.email;
-
     const tokenString = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
 
     const expiresAt = new Date();
@@ -195,8 +186,8 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         from: 'Finixar <support@finixar.com>',
         to: [email],
-        subject: `${inviterName} vous donne acc\u00e8s au projet ${projetName}`,
-        text: `Bonjour ${firstName},\n\n${inviterName} vous invite \u00e0 acc\u00e9der au projet ${projetName} sur Finixar en tant qu\u2019\u00e9metteur pour ${emetteurName}.\n\nVotre acc\u00e8s inclut :\n\u2022 Calendrier des paiements\n\u2022 Export des \u00e9ch\u00e9ances (Excel & PDF)\n\u2022 Actualit\u00e9s du projet\n\u2022 Notifications des \u00e9ch\u00e9ances\n\nAcc\u00e9dez au projet en suivant ce lien :\n${invitationLink}\n\nCe lien expire dans 7 jours.\n\nSi vous n\u2019attendiez pas cet acc\u00e8s, vous pouvez ignorer cet email.\n\n--\nFinixar \u00b7 Plateforme de gestion d\u2019investissements\nsupport@finixar.com`,
+        subject: `${orgName} vous invite \u00e0 rejoindre Finixar`,
+        text: `Bonjour ${firstName},\n\n${orgName} vous invite \u00e0 rejoindre Finixar en tant qu\u2019\u00e9metteur pour ${emetteurName}.\n\nVotre acc\u00e8s inclut :\n\u2022 Calendrier des paiements\n\u2022 Export des \u00e9ch\u00e9ances (Excel & PDF)\n\u2022 Actualit\u00e9s des projets\n\u2022 Notifications des \u00e9ch\u00e9ances\n\nAcceptez l\u2019invitation en suivant ce lien :\n${invitationLink}\n\nCe lien expire dans 7 jours.\n\nSi vous n\u2019attendiez pas cette invitation, vous pouvez ignorer cet email.\n\n--\nFinixar \u00b7 Plateforme de gestion d\u2019investissements\nsupport@finixar.com`,
         html: `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -213,7 +204,7 @@ Deno.serve(async (req: Request) => {
 <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
   <!-- Preheader (hidden preview text) -->
   <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
-    ${firstName}, acc\u00e9dez au projet ${projetName} sur Finixar \u2014 calendrier de paiements, exports et actualit\u00e9s.
+    ${firstName}, ${orgName} vous invite \u00e0 rejoindre Finixar en tant qu\u2019\u00e9metteur pour ${emetteurName}.
     &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
   </div>
 
@@ -228,8 +219,8 @@ Deno.serve(async (req: Request) => {
           <!-- Header -->
           <tr>
             <td style="background-color: #059669; padding: 40px 40px 36px; text-align: center;">
-              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Acc\u00e8s au projet ${projetName}</h1>
-              <p style="margin: 10px 0 0; font-size: 15px; color: rgba(255,255,255,0.9); font-weight: 400;">\u00c9metteur sur Finixar</p>
+              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Rejoignez ${orgName}</h1>
+              <p style="margin: 10px 0 0; font-size: 15px; color: rgba(255,255,255,0.9); font-weight: 400;">Acc\u00e8s \u00e9metteur sur Finixar</p>
             </td>
           </tr>
 
@@ -240,9 +231,8 @@ Deno.serve(async (req: Request) => {
                 Bonjour ${firstName},
               </p>
               <p style="margin: 0 0 28px; font-size: 15px; line-height: 1.7; color: #475569;">
-                <strong style="color: #0f172a;">${inviterName}</strong> vous invite \u00e0 acc\u00e9der au projet
-                <strong style="color: #0f172a;">${projetName}</strong> sur Finixar en tant qu\u2019\u00e9metteur
-                pour <strong style="color: #0f172a;">${emetteurName}</strong>.
+                <strong style="color: #0f172a;">${orgName}</strong> vous invite \u00e0 rejoindre Finixar
+                en tant qu\u2019\u00e9metteur pour <strong style="color: #0f172a;">${emetteurName}</strong>.
               </p>
 
               <!-- Feature list -->
@@ -266,7 +256,7 @@ Deno.serve(async (req: Request) => {
                       <tr>
                         <td style="padding: 5px 0; font-size: 14px; color: #065f46;">
                           <span style="color: #059669; font-weight: bold; margin-right: 8px;">\u2713</span>
-                          Actualit\u00e9s du projet
+                          Actualit\u00e9s des projets
                         </td>
                       </tr>
                       <tr>
@@ -281,7 +271,7 @@ Deno.serve(async (req: Request) => {
               </table>
 
               <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.7; color: #475569;">
-                Cliquez sur le bouton ci-dessous pour cr\u00e9er votre compte et acc\u00e9der au projet :
+                Cliquez sur le bouton ci-dessous pour cr\u00e9er votre compte :
               </p>
             </td>
           </tr>
@@ -292,12 +282,12 @@ Deno.serve(async (req: Request) => {
               <!--[if mso]>
               <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${invitationLink}" style="height:52px;v-text-anchor:middle;width:260px;" arcsize="15%" fillcolor="#059669" strokecolor="#059669" strokeweight="0">
                 <w:anchorlock/>
-                <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:600;">Acc\u00e9der au projet</center>
+                <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:600;">Accepter l\u2019invitation</center>
               </v:roundrect>
               <![endif]-->
               <!--[if !mso]><!-->
               <a href="${invitationLink}" style="display: inline-block; background-color: #059669; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3); mso-padding-alt: 0;">
-                Acc\u00e9der au projet
+                Accepter l\u2019invitation
               </a>
               <!--<![endif]-->
             </td>
