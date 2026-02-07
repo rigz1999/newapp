@@ -121,6 +121,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { user, isSuperAdmin, userRole } = useAuth();
+  const readOnly = userRole === 'emetteur';
   const [project, setProject] = useState<Project | null>(null);
   const [tranches, setTranches] = useState<Tranche[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -762,67 +763,68 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </div>
           </div>
 
-          <div className="relative" data-actions-dropdown>
-            <button
-              onClick={() => setShowActionsDropdown(!showActionsDropdown)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-              aria-label="Actions"
-            >
-              Actions
-              <ChevronDown className="w-4 h-4" aria-hidden="true" />
-            </button>
+          {!readOnly && (
+            <div className="relative" data-actions-dropdown>
+              <button
+                onClick={() => setShowActionsDropdown(!showActionsDropdown)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                aria-label="Actions"
+              >
+                Actions
+                <ChevronDown className="w-4 h-4" aria-hidden="true" />
+              </button>
 
-            {showActionsDropdown && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 z-10 py-1">
-                <button
-                  onClick={() => {
-                    setEditedProject({
-                      ...project,
-                      periodicite_coupons: normalizePeriodicite(project.periodicite_coupons)
-                    });
-                    setShowEditProject(true);
-                    setShowActionsDropdown(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  Modifier le projet
-                </button>
-
-                <button
-                  onClick={() => {
-                    setCalendarExportScope({
-                      projectId: project.id,
-                      projectName: project.projet,
-                    });
-                    setShowCalendarExport(true);
-                    setShowActionsDropdown(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                >
-                  <Calendar className="w-4 h-4" />
-                  Exporter au calendrier
-                </button>
-
-                {(isSuperAdmin || _organization.role === 'admin') && (
+              {showActionsDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 z-10 py-1">
                   <button
                     onClick={() => {
-                      setShowInviteEmetteur(true);
+                      setEditedProject({
+                        ...project,
+                        periodicite_coupons: normalizePeriodicite(project.periodicite_coupons)
+                      });
+                      setShowEditProject(true);
                       setShowActionsDropdown(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                   >
-                    <Mail className="w-4 h-4" />
-                    Inviter un émetteur
+                    <Edit className="w-4 h-4" />
+                    Modifier le projet
                   </button>
-                )}
-              </div>
-            )}
-          </div>
+
+                  <button
+                    onClick={() => {
+                      setCalendarExportScope({
+                        projectId: project.id,
+                        projectName: project.projet,
+                      });
+                      setShowCalendarExport(true);
+                      setShowActionsDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    Exporter au calendrier
+                  </button>
+
+                  {(isSuperAdmin || _organization.role === 'admin') && (
+                    <button
+                      onClick={() => {
+                        setShowInviteEmetteur(true);
+                        setShowActionsDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
+                    >
+                      <Mail className="w-4 h-4" />
+                      Inviter un émetteur
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Outdated Export Warning Banner */}
-        {hasOutdatedExport && (
+        {!readOnly && hasOutdatedExport && (
           <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-4">
             <div className="flex items-start">
               <AlertTriangle className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
@@ -969,17 +971,19 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 Voir tout ({tranches.length})
               </button>
             </div>
-            <button
-              onClick={() => {
-                setEditingTranche(null);
-                setShowTrancheWizard(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-              aria-label="Créer une nouvelle tranche"
-            >
-              <Plus className="w-4 h-4" aria-hidden="true" />
-              Nouvelle tranche
-            </button>
+            {!readOnly && (
+              <button
+                onClick={() => {
+                  setEditingTranche(null);
+                  setShowTrancheWizard(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-finixar-brand-blue rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                aria-label="Créer une nouvelle tranche"
+              >
+                <Plus className="w-4 h-4" aria-hidden="true" />
+                Nouvelle tranche
+              </button>
+            )}
           </div>
 
           {tranches.length === 0 ? (
@@ -1024,46 +1028,48 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             {trancheSubscriptions.length} souscription{trancheSubscriptions.length > 1 ? 's' : ''}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCalendarExportScope({
-                                trancheId: tranche.id,
-                                projectName: project?.projet,
-                                trancheName: tranche.tranche_name,
-                              });
-                              setShowCalendarExport(true);
-                            }}
-                            className="p-1.5 text-finixar-brand-blue hover:bg-blue-50 rounded"
-                            title="Exporter au calendrier"
-                            aria-label={`Exporter la tranche ${tranche.tranche_name} au calendrier`}
-                          >
-                            <Calendar className="w-4 h-4" aria-hidden="true" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/tranches/${tranche.id}/edit`);
-                            }}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
-                            title="Modifier"
-                            aria-label={`Modifier la tranche ${tranche.tranche_name}`}
-                          >
-                            <Edit className="w-4 h-4" aria-hidden="true" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteTranche(tranche);
-                            }}
-                            className="p-1.5 text-finixar-red hover:bg-red-50 rounded"
-                            title="Supprimer"
-                            aria-label={`Supprimer la tranche ${tranche.tranche_name}`}
-                          >
-                            <Trash2 className="w-4 h-4" aria-hidden="true" />
-                          </button>
-                        </div>
+                        {!readOnly && (
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCalendarExportScope({
+                                  trancheId: tranche.id,
+                                  projectName: project?.projet,
+                                  trancheName: tranche.tranche_name,
+                                });
+                                setShowCalendarExport(true);
+                              }}
+                              className="p-1.5 text-finixar-brand-blue hover:bg-blue-50 rounded"
+                              title="Exporter au calendrier"
+                              aria-label={`Exporter la tranche ${tranche.tranche_name} au calendrier`}
+                            >
+                              <Calendar className="w-4 h-4" aria-hidden="true" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/tranches/${tranche.id}/edit`);
+                              }}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                              title="Modifier"
+                              aria-label={`Modifier la tranche ${tranche.tranche_name}`}
+                            >
+                              <Edit className="w-4 h-4" aria-hidden="true" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTranche(tranche);
+                              }}
+                              className="p-1.5 text-finixar-red hover:bg-red-50 rounded"
+                              title="Supprimer"
+                              aria-label={`Supprimer la tranche ${tranche.tranche_name}`}
+                            >
+                              <Trash2 className="w-4 h-4" aria-hidden="true" />
+                            </button>
+                          </div>
+                        )}
                       </button>
 
                       {/* Dropdown des souscriptions */}
@@ -1087,15 +1093,15 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                               {trancheSubscriptions.map((sub) => (
                                 <div
                                   key={sub.id}
-                                  className="flex items-center justify-between py-2.5 px-3 bg-white rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer"
-                                  onClick={() => {
+                                  className={`flex items-center justify-between py-2.5 px-3 bg-white rounded-lg border border-slate-100 transition-all ${readOnly ? '' : 'hover:border-blue-200 hover:bg-blue-50 cursor-pointer'}`}
+                                  onClick={readOnly ? undefined : () => {
                                     setEditingSubscription(sub);
                                     setShowEditSubscription(true);
                                   }}
-                                  title="Cliquer pour modifier"
+                                  title={readOnly ? undefined : 'Cliquer pour modifier'}
                                   role="row"
-                                  tabIndex={0}
-                                  onKeyDown={(e) => {
+                                  tabIndex={readOnly ? undefined : 0}
+                                  onKeyDown={readOnly ? undefined : (e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                       e.preventDefault();
                                       setEditingSubscription(sub);
@@ -1154,10 +1160,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           )}
         </div>
 
-        <EcheancierCard 
-          projectId={projectId!} 
+        <EcheancierCard
+          projectId={projectId!}
           tranches={tranches}
-          onPaymentClick={(_trancheId) => {
+          onPaymentClick={readOnly ? () => {} : (_trancheId) => {
             setShowPaymentWizard(true);
           }}
           onViewAll={() => {

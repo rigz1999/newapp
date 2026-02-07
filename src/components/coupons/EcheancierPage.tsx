@@ -19,6 +19,7 @@ import {
   MoreVertical,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import * as ExcelJS from 'exceljs';
 import { QuickPaymentModal } from './QuickPaymentModal';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
@@ -96,6 +97,8 @@ interface EcheanceData {
 export function EcheancierPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const { userRole } = useAuth();
+  const readOnly = userRole === 'emetteur';
 
   const [echeances, setEcheances] = useState<Echeance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -805,18 +808,20 @@ export function EcheancierPage() {
                 <Download className="w-4 h-4" />
                 Exporter Excel
               </button>
-              <button
-                onClick={() => {
-                  setPreselectedTrancheId(undefined);
-                  setPreselectedTrancheName(undefined);
-                  setPreselectedEcheanceDate(undefined);
-                  setShowPaymentWizard(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Upload className="w-4 h-4" />
-                Enregistrer un paiement
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => {
+                    setPreselectedTrancheId(undefined);
+                    setPreselectedTrancheName(undefined);
+                    setPreselectedEcheanceDate(undefined);
+                    setShowPaymentWizard(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  Enregistrer un paiement
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -992,20 +997,22 @@ export function EcheancierPage() {
                           );
                         }
                       })()}
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          setPreselectedTrancheId(trancheGroup.trancheId);
-                          setPreselectedTrancheName(trancheGroup.trancheName);
-                          setPreselectedEcheanceDate(undefined);
-                          setShowPaymentWizard(true);
-                        }}
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                        title="Enregistrer un paiement pour cette tranche"
-                      >
-                        <Upload className="w-4 h-4" />
-                        Enregistrer un paiement
-                      </button>
+                      {!readOnly && (
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setPreselectedTrancheId(trancheGroup.trancheId);
+                            setPreselectedTrancheName(trancheGroup.trancheName);
+                            setPreselectedEcheanceDate(undefined);
+                            setShowPaymentWizard(true);
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                          title="Enregistrer un paiement pour cette tranche"
+                        >
+                          <Upload className="w-4 h-4" />
+                          Enregistrer un paiement
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1083,8 +1090,7 @@ export function EcheancierPage() {
                                     );
                                   }
                                 })()}
-                                {/* Actions dropdown menu */}
-                                {(() => {
+                                {!readOnly && (() => {
                                   const dateKey = `${trancheGroup.trancheId}-${dateGroup.date}`;
                                   const isDropdownOpen = openDropdown === dateKey;
                                   const isSending = sendingEmail === dateKey;
@@ -1223,7 +1229,7 @@ export function EcheancierPage() {
                                               </span>
                                             )}
                                           </div>
-                                          {status === 'paye' && (
+                                          {status === 'paye' && !readOnly && (
                                             <div className="flex items-center gap-2">
                                               {echeanceProofUrls.has(echeance.id) ? (
                                                 <a
@@ -1286,8 +1292,7 @@ export function EcheancierPage() {
         </div>
       </div>
 
-      {/* Quick Payment Modal */}
-      {showPaymentWizard && (
+      {!readOnly && showPaymentWizard && (
         <QuickPaymentModal
           preselectedProjectId={projectInfo?.id || projectId}
           preselectedProjectName={projectName}
@@ -1310,8 +1315,7 @@ export function EcheancierPage() {
         />
       )}
 
-      {/* View Payment Proof Modal */}
-      {selectedPaymentForProof && (
+      {!readOnly && selectedPaymentForProof && (
         <ViewProofsModal
           payment={selectedPaymentForProof}
           proofs={paymentProofs}
