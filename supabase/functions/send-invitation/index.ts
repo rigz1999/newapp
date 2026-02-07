@@ -113,8 +113,8 @@ serve(async (req) => {
 
     const roleLabel = role === 'admin' ? 'Administrateur' : 'Membre'
     const roleDescription = role === 'admin'
-      ? 'Gestion complète de l'organisation et des membres'
-      : 'Consultation des projets et données de l'organisation'
+      ? `Gestion complète de l'organisation et des membres`
+      : `Consultation des projets et données de l'organisation`
 
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
