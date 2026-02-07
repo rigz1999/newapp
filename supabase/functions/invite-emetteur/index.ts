@@ -110,9 +110,24 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (existingUser) {
+      // Check if this project already has an emetteur assigned
+      const { data: existingAssignment } = await supabaseAdmin
+        .from('emetteur_projects')
+        .select('id, user_id')
+        .eq('projet_id', projetId)
+        .single();
+
+      if (existingAssignment) {
+        if (existingAssignment.user_id === existingUser.id) {
+          throw new Error('Cet utilisateur est d\u00e9j\u00e0 \u00e9metteur sur ce projet');
+        }
+        throw new Error('Ce projet a d\u00e9j\u00e0 un \u00e9metteur assign\u00e9. Veuillez d\u2019abord retirer l\u2019\u00e9metteur actuel.');
+      }
+
+      // Create membership if none exists — never overwrite existing roles
       const { data: existingMembership } = await supabaseAdmin
         .from('memberships')
-        .select('id')
+        .select('id, role')
         .eq('user_id', existingUser.id)
         .eq('org_id', orgId)
         .single();
@@ -123,12 +138,8 @@ Deno.serve(async (req: Request) => {
           org_id: orgId,
           role: 'emetteur',
         });
-      } else {
-        await supabaseAdmin
-          .from('memberships')
-          .update({ role: 'emetteur' })
-          .eq('id', existingMembership.id);
       }
+      // If membership exists, keep their current role — don't downgrade
 
       await supabaseAdmin.from('emetteur_projects').insert({
         org_id: orgId,
@@ -138,10 +149,88 @@ Deno.serve(async (req: Request) => {
         assigned_by: user.id,
       });
 
+      // Notify the emetteur they got access to a new project
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: 'Finixar <support@finixar.com>',
+          to: [email],
+          subject: `${orgName} \u2014 nouvel acc\u00e8s au projet ${projetName}`,
+          text: `Bonjour ${firstName},\n\n${orgName} vous a donn\u00e9 acc\u00e8s au projet ${projetName} sur Finixar.\n\nConnectez-vous pour y acc\u00e9der :\n${APP_URL}\n\n--\nFinixar \u00b7 Plateforme de gestion d\u2019investissements\nsupport@finixar.com`,
+          html: `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--[if !mso]><!-->
+  <style>
+    body { margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+  </style>
+  <!--<![endif]-->
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
+    ${firstName}, vous avez acc\u00e8s au projet ${projetName} sur Finixar.
+    &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f1f5f9;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background-color: #059669; padding: 28px 32px 24px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff;">Nouvel acc\u00e8s projet</h1>
+              <p style="margin: 6px 0 0; font-size: 14px; color: rgba(255,255,255,0.9);">${orgName} sur Finixar</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 28px 32px;">
+              <p style="margin: 0 0 16px; font-size: 15px; color: #0f172a; font-weight: 500;">Bonjour ${firstName},</p>
+              <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #475569;">
+                Vous avez d\u00e9sormais acc\u00e8s au projet <strong style="color: #0f172a;">${projetName}</strong> sur Finixar.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding: 0 32px 24px;">
+              <!--[if mso]>
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${APP_URL}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="15%" fillcolor="#059669" strokecolor="#059669" strokeweight="0">
+                <w:anchorlock/>
+                <center style="color:#ffffff;font-family:sans-serif;font-size:15px;font-weight:600;">Acc\u00e9der \u00e0 Finixar</center>
+              </v:roundrect>
+              <![endif]-->
+              <!--[if !mso]><!-->
+              <a href="${APP_URL}" style="display: inline-block; background-color: #059669; color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 2px 8px rgba(5,150,105,0.3);">
+                Acc\u00e9der \u00e0 Finixar
+              </a>
+              <!--<![endif]-->
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center;">
+              <img src="https://app.finixar.com/branding/logo/logo-full-blue.png" alt="Finixar" width="120" style="display: inline-block; width: 120px; height: auto; margin-bottom: 6px;">
+              <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+                <a href="mailto:support@finixar.com" style="color: #64748b; text-decoration: underline;">support@finixar.com</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+        }),
+      });
+
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'User already exists, added to project',
+          message: 'Utilisateur existant ajout\u00e9 au projet. Un email de notification a \u00e9t\u00e9 envoy\u00e9.',
           userId: existingUser.id,
         }),
         {
@@ -151,6 +240,30 @@ Deno.serve(async (req: Request) => {
           },
         }
       );
+    }
+
+    // Check if project already has an emetteur assigned
+    const { data: existingProjectEmetteur } = await supabaseAdmin
+      .from('emetteur_projects')
+      .select('id')
+      .eq('projet_id', projetId)
+      .single();
+
+    if (existingProjectEmetteur) {
+      throw new Error('Ce projet a d\u00e9j\u00e0 un \u00e9metteur assign\u00e9. Veuillez d\u2019abord retirer l\u2019\u00e9metteur actuel.');
+    }
+
+    // Check if there's already a pending invitation for this email + project
+    const { data: existingInvitation } = await supabaseAdmin
+      .from('invitations')
+      .select('id')
+      .eq('email', email)
+      .eq('projet_id', projetId)
+      .eq('status', 'pending')
+      .single();
+
+    if (existingInvitation) {
+      throw new Error('Une invitation est d\u00e9j\u00e0 en attente pour cet email sur ce projet.');
     }
 
     const { data: invitation, error: invitationError } = await supabaseAdmin
