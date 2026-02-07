@@ -113,8 +113,8 @@ serve(async (req) => {
 
     const roleLabel = role === 'admin' ? 'Administrateur' : 'Membre'
     const roleDescription = role === 'admin'
-      ? 'Gestion compl\u00e8te de l\u2019organisation et des membres'
-      : 'Consultation des projets et donn\u00e9es de l\u2019organisation'
+      ? 'Gestion complète de l'organisation et des membres'
+      : 'Consultation des projets et données de l'organisation'
 
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -125,8 +125,8 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Finixar <support@finixar.com>',
         to: [email],
-        subject: `${orgName} vous invite \u00e0 rejoindre Finixar`,
-        text: `Bonjour ${firstName},\n\n${orgName} vous invite \u00e0 rejoindre son espace sur Finixar en tant que ${roleLabel}.\n\n${roleDescription}.\n\nAcceptez l\u2019invitation en suivant ce lien :\n${invitationLink}\n\nCe lien expire dans 7 jours.\n\nSi vous n\u2019attendiez pas cette invitation, vous pouvez ignorer cet email.\n\n--\nFinixar \u00b7 Plateforme de gestion d\u2019investissements\nsupport@finixar.com`,
+        subject: `${orgName} vous invite à rejoindre Finixar`,
+        text: `Bonjour ${firstName},\n\n${orgName} vous invite à rejoindre son espace sur Finixar en tant que ${roleLabel}.\n\n${roleDescription}.\n\nAcceptez l'invitation en suivant ce lien :\n${invitationLink}\n\nCe lien expire dans 7 jours.\n\nSi vous n'attendiez pas cette invitation, vous pouvez ignorer cet email.\n\n--\nFinixar · Plateforme de gestion d'investissements\nsupport@finixar.com`,
         html: `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -143,7 +143,7 @@ serve(async (req) => {
 <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
   <!-- Preheader (hidden preview text) -->
   <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
-    ${firstName}, ${orgName} vous attend sur Finixar \u2014 acceptez votre invitation.
+    ${firstName}, ${orgName} vous attend sur Finixar — acceptez votre invitation.
     &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
   </div>
 
@@ -170,7 +170,7 @@ serve(async (req) => {
                 Bonjour ${firstName},
               </p>
               <p style="margin: 0 0 28px; font-size: 15px; line-height: 1.7; color: #475569;">
-                <strong style="color: #0f172a;">${orgName}</strong> vous invite \u00e0 rejoindre
+                <strong style="color: #0f172a;">${orgName}</strong> vous invite à rejoindre
                 son espace sur Finixar.
               </p>
 
@@ -195,7 +195,7 @@ serve(async (req) => {
               </table>
 
               <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.7; color: #475569;">
-                Cliquez sur le bouton ci-dessous pour cr\u00e9er votre compte et rejoindre l\u2019\u00e9quipe :
+                Cliquez sur le bouton ci-dessous pour créer votre compte et rejoindre l'équipe :
               </p>
             </td>
           </tr>
@@ -206,12 +206,12 @@ serve(async (req) => {
               <!--[if mso]>
               <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${invitationLink}" style="height:52px;v-text-anchor:middle;width:260px;" arcsize="15%" fillcolor="#2563eb" strokecolor="#2563eb" strokeweight="0">
                 <w:anchorlock/>
-                <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:600;">Accepter l\u2019invitation</center>
+                <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:600;">Accepter l'invitation</center>
               </v:roundrect>
               <![endif]-->
               <!--[if !mso]><!-->
               <a href="${invitationLink}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3); mso-padding-alt: 0;">
-                Accepter l\u2019invitation
+                Accepter l'invitation
               </a>
               <!--<![endif]-->
             </td>
@@ -238,7 +238,7 @@ serve(async (req) => {
                 <tr>
                   <td style="background-color: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #f97316; border-radius: 8px; padding: 14px 16px;">
                     <p style="margin: 0; font-size: 13px; color: #9a3412; line-height: 1.5;">
-                      Cette invitation expire dans <strong>7 jours</strong>. Pass\u00e9 ce d\u00e9lai, demandez \u00e0 votre administrateur de vous renvoyer une invitation.
+                      Cette invitation expire dans <strong>7 jours</strong>. Passé ce délai, demandez à votre administrateur de vous renvoyer une invitation.
                     </p>
                   </td>
                 </tr>
@@ -250,10 +250,10 @@ serve(async (req) => {
           <tr>
             <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 28px 40px; text-align: center;">
               <img src="https://app.finixar.com/branding/logo/logo-full-blue.png" alt="Finixar" width="140" style="display: inline-block; width: 140px; height: auto; margin-bottom: 8px;">
-              <p style="margin: 0 0 16px; font-size: 13px; color: #64748b;">Plateforme de gestion d\u2019investissements</p>
+              <p style="margin: 0 0 16px; font-size: 13px; color: #64748b;">Plateforme de gestion d'investissements</p>
               <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
-                Si vous n\u2019attendiez pas cette invitation, ignorez cet email.<br>
-                Une question\u00a0? Contactez <a href="mailto:support@finixar.com" style="color: #64748b; text-decoration: underline;">support@finixar.com</a>
+                Si vous n'attendiez pas cette invitation, ignorez cet email.<br>
+                Une question ? Contactez <a href="mailto:support@finixar.com" style="color: #64748b; text-decoration: underline;">support@finixar.com</a>
               </p>
             </td>
           </tr>
