@@ -181,6 +181,66 @@ function App(): JSX.Element {
                       </ErrorBoundary>
                     }
                   />
+                  <Route
+                    path="projets/:projectId"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <EmetteurProjectView />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="projets/:projectId/echeancier"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <EcheancierPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="echeance/:projectId/:trancheId/:date"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <EcheanceDetailPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="projets/:projectId/actualites"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <ProjectActualitesPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="projets/:projectId/:slug/actualites"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <ProjectActualitesPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="tranches/:trancheId/edit"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <TrancheEditPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </>
               ) : (
