@@ -69,50 +69,49 @@ export function useRetryableQuery<T>(
     return delay;
   };
 
-  const executeWithRetry = useCallback(async (currentRetry: number = 0): Promise<void> => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
+  const executeWithRetry = useCallback(
+    async (currentRetry: number = 0): Promise<void> => {
+      setState(prev => ({ ...prev, loading: true, error: null }));
 
-    try {
-      const result = await queryFn();
-      setState({
-        data: result,
-        loading: false,
-        error: null,
-        retryCount: currentRetry,
-      });
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-
-      // Check if we should retry
-      if (currentRetry < opts.maxRetries) {
-        const delay = calculateDelay(currentRetry);
-
-        opts.onRetry(currentRetry + 1, error);
-
-        // Wait before retrying
-        await sleep(delay);
-
-        // Recursive retry
-        return executeWithRetry(currentRetry + 1);
-      } else {
-        // Max retries reached
+      try {
+        const result = await queryFn();
         setState({
-          data: null,
+          data: result,
           loading: false,
-          error,
+          error: null,
           retryCount: currentRetry,
         });
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+
+        // Check if we should retry
+        if (currentRetry < opts.maxRetries) {
+          const delay = calculateDelay(currentRetry);
+
+          opts.onRetry(currentRetry + 1, error);
+
+          // Wait before retrying
+          await sleep(delay);
+
+          // Recursive retry
+          return executeWithRetry(currentRetry + 1);
+        } else {
+          // Max retries reached
+          setState({
+            data: null,
+            loading: false,
+            error,
+            retryCount: currentRetry,
+          });
+        }
       }
-    }
-  }, [queryFn, opts]);
+    },
+    [queryFn, opts]
+  );
 
-  const execute = useCallback(async () => {
-    return executeWithRetry(0);
-  }, [executeWithRetry]);
+  const execute = useCallback(async () => executeWithRetry(0), [executeWithRetry]);
 
-  const retry = useCallback(async () => {
-    return executeWithRetry(0);
-  }, [executeWithRetry]);
+  const retry = useCallback(async () => executeWithRetry(0), [executeWithRetry]);
 
   const reset = useCallback(() => {
     setState({
@@ -144,12 +143,9 @@ export function useRetryableQuery<T>(
  *   { maxRetries: 3 }
  * );
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {}
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  let lastError: Error;
+  let lastError: Error = new Error('Query failed after retries');
 
   for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
     try {
@@ -170,5 +166,5 @@ export async function withRetry<T>(
     }
   }
 
-  throw lastError!;
+  throw lastError;
 }

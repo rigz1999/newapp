@@ -15,13 +15,15 @@ class QueryCache {
   set(key: string, data: any, ttl?: number) {
     this.cache.set(key, {
       data,
-      timestamp: Date.now() + (ttl || this.ttl)
+      timestamp: Date.now() + (ttl || this.ttl),
     });
   }
 
   get(key: string): any | null {
     const cached = this.cache.get(key);
-    if (!cached) return null;
+    if (!cached) {
+      return null;
+    }
 
     if (Date.now() > cached.timestamp) {
       this.cache.delete(key);
@@ -89,10 +91,7 @@ export async function batchLoad<T>(
     return { data: [], error: null };
   }
 
-  return supabase
-    .from(table)
-    .select(selectFields)
-    .in('id', ids);
+  return supabase.from(table).select(selectFields).in('id', ids);
 }
 
 /**
@@ -117,10 +116,7 @@ export async function paginatedQuery<T>(
   const start = (page - 1) * pageSize;
   const end = start + pageSize - 1;
 
-  let query = supabase
-    .from(table)
-    .select(select, { count: 'exact' })
-    .range(start, end);
+  let query = supabase.from(table).select(select, { count: 'exact' }).range(start, end);
 
   if (filters) {
     Object.keys(filters).forEach(key => {
@@ -239,15 +235,14 @@ export function createDebouncedSearch(
 ) {
   let timeoutId: NodeJS.Timeout;
 
-  return (query: string) => {
-    return new Promise((resolve) => {
+  return (query: string) =>
+    new Promise(resolve => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(async () => {
         const result = await searchFn(query);
         resolve(result);
       }, delay);
     });
-  };
 }
 
 /**
@@ -264,10 +259,7 @@ export async function preloadCriticalData(orgId: string) {
       .limit(20),
 
     // Précharger les statistiques basiques
-    supabase
-      .from('memberships')
-      .select('user_id, role')
-      .eq('org_id', orgId)
+    supabase.from('memberships').select('user_id, role').eq('org_id', orgId),
   ];
 
   const results = await Promise.all(promises);

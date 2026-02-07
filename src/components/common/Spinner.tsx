@@ -13,81 +13,68 @@ interface SpinnerProps {
   fullScreen?: boolean;
 }
 
-export const Spinner = memo(function Spinner({
-  size = 'md',
-  color = 'blue',
-  text,
-  fullScreen = false
-}: SpinnerProps) {
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-6 h-6',
-    lg: 'w-8 h-8',
-    xl: 'w-12 h-12'
-  };
+export const Spinner = memo(
+  ({ size = 'md', color = 'blue', text, fullScreen = false }: SpinnerProps) => {
+    const sizeClasses = {
+      sm: 'w-4 h-4',
+      md: 'w-6 h-6',
+      lg: 'w-8 h-8',
+      xl: 'w-12 h-12',
+    };
 
-  const colorClasses = {
-    blue: 'text-blue-600',
-    white: 'text-white',
-    slate: 'text-slate-600',
-    green: 'text-finixar-green',
-    red: 'text-finixar-red'
-  };
+    const colorClasses = {
+      blue: 'text-blue-600',
+      white: 'text-white',
+      slate: 'text-slate-600',
+      green: 'text-finixar-green',
+      red: 'text-finixar-red',
+    };
 
-  const spinner = (
-    <div className={`flex items-center justify-center gap-3 ${fullScreen ? 'flex-col' : ''}`}>
-      <RefreshCw className={`${sizeClasses[size]} ${colorClasses[color]} animate-spin`} />
-      {text && (
-        <p className={`${colorClasses[color]} font-medium ${size === 'sm' ? 'text-sm' : ''}`}>
-          {text}
-        </p>
-      )}
-    </div>
-  );
-
-  if (fullScreen) {
-    return (
-      <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
-        {spinner}
+    const spinner = (
+      <div className={`flex items-center justify-center gap-3 ${fullScreen ? 'flex-col' : ''}`}>
+        <RefreshCw className={`${sizeClasses[size]} ${colorClasses[color]} animate-spin`} />
+        {text && (
+          <p className={`${colorClasses[color]} font-medium ${size === 'sm' ? 'text-sm' : ''}`}>
+            {text}
+          </p>
+        )}
       </div>
     );
-  }
 
-  return spinner;
-});
+    if (fullScreen) {
+      return (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
+          {spinner}
+        </div>
+      );
+    }
+
+    return spinner;
+  }
+);
 
 // Spinner inline pour boutons
-export const ButtonSpinner = memo(function ButtonSpinner({ size = 'sm' }: { size?: 'sm' | 'md' }) {
-  return (
-    <div
-      className={`${
-        size === 'sm' ? 'w-4 h-4' : 'w-5 h-5'
-      } border-2 border-white border-t-transparent rounded-full animate-spin`}
-    />
-  );
-});
+export const ButtonSpinner = memo(({ size = 'sm' }: { size?: 'sm' | 'md' }) => (
+  <div
+    className={`${
+      size === 'sm' ? 'w-4 h-4' : 'w-5 h-5'
+    } border-2 border-white border-t-transparent rounded-full animate-spin`}
+  />
+));
 
 // Spinner pour cartes/sections
-export const CardSpinner = memo(function CardSpinner({ text }: { text?: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12">
-      <RefreshCw className="w-8 h-8 text-slate-400 animate-spin mb-3" />
-      {text && <p className="text-slate-600">{text}</p>}
-    </div>
-  );
-});
+export const CardSpinner = memo(({ text }: { text?: string }) => (
+  <div className="flex flex-col items-center justify-center py-12">
+    <RefreshCw className="w-8 h-8 text-slate-400 animate-spin mb-3" />
+    {text && <p className="text-slate-600">{text}</p>}
+  </div>
+));
 
 // Skeleton loader pour contenu
-export const SkeletonLoader = memo(function SkeletonLoader({ lines = 3 }: { lines?: number }) {
-  return (
-    <div className="animate-pulse space-y-3">
-      {Array.from({ length: lines }).map((_, i) => (
-        <div
-          key={i}
-          className="h-4 bg-slate-200 rounded"
-          style={{ width: `${100 - i * 10}%` }}
-        />
-      ))}
-    </div>
-  );
-});
+export const SkeletonLoader = memo(({ lines = 3 }: { lines?: number }) => (
+  <div className="animate-pulse space-y-3">
+    {Array.from({ length: lines }).map((_, i) => (
+      <div key={i} className="h-4 bg-slate-200 rounded" style={{ width: `${100 - i * 10}%` }} />
+    ))}
+  </div>
+));

@@ -23,6 +23,7 @@ import { EcheanceProofsModal } from './EcheanceProofsModal';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { isValidShortId } from '../../utils/shortId';
 import * as ExcelJS from 'exceljs';
+import { logger } from '../../utils/logger';
 
 interface EcheanceItem {
   id: string;
@@ -59,7 +60,7 @@ export function EcheanceDetailPage() {
     trancheId: string;
     date: string;
   }>();
-  const [searchParams] = useSearchParams();
+  const [_searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -135,7 +136,9 @@ export function EcheanceDetailPage() {
   };
 
   const fetchData = useCallback(async () => {
-    if (!projectId || !trancheId || !date) return;
+    if (!projectId || !trancheId || !date) {
+      return;
+    }
 
     setLoading(true);
     try {
@@ -144,26 +147,26 @@ export function EcheanceDetailPage() {
       const isTrancheShortId = isValidShortId(trancheId, 'tranche');
 
       // Fetch project info (by short_id or id)
-      const projetQuery = supabase
-        .from('projets')
-        .select('id, short_id, projet');
+      const projetQuery = supabase.from('projets').select('id, short_id, projet');
 
       const { data: projet } = isProjectShortId
         ? await projetQuery.eq('short_id', projectId).single()
         : await projetQuery.eq('id', projectId).single();
 
-      if (projet) setProjetInfo(projet);
+      if (projet) {
+        setProjetInfo(projet);
+      }
 
       // Fetch tranche info (by short_id or id)
-      const trancheQuery = supabase
-        .from('tranches')
-        .select('id, short_id, tranche_name');
+      const trancheQuery = supabase.from('tranches').select('id, short_id, tranche_name');
 
       const { data: tranche } = isTrancheShortId
         ? await trancheQuery.eq('short_id', trancheId).single()
         : await trancheQuery.eq('id', trancheId).single();
 
-      if (tranche) setTrancheInfo(tranche);
+      if (tranche) {
+        setTrancheInfo(tranche);
+      }
 
       // Use the resolved UUID for querying écheances
       const resolvedTrancheId = tranche?.id || trancheId;
@@ -171,7 +174,8 @@ export function EcheanceDetailPage() {
       // Fetch all écheances for this date and tranche
       const { data: echeancesData, error } = await supabase
         .from('coupons_echeances')
-        .select(`
+        .select(
+          `
           id,
           souscription_id,
           date_echeance,
@@ -191,11 +195,14 @@ export function EcheanceDetailPage() {
               type
             )
           )
-        `)
+        `
+        )
         .eq('date_echeance', date)
         .eq('souscription.tranche_id', resolvedTrancheId);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       const items: EcheanceItem[] = (echeancesData || []).map((e: any) => ({
         id: e.id,
@@ -226,8 +233,8 @@ export function EcheanceDetailPage() {
       dueDate.setHours(0, 0, 0, 0);
       const isOverdue = dueDate < today;
 
-      const paid = items.filter((e) => e.statut === 'paye');
-      const unpaid = items.filter((e) => e.statut !== 'paye');
+      const paid = items.filter(e => e.statut === 'paye');
+      const unpaid = items.filter(e => e.statut !== 'paye');
 
       setStats({
         total: items.length,
@@ -239,7 +246,7 @@ export function EcheanceDetailPage() {
         pendingAmount: unpaid.reduce((sum, e) => sum + e.montant_coupon, 0),
       });
     } catch (err) {
-      console.error('Error fetching écheance details:', err);
+      logger.error('Error fetching écheance details:', err);
     } finally {
       setLoading(false);
     }
@@ -252,7 +259,10 @@ export function EcheanceDetailPage() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (actionsDropdownRef.current && !actionsDropdownRef.current.contains(event.target as Node)) {
+      if (
+        actionsDropdownRef.current &&
+        !actionsDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowActionsDropdown(false);
       }
     };
@@ -297,7 +307,7 @@ export function EcheanceDetailPage() {
     };
 
     // Data rows
-    echeances.forEach((e) => {
+    echeances.forEach(e => {
       const status = getStatusBadge(e.statut, e.date_echeance);
       worksheet.addRow([
         e.investisseur_nom,
@@ -311,7 +321,7 @@ export function EcheanceDetailPage() {
     });
 
     // Auto-width columns
-    worksheet.columns.forEach((column) => {
+    worksheet.columns.forEach(column => {
       column.width = 20;
     });
 
@@ -406,7 +416,9 @@ export function EcheanceDetailPage() {
                 className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-medium shadow-sm shadow-blue-200"
               >
                 Actions
-                <ChevronDown className={`w-4 h-4 transition-transform ${showActionsDropdown ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${showActionsDropdown ? 'rotate-180' : ''}`}
+                />
               </button>
 
               {showActionsDropdown && (

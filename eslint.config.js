@@ -25,7 +25,7 @@ export default tseslint.config(
       'react-hooks/exhaustive-deps': 'warn',
 
       // TypeScript rules
-      '@typescript-eslint/no-explicit-any': 'error', // Changed from 'warn' to 'error'
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {

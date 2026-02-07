@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Calendar, AlertCircle, Download } from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 interface Echeance {
   date_echeance: string;
@@ -18,7 +19,12 @@ interface EcheancierCardProps {
   onViewAll?: () => void;
 }
 
-export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll }: EcheancierCardProps) {
+export function EcheancierCard({
+  projectId,
+  tranches,
+  onPaymentClick: _onPaymentClick,
+  onViewAll: _onViewAll,
+}: EcheancierCardProps) {
   const navigate = useNavigate();
   const [globalStats, setGlobalStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +38,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
     const fetchGlobalEcheancier = async () => {
       setLoading(true);
 
-      let allEcheances: Echeance[] = [];
+      const allEcheances: Echeance[] = [];
 
       // Charger toutes les échéances de toutes les tranches
       for (const tranche of tranches) {
@@ -42,7 +48,9 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
             .select('id')
             .eq('tranche_id', tranche.id);
 
-          if (!souscriptions || souscriptions.length === 0) continue;
+          if (!souscriptions || souscriptions.length === 0) {
+            continue;
+          }
 
           const subscriptionIds = souscriptions.map((s: any) => s.id);
 
@@ -56,7 +64,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
             allEcheances.push(...echeances);
           }
         } catch (error) {
-          console.error(`Error fetching echeances for tranche ${tranche.id}:`, error);
+          logger.error(`Error fetching echeances for tranche ${tranche.id}:`, error);
         }
       }
 
@@ -64,8 +72,12 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
       if (allEcheances.length > 0) {
         const now = new Date();
         const payes = allEcheances.filter((e: Echeance) => e.statut === 'paye').length;
-        const enRetard = allEcheances.filter((e: Echeance) => e.statut === 'en_attente' && new Date(e.date_echeance) < now).length;
-        const prochains = allEcheances.filter((e: Echeance) => e.statut === 'en_attente' && new Date(e.date_echeance) >= now);
+        const enRetard = allEcheances.filter(
+          (e: Echeance) => e.statut === 'en_attente' && new Date(e.date_echeance) < now
+        ).length;
+        const prochains = allEcheances.filter(
+          (e: Echeance) => e.statut === 'en_attente' && new Date(e.date_echeance) >= now
+        );
 
         // Trouver le prochain coupon (la plus proche échéance à venir)
         const prochainCoupon = prochains[0];
@@ -78,21 +90,24 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
           : 0;
 
         const nbInvestisseursProchain = prochainCoupon
-          ? new Set(prochains
-              .filter((e: Echeance) => e.date_echeance === prochainCoupon.date_echeance)
-              .map((e: Echeance) => e.souscription_id)
+          ? new Set(
+              prochains
+                .filter((e: Echeance) => e.date_echeance === prochainCoupon.date_echeance)
+                .map((e: Echeance) => e.souscription_id)
             ).size
           : 0;
 
         setGlobalStats({
           payes,
           enRetard,
-          prochainCoupon: prochainCoupon ? {
-            date: prochainCoupon.date_echeance,
-            montant: totalProchainCoupon,
-            nb_investisseurs: nbInvestisseursProchain
-          } : null,
-          totalEcheances: allEcheances.length
+          prochainCoupon: prochainCoupon
+            ? {
+                date: prochainCoupon.date_echeance,
+                montant: totalProchainCoupon,
+                nb_investisseurs: nbInvestisseursProchain,
+              }
+            : null,
+          totalEcheances: allEcheances.length,
         });
       }
 
@@ -102,18 +117,15 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
     fetchGlobalEcheancier();
   }, [projectId, tranches.length]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR');
-  };
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('fr-FR');
 
   const getRelativeDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -121,11 +133,21 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
     const diffTime = date.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return "Aujourd'hui";
-    if (diffDays === 1) return "Demain";
-    if (diffDays < 0) return `En retard de ${Math.abs(diffDays)} jour${Math.abs(diffDays) > 1 ? 's' : ''}`;
-    if (diffDays <= 7) return `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
-    if (diffDays <= 30) return `Dans ${Math.ceil(diffDays / 7)} semaine${Math.ceil(diffDays / 7) > 1 ? 's' : ''}`;
+    if (diffDays === 0) {
+      return "Aujourd'hui";
+    }
+    if (diffDays === 1) {
+      return 'Demain';
+    }
+    if (diffDays < 0) {
+      return `En retard de ${Math.abs(diffDays)} jour${Math.abs(diffDays) > 1 ? 's' : ''}`;
+    }
+    if (diffDays <= 7) {
+      return `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+    }
+    if (diffDays <= 30) {
+      return `Dans ${Math.ceil(diffDays / 7)} semaine${Math.ceil(diffDays / 7) > 1 ? 's' : ''}`;
+    }
     return `Dans ${Math.ceil(diffDays / 30)} mois`;
   };
 
@@ -142,7 +164,9 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
           .select('id, investisseur_id')
           .eq('tranche_id', tranche.id);
 
-        if (!souscriptions || souscriptions.length === 0) continue;
+        if (!souscriptions || souscriptions.length === 0) {
+          continue;
+        }
 
         const subscriptionIds = souscriptions.map((s: any) => s.id);
         const investisseurIds = [...new Set(souscriptions.map((s: any) => s.investisseur_id))];
@@ -164,31 +188,43 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
           .order('date_echeance', { ascending: true });
 
         if (echeances) {
-          allEcheances.push(...echeances.map((e: any) => {
-            const sub = souscriptions.find((s: any) => s.id === e.souscription_id);
-            const investisseur = sub ? investisseursMap.get(sub.investisseur_id) : null;
-            
-            return {
-              ...e,
-              tranche_name: tranche.tranche_name,
-              investisseur: investisseur || { nom_raison_sociale: 'Inconnu' }
-            };
-          }));
+          allEcheances.push(
+            ...echeances.map((e: any) => {
+              const sub = souscriptions.find((s: any) => s.id === e.souscription_id);
+              const investisseur = sub ? investisseursMap.get(sub.investisseur_id) : null;
+
+              return {
+                ...e,
+                tranche_name: tranche.tranche_name,
+                investisseur: investisseur || { nom_raison_sociale: 'Inconnu' },
+              };
+            })
+          );
         }
       } catch (error) {
-        console.error(`Error fetching data for tranche ${tranche.id}:`, error);
+        logger.error(`Error fetching data for tranche ${tranche.id}:`, error);
       }
     }
 
     const totalEcheances = allEcheances.length;
     const totalPayes = allEcheances.filter(e => e.statut === 'paye').length;
-    const totalEnRetard = allEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date()).length;
-    const totalAVenir = allEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date()).length;
-    
+    const totalEnRetard = allEcheances.filter(
+      e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date()
+    ).length;
+    const totalAVenir = allEcheances.filter(
+      e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date()
+    ).length;
+
     const montantTotal = allEcheances.reduce((sum, e) => sum + Number(e.montant_coupon), 0);
-    const montantPaye = allEcheances.filter(e => e.statut === 'paye').reduce((sum, e) => sum + Number(e.montant_coupon), 0);
-    const montantEnRetard = allEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date()).reduce((sum, e) => sum + Number(e.montant_coupon), 0);
-    const montantAVenir = allEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date()).reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+    const montantPaye = allEcheances
+      .filter(e => e.statut === 'paye')
+      .reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+    const montantEnRetard = allEcheances
+      .filter(e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date())
+      .reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+    const montantAVenir = allEcheances
+      .filter(e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date())
+      .reduce((sum, e) => sum + Number(e.montant_coupon), 0);
 
     const workbook = new ExcelJS.Workbook();
 
@@ -196,13 +232,13 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
     const wsSynthese = workbook.addWorksheet('Synthèse');
     wsSynthese.columns = [
       { key: 'label', width: 25 },
-      { key: 'value', width: 15 }
+      { key: 'value', width: 15 },
     ];
 
     const synthese = [
-      ['SYNTHÈSE DE L\'ÉCHÉANCIER', ''],
+      ["SYNTHÈSE DE L'ÉCHÉANCIER", ''],
       ['', ''],
-      ['Date d\'export', new Date().toLocaleDateString('fr-FR')],
+      ["Date d'export", new Date().toLocaleDateString('fr-FR')],
       ['', ''],
       ['STATISTIQUES GÉNÉRALES', ''],
       ['Total des coupons', totalEcheances],
@@ -222,18 +258,23 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
     synthese.forEach(row => wsSynthese.addRow(row));
 
     const detailData = [
-      ['Tranche', 'Investisseur', 'Date échéance', 'Montant (€)', 'Statut', 'Date paiement']
+      ['Tranche', 'Investisseur', 'Date échéance', 'Montant (€)', 'Statut', 'Date paiement'],
     ];
 
     allEcheances.forEach(e => {
-      const statut = e.statut === 'paye' ? 'Payé' : (new Date(e.date_echeance) < new Date() ? 'En retard' : 'À venir');
+      const statut =
+        e.statut === 'paye'
+          ? 'Payé'
+          : new Date(e.date_echeance) < new Date()
+            ? 'En retard'
+            : 'À venir';
       detailData.push([
         e.tranche_name,
         e.investisseur?.nom_raison_sociale || 'Inconnu',
         new Date(e.date_echeance).toLocaleDateString('fr-FR'),
         Number(e.montant_coupon),
         statut,
-        e.date_paiement ? new Date(e.date_paiement).toLocaleDateString('fr-FR') : '-'
+        e.date_paiement ? new Date(e.date_paiement).toLocaleDateString('fr-FR') : '-',
       ]);
     });
 
@@ -245,7 +286,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
       { key: 'date', header: 'Date échéance', width: 15 },
       { key: 'montant', header: 'Montant (€)', width: 12 },
       { key: 'statut', header: 'Statut', width: 12 },
-      { key: 'datePaiement', header: 'Date paiement', width: 15 }
+      { key: 'datePaiement', header: 'Date paiement', width: 15 },
     ];
     detailData.slice(1).forEach(row => {
       wsDetail.addRow({
@@ -254,21 +295,35 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
         date: row[2],
         montant: row[3],
         statut: row[4],
-        datePaiement: row[5]
+        datePaiement: row[5],
       });
     });
 
     const parTrancheData: any[] = [
-      ['Tranche', 'Total coupons', 'Payés', 'En retard', 'À venir', 'Montant total (€)', 'Montant payé (€)']
+      [
+        'Tranche',
+        'Total coupons',
+        'Payés',
+        'En retard',
+        'À venir',
+        'Montant total (€)',
+        'Montant payé (€)',
+      ],
     ];
 
     tranches.forEach(tranche => {
       const trancheEcheances = allEcheances.filter(e => e.tranche_name === tranche.tranche_name);
       const payes = trancheEcheances.filter(e => e.statut === 'paye').length;
-      const enRetard = trancheEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date()).length;
-      const aVenir = trancheEcheances.filter(e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date()).length;
+      const enRetard = trancheEcheances.filter(
+        e => e.statut !== 'paye' && new Date(e.date_echeance) < new Date()
+      ).length;
+      const aVenir = trancheEcheances.filter(
+        e => e.statut !== 'paye' && new Date(e.date_echeance) >= new Date()
+      ).length;
       const montantTotal = trancheEcheances.reduce((sum, e) => sum + Number(e.montant_coupon), 0);
-      const montantPaye = trancheEcheances.filter(e => e.statut === 'paye').reduce((sum, e) => sum + Number(e.montant_coupon), 0);
+      const montantPaye = trancheEcheances
+        .filter(e => e.statut === 'paye')
+        .reduce((sum, e) => sum + Number(e.montant_coupon), 0);
 
       parTrancheData.push([
         tranche.tranche_name,
@@ -277,7 +332,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
         enRetard,
         aVenir,
         montantTotal,
-        montantPaye
+        montantPaye,
       ]);
     });
 
@@ -290,7 +345,7 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
       { key: 'enRetard', header: 'En retard', width: 12 },
       { key: 'aVenir', header: 'À venir', width: 10 },
       { key: 'montantTotal', header: 'Montant total (€)', width: 18 },
-      { key: 'montantPaye', header: 'Montant payé (€)', width: 18 }
+      { key: 'montantPaye', header: 'Montant payé (€)', width: 18 },
     ];
     parTrancheData.slice(1).forEach(row => {
       wsParTranche.addRow({
@@ -300,13 +355,15 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
         enRetard: row[3],
         aVenir: row[4],
         montantTotal: row[5],
-        montantPaye: row[6]
+        montantPaye: row[6],
       });
     });
 
     // Generate file
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -369,7 +426,8 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
                       {formatCurrency(globalStats.prochainCoupon.montant)}
                     </p>
                     <p className="text-sm text-slate-500">
-                      {globalStats.prochainCoupon.nb_investisseurs} investisseur{globalStats.prochainCoupon.nb_investisseurs > 1 ? 's' : ''}
+                      {globalStats.prochainCoupon.nb_investisseurs} investisseur
+                      {globalStats.prochainCoupon.nb_investisseurs > 1 ? 's' : ''}
                     </p>
                   </div>
                   <div className="text-right">
@@ -391,16 +449,15 @@ export function EcheancierCard({ projectId, tranches, onPaymentClick, onViewAll 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500 mb-1">
-                  {globalStats.payes} sur {globalStats.totalEcheances} versements effectués ({Math.round((globalStats.payes / globalStats.totalEcheances) * 100)}%)
+                  {globalStats.payes} sur {globalStats.totalEcheances} versements effectués (
+                  {Math.round((globalStats.payes / globalStats.totalEcheances) * 100)}%)
                 </p>
               </div>
 
               {globalStats.enRetard > 0 && (
                 <div className="flex items-center gap-1.5 text-red-600">
                   <AlertCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">
-                    {globalStats.enRetard} en retard
-                  </span>
+                  <span className="text-sm font-medium">{globalStats.enRetard} en retard</span>
                 </div>
               )}
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
+import { logger } from '../../utils/logger';
 
 export interface Coupon {
   id: string;
@@ -106,7 +107,9 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
         .order(sortBy, { ascending: sortOrder === 'asc' })
         .range(0, 9999); // Override Supabase default limit of 1000
 
-      if (queryError) throw queryError;
+      if (queryError) {
+        throw queryError;
+      }
 
       setAllCoupons(data || []);
 
@@ -122,7 +125,7 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
       // Helper to calculate total including nominal reimbursement for last echeance
       const calculateTotal = (coupons: typeof data) =>
         coupons.reduce((sum, c) => {
-          const nominal = c.is_last_echeance ? (c.montant_investi || 0) : 0;
+          const nominal = c.is_last_echeance ? c.montant_investi || 0 : 0;
           return sum + c.montant_net + nominal;
         }, 0);
 
@@ -134,8 +137,8 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
         payes: {
           count: uniquePayesDates.size,
           total: payesData.reduce((sum, c) => {
-            const nominal = c.is_last_echeance ? (c.montant_investi || 0) : 0;
-            return sum + (c.montant_paye || (c.montant_net + nominal));
+            const nominal = c.is_last_echeance ? c.montant_investi || 0 : 0;
+            return sum + (c.montant_paye || c.montant_net + nominal);
           }, 0),
         },
         enRetard: {
@@ -144,7 +147,7 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
         },
       });
     } catch (err) {
-      console.error('Error fetching coupons:', err);
+      logger.error('Error fetching coupons:', err);
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       toast.error('Erreur lors du chargement des coupons');
     } finally {
@@ -159,10 +162,11 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
     // Search filter
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      result = result.filter(c =>
-        c.investisseur_nom?.toLowerCase().includes(searchLower) ||
-        c.projet_nom?.toLowerCase().includes(searchLower) ||
-        c.tranche_nom?.toLowerCase().includes(searchLower)
+      result = result.filter(
+        c =>
+          c.investisseur_nom?.toLowerCase().includes(searchLower) ||
+          c.projet_nom?.toLowerCase().includes(searchLower) ||
+          c.tranche_nom?.toLowerCase().includes(searchLower)
       );
     }
 

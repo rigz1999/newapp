@@ -3,7 +3,7 @@
 // Path: src/utils/dashboardAlerts.ts
 // ============================================
 
-import { formatCurrency, formatDate, getRelativeDate } from './formatters';
+import { formatCurrency, getRelativeDate } from './formatters';
 
 export interface Payment {
   id: string;
@@ -58,15 +58,15 @@ export interface UpcomingCoupon {
 }
 
 export interface AlertTargetFilters {
-  status?: string;          // e.g., 'en_retard', 'en_attente' (displayed as 'prévu')
-  trancheId?: string;       // Specific tranche ID (UUID - for DB lookups)
-  trancheShortId?: string;  // Specific tranche short ID (for URLs)
-  trancheName?: string;     // Tranche name for display
-  projectId?: string;       // Specific project ID (UUID - for DB lookups)
-  projectShortId?: string;  // Specific project short ID (for URLs)
-  projectName?: string;     // Project name for display
-  ribStatus?: string;       // e.g., 'without-rib'
-  dateEcheance?: string;    // Specific échéance date
+  status?: string; // e.g., 'en_retard', 'en_attente' (displayed as 'prévu')
+  trancheId?: string; // Specific tranche ID (UUID - for DB lookups)
+  trancheShortId?: string; // Specific tranche short ID (for URLs)
+  trancheName?: string; // Tranche name for display
+  projectId?: string; // Specific project ID (UUID - for DB lookups)
+  projectShortId?: string; // Specific project short ID (for URLs)
+  projectName?: string; // Project name for display
+  ribStatus?: string; // e.g., 'without-rib'
+  dateEcheance?: string; // Specific échéance date
 }
 
 export interface Alert {
@@ -134,7 +134,9 @@ export function generateAlerts(
 
   // 2. PAIEMENTS EN RETARD
   const latePayments = recentPayments.filter(p => {
-    if (p.statut === 'payé') return false;
+    if (p.statut === 'payé') {
+      return false;
+    }
     const paymentDate = new Date(p.date_paiement);
     return paymentDate < now;
   });
@@ -160,7 +162,9 @@ export function generateAlerts(
 
   for (const c of upcomingCoupons) {
     const dateStr = c.date_echeance || c.prochaine_date_coupon;
-    if (!dateStr || c.statut === 'paye') continue;
+    if (!dateStr || c.statut === 'paye') {
+      continue;
+    }
 
     const couponDate = new Date(dateStr);
     // Exclude urgent coupons (next 3 days) to avoid duplicates
@@ -185,44 +189,66 @@ export function generateAlerts(
   // 4. ÉCHÉANCES URGENTES (dans les 3 jours)
   const urgentCoupons = upcomingCoupons.filter(c => {
     const dateStr = c.date_echeance || c.prochaine_date_coupon;
-    if (!dateStr) return false;
+    if (!dateStr) {
+      return false;
+    }
     const couponDate = new Date(dateStr);
     // Exclude paid coupons
-    if (c.statut === 'paye') return false;
+    if (c.statut === 'paye') {
+      return false;
+    }
     return couponDate >= now && couponDate <= urgentThreshold;
   });
 
   if (urgentCoupons.length > 0) {
     // Grouper par projet + tranche et compter les dates uniques
-    const byProjectTranche = urgentCoupons.reduce((acc, c) => {
-      const trancheName = c.tranche?.tranche_name || c.souscription?.tranche?.tranche_name || 'Inconnu';
-      const trancheShortId = c.tranche?.short_id || c.souscription?.tranche?.short_id || '';
-      const projetName = c.tranche?.projet?.projet || c.souscription?.tranche?.projet?.projet || '';
-      const projectShortId = c.tranche?.projet?.short_id || c.souscription?.tranche?.projet?.short_id || '';
-      const trancheId = c.tranche_id || c.souscription?.tranche_id || '';
-      const projectId = c.tranche?.projet_id || c.souscription?.tranche?.projet_id || '';
-      const dateStr = c.date_echeance || c.prochaine_date_coupon || '';
+    const byProjectTranche = urgentCoupons.reduce(
+      (acc, c) => {
+        const trancheName =
+          c.tranche?.tranche_name || c.souscription?.tranche?.tranche_name || 'Inconnu';
+        const trancheShortId = c.tranche?.short_id || c.souscription?.tranche?.short_id || '';
+        const projetName =
+          c.tranche?.projet?.projet || c.souscription?.tranche?.projet?.projet || '';
+        const projectShortId =
+          c.tranche?.projet?.short_id || c.souscription?.tranche?.projet?.short_id || '';
+        const trancheId = c.tranche_id || c.souscription?.tranche_id || '';
+        const projectId = c.tranche?.projet_id || c.souscription?.tranche?.projet_id || '';
+        const dateStr = c.date_echeance || c.prochaine_date_coupon || '';
 
-      // Clé unique : projet|tranche
-      const key = `${projetName}|${trancheName}`;
+        // Clé unique : projet|tranche
+        const key = `${projetName}|${trancheName}`;
 
-      if (!acc[key]) {
-        acc[key] = {
-          dates: new Set<string>(),
-          firstDate: dateStr,
-          projetName,
-          trancheName,
-          trancheId,
-          trancheShortId,
-          projectId,
-          projectShortId,
-        };
-      }
-      if (dateStr) {
-        acc[key].dates.add(dateStr);
-      }
-      return acc;
-    }, {} as Record<string, { dates: Set<string>; firstDate: string; projetName: string; trancheName: string; trancheId: string; trancheShortId: string; projectId: string; projectShortId: string }>);
+        if (!acc[key]) {
+          acc[key] = {
+            dates: new Set<string>(),
+            firstDate: dateStr,
+            projetName,
+            trancheName,
+            trancheId,
+            trancheShortId,
+            projectId,
+            projectShortId,
+          };
+        }
+        if (dateStr) {
+          acc[key].dates.add(dateStr);
+        }
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          dates: Set<string>;
+          firstDate: string;
+          projetName: string;
+          trancheName: string;
+          trancheId: string;
+          trancheShortId: string;
+          projectId: string;
+          projectShortId: string;
+        }
+      >
+    );
 
     Object.entries(byProjectTranche).forEach(([key, data]) => {
       // Only create alert if there are unique dates for this project/tranche
@@ -256,7 +282,7 @@ export function generateAlerts(
     alerts.push({
       id: 'missing-ribs',
       type: 'deadline',
-      message: `${ribManquantsCount} investisseur${ribManquantsCount > 1 ? 's n\'ont' : ' n\'a'} pas de RIB enregistré`,
+      message: `${ribManquantsCount} investisseur${ribManquantsCount > 1 ? "s n'ont" : " n'a"} pas de RIB enregistré`,
       count: ribManquantsCount,
       targetFilters: {
         ribStatus: 'without-rib',

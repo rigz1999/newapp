@@ -14,7 +14,9 @@ export function useKeyboardShortcut(
   enabled: boolean = true
 ) {
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const matchesKey = e.key.toLowerCase() === combo.key.toLowerCase();

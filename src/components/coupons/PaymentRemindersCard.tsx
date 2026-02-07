@@ -18,17 +18,25 @@ export default function PaymentRemindersCard({
   remind7Days,
   remind14Days,
   remind30Days,
-  onClick
+  onClick,
 }: PaymentRemindersCardProps) {
   // Build active periods text
   const getActivePeriods = () => {
     const periods: string[] = [];
-    if (remind7Days) periods.push('7');
-    if (remind14Days) periods.push('14');
-    if (remind30Days) periods.push('30');
+    if (remind7Days) {
+      periods.push('7');
+    }
+    if (remind14Days) {
+      periods.push('14');
+    }
+    if (remind30Days) {
+      periods.push('30');
+    }
 
-    if (periods.length === 0) return 'Aucun';
-    return periods.join(', ') + ' jours';
+    if (periods.length === 0) {
+      return 'Aucun';
+    }
+    return `${periods.join(', ')} jours`;
   };
 
   return (
@@ -51,11 +59,7 @@ export default function PaymentRemindersCard({
           </span>
         </div>
 
-        {enabled && (
-          <div className="text-xs text-slate-600">
-            → {getActivePeriods()} avant
-          </div>
-        )}
+        {enabled && <div className="text-xs text-slate-600">→ {getActivePeriods()} avant</div>}
       </div>
 
       <div className="mt-4 text-xs text-blue-600 group-hover:text-blue-700 font-medium">

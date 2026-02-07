@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
+import { logger } from '../../utils/logger';
 import { Spinner } from '../common/Spinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 import { ProjectDetail } from '../projects/ProjectDetail';
@@ -53,7 +54,7 @@ export default function EmetteurProjectView() {
         name: org?.name || 'Organisation',
       });
     } catch (err: any) {
-      console.error('Error checking emetteur access:', err);
+      logger.error('Error checking emetteur access:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -83,9 +84,5 @@ export default function EmetteurProjectView() {
     );
   }
 
-  return (
-    <ProjectDetail
-      organization={{ id: orgInfo.id, name: orgInfo.name, role: 'emetteur' }}
-    />
-  );
+  return <ProjectDetail organization={{ id: orgInfo.id, name: orgInfo.name, role: 'emetteur' }} />;
 }

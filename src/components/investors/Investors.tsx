@@ -1,7 +1,29 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Search, Eye, Edit2, Trash2, Building2, User, ArrowUpDown, X, AlertTriangle, Download, Upload, FileText, RefreshCw, Mail, AlertCircle, CheckCircle, Filter, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
+import {
+  Users,
+  Search,
+  Eye,
+  Edit2,
+  Trash2,
+  Building2,
+  User,
+  ArrowUpDown,
+  X,
+  AlertTriangle,
+  Download,
+  Upload,
+  FileText,
+  RefreshCw,
+  Mail,
+  AlertCircle,
+  CheckCircle,
+  Filter,
+  ChevronDown,
+  ChevronUp,
+  ArrowLeft,
+} from 'lucide-react';
 import * as ExcelJS from 'exceljs';
 import { ConfirmModal, AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
@@ -58,34 +80,38 @@ interface InvestorsProps {
   organization: { id: string; name: string; role: string };
 }
 
-type SortField = 'id_investisseur' | 'nom_raison_sociale' | 'type' | 'cgp' | 'total_investi' | 'nb_souscriptions';
+type SortField =
+  | 'id_investisseur'
+  | 'nom_raison_sociale'
+  | 'type'
+  | 'cgp'
+  | 'total_investi'
+  | 'nb_souscriptions';
 type SortDirection = 'asc' | 'desc';
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('fr-FR', {
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
-};
 
 // Helper function to normalize investor type
 const normalizeType = (type: string | null | undefined): 'physique' | 'morale' => {
-  if (!type) return 'physique';
+  if (!type) {
+    return 'physique';
+  }
   const normalized = type.toLowerCase().trim();
   return normalized.includes('morale') ? 'morale' : 'physique';
 };
 
 // Helper function to check if investor is morale
-const isMorale = (type: string | null | undefined): boolean => {
-  return normalizeType(type) === 'morale';
-};
+const isMorale = (type: string | null | undefined): boolean => normalizeType(type) === 'morale';
 
 // Helper function to format type for display
-const formatType = (type: string | null | undefined): string => {
-  return isMorale(type) ? 'Personne Morale' : 'Personne Physique';
-};
+const formatType = (type: string | null | undefined): string =>
+  isMorale(type) ? 'Personne Morale' : 'Personne Physique';
 
 function Investors({ organization: _organization }: InvestorsProps) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -143,14 +169,16 @@ function Investors({ organization: _organization }: InvestorsProps) {
     type?: 'success' | 'error' | 'warning' | 'info';
   }>({ title: '', message: '', type: 'info' });
 
-  const [allTranches, setAllTranches] = useState<Array<{
-    id: string;
-    tranche_name: string;
-    projet_id: string;
-    projet_nom: string
-  }>>([]);
+  const [_allTranches, setAllTranches] = useState<
+    Array<{
+      id: string;
+      tranche_name: string;
+      projet_id: string;
+      projet_nom: string;
+    }>
+  >([]);
 
-  const [allCgps, setAllCgps] = useState<string[]>([]);
+  const [_allCgps, setAllCgps] = useState<string[]>([]);
 
   // Bulk delete states
   const [selectedInvestorIds, setSelectedInvestorIds] = useState<Set<string>>(new Set());
@@ -168,8 +196,12 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
       // Clear URL params (keep returnTo for breadcrumb)
       const newParams = new URLSearchParams();
-      if (searchParams.get('returnTo')) newParams.set('returnTo', searchParams.get('returnTo')!);
-      if (searchParams.get('returnLabel')) newParams.set('returnLabel', searchParams.get('returnLabel')!);
+      if (searchParams.get('returnTo')) {
+        newParams.set('returnTo', searchParams.get('returnTo')!);
+      }
+      if (searchParams.get('returnLabel')) {
+        newParams.set('returnLabel', searchParams.get('returnLabel')!);
+      }
       setSearchParams(newParams, { replace: true });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -222,47 +254,73 @@ function Investors({ organization: _organization }: InvestorsProps) {
   }, [advancedFilters.filters, currentPage]);
 
   // Extract unique values for filters
-  const uniqueTypes = useMemo(() => [
-    { value: 'physique', label: 'Personne Physique' },
-    { value: 'morale', label: 'Personne Morale' },
-  ], []);
+  const uniqueTypes = useMemo(
+    () => [
+      { value: 'physique', label: 'Personne Physique' },
+      { value: 'morale', label: 'Personne Morale' },
+    ],
+    []
+  );
 
-  const uniqueProjects = useMemo(() =>
-    Array.from(new Set(investors.flatMap(inv => inv.projects || []))).map(p => ({ value: p, label: p })),
+  const uniqueProjects = useMemo(
+    () =>
+      Array.from(new Set(investors.flatMap(inv => inv.projects || []))).map(p => ({
+        value: p,
+        label: p,
+      })),
     [investors]
   );
 
-  const uniqueTranches = useMemo(() =>
-    Array.from(new Set(investors.flatMap(inv => inv.tranches || []))).map(t => ({ value: t, label: t })),
+  const uniqueTranches = useMemo(
+    () =>
+      Array.from(new Set(investors.flatMap(inv => inv.tranches || []))).map(t => ({
+        value: t,
+        label: t,
+      })),
     [investors]
   );
 
-  const uniqueCgps = useMemo(() =>
-    Array.from(new Set(investors.map(inv => inv.cgp).filter(Boolean))).map(c => ({ value: c!, label: c! })),
+  const uniqueCgps = useMemo(
+    () =>
+      Array.from(new Set(investors.map(inv => inv.cgp).filter(Boolean))).map(c => ({
+        value: c!,
+        label: c!,
+      })),
     [investors]
   );
 
-  const uniqueRibStatus = useMemo(() => [
-    { value: 'with-rib', label: 'Avec RIB' },
-    { value: 'without-rib', label: 'Sans RIB' },
-  ], []);
+  const uniqueRibStatus = useMemo(
+    () => [
+      { value: 'with-rib', label: 'Avec RIB' },
+      { value: 'without-rib', label: 'Sans RIB' },
+    ],
+    []
+  );
 
   // Sort function - defined before use
-  const sortInvestors = (data: InvestorWithStats[], field: SortField, direction: SortDirection) => {
-    return [...data].sort((a, b) => {
+  const sortInvestors = (data: InvestorWithStats[], field: SortField, direction: SortDirection) =>
+    [...data].sort((a, b) => {
       let aValue: any = a[field];
       let bValue: any = b[field];
 
-      if (field === 'nom_raison_sociale' || field === 'id_investisseur' || field === 'cgp' || field === 'type') {
+      if (
+        field === 'nom_raison_sociale' ||
+        field === 'id_investisseur' ||
+        field === 'cgp' ||
+        field === 'type'
+      ) {
         aValue = (aValue || '').toLowerCase();
         bValue = (bValue || '').toLowerCase();
       }
 
-      if (aValue < bValue) return direction === 'asc' ? -1 : 1;
-      if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+      if (aValue < bValue) {
+        return direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return direction === 'asc' ? 1 : -1;
+      }
       return 0;
     });
-  };
 
   // Apply filters and sorting
   const filteredInvestors = useMemo(() => {
@@ -271,11 +329,12 @@ function Investors({ organization: _organization }: InvestorsProps) {
     // Search filter
     if (advancedFilters.filters.search) {
       const term = advancedFilters.filters.search.toLowerCase();
-      filtered = filtered.filter(inv =>
-        inv.nom_raison_sociale.toLowerCase().includes(term) ||
-        inv.id_investisseur.toLowerCase().includes(term) ||
-        (inv.cgp && inv.cgp.toLowerCase().includes(term)) ||
-        (inv.email && inv.email.toLowerCase().includes(term))
+      filtered = filtered.filter(
+        inv =>
+          inv.nom_raison_sociale.toLowerCase().includes(term) ||
+          inv.id_investisseur.toLowerCase().includes(term) ||
+          (inv.cgp && inv.cgp.toLowerCase().includes(term)) ||
+          (inv.email && inv.email.toLowerCase().includes(term))
       );
     }
 
@@ -288,17 +347,13 @@ function Investors({ organization: _organization }: InvestorsProps) {
     // Multi-select project filter
     const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'project');
     if (projectFilter && projectFilter.values.length > 0) {
-      filtered = filtered.filter(inv =>
-        inv.projects?.some(p => projectFilter.values.includes(p))
-      );
+      filtered = filtered.filter(inv => inv.projects?.some(p => projectFilter.values.includes(p)));
     }
 
     // Multi-select tranche filter
     const trancheFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'tranche');
     if (trancheFilter && trancheFilter.values.length > 0) {
-      filtered = filtered.filter(inv =>
-        inv.tranches?.some(t => trancheFilter.values.includes(t))
-      );
+      filtered = filtered.filter(inv => inv.tranches?.some(t => trancheFilter.values.includes(t)));
     }
 
     // Multi-select CGP filter
@@ -313,8 +368,12 @@ function Investors({ organization: _organization }: InvestorsProps) {
       filtered = filtered.filter(inv => {
         const hasRib = inv.rib_file_path && inv.rib_status === 'valide';
         return ribFilter.values.some(val => {
-          if (val === 'with-rib') return hasRib;
-          if (val === 'without-rib') return !hasRib;
+          if (val === 'with-rib') {
+            return hasRib;
+          }
+          if (val === 'without-rib') {
+            return !hasRib;
+          }
           return false;
         });
       });
@@ -335,10 +394,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
   }, [investors, advancedFilters.filters, sortField, sortDirection, ribSortDirection]);
 
   // Count active filters
-  const activeFiltersCount = useMemo(() => [
-    advancedFilters.filters.search ? 1 : 0,
-    ...advancedFilters.filters.multiSelect.map(f => f.values.length > 0 ? 1 : 0)
-  ].reduce((a, b) => a + b, 0), [advancedFilters.filters]);
+  const activeFiltersCount = useMemo(
+    () =>
+      [
+        advancedFilters.filters.search ? 1 : 0,
+        ...advancedFilters.filters.multiSelect.map(f => (f.values.length > 0 ? 1 : 0)),
+      ].reduce((a, b) => a + b, 0),
+    [advancedFilters.filters]
+  );
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -370,11 +433,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
     setLoading(true);
 
     const [investorsRes, subscriptionsRes, tranchesRes] = await Promise.all([
-      supabase
-        .from('investisseurs')
-        .select('*')
-        .order('nom_raison_sociale')
-        .limit(1000), // Safety limit to prevent loading too much data
+      supabase.from('investisseurs').select('*').order('nom_raison_sociale').limit(1000), // Safety limit to prevent loading too much data
       supabase.from('souscriptions').select(`
         investisseur_id, montant_investi,
         tranche:tranches(tranche_name, projet:projets(projet))
@@ -382,7 +441,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
       supabase.from('tranches').select(`
         id, tranche_name, projet_id,
         projet:projets(projet)
-      `)
+      `),
     ]);
 
     const investorsData = investorsRes.data || [];
@@ -393,25 +452,28 @@ function Investors({ organization: _organization }: InvestorsProps) {
       id: t.id,
       tranche_name: t.tranche_name,
       projet_id: t.projet_id,
-      projet_nom: t.projet?.projet || ''
+      projet_nom: t.projet?.projet || '',
     }));
 
     setAllTranches(formattedTranches);
 
     const uniqueCgps = Array.from(
-      new Set(
-        investorsData
-          .map((inv: any) => inv.cgp)
-          .filter(Boolean)
-      )
+      new Set(investorsData.map((inv: any) => inv.cgp).filter(Boolean))
     ).sort();
     setAllCgps(uniqueCgps as string[]);
 
-    const investorsWithStats = investorsData.map((investor) => {
+    const investorsWithStats = investorsData.map(investor => {
       const investorSubs = subscriptionsData.filter((s: any) => s.investisseur_id === investor.id);
-      const totalInvesti = investorSubs.reduce((sum, sub: any) => sum + Number(sub.montant_investi || 0), 0);
-      const projects = Array.from(new Set(investorSubs.map((s: any) => s.tranche?.projet?.projet).filter(Boolean)));
-      const tranches = Array.from(new Set(investorSubs.map((s: any) => s.tranche?.tranche_name).filter(Boolean)));
+      const totalInvesti = investorSubs.reduce(
+        (sum, sub: any) => sum + Number(sub.montant_investi || 0),
+        0
+      );
+      const projects = Array.from(
+        new Set(investorSubs.map((s: any) => s.tranche?.projet?.projet).filter(Boolean))
+      );
+      const tranches = Array.from(
+        new Set(investorSubs.map((s: any) => s.tranche?.tranche_name).filter(Boolean))
+      );
 
       return {
         ...investor,
@@ -456,13 +518,17 @@ function Investors({ organization: _organization }: InvestorsProps) {
   };
 
   const handleEditSave = async () => {
-    if (!editFormData || !selectedInvestor) return;
+    if (!editFormData || !selectedInvestor) {
+      return;
+    }
 
     // Validate SIREN for personne morale
     if (isMorale(editFormData.type) && editFormData.siren) {
       const sirenString = String(editFormData.siren);
       if (!isValidSIREN(sirenString)) {
-        toast.error('Le numéro SIREN doit contenir 9 chiffres et être valide selon l\'algorithme de Luhn.');
+        toast.error(
+          "Le numéro SIREN doit contenir 9 chiffres et être valide selon l'algorithme de Luhn."
+        );
         return;
       }
     }
@@ -488,18 +554,17 @@ function Investors({ organization: _organization }: InvestorsProps) {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!selectedInvestor) return;
+    if (!selectedInvestor) {
+      return;
+    }
 
-    const { error } = await supabase
-      .from('investisseurs')
-      .delete()
-      .eq('id', selectedInvestor.id);
+    const { error } = await supabase.from('investisseurs').delete().eq('id', selectedInvestor.id);
 
     if (error) {
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors de la suppression',
-        type: 'error'
+        type: 'error',
       });
       setShowAlertModal(true);
       return;
@@ -529,19 +594,20 @@ function Investors({ organization: _organization }: InvestorsProps) {
   };
 
   const handleBulkDeleteClick = () => {
-    if (selectedInvestorIds.size === 0) return;
+    if (selectedInvestorIds.size === 0) {
+      return;
+    }
     setShowBulkDeleteModal(true);
   };
 
   const handleBulkDeleteConfirm = async () => {
-    if (selectedInvestorIds.size === 0) return;
+    if (selectedInvestorIds.size === 0) {
+      return;
+    }
 
     const idsToDelete = Array.from(selectedInvestorIds);
 
-    const { error } = await supabase
-      .from('investisseurs')
-      .delete()
-      .in('id', idsToDelete);
+    const { error } = await supabase.from('investisseurs').delete().in('id', idsToDelete);
 
     if (error) {
       toast.error(`Erreur lors de la suppression: ${error.message}`);
@@ -563,7 +629,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     // Validate file before accepting it
     const validation = validateFile(file, FILE_VALIDATION_PRESETS.rib);
@@ -585,7 +653,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
   };
 
   const handleRibUploadConfirm = async () => {
-    if (!ribFile || !selectedInvestor) return;
+    if (!ribFile || !selectedInvestor) {
+      return;
+    }
 
     setUploadingRib(true);
     setUploadProgress(0);
@@ -614,7 +684,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
       clearInterval(progressInterval);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        throw uploadError;
+      }
 
       setUploadProgress(95);
 
@@ -623,11 +695,13 @@ function Investors({ organization: _organization }: InvestorsProps) {
         .update({
           rib_file_path: filePath,
           rib_uploaded_at: new Date().toISOString(),
-          rib_status: 'valide'
+          rib_status: 'valide',
         })
         .eq('id', selectedInvestor.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
 
       setUploadProgress(100);
       setUploadSuccess(true);
@@ -642,16 +716,17 @@ function Investors({ organization: _organization }: InvestorsProps) {
         setRibPreview(null);
         fetchInvestors();
       }, 2000);
-
     } catch (error: any) {
-      setUploadError(error.message || 'Erreur lors de l\'upload du RIB');
+      setUploadError(error.message || "Erreur lors de l'upload du RIB");
       setUploadingRib(false);
       setUploadProgress(0);
     }
   };
 
   const handleViewRib = async (investor: InvestorWithStats) => {
-    if (!investor.rib_file_path) return;
+    if (!investor.rib_file_path) {
+      return;
+    }
 
     setCurrentRibInvestor(investor);
     setShowRibViewModal(true);
@@ -662,7 +737,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
         .from('documents')
         .download(investor.rib_file_path);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       const url = window.URL.createObjectURL(data);
       setRibViewUrl(url);
@@ -670,7 +747,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
       setAlertModalConfig({
         title: 'Erreur',
         message: 'Erreur lors du chargement du RIB',
-        type: 'error'
+        type: 'error',
       });
       setShowAlertModal(true);
       setShowRibViewModal(false);
@@ -689,7 +766,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
   };
 
   const handleDownloadFromView = () => {
-    if (!currentRibInvestor || !ribViewUrl) return;
+    if (!currentRibInvestor || !ribViewUrl) {
+      return;
+    }
 
     const a = document.createElement('a');
     a.href = ribViewUrl;
@@ -700,7 +779,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
   };
 
   const handleDeleteRib = (investor: InvestorWithStats) => {
-    if (!investor.rib_file_path) return;
+    if (!investor.rib_file_path) {
+      return;
+    }
 
     setConfirmModalConfig({
       title: 'Supprimer le RIB',
@@ -712,41 +793,45 @@ function Investors({ organization: _organization }: InvestorsProps) {
             .from('documents')
             .remove([investor.rib_file_path!]);
 
-          if (storageError) throw storageError;
+          if (storageError) {
+            throw storageError;
+          }
 
           const { error: updateError } = await supabase
             .from('investisseurs')
             .update({
               rib_file_path: null,
               rib_uploaded_at: null,
-              rib_status: 'manquant'
+              rib_status: 'manquant',
             })
             .eq('id', investor.id);
 
-          if (updateError) throw updateError;
+          if (updateError) {
+            throw updateError;
+          }
 
           toast.success('RIB supprimé avec succès !');
           fetchInvestors();
         } catch {
           toast.error('Erreur lors de la suppression du RIB');
         }
-      }
+      },
     });
     setShowConfirmModal(true);
   };
 
   const handleExportExcel = async () => {
     const exportData = filteredInvestors.map(inv => ({
-      'ID': inv.id_investisseur,
+      ID: inv.id_investisseur,
       'Nom / Raison Sociale': inv.nom_raison_sociale,
-      'Type': formatType(inv.type),
-      'CGP': inv.cgp || '',
+      Type: formatType(inv.type),
+      CGP: inv.cgp || '',
       'Email CGP': inv.email_cgp || '',
-      'Téléphone': inv.telephone || '',
+      Téléphone: inv.telephone || '',
       'Total Investi': inv.total_investi,
       'Nb Souscriptions': inv.nb_souscriptions,
-      'Projets': inv.projects?.join(', ') || '',
-      'RIB': inv.rib_status === 'valide' ? 'Oui' : 'Non'
+      Projets: inv.projects?.join(', ') || '',
+      RIB: inv.rib_status === 'valide' ? 'Oui' : 'Non',
     }));
 
     const workbook = new ExcelJS.Workbook();
@@ -756,7 +841,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
     worksheet.columns = Object.keys(exportData[0] || {}).map(key => ({
       header: key,
       key: key,
-      width: 20
+      width: 20,
     }));
 
     // Add data rows
@@ -764,7 +849,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
     // Generate file
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -772,7 +859,6 @@ function Investors({ organization: _organization }: InvestorsProps) {
     link.click();
     window.URL.revokeObjectURL(url);
   };
-
 
   if (loading) {
     return (
@@ -847,13 +933,16 @@ function Investors({ organization: _organization }: InvestorsProps) {
             <label htmlFor="investor-search" className="sr-only">
               Rechercher des investisseurs
             </label>
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" aria-hidden="true" />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5"
+              aria-hidden="true"
+            />
             <input
               id="investor-search"
               type="search"
               placeholder="Rechercher par nom, ID, CGP, email..."
               value={advancedFilters.filters.search}
-              onChange={(e) => advancedFilters.setSearch(e.target.value)}
+              onChange={e => advancedFilters.setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
               aria-label="Rechercher des investisseurs par nom, ID, CGP ou email"
             />
@@ -872,11 +961,18 @@ function Investors({ organization: _organization }: InvestorsProps) {
             <Filter className="w-5 h-5" aria-hidden="true" />
             <span className="font-medium">Filtres avancés</span>
             {activeFiltersCount > 0 && (
-              <span className="bg-finixar-brand-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center" aria-hidden="true">
+              <span
+                className="bg-finixar-brand-blue text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                aria-hidden="true"
+              >
                 {activeFiltersCount}
               </span>
             )}
-            {showAdvancedFilters ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
+            {showAdvancedFilters ? (
+              <ChevronUp className="w-4 h-4" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="w-4 h-4" aria-hidden="true" />
+            )}
           </button>
         </div>
 
@@ -886,9 +982,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
             {/* Filter Presets */}
             <FilterPresets
               presets={advancedFilters.presets}
-              onSave={(name) => advancedFilters.savePreset(name)}
-              onLoad={(id) => advancedFilters.loadPreset(id)}
-              onDelete={(id) => advancedFilters.deletePreset(id)}
+              onSave={name => advancedFilters.savePreset(name)}
+              onLoad={id => advancedFilters.loadPreset(id)}
+              onDelete={id => advancedFilters.deletePreset(id)}
             />
 
             {/* Multi-select Filters */}
@@ -899,8 +995,8 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 selectedValues={
                   advancedFilters.filters.multiSelect.find(f => f.field === 'type')?.values || []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('type', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('type', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('type', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('type', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('type')}
                 placeholder="Sélectionner des types..."
               />
@@ -911,8 +1007,8 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 selectedValues={
                   advancedFilters.filters.multiSelect.find(f => f.field === 'project')?.values || []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('project', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('project', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('project', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('project', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('project')}
                 placeholder="Sélectionner des projets..."
               />
@@ -923,8 +1019,8 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 selectedValues={
                   advancedFilters.filters.multiSelect.find(f => f.field === 'tranche')?.values || []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('tranche', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('tranche', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('tranche', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('tranche', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('tranche')}
                 placeholder="Sélectionner des tranches..."
               />
@@ -935,8 +1031,8 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 selectedValues={
                   advancedFilters.filters.multiSelect.find(f => f.field === 'cgp')?.values || []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('cgp', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('cgp', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('cgp', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('cgp', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('cgp')}
                 placeholder="Sélectionner des CGP..."
               />
@@ -945,10 +1041,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 label="Statut RIB"
                 options={uniqueRibStatus}
                 selectedValues={
-                  advancedFilters.filters.multiSelect.find(f => f.field === 'ribStatus')?.values || []
+                  advancedFilters.filters.multiSelect.find(f => f.field === 'ribStatus')?.values ||
+                  []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('ribStatus', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('ribStatus', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('ribStatus', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('ribStatus', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('ribStatus')}
                 placeholder="Sélectionner un statut..."
               />
@@ -977,7 +1074,10 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 <th scope="col" className="px-4 py-3 text-center">
                   <input
                     type="checkbox"
-                    checked={selectedInvestorIds.size === filteredInvestors.length && filteredInvestors.length > 0}
+                    checked={
+                      selectedInvestorIds.size === filteredInvestors.length &&
+                      filteredInvestors.length > 0
+                    }
                     onChange={handleSelectAll}
                     className="w-4 h-4 text-finixar-teal border-slate-300 rounded focus:ring-finixar-teal cursor-pointer"
                     aria-label="Sélectionner tous les investisseurs"
@@ -1045,10 +1145,10 @@ function Investors({ organization: _organization }: InvestorsProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {paginate(filteredInvestors, currentPage, itemsPerPage).map((investor) => {
+              {paginate(filteredInvestors, currentPage, itemsPerPage).map(investor => {
                 const hasRib = investor.rib_file_path && investor.rib_status === 'valide';
                 const isInvestorMorale = isMorale(investor.type);
-                
+
                 return (
                   <tr key={investor.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-4 text-center">
@@ -1057,13 +1157,16 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         checked={selectedInvestorIds.has(investor.id)}
                         onChange={() => handleSelectInvestor(investor.id)}
                         className="w-4 h-4 text-finixar-teal border-slate-300 rounded focus:ring-finixar-teal cursor-pointer"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={e => e.stopPropagation()}
                         aria-label={`Sélectionner ${investor.nom_raison_sociale}`}
                       />
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${isInvestorMorale ? 'bg-purple-100' : 'bg-blue-100'}`} aria-hidden="true">
+                        <div
+                          className={`p-2 rounded-lg ${isInvestorMorale ? 'bg-purple-100' : 'bg-blue-100'}`}
+                          aria-hidden="true"
+                        >
                           {isInvestorMorale ? (
                             <Building2 className="w-5 h-5 text-purple-600" />
                           ) : (
@@ -1071,16 +1174,20 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-slate-900">{investor.nom_raison_sociale}</p>
+                          <p className="text-sm font-medium text-slate-900">
+                            {investor.nom_raison_sociale}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        isInvestorMorale
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          isInvestorMorale
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}
+                      >
                         {formatType(investor.type)}
                       </span>
                     </td>
@@ -1159,7 +1266,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
             totalPages={Math.ceil(filteredInvestors.length / itemsPerPage)}
             totalItems={filteredInvestors.length}
             itemsPerPage={itemsPerPage}
-            onPageChange={(page) => setCurrentPage(page)}
+            onPageChange={page => setCurrentPage(page)}
             itemName="investisseurs"
           />
         </div>
@@ -1167,13 +1274,21 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
       {/* Modals remain the same - I'll include key fixes in the details modal */}
       {showDetailsModal && selectedInvestor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowDetailsModal(false)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowDetailsModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${
-                  isMorale(selectedInvestor.type) ? 'bg-purple-100' : 'bg-blue-100'
-                }`}>
+                <div
+                  className={`p-3 rounded-lg ${
+                    isMorale(selectedInvestor.type) ? 'bg-purple-100' : 'bg-blue-100'
+                  }`}
+                >
                   {isMorale(selectedInvestor.type) ? (
                     <Building2 className="w-8 h-8 text-purple-600" />
                   ) : (
@@ -1181,7 +1296,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-900">{selectedInvestor.nom_raison_sociale}</h3>
+                  <h3 className="text-2xl font-bold text-slate-900">
+                    {selectedInvestor.nom_raison_sociale}
+                  </h3>
                   <p className="text-sm text-slate-600">{selectedInvestor.id_investisseur}</p>
                 </div>
               </div>
@@ -1209,11 +1326,15 @@ function Investors({ organization: _organization }: InvestorsProps) {
               <div className="grid grid-cols-2 gap-6">
                 <div className="bg-slate-50 p-4 rounded-lg">
                   <p className="text-sm text-slate-600 mb-1">Total Investi</p>
-                  <p className="text-2xl font-bold text-finixar-green">{formatCurrency(selectedInvestor.total_investi)}</p>
+                  <p className="text-2xl font-bold text-finixar-green">
+                    {formatCurrency(selectedInvestor.total_investi)}
+                  </p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-lg">
                   <p className="text-sm text-slate-600 mb-1">Nombre de souscriptions</p>
-                  <p className="text-2xl font-bold text-slate-900">{selectedInvestor.nb_souscriptions}</p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {selectedInvestor.nb_souscriptions}
+                  </p>
                 </div>
               </div>
 
@@ -1222,18 +1343,16 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   <User className="w-5 h-5 text-amber-600" />
                   Conseiller en Gestion de Patrimoine
                 </h4>
-                
+
                 {selectedInvestor.cgp ? (
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
                       <User className="w-6 h-6 text-amber-700" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-lg font-semibold text-slate-900">
-                        {selectedInvestor.cgp}
-                      </p>
+                      <p className="text-lg font-semibold text-slate-900">{selectedInvestor.cgp}</p>
                       {selectedInvestor.email_cgp && (
-                        <a 
+                        <a
                           href={`mailto:${selectedInvestor.email_cgp}`}
                           className="text-sm text-amber-700 hover:text-amber-900 flex items-center gap-1 mt-1"
                         >
@@ -1264,8 +1383,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 <div>
                   <h4 className="text-sm font-semibold text-slate-900 mb-2">Projets</h4>
                   <div className="flex flex-wrap gap-2">
-                    {selectedInvestor.projects.map((project) => (
-                      <span key={project} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                    {selectedInvestor.projects.map(project => (
+                      <span
+                        key={project}
+                        className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                      >
                         {project}
                       </span>
                     ))}
@@ -1277,8 +1399,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 <div>
                   <h4 className="text-sm font-semibold text-slate-900 mb-2">Tranches</h4>
                   <div className="flex flex-wrap gap-2">
-                    {selectedInvestor.tranches.map((tranche) => (
-                      <span key={tranche} className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
+                    {selectedInvestor.tranches.map(tranche => (
+                      <span
+                        key={tranche}
+                        className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full"
+                      >
                         {tranche}
                       </span>
                     ))}
@@ -1291,19 +1416,27 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-slate-600">Type</p>
-                    <p className="text-sm font-medium text-slate-900">{formatType(selectedInvestor.type)}</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {formatType(selectedInvestor.type)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-600">Email</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.email || '-'}</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {selectedInvestor.email || '-'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-600">Téléphone</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.telephone || '-'}</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {selectedInvestor.telephone || '-'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-600">Résidence Fiscale</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedInvestor.residence_fiscale || '-'}</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {selectedInvestor.residence_fiscale || '-'}
+                    </p>
                   </div>
                   {isMorale(selectedInvestor.type) && selectedInvestor.siren && (
                     <div>
@@ -1349,22 +1482,39 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   <h5 className="font-semibold text-slate-900">Informations générales</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="edit-nom-raison-sociale" className="block text-sm font-medium text-slate-700 mb-2">Nom / Raison sociale</label>
+                      <label
+                        htmlFor="edit-nom-raison-sociale"
+                        className="block text-sm font-medium text-slate-700 mb-2"
+                      >
+                        Nom / Raison sociale
+                      </label>
                       <input
                         id="edit-nom-raison-sociale"
                         type="text"
                         minLength={2}
                         value={editFormData.nom_raison_sociale}
-                        onChange={(e) => setEditFormData({ ...editFormData, nom_raison_sociale: e.target.value })}
+                        onChange={e =>
+                          setEditFormData({ ...editFormData, nom_raison_sociale: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       />
                     </div>
                     <div>
-                      <label htmlFor="edit-type" className="block text-sm font-medium text-slate-700 mb-2">Type</label>
+                      <label
+                        htmlFor="edit-type"
+                        className="block text-sm font-medium text-slate-700 mb-2"
+                      >
+                        Type
+                      </label>
                       <select
                         id="edit-type"
                         value={normalizeType(editFormData.type)}
-                        onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value === 'morale' ? 'Morale' : 'Physique' })}
+                        onChange={e =>
+                          setEditFormData({
+                            ...editFormData,
+                            type: e.target.value === 'morale' ? 'Morale' : 'Physique',
+                          })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="physique">Personne Physique</option>
@@ -1372,17 +1522,27 @@ function Investors({ organization: _organization }: InvestorsProps) {
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="edit-email" className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                      <label
+                        htmlFor="edit-email"
+                        className="block text-sm font-medium text-slate-700 mb-2"
+                      >
+                        Email
+                      </label>
                       <input
                         id="edit-email"
                         type="email"
                         value={editFormData.email || ''}
-                        onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                        onChange={e => setEditFormData({ ...editFormData, email: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       />
                     </div>
                     <div>
-                      <label htmlFor="edit-telephone" className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
+                      <label
+                        htmlFor="edit-telephone"
+                        className="block text-sm font-medium text-slate-700 mb-2"
+                      >
+                        Téléphone
+                      </label>
                       <input
                         id="edit-telephone"
                         type="tel"
@@ -1390,18 +1550,30 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         minLength={10}
                         maxLength={10}
                         value={editFormData.telephone || ''}
-                        onChange={(e) => setEditFormData({ ...editFormData, telephone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                        onChange={e =>
+                          setEditFormData({
+                            ...editFormData,
+                            telephone: e.target.value.replace(/\D/g, '').slice(0, 10),
+                          })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       />
                     </div>
                     <div>
-                      <label htmlFor="edit-residence-fiscale" className="block text-sm font-medium text-slate-700 mb-2">Résidence fiscale</label>
+                      <label
+                        htmlFor="edit-residence-fiscale"
+                        className="block text-sm font-medium text-slate-700 mb-2"
+                      >
+                        Résidence fiscale
+                      </label>
                       <input
                         id="edit-residence-fiscale"
                         type="text"
                         minLength={2}
                         value={editFormData.residence_fiscale || ''}
-                        onChange={(e) => setEditFormData({ ...editFormData, residence_fiscale: e.target.value })}
+                        onChange={e =>
+                          setEditFormData({ ...editFormData, residence_fiscale: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       />
                     </div>
@@ -1413,18 +1585,23 @@ function Investors({ organization: _organization }: InvestorsProps) {
                       <h5 className="font-semibold text-slate-900 mb-3">Régime Fiscal</h5>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label htmlFor="edit-tax-regime" className="block text-sm font-medium text-slate-700 mb-2">
+                          <label
+                            htmlFor="edit-tax-regime"
+                            className="block text-sm font-medium text-slate-700 mb-2"
+                          >
                             Régime fiscal
                           </label>
                           <select
                             id="edit-tax-regime"
                             value={editFormData.tax_regime || 'default'}
-                            onChange={(e) => setEditFormData({
-                              ...editFormData,
-                              tax_regime: e.target.value,
-                              // Clear custom rate if switching away from custom
-                              ...(e.target.value !== 'custom' && { custom_tax_rate: null })
-                            })}
+                            onChange={e =>
+                              setEditFormData({
+                                ...editFormData,
+                                tax_regime: e.target.value,
+                                // Clear custom rate if switching away from custom
+                                ...(e.target.value !== 'custom' && { custom_tax_rate: null }),
+                              })
+                            }
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <option value="default">Par défaut (PFU 30%)</option>
@@ -1440,7 +1617,10 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         {/* Custom Tax Rate - Only show if custom regime selected */}
                         {editFormData.tax_regime === 'custom' && (
                           <div>
-                            <label htmlFor="edit-custom-tax-rate" className="block text-sm font-medium text-slate-700 mb-2">
+                            <label
+                              htmlFor="edit-custom-tax-rate"
+                              className="block text-sm font-medium text-slate-700 mb-2"
+                            >
                               Taux de Prélèvement (%)
                             </label>
                             <input
@@ -1450,16 +1630,18 @@ function Investors({ organization: _organization }: InvestorsProps) {
                               max="100"
                               step="0.1"
                               value={editFormData.custom_tax_rate ?? ''}
-                              onChange={(e) => setEditFormData({
-                                ...editFormData,
-                                custom_tax_rate: e.target.value ? parseFloat(e.target.value) : null
-                              })}
+                              onChange={e =>
+                                setEditFormData({
+                                  ...editFormData,
+                                  custom_tax_rate: e.target.value
+                                    ? parseFloat(e.target.value)
+                                    : null,
+                                })
+                              }
                               placeholder="Ex: 12.8"
                               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
-                            <p className="text-xs text-slate-600 mt-1">
-                              Taux entre 0 et 100%
-                            </p>
+                            <p className="text-xs text-slate-600 mt-1">Taux entre 0 et 100%</p>
                           </div>
                         )}
                       </div>
@@ -1472,10 +1654,13 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     <User className="w-5 h-5 text-amber-600" />
                     Conseiller en Gestion de Patrimoine
                   </h5>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="edit-cgp-name" className="block text-sm font-medium text-slate-700 mb-2">
+                      <label
+                        htmlFor="edit-cgp-name"
+                        className="block text-sm font-medium text-slate-700 mb-2"
+                      >
                         Nom du CGP *
                       </label>
                       <input
@@ -1485,14 +1670,17 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         minLength={2}
                         aria-required="true"
                         value={editFormData.cgp || ''}
-                        onChange={(e) => setEditFormData({ ...editFormData, cgp: e.target.value })}
+                        onChange={e => setEditFormData({ ...editFormData, cgp: e.target.value })}
                         placeholder="Ex: Jean Dupont"
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="edit-cgp-email" className="block text-sm font-medium text-slate-700 mb-2">
+                      <label
+                        htmlFor="edit-cgp-email"
+                        className="block text-sm font-medium text-slate-700 mb-2"
+                      >
                         Email du CGP *
                       </label>
                       <input
@@ -1501,7 +1689,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         required
                         aria-required="true"
                         value={editFormData.email_cgp || ''}
-                        onChange={(e) => setEditFormData({ ...editFormData, email_cgp: e.target.value })}
+                        onChange={e =>
+                          setEditFormData({ ...editFormData, email_cgp: e.target.value })
+                        }
                         placeholder="cgp@email.com"
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                       />
@@ -1519,7 +1709,12 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     <h5 className="font-semibold text-slate-900">Personne Morale</h5>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="edit-siren" className="block text-sm font-medium text-slate-700 mb-2">SIREN</label>
+                        <label
+                          htmlFor="edit-siren"
+                          className="block text-sm font-medium text-slate-700 mb-2"
+                        >
+                          SIREN
+                        </label>
                         <input
                           id="edit-siren"
                           type="text"
@@ -1528,34 +1723,51 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           maxLength={9}
                           inputMode="numeric"
                           value={editFormData.siren?.toString() || ''}
-                          onChange={(e) => {
+                          onChange={e => {
                             const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
-                            setEditFormData({ ...editFormData, siren: digits ? Number(digits) : undefined });
+                            setEditFormData({
+                              ...editFormData,
+                              siren: digits ? Number(digits) : undefined,
+                            });
                           }}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           placeholder="123456789"
                         />
                       </div>
                       <div>
-                        <label htmlFor="edit-forme-juridique" className="block text-sm font-medium text-slate-700 mb-2">Forme Juridique</label>
+                        <label
+                          htmlFor="edit-forme-juridique"
+                          className="block text-sm font-medium text-slate-700 mb-2"
+                        >
+                          Forme Juridique
+                        </label>
                         <input
                           id="edit-forme-juridique"
                           type="text"
                           minLength={2}
                           value={editFormData.forme_juridique || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, forme_juridique: e.target.value })}
+                          onChange={e =>
+                            setEditFormData({ ...editFormData, forme_juridique: e.target.value })
+                          }
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           placeholder="Ex: SAS, SARL, SA..."
                         />
                       </div>
                       <div>
-                        <label htmlFor="edit-representant-legal" className="block text-sm font-medium text-slate-700 mb-2">Représentant Légal</label>
+                        <label
+                          htmlFor="edit-representant-legal"
+                          className="block text-sm font-medium text-slate-700 mb-2"
+                        >
+                          Représentant Légal
+                        </label>
                         <input
                           id="edit-representant-legal"
                           type="text"
                           minLength={2}
                           value={editFormData.representant_legal || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, representant_legal: e.target.value })}
+                          onChange={e =>
+                            setEditFormData({ ...editFormData, representant_legal: e.target.value })
+                          }
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           placeholder="Ex: Jean Dupont"
                         />
@@ -1567,35 +1779,54 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     <h5 className="font-semibold text-slate-900">Personne Physique</h5>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="edit-nom" className="block text-sm font-medium text-slate-700 mb-2">Nom</label>
+                        <label
+                          htmlFor="edit-nom"
+                          className="block text-sm font-medium text-slate-700 mb-2"
+                        >
+                          Nom
+                        </label>
                         <input
                           id="edit-nom"
                           type="text"
                           minLength={2}
                           value={editFormData.nom || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, nom: e.target.value })}
+                          onChange={e => setEditFormData({ ...editFormData, nom: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
                       <div>
-                        <label htmlFor="edit-prenom" className="block text-sm font-medium text-slate-700 mb-2">Prénom</label>
+                        <label
+                          htmlFor="edit-prenom"
+                          className="block text-sm font-medium text-slate-700 mb-2"
+                        >
+                          Prénom
+                        </label>
                         <input
                           id="edit-prenom"
                           type="text"
                           minLength={2}
                           value={editFormData.prenom || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, prenom: e.target.value })}
+                          onChange={e =>
+                            setEditFormData({ ...editFormData, prenom: e.target.value })
+                          }
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
                       <div>
-                        <label htmlFor="edit-nationalite" className="block text-sm font-medium text-slate-700 mb-2">Nationalité</label>
+                        <label
+                          htmlFor="edit-nationalite"
+                          className="block text-sm font-medium text-slate-700 mb-2"
+                        >
+                          Nationalité
+                        </label>
                         <input
                           id="edit-nationalite"
                           type="text"
                           minLength={2}
                           value={editFormData.nationalite || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, nationalite: e.target.value })}
+                          onChange={e =>
+                            setEditFormData({ ...editFormData, nationalite: e.target.value })
+                          }
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
@@ -1607,19 +1838,31 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   <h5 className="font-semibold text-slate-900">Adresse</h5>
                   <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <label htmlFor="edit-adresse" className="block text-sm font-medium text-slate-700 mb-2">Adresse</label>
+                      <label
+                        htmlFor="edit-adresse"
+                        className="block text-sm font-medium text-slate-700 mb-2"
+                      >
+                        Adresse
+                      </label>
                       <input
                         id="edit-adresse"
                         type="text"
                         minLength={5}
                         value={editFormData.adresse || editFormData.siege_social || ''}
-                        onChange={(e) => setEditFormData({ ...editFormData, adresse: e.target.value })}
+                        onChange={e =>
+                          setEditFormData({ ...editFormData, adresse: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       />
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <label htmlFor="edit-code-postal" className="block text-sm font-medium text-slate-700 mb-2">Code Postal</label>
+                        <label
+                          htmlFor="edit-code-postal"
+                          className="block text-sm font-medium text-slate-700 mb-2"
+                        >
+                          Code Postal
+                        </label>
                         <input
                           id="edit-code-postal"
                           type="text"
@@ -1628,30 +1871,47 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           maxLength={5}
                           inputMode="numeric"
                           value={editFormData.code_postal || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, code_postal: e.target.value.replace(/\D/g, '').slice(0, 5) })}
+                          onChange={e =>
+                            setEditFormData({
+                              ...editFormData,
+                              code_postal: e.target.value.replace(/\D/g, '').slice(0, 5),
+                            })
+                          }
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                           placeholder="75001"
                         />
                       </div>
                       <div>
-                        <label htmlFor="edit-ville" className="block text-sm font-medium text-slate-700 mb-2">Ville</label>
+                        <label
+                          htmlFor="edit-ville"
+                          className="block text-sm font-medium text-slate-700 mb-2"
+                        >
+                          Ville
+                        </label>
                         <input
                           id="edit-ville"
                           type="text"
                           minLength={2}
                           value={editFormData.ville || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, ville: e.target.value })}
+                          onChange={e =>
+                            setEditFormData({ ...editFormData, ville: e.target.value })
+                          }
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
                       <div>
-                        <label htmlFor="edit-pays" className="block text-sm font-medium text-slate-700 mb-2">Pays</label>
+                        <label
+                          htmlFor="edit-pays"
+                          className="block text-sm font-medium text-slate-700 mb-2"
+                        >
+                          Pays
+                        </label>
                         <input
                           id="edit-pays"
                           type="text"
                           minLength={2}
                           value={editFormData.pays || ''}
-                          onChange={(e) => setEditFormData({ ...editFormData, pays: e.target.value })}
+                          onChange={e => setEditFormData({ ...editFormData, pays: e.target.value })}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
@@ -1687,16 +1947,20 @@ function Investors({ organization: _organization }: InvestorsProps) {
               <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
                 <AlertTriangle className="w-6 h-6 text-finixar-red" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 text-center mb-2">Supprimer l'investisseur</h3>
+              <h3 className="text-xl font-bold text-slate-900 text-center mb-2">
+                Supprimer l'investisseur
+              </h3>
               <p className="text-slate-600 text-center mb-4">
-                Êtes-vous sûr de vouloir supprimer <strong>{selectedInvestor.nom_raison_sociale}</strong> ?
-                Cette action est irréversible.
+                Êtes-vous sûr de vouloir supprimer{' '}
+                <strong>{selectedInvestor.nom_raison_sociale}</strong> ? Cette action est
+                irréversible.
               </p>
               {selectedInvestor.nb_souscriptions > 0 && (
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
                   <p className="text-sm text-orange-800">
                     Attention : Cet investisseur a {selectedInvestor.nb_souscriptions} souscription
-                    {selectedInvestor.nb_souscriptions > 1 ? 's' : ''} active{selectedInvestor.nb_souscriptions > 1 ? 's' : ''}.
+                    {selectedInvestor.nb_souscriptions > 1 ? 's' : ''} active
+                    {selectedInvestor.nb_souscriptions > 1 ? 's' : ''}.
                   </p>
                 </div>
               )}
@@ -1738,26 +2002,26 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <p className="text-sm text-blue-800">
-                  💡 Le RIB est nécessaire pour effectuer les virements de coupons à cet investisseur.
-                  Formats acceptés : PDF, JPG, PNG
+                  💡 Le RIB est nécessaire pour effectuer les virements de coupons à cet
+                  investisseur. Formats acceptés : PDF, JPG, PNG
                 </p>
               </div>
 
               <div
-                onDragOver={(e) => {
+                onDragOver={e => {
                   e.preventDefault();
                   e.currentTarget.classList.add('border-blue-500', 'bg-blue-50');
                 }}
-                onDragLeave={(e) => {
+                onDragLeave={e => {
                   e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
                 }}
-                onDrop={(e) => {
+                onDrop={e => {
                   e.preventDefault();
                   e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
                   const file = e.dataTransfer.files[0];
                   if (file) {
                     const fakeEvent = {
-                      target: { files: [file] }
+                      target: { files: [file] },
                     } as React.ChangeEvent<HTMLInputElement>;
                     handleFileChange(fakeEvent);
                   }
@@ -1773,9 +2037,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     <p className="text-sm font-medium text-slate-900 mb-1">
                       Glissez votre fichier ici
                     </p>
-                    <p className="text-xs text-slate-500">
-                      ou cliquez pour parcourir
-                    </p>
+                    <p className="text-xs text-slate-500">ou cliquez pour parcourir</p>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <FileText className="w-4 h-4" />
@@ -1794,9 +2056,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
               {ribPreview && (
                 <div className="mb-4 border rounded-lg p-4 bg-slate-50">
                   <p className="text-xs text-slate-600 mb-2 font-medium">Aperçu :</p>
-                  <img 
-                    src={ribPreview} 
-                    alt="Preview RIB" 
+                  <img
+                    src={ribPreview}
+                    alt="Preview RIB"
                     className="max-h-48 mx-auto rounded shadow-sm"
                   />
                 </div>
@@ -1832,12 +2094,8 @@ function Investors({ organization: _organization }: InvestorsProps) {
               {uploadingRib && (
                 <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-blue-900">
-                      Upload en cours...
-                    </span>
-                    <span className="text-sm font-semibold text-blue-900">
-                      {uploadProgress}%
-                    </span>
+                    <span className="text-sm font-medium text-blue-900">Upload en cours...</span>
+                    <span className="text-sm font-semibold text-blue-900">{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
                     <div
@@ -1873,12 +2131,8 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   <div className="flex items-center gap-3">
                     <AlertCircle className="w-5 h-5 text-finixar-red flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-red-900">
-                        Erreur lors de l'upload
-                      </p>
-                      <p className="text-xs text-red-700 mt-1">
-                        {uploadError}
-                      </p>
+                      <p className="text-sm font-medium text-red-900">Erreur lors de l'upload</p>
+                      <p className="text-xs text-red-700 mt-1">{uploadError}</p>
                     </div>
                     <button
                       onClick={() => setUploadError('')}
@@ -1929,10 +2183,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
               <h3 className="text-xl font-bold text-slate-900">
                 RIB - {currentRibInvestor.nom_raison_sociale}
               </h3>
-              <button
-                onClick={handleCloseRibView}
-                className="text-slate-400 hover:text-slate-600"
-              >
+              <button onClick={handleCloseRibView} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>

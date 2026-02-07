@@ -24,7 +24,7 @@ export function Pagination({
   onPageChange,
   onItemsPerPageChange,
   itemName = 'éléments',
-  itemsPerPageOptions = [10, 25, 50, 100]
+  itemsPerPageOptions = [10, 25, 50, 100],
 }: PaginationProps) {
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -66,7 +66,9 @@ export function Pagination({
     return pages;
   };
 
-  if (totalPages <= 1) return null;
+  if (totalPages <= 1) {
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-slate-200 flex-wrap gap-4">
@@ -83,10 +85,10 @@ export function Pagination({
             <label className="text-sm text-slate-600">Par page:</label>
             <select
               value={itemsPerPage}
-              onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+              onChange={e => onItemsPerPageChange(Number(e.target.value))}
               className="px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
-              {itemsPerPageOptions.map((option) => (
+              {itemsPerPageOptions.map(option => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -120,12 +122,9 @@ export function Pagination({
 
         {/* Numéros de page */}
         <div className="flex gap-1">
-          {getPageNumbers().map((page, index) => (
+          {getPageNumbers().map((page, index) =>
             page === '...' ? (
-              <span
-                key={`ellipsis-${index}`}
-                className="px-3 py-2 text-slate-600"
-              >
+              <span key={`ellipsis-${index}`} className="px-3 py-2 text-slate-600">
                 ...
               </span>
             ) : (
@@ -141,7 +140,7 @@ export function Pagination({
                 {page}
               </button>
             )
-          ))}
+          )}
         </div>
 
         {/* Page suivante */}

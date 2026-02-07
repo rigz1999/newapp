@@ -1,7 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Download, Search, Euro, CheckCircle2, Eye, Filter, X, AlertCircle, Trash2, FileDown, MoreVertical, FileText, XCircle, Upload, StickyNote } from 'lucide-react';
+import {
+  Download,
+  Search,
+  Euro,
+  CheckCircle2,
+  Filter,
+  X,
+  AlertCircle,
+  Trash2,
+  FileDown,
+  MoreVertical,
+  FileText,
+  XCircle,
+  Upload,
+  StickyNote,
+} from 'lucide-react';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { PaymentProofUpload } from './PaymentProofUpload';
 import { TableSkeleton } from '../common/Skeleton';
@@ -150,10 +165,10 @@ export function Payments({ organization }: PaymentsProps) {
     setLoading(true);
 
     try {
-
       const { data, error } = await supabase
         .from('paiements')
-        .select(`
+        .select(
+          `
           id,
           id_paiement,
           type,
@@ -170,12 +185,14 @@ export function Payments({ organization }: PaymentsProps) {
           investisseur:investisseurs(
             nom_raison_sociale
           )
-        `)
+        `
+        )
         .order('date_paiement', { ascending: false })
         .limit(500); // Optimized limit for better performance
 
-      if (error) throw error;
-
+      if (error) {
+        throw error;
+      }
 
       const paymentsData = (data || []) as Payment[];
       setPayments(paymentsData);
@@ -201,7 +218,6 @@ export function Payments({ organization }: PaymentsProps) {
         const idsWithProofs = new Set(proofsData?.map(p => p.paiement_id) || []);
         setPaymentsWithProofs(idsWithProofs);
       }
-
     } catch (err) {
       const errorMessage = formatErrorMessage(err);
       setError(errorMessage);
@@ -215,10 +231,7 @@ export function Payments({ organization }: PaymentsProps) {
   };
 
   const loadProofs = async (paymentId: string) => {
-    const { data } = await supabase
-      .from('payment_proofs')
-      .select('*')
-      .eq('paiement_id', paymentId);
+    const { data } = await supabase.from('payment_proofs').select('*').eq('paiement_id', paymentId);
     return data || [];
   };
 
@@ -238,7 +251,7 @@ export function Payments({ organization }: PaymentsProps) {
     // Basic search
     if (searchTerm) {
       filtered = filtered.filter(
-        (p) =>
+        p =>
           p.tranche?.projet?.projet?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           p.tranche?.tranche_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           p.investisseur?.nom_raison_sociale?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -250,7 +263,7 @@ export function Payments({ organization }: PaymentsProps) {
     if (advancedFilters.filters.dateRange.startDate && advancedFilters.filters.dateRange.endDate) {
       const startDate = new Date(advancedFilters.filters.dateRange.startDate);
       const endDate = new Date(advancedFilters.filters.dateRange.endDate);
-      filtered = filtered.filter((p) => {
+      filtered = filtered.filter(p => {
         const paymentDate = new Date(p.date_paiement);
         return paymentDate >= startDate && paymentDate <= endDate;
       });
@@ -259,7 +272,7 @@ export function Payments({ organization }: PaymentsProps) {
     // Advanced filters - Multi-select projects
     const projectFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'projet');
     if (projectFilter && projectFilter.values.length > 0) {
-      filtered = filtered.filter((p) =>
+      filtered = filtered.filter(p =>
         projectFilter.values.includes(p.tranche?.projet?.projet || '')
       );
     }
@@ -267,9 +280,7 @@ export function Payments({ organization }: PaymentsProps) {
     // Advanced filters - Multi-select types
     const typeFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'type');
     if (typeFilter && typeFilter.values.length > 0) {
-      filtered = filtered.filter((p) =>
-        typeFilter.values.includes(p.type || 'Coupon')
-      );
+      filtered = filtered.filter(p => typeFilter.values.includes(p.type || 'Coupon'));
     }
 
     // Sort
@@ -282,18 +293,15 @@ export function Payments({ organization }: PaymentsProps) {
     setFilteredPayments(filtered);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('fr-FR');
-  };
+  const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('fr-FR');
 
   const exportToExcel = async () => {
     const workbook = new ExcelJS.Workbook();
@@ -311,7 +319,7 @@ export function Payments({ organization }: PaymentsProps) {
     ];
 
     // Add rows
-    filteredPayments.forEach((payment) => {
+    filteredPayments.forEach(payment => {
       worksheet.addRow({
         projet: payment.tranche?.projet?.projet || '',
         emetteur: payment.tranche?.projet?.emetteur || '',
@@ -333,7 +341,9 @@ export function Payments({ organization }: PaymentsProps) {
 
     // Generate buffer and download
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -383,19 +393,23 @@ export function Payments({ organization }: PaymentsProps) {
         .delete()
         .in('id', Array.from(selectedPayments));
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       // Refresh data
       await fetchPayments();
       setSelectedPayments(new Set());
     } catch (err) {
-      console.error('Bulk delete failed:', err);
+      logger.error('Bulk delete failed:', err);
       setError('Échec de la suppression des paiements sélectionnés');
     }
   };
 
   const handleDeleteSinglePayment = async () => {
-    if (!paymentToDelete) return;
+    if (!paymentToDelete) {
+      return;
+    }
 
     try {
       // Get payment proofs to delete storage files
@@ -405,10 +419,7 @@ export function Payments({ organization }: PaymentsProps) {
         .eq('paiement_id', paymentToDelete.id);
 
       // Delete payment proofs from database
-      await supabase
-        .from('payment_proofs')
-        .delete()
-        .eq('paiement_id', paymentToDelete.id);
+      await supabase.from('payment_proofs').delete().eq('paiement_id', paymentToDelete.id);
 
       // Delete files from storage
       if (proofs && proofs.length > 0) {
@@ -417,9 +428,7 @@ export function Payments({ organization }: PaymentsProps) {
             const urlParts = proof.file_url.split('/payment-proofs/');
             if (urlParts.length > 1) {
               const filePath = urlParts[1].split('?')[0];
-              await supabase.storage
-                .from('payment-proofs')
-                .remove([filePath]);
+              await supabase.storage.from('payment-proofs').remove([filePath]);
             }
           }
         }
@@ -432,23 +441,22 @@ export function Payments({ organization }: PaymentsProps) {
           paiement_id: null,
           statut: 'en_attente',
           date_paiement: null,
-          montant_paye: null
+          montant_paye: null,
         })
         .eq('paiement_id', paymentToDelete.id);
 
       // Delete the payment
-      const { error } = await supabase
-        .from('paiements')
-        .delete()
-        .eq('id', paymentToDelete.id);
+      const { error } = await supabase.from('paiements').delete().eq('id', paymentToDelete.id);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       // Refresh data
       await fetchPayments();
       setPaymentToDelete(null);
     } catch (err) {
-      console.error('Delete failed:', err);
+      logger.error('Delete failed:', err);
       setError('Échec de la suppression du paiement');
       setPaymentToDelete(null);
     }
@@ -471,7 +479,7 @@ export function Payments({ organization }: PaymentsProps) {
     ];
 
     // Add rows
-    selected.forEach((payment) => {
+    selected.forEach(payment => {
       worksheet.addRow({
         projet: payment.tranche?.projet?.projet || '',
         emetteur: payment.tranche?.projet?.emetteur || '',
@@ -493,7 +501,9 @@ export function Payments({ organization }: PaymentsProps) {
 
     // Generate buffer and download
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -502,7 +512,7 @@ export function Payments({ organization }: PaymentsProps) {
     URL.revokeObjectURL(url);
   };
 
-  const hasActiveFilters = 
+  const hasActiveFilters =
     advancedFilters.filters.dateRange.startDate ||
     advancedFilters.filters.dateRange.endDate ||
     advancedFilters.filters.multiSelect.length > 0;
@@ -535,8 +545,12 @@ export function Payments({ organization }: PaymentsProps) {
             <Euro className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Historique des paiements</h1>
-            <p className="text-slate-600">{filteredPayments.length} paiement{filteredPayments.length > 1 ? 's' : ''}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+              Historique des paiements
+            </h1>
+            <p className="text-slate-600">
+              {filteredPayments.length} paiement{filteredPayments.length > 1 ? 's' : ''}
+            </p>
           </div>
         </div>
         <button
@@ -576,14 +590,14 @@ export function Payments({ organization }: PaymentsProps) {
               type="text"
               placeholder="Rechercher par projet, tranche, investisseur..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             />
           </div>
 
           <select
             value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+            onChange={e => setSortOrder(e.target.value as SortOrder)}
             className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
           >
             <option value="desc">Plus récents</option>
@@ -602,7 +616,7 @@ export function Payments({ organization }: PaymentsProps) {
             Filtres avancés
             {hasActiveFilters && (
               <span className="bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs font-semibold">
-                {advancedFilters.filters.multiSelect.length + 
+                {advancedFilters.filters.multiSelect.length +
                   (advancedFilters.filters.dateRange.startDate ? 1 : 0)}
               </span>
             )}
@@ -617,10 +631,10 @@ export function Payments({ organization }: PaymentsProps) {
               <DateRangePicker
                 startDate={advancedFilters.filters.dateRange.startDate}
                 endDate={advancedFilters.filters.dateRange.endDate}
-                onStartDateChange={(date) =>
+                onStartDateChange={date =>
                   advancedFilters.setDateRange(date, advancedFilters.filters.dateRange.endDate)
                 }
-                onEndDateChange={(date) =>
+                onEndDateChange={date =>
                   advancedFilters.setDateRange(advancedFilters.filters.dateRange.startDate, date)
                 }
                 label="Période de paiement"
@@ -633,8 +647,8 @@ export function Payments({ organization }: PaymentsProps) {
                 selectedValues={
                   advancedFilters.filters.multiSelect.find(f => f.field === 'projet')?.values || []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('projet', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('projet', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('projet', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('projet', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('projet')}
                 placeholder="Tous les projets"
               />
@@ -646,8 +660,8 @@ export function Payments({ organization }: PaymentsProps) {
                 selectedValues={
                   advancedFilters.filters.multiSelect.find(f => f.field === 'type')?.values || []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('type', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('type', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('type', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('type', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('type')}
                 placeholder="Tous les types"
               />
@@ -655,9 +669,9 @@ export function Payments({ organization }: PaymentsProps) {
               {/* Filter Presets */}
               <FilterPresets
                 presets={advancedFilters.presets}
-                onSave={(name) => advancedFilters.savePreset(name)}
-                onLoad={(id) => advancedFilters.loadPreset(id)}
-                onDelete={(id) => advancedFilters.deletePreset(id)}
+                onSave={name => advancedFilters.savePreset(name)}
+                onLoad={id => advancedFilters.loadPreset(id)}
+                onDelete={id => advancedFilters.deletePreset(id)}
               />
             </div>
 
@@ -686,8 +700,8 @@ export function Payments({ organization }: PaymentsProps) {
             <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun paiement</h3>
             <p className="text-slate-600">
               {searchTerm || hasActiveFilters
-                ? "Aucun paiement ne correspond à vos critères"
-                : "Aucun paiement enregistré"}
+                ? 'Aucun paiement ne correspond à vos critères'
+                : 'Aucun paiement enregistré'}
             </p>
           </div>
         ) : (
@@ -697,7 +711,8 @@ export function Payments({ organization }: PaymentsProps) {
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-blue-900">
-                    {selectedPayments.size} élément{selectedPayments.size > 1 ? 's' : ''} sélectionné{selectedPayments.size > 1 ? 's' : ''}
+                    {selectedPayments.size} élément{selectedPayments.size > 1 ? 's' : ''}{' '}
+                    sélectionné{selectedPayments.size > 1 ? 's' : ''}
                   </span>
                   <button
                     onClick={() => setSelectedPayments(new Set())}
@@ -734,22 +749,34 @@ export function Payments({ organization }: PaymentsProps) {
                         type="checkbox"
                         checked={
                           paginate(filteredPayments, currentPage, itemsPerPage).length > 0 &&
-                          paginate(filteredPayments, currentPage, itemsPerPage).every(p => selectedPayments.has(p.id))
+                          paginate(filteredPayments, currentPage, itemsPerPage).every(p =>
+                            selectedPayments.has(p.id)
+                          )
                         }
                         onChange={toggleSelectAll}
                         className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                       />
                     </th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">Projet</th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">Tranche</th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden sm:table-cell">Investisseur</th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">Montant</th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">Date</th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">
+                      Projet
+                    </th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">
+                      Tranche
+                    </th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden sm:table-cell">
+                      Investisseur
+                    </th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">
+                      Montant
+                    </th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">
+                      Date
+                    </th>
                     <th className="px-2 md:px-4 py-3 text-right text-xs md:text-sm font-semibold text-slate-900"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginate(filteredPayments, currentPage, itemsPerPage).map((payment) => (
+                  {paginate(filteredPayments, currentPage, itemsPerPage).map(payment => (
                     <tr
                       key={payment.id}
                       onClick={() => navigate(`/paiements/${payment.id}`)}
@@ -760,143 +787,159 @@ export function Payments({ organization }: PaymentsProps) {
                           type="checkbox"
                           checked={selectedPayments.has(payment.id)}
                           onChange={() => toggleSelectPayment(payment.id)}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={e => e.stopPropagation()}
                           className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                         />
                       </td>
                       <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600">
-                      <div>
-                        <p className="font-medium text-slate-900">{payment.tranche?.projet?.projet || '-'}</p>
-                        <p className="text-xs text-slate-500 hidden xl:block">{payment.tranche?.projet?.emetteur || ''}</p>
-                        <p className="text-xs text-slate-500 md:hidden">{payment.tranche?.tranche_name || '-'}</p>
-                      </div>
-                    </td>
-                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 hidden md:table-cell">{payment.tranche?.tranche_name || '-'}</td>
-                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 hidden sm:table-cell">{payment.investisseur?.nom_raison_sociale || '-'}</td>
-                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm font-semibold text-slate-900">
-                      <div>
-                        {formatCurrency(payment.montant)}
-                        <p className="text-xs text-slate-500 md:hidden mt-0.5">{formatDate(payment.date_paiement)}</p>
-                      </div>
-                    </td>
-                    <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 hidden md:table-cell">{formatDate(payment.date_paiement)}</td>
-                    <td className="px-2 md:px-4 py-3">
-                      <div className="flex items-center justify-end gap-2 relative">
-                        {paymentsWithProofs.has(payment.id) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewProofs(payment);
-                            }}
-                            className="p-1 text-finixar-green hover:bg-green-50 rounded transition-colors"
-                            title="Voir le justificatif"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </button>
-                        )}
-                        {payment.note && (
-                          <div className="relative">
+                        <div>
+                          <p className="font-medium text-slate-900">
+                            {payment.tranche?.projet?.projet || '-'}
+                          </p>
+                          <p className="text-xs text-slate-500 hidden xl:block">
+                            {payment.tranche?.projet?.emetteur || ''}
+                          </p>
+                          <p className="text-xs text-slate-500 md:hidden">
+                            {payment.tranche?.tranche_name || '-'}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 hidden md:table-cell">
+                        {payment.tranche?.tranche_name || '-'}
+                      </td>
+                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 hidden sm:table-cell">
+                        {payment.investisseur?.nom_raison_sociale || '-'}
+                      </td>
+                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm font-semibold text-slate-900">
+                        <div>
+                          {formatCurrency(payment.montant)}
+                          <p className="text-xs text-slate-500 md:hidden mt-0.5">
+                            {formatDate(payment.date_paiement)}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 hidden md:table-cell">
+                        {formatDate(payment.date_paiement)}
+                      </td>
+                      <td className="px-2 md:px-4 py-3">
+                        <div className="flex items-center justify-end gap-2 relative">
+                          {paymentsWithProofs.has(payment.id) && (
                             <button
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
-                                setShowNotePopover(showNotePopover === payment.id ? null : payment.id);
+                                handleViewProofs(payment);
                               }}
-                              className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="Voir la note"
+                              className="p-1 text-finixar-green hover:bg-green-50 rounded transition-colors"
+                              title="Voir le justificatif"
                             >
-                              <StickyNote className="w-4 h-4" />
+                              <FileText className="w-4 h-4" />
                             </button>
-                            {showNotePopover === payment.id && (
-                              <div className="note-popover absolute right-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-slate-200 p-3 z-50">
-                                <div className="flex items-start justify-between mb-2">
-                                  <h4 className="text-sm font-semibold text-slate-900">Note</h4>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setShowNotePopover(null);
-                                    }}
-                                    className="text-slate-400 hover:text-slate-600"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
+                          )}
+                          {payment.note && (
+                            <div className="relative">
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setShowNotePopover(
+                                    showNotePopover === payment.id ? null : payment.id
+                                  );
+                                }}
+                                className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="Voir la note"
+                              >
+                                <StickyNote className="w-4 h-4" />
+                              </button>
+                              {showNotePopover === payment.id && (
+                                <div className="note-popover absolute right-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-slate-200 p-3 z-50">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <h4 className="text-sm font-semibold text-slate-900">Note</h4>
+                                    <button
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        setShowNotePopover(null);
+                                      }}
+                                      className="text-slate-400 hover:text-slate-600"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  <p className="text-sm text-slate-700 whitespace-pre-wrap max-h-48 overflow-y-auto">
+                                    {payment.note}
+                                  </p>
                                 </div>
-                                <p className="text-sm text-slate-700 whitespace-pre-wrap max-h-48 overflow-y-auto">
-                                  {payment.note}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenDropdown(openDropdown === payment.id ? null : payment.id);
-                          }}
-                          className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                          title="Actions"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-
-                        {openDropdown === payment.id && (
-                          <div
-                            className="absolute right-0 top-full mt-1 w-52 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenDropdown(null);
-                                if (paymentsWithProofs.has(payment.id)) {
-                                  handleViewProofs(payment);
-                                } else {
-                                  handleUploadProof(payment);
-                                }
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                            >
-                              {paymentsWithProofs.has(payment.id) ? (
-                                <>
-                                  <FileText className="w-4 h-4 text-slate-600" />
-                                  <span>Voir la preuve</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Upload className="w-4 h-4 text-green-600" />
-                                  <span>Ajouter une preuve</span>
-                                </>
                               )}
-                            </button>
+                            </div>
+                          )}
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              setOpenDropdown(openDropdown === payment.id ? null : payment.id);
+                            }}
+                            className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                            title="Actions"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenDropdown(null);
-                                setPaymentToDelete(payment);
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                          {openDropdown === payment.id && (
+                            <div
+                              className="absolute right-0 top-full mt-1 w-52 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+                              onClick={e => e.stopPropagation()}
                             >
-                              <XCircle className="w-4 h-4 text-red-600" />
-                              <span>Supprimer</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setOpenDropdown(null);
+                                  if (paymentsWithProofs.has(payment.id)) {
+                                    handleViewProofs(payment);
+                                  } else {
+                                    handleUploadProof(payment);
+                                  }
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                              >
+                                {paymentsWithProofs.has(payment.id) ? (
+                                  <>
+                                    <FileText className="w-4 h-4 text-slate-600" />
+                                    <span>Voir la preuve</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-4 h-4 text-green-600" />
+                                    <span>Ajouter une preuve</span>
+                                  </>
+                                )}
+                              </button>
 
-            <Pagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(filteredPayments.length / itemsPerPage)}
-              totalItems={filteredPayments.length}
-              itemsPerPage={itemsPerPage}
-              onPageChange={(page) => setCurrentPage(page)}
-              itemName="paiements"
-            />
-          </div>
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setOpenDropdown(null);
+                                  setPaymentToDelete(payment);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors"
+                              >
+                                <XCircle className="w-4 h-4 text-red-600" />
+                                <span>Supprimer</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(filteredPayments.length / itemsPerPage)}
+                totalItems={filteredPayments.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={page => setCurrentPage(page)}
+                itemName="paiements"
+              />
+            </div>
           </>
         )}
       </div>

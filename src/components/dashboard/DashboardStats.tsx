@@ -22,7 +22,7 @@ interface DashboardStatsProps {
   stats: Stats;
 }
 
-const GrowthBadge = memo(function GrowthBadge({ percentage, label }: { percentage?: number; label: string }) {
+const GrowthBadge = memo(({ percentage, label }: { percentage?: number; label: string }) => {
   if (percentage === undefined || percentage === null || isNaN(percentage)) {
     return (
       <span className="inline-flex items-center gap-0.5 text-xs font-medium text-slate-400">
@@ -49,7 +49,7 @@ const GrowthBadge = memo(function GrowthBadge({ percentage, label }: { percentag
   );
 });
 
-export const DashboardStats = memo(function DashboardStats({ stats }: DashboardStatsProps) {
+export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
   // Format current month in French
   const currentMonth = new Date().toLocaleDateString('fr-FR', {
     month: 'long',

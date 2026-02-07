@@ -51,7 +51,7 @@ export function invalidateAllDashboardCaches(): void {
  * Components can call this to be notified when cache is invalidated
  */
 export function onCacheInvalidated(callback: () => void): () => void {
-  const handleInvalidation = (event: Event) => {
+  const handleInvalidation = (_event: Event) => {
     callback();
   };
 
@@ -76,7 +76,7 @@ export function triggerCacheInvalidation(orgId?: string): void {
 
   // Dispatch custom event for components that want to react
   const event = new CustomEvent('cache-invalidated', {
-    detail: { orgId, timestamp: Date.now() }
+    detail: { orgId, timestamp: Date.now() },
   });
   window.dispatchEvent(event);
 }

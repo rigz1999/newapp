@@ -22,7 +22,9 @@ export function sanitizeHTML(dirtyHTML: string): string {
  * Use this for general text inputs
  */
 export function sanitizeText(input: string): string {
-  if (!input) return '';
+  if (!input) {
+    return '';
+  }
 
   // Remove null bytes and other control characters
   return input
@@ -35,7 +37,9 @@ export function sanitizeText(input: string): string {
  * Sanitize email address
  */
 export function sanitizeEmail(email: string): string {
-  if (!email) return '';
+  if (!email) {
+    return '';
+  }
 
   return email
     .toLowerCase()
@@ -47,7 +51,9 @@ export function sanitizeEmail(email: string): string {
  * Sanitize phone number - keep only digits, spaces, and + for international prefix
  */
 export function sanitizePhone(phone: string): string {
-  if (!phone) return '';
+  if (!phone) {
+    return '';
+  }
 
   return phone.replace(/[^\d\s+\-().]/g, '').trim();
 }
@@ -56,7 +62,9 @@ export function sanitizePhone(phone: string): string {
  * Sanitize numeric input - keep only digits and decimal point
  */
 export function sanitizeNumber(input: string): string {
-  if (!input) return '';
+  if (!input) {
+    return '';
+  }
 
   return input.replace(/[^\d.]/g, '');
 }
@@ -65,7 +73,9 @@ export function sanitizeNumber(input: string): string {
  * Sanitize file name to prevent directory traversal attacks
  */
 export function sanitizeFileName(fileName: string): string {
-  if (!fileName) return '';
+  if (!fileName) {
+    return '';
+  }
 
   // Remove path separators and dangerous characters
   return fileName
@@ -79,12 +89,15 @@ export function sanitizeFileName(fileName: string): string {
  * Sanitize URL to prevent javascript: and data: URIs
  */
 export function sanitizeURL(url: string): string {
-  if (!url) return '';
+  if (!url) {
+    return '';
+  }
 
   const trimmed = url.trim().toLowerCase();
 
   // Block dangerous protocols
   if (
+    // eslint-disable-next-line no-script-url -- checking for dangerous protocol, not using it
     trimmed.startsWith('javascript:') ||
     trimmed.startsWith('data:') ||
     trimmed.startsWith('vbscript:') ||
@@ -105,7 +118,9 @@ export function sanitizeURL(url: string): string {
  * Sanitize SIREN number - French company identifier (9 digits)
  */
 export function sanitizeSIREN(siren: string): string {
-  if (!siren) return '';
+  if (!siren) {
+    return '';
+  }
 
   // Remove all non-digits and limit to 9 characters
   return siren.replace(/\D/g, '').slice(0, 9);
@@ -115,7 +130,9 @@ export function sanitizeSIREN(siren: string): string {
  * Sanitize IBAN - International Bank Account Number
  */
 export function sanitizeIBAN(iban: string): string {
-  if (!iban) return '';
+  if (!iban) {
+    return '';
+  }
 
   // Remove spaces and convert to uppercase, keep only alphanumeric
   return iban
@@ -129,7 +146,9 @@ export function sanitizeIBAN(iban: string): string {
  * Use this when constructing search queries to prevent SQL injection-like attacks
  */
 export function escapeSQLPattern(pattern: string): string {
-  if (!pattern) return '';
+  if (!pattern) {
+    return '';
+  }
 
   // Escape special SQL pattern characters
   return pattern
@@ -143,7 +162,9 @@ export function escapeSQLPattern(pattern: string): string {
  * Sanitize amount input - format for financial data
  */
 export function sanitizeAmount(amount: string): string {
-  if (!amount) return '';
+  if (!amount) {
+    return '';
+  }
 
   // Keep only digits, decimal point, and minus sign
   let sanitized = amount.replace(/[^\d.-]/g, '');
@@ -151,7 +172,7 @@ export function sanitizeAmount(amount: string): string {
   // Ensure only one decimal point
   const parts = sanitized.split('.');
   if (parts.length > 2) {
-    sanitized = parts[0] + '.' + parts.slice(1).join('');
+    sanitized = `${parts[0]}.${parts.slice(1).join('')}`;
   }
 
   // Ensure minus sign only at the beginning
@@ -159,7 +180,7 @@ export function sanitizeAmount(amount: string): string {
     const isNegative = sanitized[0] === '-';
     sanitized = sanitized.replace(/-/g, '');
     if (isNegative) {
-      sanitized = '-' + sanitized;
+      sanitized = `-${sanitized}`;
     }
   }
 
@@ -171,7 +192,9 @@ export function sanitizeAmount(amount: string): string {
  * Use this as a default when you're not sure which sanitizer to use
  */
 export function sanitizeUserInput(input: string, maxLength: number = 1000): string {
-  if (!input) return '';
+  if (!input) {
+    return '';
+  }
 
   return sanitizeText(input).slice(0, maxLength);
 }

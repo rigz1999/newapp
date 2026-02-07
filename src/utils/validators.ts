@@ -7,7 +7,9 @@
  * Validate SIREN number (9 digits + Luhn algorithm)
  */
 export const isValidSIREN = (value: string): boolean => {
-  if (!/^\d{9}$/.test(value)) return false;
+  if (!/^\d{9}$/.test(value)) {
+    return false;
+  }
 
   // Luhn algorithm for SIREN (process from RIGHT to LEFT)
   let sum = 0;
@@ -16,7 +18,9 @@ export const isValidSIREN = (value: string): boolean => {
     // Multiply every other digit starting from the rightmost (position 8 is index 0 from right)
     if ((8 - i) % 2 === 1) {
       digit *= 2;
-      if (digit > 9) digit -= 9;
+      if (digit > 9) {
+        digit -= 9;
+      }
     }
     sum += digit;
   }
@@ -75,9 +79,13 @@ export const isDateInFuture = (dateString: string): boolean => {
 /**
  * Validate required field
  */
-export const isRequired = (value: any): boolean => {
-  if (value === null || value === undefined) return false;
-  if (typeof value === 'string') return value.trim().length > 0;
+export const isRequired = (value: unknown): boolean => {
+  if (value === null || value === undefined) {
+    return false;
+  }
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
   return true;
 };
 

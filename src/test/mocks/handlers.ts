@@ -34,18 +34,16 @@ export const handlers = [
   }),
 
   // Get session
-  http.get(`${SUPABASE_URL}/auth/v1/user`, () => {
-    return HttpResponse.json({
+  http.get(`${SUPABASE_URL}/auth/v1/user`, () =>
+    HttpResponse.json({
       id: 'user-123',
       email: 'test@example.com',
       created_at: '2025-01-01T00:00:00Z',
-    });
-  }),
+    })
+  ),
 
   // Sign out
-  http.post(`${SUPABASE_URL}/auth/v1/logout`, () => {
-    return HttpResponse.json({}, { status: 204 });
-  }),
+  http.post(`${SUPABASE_URL}/auth/v1/logout`, () => HttpResponse.json({}, { status: 204 })),
 
   // Get memberships (for role checking)
   http.get(`${SUPABASE_URL}/rest/v1/memberships`, ({ request }) => {
@@ -68,31 +66,31 @@ export const handlers = [
   }),
 
   // Get organizations
-  http.get(`${SUPABASE_URL}/rest/v1/organizations`, () => {
-    return HttpResponse.json([
+  http.get(`${SUPABASE_URL}/rest/v1/organizations`, () =>
+    HttpResponse.json([
       {
         id: 'org-1',
         name: 'Test Organization',
         created_at: '2025-01-01T00:00:00Z',
       },
-    ]);
-  }),
+    ])
+  ),
 
   // Get projects
-  http.get(`${SUPABASE_URL}/rest/v1/projects`, () => {
-    return HttpResponse.json([
+  http.get(`${SUPABASE_URL}/rest/v1/projects`, () =>
+    HttpResponse.json([
       {
         id: 'project-1',
         projet: 'Test Project',
         emetteur: 'Test Company',
         created_at: '2025-01-01T00:00:00Z',
       },
-    ]);
-  }),
+    ])
+  ),
 
   // Get investors
-  http.get(`${SUPABASE_URL}/rest/v1/investors`, () => {
-    return HttpResponse.json([
+  http.get(`${SUPABASE_URL}/rest/v1/investors`, () =>
+    HttpResponse.json([
       {
         id: 'investor-1',
         nom: 'Doe',
@@ -100,12 +98,12 @@ export const handlers = [
         email: 'john.doe@example.com',
         created_at: '2025-01-01T00:00:00Z',
       },
-    ]);
-  }),
+    ])
+  ),
 
   // Get subscriptions
-  http.get(`${SUPABASE_URL}/rest/v1/subscriptions`, () => {
-    return HttpResponse.json([
+  http.get(`${SUPABASE_URL}/rest/v1/subscriptions`, () =>
+    HttpResponse.json([
       {
         id: 'subscription-1',
         investor_id: 'investor-1',
@@ -113,12 +111,12 @@ export const handlers = [
         montant_investi: 10000,
         created_at: '2025-01-01T00:00:00Z',
       },
-    ]);
-  }),
+    ])
+  ),
 
   // Get payments
-  http.get(`${SUPABASE_URL}/rest/v1/payments`, () => {
-    return HttpResponse.json([
+  http.get(`${SUPABASE_URL}/rest/v1/payments`, () =>
+    HttpResponse.json([
       {
         id: 'payment-1',
         subscription_id: 'subscription-1',
@@ -126,8 +124,8 @@ export const handlers = [
         statut: 'paid',
         created_at: '2025-01-01T00:00:00Z',
       },
-    ]);
-  }),
+    ])
+  ),
 
   // POST handlers for creating resources
   http.post(`${SUPABASE_URL}/rest/v1/projects`, async ({ request }) => {
@@ -155,14 +153,12 @@ export const handlers = [
   }),
 
   // Storage endpoints
-  http.post(`${SUPABASE_URL}/storage/v1/object/*`, () => {
-    return HttpResponse.json({
+  http.post(`${SUPABASE_URL}/storage/v1/object/*`, () =>
+    HttpResponse.json({
       Key: 'mock-file-key',
       Id: 'mock-file-id',
-    });
-  }),
+    })
+  ),
 
-  http.delete(`${SUPABASE_URL}/storage/v1/object/*`, () => {
-    return HttpResponse.json({}, { status: 200 });
-  }),
+  http.delete(`${SUPABASE_URL}/storage/v1/object/*`, () => HttpResponse.json({}, { status: 200 })),
 ];

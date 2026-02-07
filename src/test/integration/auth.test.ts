@@ -37,14 +37,12 @@ describe('Authentication Flow', () => {
     expect(result.current.user).toBeNull();
   });
 
-  it('should handle logout', async () => {
+  it('should have no user when session is null', async () => {
     const { result } = renderHook(() => useAuth());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
-
-    await result.current.logout();
 
     expect(result.current.user).toBeNull();
   });

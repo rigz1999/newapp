@@ -86,7 +86,9 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
         .select('id, projet, emetteur')
         .order('projet');
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       setProjects(data || []);
     } catch (error) {
       logger.error('Failed to fetch projects', error);
@@ -105,10 +107,12 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
         .eq('projet_id', projectId)
         .order('tranche_name');
 
-      if (tranchesError) throw tranchesError;
+      if (tranchesError) {
+        throw tranchesError;
+      }
 
       const tranchesWithStats = await Promise.all(
-        (tranchesData || []).map(async (tranche) => {
+        (tranchesData || []).map(async tranche => {
           const { data: subs, error: subsError } = await supabase
             .from('souscriptions')
             .select('coupon_net')
@@ -146,17 +150,21 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
     try {
       const { data, error } = await supabase
         .from('souscriptions')
-        .select(`
+        .select(
+          `
           id,
           id_souscription,
           montant_investi,
           coupon_net,
           investisseur:investisseurs(nom_raison_sociale)
-        `)
+        `
+        )
         .eq('tranche_id', trancheId)
         .order('id_souscription');
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       setSubscriptions((data || []) as Subscription[]);
     } catch (error) {
       logger.error('Failed to fetch subscriptions', error);
@@ -166,18 +174,16 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
 
-  const getTotalPayment = () => {
-    return subscriptions.reduce((sum, sub) => sum + (Number(sub.coupon_net) || 0), 0);
-  };
+  const getTotalPayment = () =>
+    subscriptions.reduce((sum, sub) => sum + (Number(sub.coupon_net) || 0), 0);
 
   if (showUpload && selectedTrancheId) {
     return (
@@ -196,15 +202,29 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="p-6 border-b border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-xl font-bold text-slate-900">Enregistrer un paiement de tranche</h3>
-              <p className="text-sm text-slate-600 mt-1">Sélectionnez un projet et une tranche à payer</p>
+              <h3 className="text-xl font-bold text-slate-900">
+                Enregistrer un paiement de tranche
+              </h3>
+              <p className="text-sm text-slate-600 mt-1">
+                Sélectionnez un projet et une tranche à payer
+              </p>
             </div>
-            <button onClick={onClose} aria-label="Fermer la modal" className="text-slate-400 hover:text-slate-600">
+            <button
+              onClick={onClose}
+              aria-label="Fermer la modal"
+              className="text-slate-400 hover:text-slate-600"
+            >
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -216,11 +236,11 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
               <label className="block text-sm font-medium text-slate-900 mb-2">Projet</label>
               <select
                 value={selectedProjectId}
-                onChange={(e) => setSelectedProjectId(e.target.value)}
+                onChange={e => setSelectedProjectId(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
               >
                 <option value="">Sélectionner un projet</option>
-                {projects.map((project) => (
+                {projects.map(project => (
                   <option key={project.id} value={project.id}>
                     {project.projet} - {project.emetteur}
                   </option>
@@ -232,14 +252,15 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
               <label className="block text-sm font-medium text-slate-900 mb-2">Tranche</label>
               <select
                 value={selectedTrancheId}
-                onChange={(e) => setSelectedTrancheId(e.target.value)}
+                onChange={e => setSelectedTrancheId(e.target.value)}
                 disabled={!selectedProjectId || tranches.length === 0}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue disabled:bg-slate-100 disabled:cursor-not-allowed"
               >
                 <option value="">Sélectionner une tranche</option>
-                {tranches.map((tranche) => (
+                {tranches.map(tranche => (
                   <option key={tranche.id} value={tranche.id}>
-                    {tranche.tranche_name} ({tranche.subscription_count} investisseurs - Total: {formatCurrency(tranche.total_amount)})
+                    {tranche.tranche_name} ({tranche.subscription_count} investisseurs - Total:{' '}
+                    {formatCurrency(tranche.total_amount)})
                   </option>
                 ))}
               </select>
@@ -263,18 +284,23 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <h4 className="font-semibold text-blue-900 mb-2">Paiement de tranche</h4>
                 <p className="text-sm text-blue-700 mb-3">
-                  Cette tranche contient {subscriptions.length} investisseur{subscriptions.length > 1 ? 's' : ''}.
-                  Le justificatif de paiement doit contenir tous les paiements individuels.
+                  Cette tranche contient {subscriptions.length} investisseur
+                  {subscriptions.length > 1 ? 's' : ''}. Le justificatif de paiement doit contenir
+                  tous les paiements individuels.
                 </p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-blue-900">Montant total à payer:</span>
-                  <span className="text-lg font-bold text-blue-900">{formatCurrency(getTotalPayment())}</span>
+                  <span className="text-lg font-bold text-blue-900">
+                    {formatCurrency(getTotalPayment())}
+                  </span>
                 </div>
               </div>
 
-              <h4 className="font-medium text-slate-900 mb-3">Détails des paiements ({subscriptions.length})</h4>
+              <h4 className="font-medium text-slate-900 mb-3">
+                Détails des paiements ({subscriptions.length})
+              </h4>
               <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
-                {subscriptions.map((subscription) => (
+                {subscriptions.map(subscription => (
                   <div
                     key={subscription.id}
                     className="p-3 border border-slate-200 rounded-lg bg-slate-50"
@@ -282,12 +308,15 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium text-slate-900">
-                          {subscription.investisseur?.nom_raison_sociale || 'Investisseur non spécifié'}
+                          {subscription.investisseur?.nom_raison_sociale ||
+                            'Investisseur non spécifié'}
                         </p>
                         <p className="text-xs text-slate-500">{subscription.id_souscription}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-slate-900">{formatCurrency(Number(subscription.coupon_net) || 0)}</p>
+                        <p className="font-semibold text-slate-900">
+                          {formatCurrency(Number(subscription.coupon_net) || 0)}
+                        </p>
                         <p className="text-xs text-slate-500">À payer</p>
                       </div>
                     </div>
