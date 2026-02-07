@@ -187,7 +187,7 @@ Deno.serve(async (req: Request) => {
         from: 'Finixar <support@finixar.com>',
         to: [email],
         subject: `${orgName} vous invite \u00e0 rejoindre Finixar`,
-        text: `Bonjour ${firstName},\n\n${orgName} vous invite \u00e0 rejoindre Finixar en tant qu\u2019\u00e9metteur pour ${emetteurName}.\n\nVotre acc\u00e8s inclut :\n\u2022 Calendrier des paiements\n\u2022 Export des \u00e9ch\u00e9ances (Excel & PDF)\n\u2022 Actualit\u00e9s des projets\n\u2022 Notifications des \u00e9ch\u00e9ances\n\nAcceptez l\u2019invitation en suivant ce lien :\n${invitationLink}\n\nCe lien expire dans 7 jours.\n\nSi vous n\u2019attendiez pas cette invitation, vous pouvez ignorer cet email.\n\n--\nFinixar \u00b7 Plateforme de gestion d\u2019investissements\nsupport@finixar.com`,
+        text: `Bonjour ${firstName},\n\n${orgName} vous invite \u00e0 rejoindre Finixar en tant qu\u2019\u00e9metteur pour ${emetteurName}.\n\nVotre acc\u00e8s inclut :\n\u2022 Calendrier des paiements\n\u2022 Export des \u00e9ch\u00e9ances (Excel & PDF)\n\u2022 Actualit\u00e9s des projets\n\nAcceptez l\u2019invitation en suivant ce lien :\n${invitationLink}\n\nCe lien expire dans 7 jours.\n\nSi vous n\u2019attendiez pas cette invitation, vous pouvez ignorer cet email.\n\n--\nFinixar \u00b7 Plateforme de gestion d\u2019investissements\nsupport@finixar.com`,
         html: `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -259,12 +259,6 @@ Deno.serve(async (req: Request) => {
                           Actualit\u00e9s des projets
                         </td>
                       </tr>
-                      <tr>
-                        <td style="padding: 5px 0; font-size: 14px; color: #065f46;">
-                          <span style="color: #059669; font-weight: bold; margin-right: 8px;">\u2713</span>
-                          Notifications des \u00e9ch\u00e9ances \u00e0 venir
-                        </td>
-                      </tr>
                     </table>
                   </td>
                 </tr>
@@ -325,7 +319,7 @@ Deno.serve(async (req: Request) => {
           <!-- Footer -->
           <tr>
             <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 28px 40px; text-align: center;">
-              <p style="margin: 0 0 4px; font-size: 20px; font-weight: 700; color: #059669;">Finixar</p>
+              <img src="https://app.finixar.com/branding/logo/logo-full-blue.png" alt="Finixar" width="140" style="display: inline-block; width: 140px; height: auto; margin-bottom: 8px;">
               <p style="margin: 0 0 16px; font-size: 13px; color: #64748b;">Plateforme de gestion d\u2019investissements</p>
               <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
                 Si vous n\u2019attendiez pas cet acc\u00e8s, ignorez cet email.<br>

@@ -249,7 +249,7 @@ serve(async (req) => {
           <!-- Footer -->
           <tr>
             <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 28px 40px; text-align: center;">
-              <p style="margin: 0 0 4px; font-size: 20px; font-weight: 700; color: #1e40af;">Finixar</p>
+              <img src="https://app.finixar.com/branding/logo/logo-full-blue.png" alt="Finixar" width="140" style="display: inline-block; width: 140px; height: auto; margin-bottom: 8px;">
               <p style="margin: 0 0 16px; font-size: 13px; color: #64748b;">Plateforme de gestion d\u2019investissements</p>
               <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
                 Si vous n\u2019attendiez pas cette invitation, ignorez cet email.<br>
