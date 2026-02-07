@@ -79,33 +79,34 @@ export default function EmetteurDashboard() {
 
       const projectsWithDetails = await Promise.all(
         (data || []).map(async (project: any) => {
-          const { data: nextPayment } = await supabase
-            .from('coupons_echeances')
-            .select('date_echeance, montant_coupon, souscription_id')
-            .eq('statut', 'en_attente')
-            .in('souscription_id', [
-              supabase
-                .from('souscriptions')
-                .select('id')
-                .eq('projet_id', project.projet_id),
-            ])
-            .order('date_echeance', { ascending: true })
-            .limit(1)
-            .maybeSingle();
+          const { data: subs } = await supabase
+            .from('souscriptions')
+            .select('id')
+            .eq('projet_id', project.projet_id);
+
+          const subscriptionIds = (subs || []).map((s: any) => s.id);
+
+          let nextPayment = null;
+          if (subscriptionIds.length > 0) {
+            const { data: np } = await supabase
+              .from('coupons_echeances')
+              .select('date_echeance, montant_coupon, souscription_id')
+              .eq('statut', 'en_attente')
+              .in('souscription_id', subscriptionIds)
+              .order('date_echeance', { ascending: true })
+              .limit(1)
+              .maybeSingle();
+            nextPayment = np;
+          }
 
           let totalAmount = 0;
-          if (nextPayment) {
+          if (nextPayment && subscriptionIds.length > 0) {
             const { data: allPayments } = await supabase
               .from('coupons_echeances')
               .select('montant_coupon')
               .eq('date_echeance', nextPayment.date_echeance)
               .eq('statut', 'en_attente')
-              .in('souscription_id', [
-                supabase
-                  .from('souscriptions')
-                  .select('id')
-                  .eq('projet_id', project.projet_id),
-              ]);
+              .in('souscription_id', subscriptionIds);
             totalAmount =
               allPayments?.reduce((sum, p) => sum + Number(p.montant_coupon), 0) || 0;
           }
