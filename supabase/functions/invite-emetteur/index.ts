@@ -98,6 +98,15 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Fetch inviter's name for personalization
+    const { data: inviterProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
+
+    const inviterName = inviterProfile?.full_name || user.email;
+
     const tokenString = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
 
     const expiresAt = new Date();
@@ -186,308 +195,163 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         from: 'Finixar <support@finixar.com>',
         to: [email],
-        subject: `Accès émetteur - ${projetName}`,
-        html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <style>
-                * {
-                  margin: 0;
-                  padding: 0;
-                  box-sizing: border-box;
-                }
-                body {
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                  line-height: 1.6;
-                  color: #1e293b;
-                  background-color: #f1f5f9;
-                  padding: 40px 20px;
-                }
-                .container {
-                  max-width: 600px;
-                  margin: 0 auto;
-                  background: white;
-                  border-radius: 12px;
-                  overflow: hidden;
-                  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-                }
-                .header {
-                  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-                  color: white;
-                  padding: 48px 40px;
-                  text-align: center;
-                }
-                .header h1 {
-                  font-size: 32px;
-                  font-weight: 700;
-                  margin-bottom: 12px;
-                  letter-spacing: -0.5px;
-                }
-                .header p {
-                  font-size: 16px;
-                  opacity: 0.95;
-                  font-weight: 400;
-                }
-                .content {
-                  padding: 48px 40px;
-                }
-                .greeting {
-                  font-size: 18px;
-                  color: #0f172a;
-                  margin-bottom: 24px;
-                  font-weight: 500;
-                }
-                .message {
-                  font-size: 16px;
-                  color: #475569;
-                  margin-bottom: 32px;
-                  line-height: 1.7;
-                }
-                .info-card {
-                  background: #f8fafc;
-                  border: 2px solid #e2e8f0;
-                  border-radius: 10px;
-                  padding: 28px;
-                  margin: 32px 0;
-                }
-                .info-item {
-                  display: flex;
-                  align-items: flex-start;
-                  margin-bottom: 16px;
-                  font-size: 15px;
-                }
-                .info-item:last-child {
-                  margin-bottom: 0;
-                }
-                .info-icon {
-                  width: 20px;
-                  height: 20px;
-                  margin-right: 14px;
-                  margin-top: 2px;
-                  flex-shrink: 0;
-                }
-                .info-label {
-                  font-weight: 600;
-                  color: #0f172a;
-                  margin-right: 8px;
-                  min-width: 110px;
-                }
-                .info-value {
-                  color: #475569;
-                  flex: 1;
-                }
-                .role-badge {
-                  display: inline-block;
-                  background: #059669;
-                  color: white;
-                  padding: 8px 18px;
-                  border-radius: 6px;
-                  font-size: 14px;
-                  font-weight: 600;
-                  margin-left: 4px;
-                }
-                .feature-list {
-                  background: #f0fdf4;
-                  border: 2px solid #bbf7d0;
-                  border-radius: 10px;
-                  padding: 28px;
-                  margin: 32px 0;
-                }
-                .feature-list h3 {
-                  color: #047857;
-                  font-size: 16px;
-                  margin-bottom: 16px;
-                  font-weight: 600;
-                }
-                .feature-list ul {
-                  list-style: none;
-                  padding: 0;
-                }
-                .feature-list li {
-                  color: #065f46;
-                  font-size: 14px;
-                  padding: 8px 0;
-                  padding-left: 24px;
-                  position: relative;
-                }
-                .feature-list li:before {
-                  content: "✓";
-                  position: absolute;
-                  left: 0;
-                  color: #059669;
-                  font-weight: bold;
-                }
-                .cta-container {
-                  text-align: center;
-                  margin: 40px 0;
-                }
-                .button {
-                  display: inline-block;
-                  background: #059669;
-                  color: #ffffff !important;
-                  padding: 18px 48px;
-                  text-decoration: none;
-                  border-radius: 8px;
-                  font-weight: 600;
-                  font-size: 16px;
-                  box-shadow: 0 4px 14px 0 rgba(5, 150, 105, 0.39);
-                  transition: all 0.3s ease;
-                }
-                .button:hover {
-                  background: #047857;
-                  box-shadow: 0 6px 20px 0 rgba(5, 150, 105, 0.5);
-                }
-                .link-box {
-                  background: #f8fafc;
-                  border: 1px solid #e2e8f0;
-                  border-radius: 8px;
-                  padding: 18px;
-                  margin: 28px 0;
-                }
-                .link-box p {
-                  color: #64748b;
-                  font-size: 13px;
-                  margin-bottom: 10px;
-                  font-weight: 500;
-                }
-                .link-box a {
-                  color: #059669;
-                  word-break: break-all;
-                  font-size: 13px;
-                  text-decoration: none;
-                }
-                .expiry-notice {
-                  background: #fff7ed;
-                  border: 1px solid #fed7aa;
-                  border-left: 4px solid #f97316;
-                  border-radius: 8px;
-                  padding: 18px;
-                  margin: 28px 0;
-                }
-                .expiry-notice-content {
-                  display: flex;
-                  align-items: flex-start;
-                }
-                .expiry-icon {
-                  width: 20px;
-                  height: 20px;
-                  margin-right: 12px;
-                  margin-top: 2px;
-                  flex-shrink: 0;
-                }
-                .expiry-text {
-                  color: #9a3412;
-                  font-size: 14px;
-                  line-height: 1.6;
-                }
-                .footer {
-                  background: #f8fafc;
-                  padding: 36px 40px;
-                  text-align: center;
-                  border-top: 1px solid #e2e8f0;
-                }
-                .footer-logo {
-                  font-size: 24px;
-                  font-weight: 700;
-                  color: #059669;
-                  margin-bottom: 8px;
-                }
-                .footer p {
-                  color: #64748b;
-                  font-size: 14px;
-                  margin-bottom: 6px;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <h1>Accès Émetteur</h1>
-                  <p>Plateforme Finixar</p>
-                </div>
+        subject: `${inviterName} vous donne acc\u00e8s au projet ${projetName}`,
+        text: `Bonjour ${firstName},\n\n${inviterName} vous invite \u00e0 acc\u00e9der au projet ${projetName} sur Finixar en tant qu\u2019\u00e9metteur pour ${emetteurName}.\n\nVotre acc\u00e8s inclut :\n\u2022 Calendrier des paiements\n\u2022 Export des \u00e9ch\u00e9ances (Excel & PDF)\n\u2022 Actualit\u00e9s du projet\n\u2022 Notifications des \u00e9ch\u00e9ances\n\nAcc\u00e9dez au projet en suivant ce lien :\n${invitationLink}\n\nCe lien expire dans 7 jours.\n\nSi vous n\u2019attendiez pas cet acc\u00e8s, vous pouvez ignorer cet email.\n\n--\nFinixar \u00b7 Plateforme de gestion d\u2019investissements\nsupport@finixar.com`,
+        html: `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <!--[if !mso]><!-->
+  <style>
+    body { margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+  </style>
+  <!--<![endif]-->
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <!-- Preheader (hidden preview text) -->
+  <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">
+    ${firstName}, acc\u00e9dez au projet ${projetName} sur Finixar \u2014 calendrier de paiements, exports et actualit\u00e9s.
+    &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
+  </div>
 
-                <div class="content">
-                  <div class="greeting">
-                    Bonjour <strong>${firstName} ${lastName}</strong>,
-                  </div>
+  <!-- Outer wrapper -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f1f5f9;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
 
-                  <div class="message">
-                    Vous avez été invité(e) à accéder au projet <strong>${projetName}</strong> sur la plateforme Finixar en tant qu'<span class="role-badge">Émetteur</span>
-                  </div>
+        <!-- Container -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);">
 
-                  <div class="info-card">
-                    <div class="info-item">
-                      <svg class="info-icon" fill="none" stroke="#059669" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                      </svg>
-                      <span class="info-label">Organisation :</span>
-                      <span class="info-value">${orgName}</span>
-                    </div>
-                    <div class="info-item">
-                      <svg class="info-icon" fill="none" stroke="#059669" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                      </svg>
-                      <span class="info-label">Projet :</span>
-                      <span class="info-value">${projetName}</span>
-                    </div>
-                    <div class="info-item">
-                      <svg class="info-icon" fill="none" stroke="#059669" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                      </svg>
-                      <span class="info-label">Email :</span>
-                      <span class="info-value">${email}</span>
-                    </div>
-                  </div>
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #059669; padding: 40px 40px 36px; text-align: center;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Acc\u00e8s au projet ${projetName}</h1>
+              <p style="margin: 10px 0 0; font-size: 15px; color: rgba(255,255,255,0.9); font-weight: 400;">\u00c9metteur sur Finixar</p>
+            </td>
+          </tr>
 
-                  <div class="feature-list">
-                    <h3>Votre accès inclut :</h3>
-                    <ul>
-                      <li>Visualisation du calendrier des paiements</li>
-                      <li>Export des échéances (Excel & PDF)</li>
-                      <li>Publication et consultation des actualités du projet</li>
-                      <li>Notifications des échéances à venir</li>
-                    </ul>
-                  </div>
+          <!-- Body -->
+          <tr>
+            <td style="padding: 40px 40px 16px;">
+              <p style="margin: 0 0 24px; font-size: 17px; color: #0f172a; font-weight: 500;">
+                Bonjour ${firstName},
+              </p>
+              <p style="margin: 0 0 28px; font-size: 15px; line-height: 1.7; color: #475569;">
+                <strong style="color: #0f172a;">${inviterName}</strong> vous invite \u00e0 acc\u00e9der au projet
+                <strong style="color: #0f172a;">${projetName}</strong> sur Finixar en tant qu\u2019\u00e9metteur
+                pour <strong style="color: #0f172a;">${emetteurName}</strong>.
+              </p>
 
-                  <div class="message">
-                    Pour activer votre accès et définir votre mot de passe, veuillez cliquer sur le bouton ci-dessous :
-                  </div>
+              <!-- Feature list -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 28px;">
+                <tr>
+                  <td style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px 24px;">
+                    <p style="margin: 0 0 14px; font-size: 14px; font-weight: 600; color: #047857;">Votre acc\u00e8s inclut :</p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                      <tr>
+                        <td style="padding: 5px 0; font-size: 14px; color: #065f46;">
+                          <span style="color: #059669; font-weight: bold; margin-right: 8px;">\u2713</span>
+                          Calendrier des paiements
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 5px 0; font-size: 14px; color: #065f46;">
+                          <span style="color: #059669; font-weight: bold; margin-right: 8px;">\u2713</span>
+                          Export des \u00e9ch\u00e9ances (Excel &amp; PDF)
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 5px 0; font-size: 14px; color: #065f46;">
+                          <span style="color: #059669; font-weight: bold; margin-right: 8px;">\u2713</span>
+                          Actualit\u00e9s du projet
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 5px 0; font-size: 14px; color: #065f46;">
+                          <span style="color: #059669; font-weight: bold; margin-right: 8px;">\u2713</span>
+                          Notifications des \u00e9ch\u00e9ances \u00e0 venir
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
 
-                  <div class="cta-container">
-                    <a href="${invitationLink}" class="button" style="color: #ffffff;">
-                      Activer mon accès
-                    </a>
-                  </div>
+              <p style="margin: 0 0 8px; font-size: 15px; line-height: 1.7; color: #475569;">
+                Cliquez sur le bouton ci-dessous pour cr\u00e9er votre compte et acc\u00e9der au projet :
+              </p>
+            </td>
+          </tr>
 
-                  <div class="link-box">
-                    <p>Ou copiez ce lien dans votre navigateur :</p>
-                    <a href="${invitationLink}">${invitationLink}</a>
-                  </div>
+          <!-- CTA -->
+          <tr>
+            <td align="center" style="padding: 16px 40px 32px;">
+              <!--[if mso]>
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${invitationLink}" style="height:52px;v-text-anchor:middle;width:260px;" arcsize="15%" fillcolor="#059669" strokecolor="#059669" strokeweight="0">
+                <w:anchorlock/>
+                <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:600;">Acc\u00e9der au projet</center>
+              </v:roundrect>
+              <![endif]-->
+              <!--[if !mso]><!-->
+              <a href="${invitationLink}" style="display: inline-block; background-color: #059669; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3); mso-padding-alt: 0;">
+                Acc\u00e9der au projet
+              </a>
+              <!--<![endif]-->
+            </td>
+          </tr>
 
-                  <div class="expiry-notice">
-                    <div class="expiry-notice-content">
-                      <svg class="expiry-icon" fill="none" stroke="#f97316" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                      <div class="expiry-text">
-                        <strong>Important :</strong> Cette invitation expire dans 7 jours. Veuillez activer votre accès rapidement.
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          <!-- Fallback link -->
+          <tr>
+            <td style="padding: 0 40px 16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+                    <p style="margin: 0 0 8px; font-size: 12px; color: #64748b; font-weight: 500;">Ou copiez ce lien dans votre navigateur :</p>
+                    <a href="${invitationLink}" style="font-size: 12px; color: #059669; text-decoration: none; word-break: break-all;">${invitationLink}</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-                <div class="footer">
-                  <div class="footer-logo">Finixar</div>
-                  <p>Plateforme de gestion d'investissements</p>
-                  <p style="margin-top: 18px; color: #94a3b8;">Si vous n'avez pas demandé cet accès, vous pouvez ignorer cet email en toute sécurité.</p>
-                </div>
-              </div>
-            </body>
-          </html>
-        `,
+          <!-- Expiry notice -->
+          <tr>
+            <td style="padding: 0 40px 36px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #f97316; border-radius: 8px; padding: 14px 16px;">
+                    <p style="margin: 0; font-size: 13px; color: #9a3412; line-height: 1.5;">
+                      Cette invitation expire dans <strong>7 jours</strong>. Pass\u00e9 ce d\u00e9lai, demandez \u00e0 votre administrateur de vous renvoyer une invitation.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 28px 40px; text-align: center;">
+              <p style="margin: 0 0 4px; font-size: 20px; font-weight: 700; color: #059669;">Finixar</p>
+              <p style="margin: 0 0 16px; font-size: 13px; color: #64748b;">Plateforme de gestion d\u2019investissements</p>
+              <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
+                Si vous n\u2019attendiez pas cet acc\u00e8s, ignorez cet email.<br>
+                Une question\u00a0? Contactez <a href="mailto:support@finixar.com" style="color: #64748b; text-decoration: underline;">support@finixar.com</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Container -->
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
       }),
     });
 
