@@ -34,7 +34,8 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<{ full_name: string | null } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { isOrgAdmin, isSuperAdmin, user } = useAuth();
+  const { isOrgAdmin, isSuperAdmin, userRole, user } = useAuth();
+  const isEmetteur = userRole === 'emetteur';
 
   // Sidebar collapse state with localStorage persistence
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -280,30 +281,37 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
         {/* Navigation - No scroll */}
         <div className="flex-1 px-4">
           <nav className="space-y-1">
-            <NavItem to="/" icon={Home} label="Tableau de bord" />
-            <NavItem to="/coupons" icon={Receipt} label="Coupons" />
-            <NavItem to="/projets" icon={FolderOpen} label="Projets" />
-            <NavItem to="/investisseurs" icon={Users} label="Investisseurs" />
-            <NavItem to="/souscriptions" icon={FileText} label="Souscriptions" />
-            <NavItem to="/paiements" icon={Euro} label="Paiements" />
-
-            {/* Settings Link */}
-            <div className="border-t border-slate-700 my-2"></div>
-            <NavItem to="/parametres" icon={Settings} label="Paramètres" />
-
-            {/* Members Management Link - Only for Organization Admins */}
-            {isOrgAdmin && !isSuperAdminUser && (
+            {isEmetteur ? (
               <>
+                <NavItem to="/" icon={Home} label="Mes Projets" />
                 <div className="border-t border-slate-700 my-2"></div>
-                <NavItem to="/membres" icon={UserCog} label="Gestion Membres" />
+                <NavItem to="/parametres" icon={Settings} label="Paramètres" />
               </>
-            )}
-
-            {/* Admin Panel Link - Only for Super Admins */}
-            {isSuperAdminUser && (
+            ) : (
               <>
+                <NavItem to="/" icon={Home} label="Tableau de bord" />
+                <NavItem to="/coupons" icon={Receipt} label="Coupons" />
+                <NavItem to="/projets" icon={FolderOpen} label="Projets" />
+                <NavItem to="/investisseurs" icon={Users} label="Investisseurs" />
+                <NavItem to="/souscriptions" icon={FileText} label="Souscriptions" />
+                <NavItem to="/paiements" icon={Euro} label="Paiements" />
+
                 <div className="border-t border-slate-700 my-2"></div>
-                <NavItem to="/admin" icon={Shield} label="Admin Panel" />
+                <NavItem to="/parametres" icon={Settings} label="Paramètres" />
+
+                {isOrgAdmin && !isSuperAdminUser && (
+                  <>
+                    <div className="border-t border-slate-700 my-2"></div>
+                    <NavItem to="/membres" icon={UserCog} label="Gestion Membres" />
+                  </>
+                )}
+
+                {isSuperAdminUser && (
+                  <>
+                    <div className="border-t border-slate-700 my-2"></div>
+                    <NavItem to="/admin" icon={Shield} label="Admin Panel" />
+                  </>
+                )}
               </>
             )}
           </nav>
@@ -325,7 +333,9 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                       ? 'bg-finixar-action-process'
                       : isOrgAdmin
                         ? 'bg-finixar-brand-blue'
-                        : 'bg-finixar-text-secondary'
+                        : isEmetteur
+                          ? 'bg-emerald-600'
+                          : 'bg-finixar-text-secondary'
                   }`}
                 >
                   {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
@@ -338,7 +348,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                     {userProfile?.full_name || 'Utilisateur'}
                   </p>
                   <p className="text-xs text-slate-400 capitalize whitespace-nowrap">
-                    {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : 'Membre'}
+                    {isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : isEmetteur ? 'Émetteur' : 'Membre'}
                   </p>
                 </div>
               )}

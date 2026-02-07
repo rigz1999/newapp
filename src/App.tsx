@@ -49,8 +49,9 @@ const EmetteurProjectView = lazy(() => import('./components/emetteur/EmetteurPro
 const DEFAULT_ORG = { id: 'admin', name: 'Admin', role: 'admin' } as const;
 
 function App(): JSX.Element {
-  const { user, loading: authLoading, isAdmin, isOrgAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin, isOrgAdmin, userRole } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
+  const isEmetteur = userRole === 'emetteur';
 
   const LoadingFallback = (): JSX.Element => <DashboardSkeleton />;
 
@@ -147,158 +148,195 @@ function App(): JSX.Element {
                 )
               }
             >
-              <Route
-                index
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <Dashboard organization={organization || DEFAULT_ORG} />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="projets"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <Projects organization={organization || DEFAULT_ORG} />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="projets/:projectId"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <ProjectDetail organization={organization || DEFAULT_ORG} />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="projets/:projectId/echeancier"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <EcheancierPage />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="echeance/:projectId/:trancheId/:date"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <EcheanceDetailPage />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="projets/:projectId/actualites"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <ProjectActualitesPage />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="projets/:projectId/:slug/actualites"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <ProjectActualitesPage />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="tranches/:trancheId/edit"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <TrancheEditPage />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="coupons"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <Coupons organization={organization || DEFAULT_ORG} />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="investisseurs"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <Investors organization={organization || DEFAULT_ORG} />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="souscriptions"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <Subscriptions organization={organization || DEFAULT_ORG} />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="paiements"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <Payments organization={organization || DEFAULT_ORG} />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="paiements/:paymentId"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <PaymentDetailPage />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-
-              {/* Emetteur Routes */}
-              <Route
-                path="emetteur"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <EmetteurDashboard />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="emetteur/projets/:projectId"
-                element={
-                  <ErrorBoundary>
-                    <Suspense fallback={<LoadingFallback />}>
-                      <EmetteurProjectView />
-                    </Suspense>
-                  </ErrorBoundary>
-                }
-              />
+              {/* Emetteur-specific routes */}
+              {isEmetteur ? (
+                <>
+                  <Route
+                    index
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <EmetteurDashboard />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="emetteur"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <EmetteurDashboard />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="emetteur/projets/:projectId"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <EmetteurProjectView />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </>
+              ) : (
+                <>
+                  <Route
+                    index
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Dashboard organization={organization || DEFAULT_ORG} />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="projets"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Projects organization={organization || DEFAULT_ORG} />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="projets/:projectId"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <ProjectDetail organization={organization || DEFAULT_ORG} />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="projets/:projectId/echeancier"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <EcheancierPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="echeance/:projectId/:trancheId/:date"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <EcheanceDetailPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="projets/:projectId/actualites"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <ProjectActualitesPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="projets/:projectId/:slug/actualites"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <ProjectActualitesPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="tranches/:trancheId/edit"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <TrancheEditPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="coupons"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Coupons organization={organization || DEFAULT_ORG} />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="investisseurs"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Investors organization={organization || DEFAULT_ORG} />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="souscriptions"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Subscriptions organization={organization || DEFAULT_ORG} />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="paiements"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Payments organization={organization || DEFAULT_ORG} />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="paiements/:paymentId"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <PaymentDetailPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="emetteur"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <EmetteurDashboard />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="emetteur/projets/:projectId"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <EmetteurProjectView />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                </>
+              )}
 
               {/* Settings - For all users */}
               <Route
