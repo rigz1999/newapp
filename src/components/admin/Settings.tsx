@@ -14,7 +14,7 @@ import { CardSkeleton } from '../common/Skeleton';
 import { logger } from '../../utils/logger';
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const errorMessageRef = useRef<HTMLDivElement>(null);
@@ -691,7 +691,8 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Email Reminder Settings Card */}
+        {/* Email Reminder Settings Card - Hidden for emetteur role */}
+        {userRole !== 'emetteur' && (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200">
           <div className="p-6 border-b border-slate-200">
             <div className="flex items-center justify-between">
@@ -837,8 +838,10 @@ export default function Settings() {
             </div>
           </div>
         </div>
+        )}
 
-        {/* Email Connection Card */}
+        {/* Email Connection Card - Hidden for emetteur role */}
+        {userRole !== 'emetteur' && (
         <div id="email-connection" className="bg-white rounded-xl shadow-sm border border-slate-200 scroll-mt-4">
           <div className="p-6 border-b border-slate-200">
             <div className="flex items-center gap-2">
@@ -956,6 +959,7 @@ export default function Settings() {
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Confirmation Modal */}
