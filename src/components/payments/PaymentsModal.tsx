@@ -17,7 +17,12 @@ interface PaymentsModalProps {
   formatDate: (date: string) => string;
 }
 
-export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }: PaymentsModalProps) {
+export function PaymentsModal({
+  payments,
+  onClose,
+  formatCurrency,
+  formatDate,
+}: PaymentsModalProps) {
   // Handle ESC key to close modal
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -37,8 +42,14 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl max-w-5xl w-full max-h-[90vh] m-4 flex flex-col" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl max-w-5xl w-full max-h-[90vh] m-4 flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-6 border-b border-slate-200">
           <div className="flex justify-between items-start">
@@ -46,7 +57,10 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
               <h3 className="text-2xl font-bold text-slate-900">Historique des paiements</h3>
               <p className="text-sm text-slate-600 mt-1">Tous les paiements du projet</p>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
+            >
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -74,7 +88,9 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
                 <Coins className="w-4 h-4 text-purple-600" />
                 <p className="text-xs font-medium text-purple-900">Montant total</p>
               </div>
-              <p className="text-lg font-bold text-purple-900">{formatCurrency(stats.montantTotal)}</p>
+              <p className="text-lg font-bold text-purple-900">
+                {formatCurrency(stats.montantTotal)}
+              </p>
             </div>
           </div>
         </div>
@@ -87,15 +103,19 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
             </div>
           ) : (
             <div className="space-y-3">
-              {payments.map((payment) => (
+              {payments.map(payment => (
                 <div
                   key={payment.id}
                   className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50"
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-2 h-2 rounded-full ${
-                      payment.statut === 'Payé' || payment.statut === 'payé' ? 'bg-green-500' : 'bg-orange-500'
-                    }`} />
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        payment.statut === 'Payé' || payment.statut === 'payé'
+                          ? 'bg-green-500'
+                          : 'bg-orange-500'
+                      }`}
+                    />
                     <div>
                       <p className="text-sm font-medium text-slate-900">
                         {payment.type || 'Paiement'} - {payment.id_paiement}
@@ -104,12 +124,16 @@ export function PaymentsModal({ payments, onClose, formatCurrency, formatDate }:
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-900">{formatCurrency(payment.montant)}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      payment.statut === 'Payé' || payment.statut === 'payé'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-orange-100 text-orange-700'
-                    }`}>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {formatCurrency(payment.montant)}
+                    </p>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        payment.statut === 'Payé' || payment.statut === 'payé'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-orange-100 text-orange-700'
+                      }`}
+                    >
                       {payment.statut}
                     </span>
                   </div>

@@ -40,6 +40,7 @@ interface Echeance {
   date_echeance: string;
   montant_coupon: number;
   statut: string;
+  souscription_id?: string;
   souscription: {
     id_souscription: string;
     coupon_brut: number;
@@ -55,6 +56,22 @@ interface Echeance {
     };
   };
   isLastEcheance: boolean;
+}
+
+interface PaymentInfo {
+  id: string;
+  date_paiement: string;
+  tranche?: { tranche_name: string };
+  investisseur?: { nom_raison_sociale: string } | null;
+}
+
+interface ProofItem {
+  id: string;
+  file_url: string;
+  file_name: string;
+  validated_at: string;
+  extracted_data?: { montant: number; date?: string } | null;
+  confidence?: number;
 }
 
 interface DateGroup {
@@ -89,11 +106,8 @@ export function EcheancierContent({
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
-  const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<Record<
-    string,
-    unknown
-  > | null>(null);
-  const [paymentProofs, setPaymentProofs] = useState<Record<string, unknown>[]>([]);
+  const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<PaymentInfo | null>(null);
+  const [paymentProofs, setPaymentProofs] = useState<ProofItem[]>([]);
   const [markingUnpaid, setMarkingUnpaid] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [showQuickPayment, setShowQuickPayment] = useState(false);
@@ -170,7 +184,7 @@ export function EcheancierContent({
         };
       });
 
-      setEcheances(enrichedEcheances);
+      setEcheances(enrichedEcheances as Echeance[]);
     } catch (err) {
       logger.error(err instanceof Error ? err : new Error('Failed to fetch echeances'), {
         projectId,
@@ -323,7 +337,7 @@ export function EcheancierContent({
           investisseur:investisseurs(nom_raison_sociale)
         `
         )
-        .eq('souscription_id', echeanceData?.souscription_id || echeance.souscription_id)
+        .eq('souscription_id', echeanceData?.souscription_id || echeance.souscription_id || '')
         .eq('date_paiement', echeance.date_echeance)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -336,8 +350,8 @@ export function EcheancierContent({
           .eq('paiement_id', paymentByMatch.id)
           .order('validated_at', { ascending: false });
 
-        setSelectedPaymentForProof(paymentByMatch);
-        setPaymentProofs(proofsData || []);
+        setSelectedPaymentForProof(paymentByMatch as unknown as PaymentInfo);
+        setPaymentProofs((proofsData || []) as unknown as ProofItem[]);
       }
       return;
     }
@@ -366,8 +380,8 @@ export function EcheancierContent({
       .eq('paiement_id', echeanceData.paiement_id)
       .order('validated_at', { ascending: false });
 
-    setSelectedPaymentForProof(paymentData);
-    setPaymentProofs(proofsData || []);
+    setSelectedPaymentForProof(paymentData as unknown as PaymentInfo);
+    setPaymentProofs((proofsData || []) as unknown as ProofItem[]);
   };
 
   const handleMarkAsUnpaid = async (echeance: Echeance) => {
@@ -1094,7 +1108,7 @@ export function EcheancierContent({
                                                       .select(
                                                         'tranche_id, tranches!inner(tranche_name)'
                                                       )
-                                                      .eq('id', echeance.souscription_id)
+                                                      .eq('id', echeance.souscription_id || '')
                                                       .single();
 
                                                     const { data: projectData } = await supabase

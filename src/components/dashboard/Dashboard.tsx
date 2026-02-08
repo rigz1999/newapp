@@ -34,10 +34,27 @@ interface DashboardProps {
 
 interface Stats {
   totalInvested: number;
+  totalInvestedMoM?: number;
+  totalInvestedYoY?: number;
   couponsPaidThisMonth: number;
+  couponsPaidMoM?: number;
+  couponsPaidYoY?: number;
   activeProjects: number;
+  activeProjectsMoM?: number;
+  activeProjectsYoY?: number;
   upcomingCoupons: number;
+  upcomingCouponsMoM?: number;
+  upcomingCouponsYoY?: number;
   nextCouponDays: number;
+}
+
+interface CachedDashboardData {
+  stats: Stats;
+  recentPayments: Payment[];
+  upcomingCoupons: UpcomingCoupon[];
+  monthlyData: MonthlyData[];
+  chartSubscriptionsAll: { montant_investi: number; date_souscription: string }[];
+  alerts: Alert[];
 }
 
 // Payment, UpcomingCoupon, Alert now imported from utils/dashboardAlerts.ts
@@ -60,13 +77,16 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
   const CACHE_DURATION = 5 * 60 * 1000;
 
   // Cache getter - defined early for useState initializer
-  const checkCachedData = (): unknown => {
+  const checkCachedData = (): CachedDashboardData | null => {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (!cached) {
         return null;
       }
-      const { data, timestamp } = JSON.parse(cached);
+      const { data, timestamp } = JSON.parse(cached) as {
+        data: CachedDashboardData;
+        timestamp: number;
+      };
       if (Date.now() - timestamp > CACHE_DURATION) {
         localStorage.removeItem(CACHE_KEY);
         return null;
@@ -503,8 +523,8 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
           logger.warn('Supabase error all coupons:', allCouponsRes.error);
         }
 
-        recentPaymentsData = paymentsRes2.data || [];
-        allCouponsForAlerts = allCouponsRes.data || [];
+        recentPaymentsData = (paymentsRes2.data || []) as unknown as Payment[];
+        allCouponsForAlerts = (allCouponsRes.data || []) as unknown as UpcomingCoupon[];
 
         // Group coupons by échéance (tranche + date) and calculate unpaid amounts
         // Show échéances with at least 1 unpaid coupon (even if partially paid)
@@ -550,7 +570,10 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
             }
 
             const echeance = echeanceMap.get(key);
-            const montantCoupon = parseFloat(coupon.montant_coupon || 0);
+            if (!echeance) {
+              return;
+            }
+            const montantCoupon = parseFloat(String(coupon.montant_coupon || 0));
             echeance.montant_total += montantCoupon;
             echeance.investor_count += 1;
 
@@ -893,8 +916,8 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         organizationId={organization.id}
         dashboardData={{
           stats,
-          recentPayments,
-          upcomingCoupons,
+          recentPayments: recentPayments as unknown as Record<string, unknown>[],
+          upcomingCoupons: upcomingCoupons as unknown as Record<string, unknown>[],
           alerts,
           monthlyData,
         }}

@@ -71,8 +71,10 @@ export function SimplePaymentModal({
         throw new Error('Échéance introuvable');
       }
 
-      const orgId = (echeanceData.souscription as Record<string, unknown> | null)?.org_id;
-      const trancheId = (echeanceData.souscription as Record<string, unknown> | null)?.tranche_id;
+      const orgId = (echeanceData.souscription as unknown as Record<string, unknown> | null)
+        ?.org_id as string | undefined;
+      const trancheId = (echeanceData.souscription as unknown as Record<string, unknown> | null)
+        ?.tranche_id as string | undefined;
 
       if (!orgId) {
         throw new Error('Organisation introuvable');
@@ -88,7 +90,8 @@ export function SimplePaymentModal({
           type: 'coupon',
           tranche_id: trancheId,
           org_id: orgId,
-        })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
         .select()
         .single();
 
@@ -132,7 +135,7 @@ export function SimplePaymentModal({
         }
       }
 
-      await triggerCacheInvalidation(['coupons', 'echeances', 'payments']);
+      await triggerCacheInvalidation();
       toast.success('Paiement enregistré avec succès');
       onSuccess();
     } catch (error) {

@@ -27,7 +27,7 @@ export default function EmetteurProjectView() {
       const { data: accessCheck } = await supabase
         .from('emetteur_projects')
         .select('id')
-        .eq('projet_id', projectId)
+        .eq('projet_id', projectId!)
         .eq('user_id', user!.id)
         .maybeSingle();
 
@@ -39,7 +39,7 @@ export default function EmetteurProjectView() {
       const { data: projectData } = await supabase
         .from('projets')
         .select('org_id, organizations:org_id(id, name)')
-        .eq('id', projectId)
+        .eq('id', projectId!)
         .maybeSingle();
 
       if (!projectData) {
@@ -49,8 +49,8 @@ export default function EmetteurProjectView() {
 
       const org = projectData.organizations as Record<string, unknown> | null;
       setOrgInfo({
-        id: org?.id || projectData.org_id,
-        name: org?.name || 'Organisation',
+        id: (org?.id as string) || projectData.org_id || '',
+        name: (org?.name as string) || 'Organisation',
       });
     } catch (err: unknown) {
       console.error('Error checking emetteur access:', err);

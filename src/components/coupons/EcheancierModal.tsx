@@ -11,7 +11,12 @@ interface EcheancierModalProps {
   formatDate: (date: string | null) => string;
 }
 
-function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate }: EcheancierModalProps) {
+function EcheancierModalContent({
+  projectId,
+  onClose,
+  formatCurrency,
+  formatDate,
+}: EcheancierModalProps) {
   const navigate = useNavigate();
 
   // Handle ESC key to close modal
@@ -31,8 +36,14 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fade-in" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] m-4 flex flex-col animate-slide-in-right" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] m-4 flex flex-col animate-slide-in-right"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Close button in top-right corner */}
         <button
           onClick={onClose}
@@ -54,8 +65,5 @@ function EcheancierModalContent({ projectId, onClose, formatCurrency, formatDate
 }
 
 export function EcheancierModal(props: EcheancierModalProps) {
-  return createPortal(
-    <EcheancierModalContent {...props} />,
-    document.body
-  );
+  return createPortal(<EcheancierModalContent {...props} />, document.body);
 }

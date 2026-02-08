@@ -112,7 +112,7 @@ export async function downloadRegistreTemplate(): Promise<void> {
     const instructions = [
       '1. Ouvrez l\'onglet "Registre" en bas de l\'ecran',
       '2. Remplissez les sections "Personnes Physiques" et "Personnes Morales"',
-      '3. IMPORTANT: Ne modifiez pas les en-tetes de colonnes (sinon l\'import echouera)',
+      "3. IMPORTANT: Ne modifiez pas les en-tetes de colonnes (sinon l'import echouera)",
       '4. Consultez l\'onglet "Aide" pour connaitre les champs obligatoires',
       '5. Une fois termine, enregistrez et importez le fichier dans Finixar',
     ];
@@ -361,7 +361,10 @@ export async function downloadRegistreTemplate(): Promise<void> {
       ['Téléphone', 'Numéro avec ou sans indicatif (+33)'],
       ['Adresse du domicile', 'Adresse complète du domicile'],
       ['Résidence Fiscale 1', 'Pays de résidence fiscale (ex: France)'],
-      ['Date de Transfert (obligatoire)', 'Date de souscription (jj/mm/aaaa) - utilisée comme date d\'émission'],
+      [
+        'Date de Transfert (obligatoire)',
+        "Date de souscription (jj/mm/aaaa) - utilisée comme date d'émission",
+      ],
       ['CGP', 'Conseiller en Gestion de Patrimoine (optionnel)'],
       ['E-mail du CGP', 'E-mail du CGP (optionnel)'],
     ];
@@ -394,7 +397,10 @@ export async function downloadRegistreTemplate(): Promise<void> {
       ['Nom du représentant légal', 'Nom du représentant (optionnel)'],
       ['Téléphone', 'Numéro de téléphone de la société'],
       ['Adresse du siège social', 'Adresse complète du siège social'],
-      ['Date de Transfert (obligatoire)', 'Date de souscription (jj/mm/aaaa) - utilisée comme date d\'émission'],
+      [
+        'Date de Transfert (obligatoire)',
+        "Date de souscription (jj/mm/aaaa) - utilisée comme date d'émission",
+      ],
       ['CGP', 'Conseiller en Gestion de Patrimoine (optionnel)'],
       ['E-mail du CGP', 'E-mail du CGP (optionnel)'],
     ];

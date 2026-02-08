@@ -206,7 +206,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       .order('date_souscription', { ascending: false })
       .limit(2000); // Safety limit to prevent loading too much data
 
-    const subscriptionsData = (data || []) as Subscription[];
+    const subscriptionsData = (data || []) as unknown as Subscription[];
 
     // Fetch payment status for each subscription (count unique dates paid vs total)
     if (subscriptionsData.length > 0) {
@@ -219,7 +219,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         .in('souscription_id', subscriptionIds);
 
       // Count unique dates paid vs total for each subscription
-      const paymentStatusMap = new Map<string, { paid: number; total: number }>();
+      const paymentStatusMap = new Map<string, { paid: Set<string>; total: Set<string> }>();
 
       echeances?.forEach(e => {
         if (!paymentStatusMap.has(e.souscription_id)) {

@@ -13,7 +13,7 @@ interface QuickPaymentModalProps {
 interface Project {
   id: string;
   projet: string;
-  emetteur: string;
+  emetteur: string | null;
 }
 
 interface Tranche {
@@ -91,7 +91,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
       }
       setProjects(data || []);
     } catch (error) {
-      logger.error('Failed to fetch projects', error);
+      logger.error('Failed to fetch projects', error as Record<string, unknown>);
       toast.error('Erreur lors du chargement des projets');
     } finally {
       setLoading(false);
@@ -138,7 +138,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
 
       setTranches(tranchesWithStats);
     } catch (error) {
-      logger.error('Failed to fetch tranches', error);
+      logger.error('Failed to fetch tranches', error as Record<string, unknown>);
       toast.error('Erreur lors du chargement des tranches');
     } finally {
       setLoading(false);
@@ -167,7 +167,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
       }
       setSubscriptions((data || []) as Subscription[]);
     } catch (error) {
-      logger.error('Failed to fetch subscriptions', error);
+      logger.error('Failed to fetch subscriptions', error as Record<string, unknown>);
       toast.error('Erreur lors du chargement des souscriptions');
     } finally {
       setLoading(false);

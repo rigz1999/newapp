@@ -6,7 +6,7 @@ const SUPABASE_URL = 'https://test.supabase.co';
 export const handlers = [
   // Sign in with password
   http.post(`${SUPABASE_URL}/auth/v1/token`, async ({ request }) => {
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
 
     // Mock successful login
     if (body.email === 'test@example.com' && body.password === 'password123') {
@@ -129,7 +129,7 @@ export const handlers = [
 
   // POST handlers for creating resources
   http.post(`${SUPABASE_URL}/rest/v1/projects`, async ({ request }) => {
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json(
       {
         ...body,
@@ -141,7 +141,7 @@ export const handlers = [
   }),
 
   http.post(`${SUPABASE_URL}/rest/v1/investors`, async ({ request }) => {
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json(
       {
         ...body,

@@ -217,12 +217,13 @@ export function TrancheEditPage(): JSX.Element {
     }
   };
 
-  const _fetchInvestorDetails = async (investorId: string): Promise<void> => {
+  // @ts-expect-error reserved for future use
+  const _fetchInvestorDetails = async (_investorId: string): Promise<void> => {
     try {
       const { data: investor, error: investorError } = await supabase
         .from('investisseurs')
         .select('id, nom_raison_sociale, type, email, telephone, adresse')
-        .eq('id', investorId)
+        .eq('id', _investorId)
         .single();
 
       if (investorError) {
@@ -244,7 +245,7 @@ export function TrancheEditPage(): JSX.Element {
           )
         `
         )
-        .eq('investisseur_id', investorId);
+        .eq('investisseur_id', _investorId);
 
       if (investmentsError) {
         throw investmentsError;

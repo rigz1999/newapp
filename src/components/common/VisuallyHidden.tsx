@@ -6,11 +6,7 @@ interface VisuallyHiddenProps {
 }
 
 export function VisuallyHidden({ children, as: Component = 'span' }: VisuallyHiddenProps) {
-  return (
-    <Component className="sr-only">
-      {children}
-    </Component>
-  );
+  return <Component className="sr-only">{children}</Component>;
 }
 
 export function FocusVisible({ children }: { children: ReactNode }) {

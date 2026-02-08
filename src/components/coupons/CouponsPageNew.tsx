@@ -646,13 +646,13 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
             {/* Date Range Filter */}
             <DateRangePicker
               label="Période d'échéance"
-              startDate={filterState.filters.dateStart}
-              endDate={filterState.filters.dateEnd}
+              startDate={filterState.filters.dateStart ?? null}
+              endDate={filterState.filters.dateEnd ?? null}
               onStartDateChange={date =>
-                filterState.setDateRange(date, filterState.filters.dateEnd)
+                filterState.setDateRange(date ?? undefined, filterState.filters.dateEnd)
               }
               onEndDateChange={date =>
-                filterState.setDateRange(filterState.filters.dateStart, date)
+                filterState.setDateRange(filterState.filters.dateStart, date ?? undefined)
               }
             />
 

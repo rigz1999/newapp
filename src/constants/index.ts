@@ -58,9 +58,9 @@ export const PAYMENT_STATUS = {
  * Note: Database stores 'en_attente' but UI displays as 'Prévu'
  */
 export const COUPON_STATUS = {
-  PLANNED: 'en_attente',  // Displayed as "Prévu"
-  PAID: 'paye',           // Displayed as "Payé"
-  OVERDUE: 'en_retard',   // Displayed as "En retard"
+  PLANNED: 'en_attente', // Displayed as "Prévu"
+  PAID: 'paye', // Displayed as "Payé"
+  OVERDUE: 'en_retard', // Displayed as "En retard"
 } as const;
 
 export const COUPON_STATUS_LABELS = {

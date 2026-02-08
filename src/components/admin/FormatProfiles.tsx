@@ -68,7 +68,7 @@ export default function FormatProfiles(): JSX.Element {
         throw profilesError;
       }
 
-      setProfiles(profilesData || []);
+      setProfiles((profilesData || []) as unknown as FormatProfile[]);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
       console.error('Erreur chargement données:', error);

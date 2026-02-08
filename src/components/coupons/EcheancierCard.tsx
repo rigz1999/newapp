@@ -221,7 +221,7 @@ export function EcheancierCard({
                 ...e,
                 tranche_name: tranche.tranche_name,
                 investisseur: investisseur || { nom_raison_sociale: 'Inconnu' },
-              };
+              } as EnrichedEcheance;
             })
           );
         }
@@ -296,7 +296,7 @@ export function EcheancierCard({
         e.tranche_name,
         e.investisseur?.nom_raison_sociale || 'Inconnu',
         new Date(e.date_echeance).toLocaleDateString('fr-FR'),
-        Number(e.montant_coupon),
+        String(Number(e.montant_coupon)),
         statut,
         e.date_paiement ? new Date(e.date_paiement).toLocaleDateString('fr-FR') : '-',
       ]);

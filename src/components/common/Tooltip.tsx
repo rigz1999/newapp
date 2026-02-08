@@ -72,23 +72,25 @@ export function Tooltip({ content, children, position = 'top', disabled = false 
       >
         {children}
       </div>
-      {isVisible && content && createPortal(
-        <div
-          className={`fixed z-[9999] ${positionClasses[position]} pointer-events-none animate-fade-in`}
-          style={{
-            top: `${coords.top}px`,
-            left: `${coords.left}px`,
-          }}
-        >
-          <div className="bg-slate-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap max-w-xs">
-            {content}
-          </div>
+      {isVisible &&
+        content &&
+        createPortal(
           <div
-            className={`absolute w-0 h-0 border-4 border-transparent ${arrowClasses[position]}`}
-          />
-        </div>,
-        document.body
-      )}
+            className={`fixed z-[9999] ${positionClasses[position]} pointer-events-none animate-fade-in`}
+            style={{
+              top: `${coords.top}px`,
+              left: `${coords.left}px`,
+            }}
+          >
+            <div className="bg-slate-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap max-w-xs">
+              {content}
+            </div>
+            <div
+              className={`absolute w-0 h-0 border-4 border-transparent ${arrowClasses[position]}`}
+            />
+          </div>,
+          document.body
+        )}
     </>
   );
 }

@@ -42,7 +42,9 @@ export default function TestToast() {
             </button>
 
             <button
-              onClick={() => toast.success('Short duration', 'This will disappear in 2 seconds', 2000)}
+              onClick={() =>
+                toast.success('Short duration', 'This will disappear in 2 seconds', 2000)
+              }
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
               Show Short Duration (2s)

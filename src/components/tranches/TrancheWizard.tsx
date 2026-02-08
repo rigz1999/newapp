@@ -905,7 +905,8 @@ export function TrancheWizard({
 
   // Use full-page edit view for edit mode
   if (isEditMode && editingTranche) {
-    return <TrancheEditPage tranche={editingTranche} onClose={onClose} onSuccess={onSuccess} />;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return <TrancheEditPage {...({ tranche: editingTranche, onClose, onSuccess } as any)} />;
   }
 
   // Modal view for create mode
@@ -1254,7 +1255,10 @@ export function TrancheWizard({
                   description="Le fichier sera importé automatiquement"
                 />
                 {csvFile && (
-                  <div ref={fileConfirmRef} className="mt-4 flex items-center justify-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div
+                    ref={fileConfirmRef}
+                    className="mt-4 flex items-center justify-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg"
+                  >
                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                     <span className="text-sm text-slate-700 font-medium flex-1 text-left">
                       {csvFile.name}

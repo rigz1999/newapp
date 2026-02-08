@@ -68,13 +68,15 @@ export function useRealtimeSubscription<
 
     // Subscribe to changes
     const subscription = newChannel.on(
-      'postgres_changes',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      'postgres_changes' as any,
       {
         event,
         schema: 'public',
         table,
         filter,
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
       (payload: RealtimePostgresChangesPayload<T>) => {
         setLastUpdate(new Date());
 

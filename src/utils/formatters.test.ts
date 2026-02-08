@@ -34,9 +34,9 @@ describe('formatters', () => {
 
   describe('formatCurrencyWithDecimals', () => {
     it('should format amounts to EUR with decimals', () => {
-      expect(formatCurrencyWithDecimals(1000.50)).toContain('1');
-      expect(formatCurrencyWithDecimals(1000.50)).toContain('50');
-      expect(formatCurrencyWithDecimals(1000.50)).toContain('€');
+      expect(formatCurrencyWithDecimals(1000.5)).toContain('1');
+      expect(formatCurrencyWithDecimals(1000.5)).toContain('50');
+      expect(formatCurrencyWithDecimals(1000.5)).toContain('€');
       expect(formatCurrencyWithDecimals(0)).toContain('0,00');
     });
 

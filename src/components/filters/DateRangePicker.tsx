@@ -34,7 +34,7 @@ export function DateRangePicker({
         <input
           type="date"
           value={startDate || ''}
-          onChange={(e) => onStartDateChange(e.target.value || null)}
+          onChange={e => onStartDateChange(e.target.value || null)}
           className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
           placeholder="Date début"
         />
@@ -42,7 +42,7 @@ export function DateRangePicker({
         <input
           type="date"
           value={endDate || ''}
-          onChange={(e) => onEndDateChange(e.target.value || null)}
+          onChange={e => onEndDateChange(e.target.value || null)}
           className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
           placeholder="Date fin"
         />

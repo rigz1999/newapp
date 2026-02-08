@@ -246,9 +246,7 @@ export function ImportPreviewModal({
                       <th className="px-5 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                         Titres
                       </th>
-                      <th className="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider w-12">
-
-                      </th>
+                      <th className="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider w-12"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -308,7 +306,9 @@ export function ImportPreviewModal({
                               </span>
                             )}
                           </td>
-                          <td className={`px-5 py-3 text-sm text-right ${isDeleted ? 'line-through' : ''}`}>
+                          <td
+                            className={`px-5 py-3 text-sm text-right ${isDeleted ? 'line-through' : ''}`}
+                          >
                             {editingRow === index && !isDeleted ? (
                               <input
                                 type="number"
@@ -329,7 +329,9 @@ export function ImportPreviewModal({
                               </span>
                             )}
                           </td>
-                          <td className={`px-5 py-3 text-sm text-right ${isDeleted ? 'line-through' : ''}`}>
+                          <td
+                            className={`px-5 py-3 text-sm text-right ${isDeleted ? 'line-through' : ''}`}
+                          >
                             {editingRow === index && !isDeleted ? (
                               <div className="flex items-center justify-end gap-2">
                                 <input

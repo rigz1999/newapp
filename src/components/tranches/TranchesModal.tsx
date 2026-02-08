@@ -1,9 +1,24 @@
 import { useState, useMemo, useEffect } from 'react';
 import { X, Search, Edit, Trash2 } from 'lucide-react';
 
+interface TrancheRecord {
+  id: string | number;
+  tranche_name: string;
+  date_emission: string;
+  date_echeance_finale?: string | null;
+  taux_nominal?: number | null;
+  [key: string]: unknown;
+}
+
+interface SubscriptionRecord {
+  tranche: { tranche_name: string; [key: string]: unknown };
+  montant_investi: number;
+  [key: string]: unknown;
+}
+
 interface TranchesModalProps {
-  tranches: Record<string, unknown>[];
-  subscriptions: Record<string, unknown>[];
+  tranches: TrancheRecord[];
+  subscriptions: SubscriptionRecord[];
   onClose: () => void;
   onEdit: (tranche: Record<string, unknown>) => void;
   onDelete: (tranche: Record<string, unknown>) => void;

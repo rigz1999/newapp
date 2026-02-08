@@ -77,7 +77,7 @@ export default function InviteEmetteurModal({
       setProjectOrgId(projectData.org_id);
       setProjectOrgName(projectData.organizations?.name || '');
     } catch (error) {
-      logger.error('Error loading project organization', error);
+      logger.error('Error loading project organization', error as Record<string, unknown>);
       toast.error('Erreur lors du chargement du projet');
     }
   };
@@ -100,7 +100,7 @@ export default function InviteEmetteurModal({
         setSelectedEmetteur(projectEmetteur);
       }
     } catch (error) {
-      logger.error('Error loading emetteurs', error);
+      logger.error('Error loading emetteurs', error as Record<string, unknown>);
       toast.error('Erreur lors du chargement des émetteurs');
     } finally {
       setLoadingEmetteurs(false);
@@ -146,7 +146,7 @@ export default function InviteEmetteurModal({
       onSuccess();
       onClose();
     } catch (error) {
-      logger.error('Error inviting emetteur', error);
+      logger.error('Error inviting emetteur', error as Record<string, unknown>);
       const errorMessage =
         error instanceof Error ? error.message : "Erreur lors de l'envoi de l'invitation";
       toast.error(errorMessage);

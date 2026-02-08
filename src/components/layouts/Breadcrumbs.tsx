@@ -29,10 +29,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
         <div key={index} className="flex items-center space-x-2">
           <ChevronRight className="w-4 h-4 text-slate-400" />
           {item.path && index < items.length - 1 ? (
-            <Link
-              to={item.path}
-              className="text-slate-600 hover:text-slate-900 transition-colors"
-            >
+            <Link to={item.path} className="text-slate-600 hover:text-slate-900 transition-colors">
               {item.label}
             </Link>
           ) : (

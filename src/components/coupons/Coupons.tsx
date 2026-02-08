@@ -238,14 +238,15 @@ export function Coupons() {
       }
 
       const processedCoupons: Coupon[] = (data || []).map((c: Record<string, unknown>) => {
-        const investisseur = c.souscription.investisseur;
-        const tranche = c.souscription.tranche;
-        const projet = tranche.projet;
+        const souscription = c.souscription as Record<string, unknown>;
+        const investisseur = souscription.investisseur as Record<string, unknown>;
+        const tranche = souscription.tranche as Record<string, unknown>;
+        const projet = tranche.projet as Record<string, unknown>;
 
         const montant_net =
-          investisseur.type.toLowerCase() === 'physique'
-            ? c.montant_coupon * (1 - TAX_RATE_PHYSICAL)
-            : c.montant_coupon;
+          (investisseur.type as string).toLowerCase() === 'physique'
+            ? (c.montant_coupon as number) * (1 - TAX_RATE_PHYSICAL)
+            : (c.montant_coupon as number);
 
         return {
           id: c.id,
@@ -269,7 +270,7 @@ export function Coupons() {
           tranche_id: tranche.id,
           tranche_nom: tranche.tranche_name,
           montant_net,
-        };
+        } as unknown as Coupon;
       });
 
       setCoupons(processedCoupons);

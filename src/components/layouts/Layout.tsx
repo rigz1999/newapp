@@ -283,10 +283,15 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
           <nav className="space-y-1">
             {isLoading ? (
               <>
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className={`flex items-center gap-2 px-3 py-2 ${isCollapsed ? 'justify-center' : ''}`}>
+                {[1, 2, 3].map(i => (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-2 px-3 py-2 ${isCollapsed ? 'justify-center' : ''}`}
+                  >
                     <div className="w-4 h-4 rounded bg-slate-700 animate-pulse flex-shrink-0" />
-                    {!isCollapsed && <div className="h-3 rounded bg-slate-700 animate-pulse flex-1" />}
+                    {!isCollapsed && (
+                      <div className="h-3 rounded bg-slate-700 animate-pulse flex-1" />
+                    )}
                   </div>
                 ))}
               </>
@@ -357,7 +362,17 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                     {userProfile?.full_name || 'Utilisateur'}
                   </p>
                   <p className="text-xs text-slate-400 capitalize whitespace-nowrap">
-                    {isLoading ? <span className="inline-block w-12 h-3 bg-slate-700 rounded animate-pulse" /> : isSuperAdminUser ? 'Super Admin' : isOrgAdmin ? 'Admin' : isEmetteur ? 'Émetteur' : 'Membre'}
+                    {isLoading ? (
+                      <span className="inline-block w-12 h-3 bg-slate-700 rounded animate-pulse" />
+                    ) : isSuperAdminUser ? (
+                      'Super Admin'
+                    ) : isOrgAdmin ? (
+                      'Admin'
+                    ) : isEmetteur ? (
+                      'Émetteur'
+                    ) : (
+                      'Membre'
+                    )}
                   </p>
                 </div>
               )}

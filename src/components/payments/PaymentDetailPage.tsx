@@ -54,11 +54,20 @@ export function PaymentDetailPage() {
   const [payment, setPayment] = useState<PaymentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [proofs, setProofs] = useState<Record<string, unknown>[]>([]);
+  const [proofs, setProofs] = useState<
+    {
+      id: string;
+      file_url: string;
+      file_name: string;
+      validated_at: string;
+      extracted_data?: { montant: number; date?: string } | null;
+      confidence?: number;
+    }[]
+  >([]);
   const [showProofsModal, setShowProofsModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [_deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (paymentId) {
@@ -84,13 +93,13 @@ export function PaymentDetailPage() {
           souscription:souscriptions(montant_investi, coupon_brut, coupon_net)
         `
         )
-        .eq('id', paymentId)
+        .eq('id', paymentId!)
         .single();
 
       if (fetchError) {
         throw fetchError;
       }
-      setPayment(data);
+      setPayment(data as unknown as PaymentDetail);
     } catch (err) {
       console.error('Error fetching payment:', err);
       setError('Impossible de charger les détails du paiement');
@@ -104,11 +113,11 @@ export function PaymentDetailPage() {
       const { data, error: proofsError } = await supabase
         .from('payment_proofs')
         .select('*')
-        .eq('paiement_id', paymentId)
+        .eq('paiement_id', paymentId!)
         .order('validated_at', { ascending: false });
 
       if (!proofsError && data) {
-        setProofs(data);
+        setProofs(data as typeof proofs);
       }
     } catch (err) {
       console.error('Error fetching proofs:', err);
@@ -444,7 +453,7 @@ export function PaymentDetailPage() {
         <PaymentProofUpload
           payment={payment}
           onClose={() => setShowUploadModal(false)}
-          onUploadSuccess={() => {
+          onSuccess={() => {
             fetchProofs();
             setShowUploadModal(false);
           }}
@@ -459,7 +468,7 @@ export function PaymentDetailPage() {
           title="Supprimer le paiement"
           message={`Êtes-vous sûr de vouloir supprimer ce paiement de ${formatCurrency(payment.montant)} ? Cette action est irréversible.`}
           confirmText="Supprimer"
-          isLoading={deleting}
+          isDangerous
         />
       )}
     </div>

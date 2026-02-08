@@ -947,7 +947,16 @@ export function Payments({ organization }: PaymentsProps) {
       {viewingProofs && (
         <ViewProofsModal
           payment={viewingProofs}
-          proofs={proofs}
+          proofs={
+            proofs as unknown as {
+              id: string;
+              file_url: string;
+              file_name: string;
+              validated_at: string;
+              extracted_data?: { montant: number; date?: string } | null;
+              confidence?: number;
+            }[]
+          }
           onClose={() => setViewingProofs(null)}
           onProofDeleted={() => {
             fetchPayments();

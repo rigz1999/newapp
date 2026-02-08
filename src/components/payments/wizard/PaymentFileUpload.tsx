@@ -62,9 +62,7 @@ export function PaymentFileUpload({
         <p className="text-sm text-slate-500 mt-2">
           {isDragging ? 'Relâchez pour téléverser' : 'ou glissez-déposez vos fichiers'}
         </p>
-        <p className="text-xs text-slate-400 mt-1">
-          PDF, PNG, JPG ou WEBP (max 10MB par fichier)
-        </p>
+        <p className="text-xs text-slate-400 mt-1">PDF, PNG, JPG ou WEBP (max 10MB par fichier)</p>
       </div>
 
       {files.length > 0 && (
@@ -85,9 +83,7 @@ export function PaymentFileUpload({
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-500">
-                    {(file.size / 1024).toFixed(0)} KB
-                  </span>
+                  <span className="text-xs text-slate-500">{(file.size / 1024).toFixed(0)} KB</span>
                   <button
                     onClick={() => onRemoveFile(idx)}
                     disabled={analyzing}
@@ -105,7 +101,11 @@ export function PaymentFileUpload({
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2" role="alert" aria-live="assertive">
+        <div
+          className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2"
+          role="alert"
+          aria-live="assertive"
+        >
           <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <p className="text-sm text-red-700">{error}</p>
         </div>
@@ -116,7 +116,9 @@ export function PaymentFileUpload({
         disabled={files.length === 0 || analyzing}
         className="w-full bg-finixar-teal text-white py-3 rounded-lg font-medium hover:bg-finixar-teal-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
         aria-busy={analyzing}
-        aria-label={analyzing ? "Analyse du justificatif en cours" : "Analyser le justificatif de paiement"}
+        aria-label={
+          analyzing ? 'Analyse du justificatif en cours' : 'Analyser le justificatif de paiement'
+        }
       >
         {analyzing ? (
           <>

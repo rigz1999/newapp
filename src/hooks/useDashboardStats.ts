@@ -59,10 +59,7 @@ export function useDashboardStats(orgId: string): DashboardStatsResult {
         couponsLastYearRes,
         upcomingCouponsRes,
       ] = await Promise.all([
-        supabase
-          .from('projets')
-          .select('id', { count: 'exact', head: true })
-          .eq('org_id', orgId),
+        supabase.from('projets').select('id', { count: 'exact', head: true }).eq('org_id', orgId),
         supabase
           .from('souscriptions')
           .select('montant_investi, projets!inner(org_id)', { count: 'exact' })
@@ -133,7 +130,7 @@ export function useDashboardStats(orgId: string): DashboardStatsResult {
         nextCouponDays: 0,
       });
     } catch (err) {
-      logger.error('Failed to fetch dashboard stats', err);
+      logger.error('Failed to fetch dashboard stats', err as Record<string, unknown>);
       setError('Erreur lors du chargement des statistiques');
     } finally {
       setLoading(false);

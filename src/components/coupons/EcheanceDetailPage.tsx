@@ -43,14 +43,38 @@ interface EcheanceItem {
 
 interface ProjetInfo {
   id: string;
-  short_id: string;
+  short_id: string | null;
   projet: string;
 }
 
 interface TrancheInfo {
   id: string;
-  short_id: string;
+  short_id: string | null;
   tranche_name: string;
+}
+
+interface RawEcheanceSouscription {
+  id_souscription: string;
+  coupon_brut: number;
+  coupon_net: number;
+  montant_investi: number;
+  tranche_id: string;
+  investisseur: {
+    id: string;
+    nom_raison_sociale: string;
+    type: string;
+  } | null;
+}
+
+interface RawEcheanceRow {
+  id: string;
+  souscription_id: string;
+  date_echeance: string;
+  montant_coupon: number;
+  statut: string;
+  paiement_id: string | null;
+  date_paiement: string | null;
+  souscription: RawEcheanceSouscription;
 }
 
 export function EcheanceDetailPage() {
@@ -203,22 +227,24 @@ export function EcheanceDetailPage() {
         throw error;
       }
 
-      const items: EcheanceItem[] = (echeancesData || []).map((e: Record<string, unknown>) => ({
-        id: e.id,
-        souscription_id: e.souscription_id,
-        date_echeance: e.date_echeance,
-        montant_coupon: e.montant_coupon,
-        statut: e.statut,
-        paiement_id: e.paiement_id,
-        date_paiement: e.date_paiement,
-        investisseur_id: e.souscription?.investisseur?.id || '',
-        investisseur_nom: e.souscription?.investisseur?.nom_raison_sociale || 'N/A',
-        investisseur_type: e.souscription?.investisseur?.type || 'Physique',
-        souscription_id_display: e.souscription?.id_souscription || '',
-        coupon_brut: e.souscription?.coupon_brut || 0,
-        coupon_net: e.souscription?.coupon_net || 0,
-        montant_investi: e.souscription?.montant_investi || 0,
-      }));
+      const items: EcheanceItem[] = ((echeancesData || []) as unknown as RawEcheanceRow[]).map(
+        e => ({
+          id: e.id,
+          souscription_id: e.souscription_id,
+          date_echeance: e.date_echeance,
+          montant_coupon: e.montant_coupon,
+          statut: e.statut,
+          paiement_id: e.paiement_id,
+          date_paiement: e.date_paiement,
+          investisseur_id: e.souscription?.investisseur?.id || '',
+          investisseur_nom: e.souscription?.investisseur?.nom_raison_sociale || 'N/A',
+          investisseur_type: e.souscription?.investisseur?.type || 'Physique',
+          souscription_id_display: e.souscription?.id_souscription || '',
+          coupon_brut: e.souscription?.coupon_brut || 0,
+          coupon_net: e.souscription?.coupon_net || 0,
+          montant_investi: e.souscription?.montant_investi || 0,
+        })
+      );
 
       // Sort by investor name
       items.sort((a, b) => a.investisseur_nom.localeCompare(b.investisseur_nom));
@@ -271,7 +297,7 @@ export function EcheanceDetailPage() {
 
   const handlePaymentSuccess = async () => {
     setShowPaymentModal(false);
-    await triggerCacheInvalidation(['coupons', 'echeances']);
+    await triggerCacheInvalidation();
     fetchData();
   };
 

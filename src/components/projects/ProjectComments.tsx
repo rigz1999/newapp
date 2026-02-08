@@ -91,7 +91,7 @@ export function ProjectComments({ projectId, orgId }: ProjectCommentsProps) {
       if (error) {
         throw error;
       }
-      setComments(data || []);
+      setComments((data || []) as unknown as Comment[]);
     } catch (error) {
       console.error('Error fetching comments:', error);
     } finally {

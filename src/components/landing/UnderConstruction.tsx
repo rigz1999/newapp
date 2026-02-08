@@ -14,18 +14,14 @@ export function UnderConstruction() {
 
         {/* Main Message */}
         <div className="bg-white/10 backdrop-blur-md rounded-2xl p-12 shadow-2xl border border-white/20">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Notre site est en construction
-          </h2>
+          <h2 className="text-3xl font-bold text-white mb-4">Notre site est en construction</h2>
           <p className="text-xl text-slate-200 mb-8">
             Nous préparons quelque chose d'extraordinaire pour vous.
           </p>
 
           {/* CTA to App */}
           <div className="space-y-4">
-            <p className="text-slate-300 text-sm">
-              Vous êtes déjà client ?
-            </p>
+            <p className="text-slate-300 text-sm">Vous êtes déjà client ?</p>
             <a
               href="http://app.finixar.com"
               className="inline-flex items-center gap-2 px-8 py-4 bg-finixar-brand-blue hover:bg-blue-600 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"

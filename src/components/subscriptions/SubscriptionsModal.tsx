@@ -1,6 +1,18 @@
 import { useState, useMemo, useEffect } from 'react';
 import { X, Search, Download, ArrowUpDown, Edit, Trash2 } from 'lucide-react';
 
+interface SubscriptionItem {
+  id: string | number;
+  tranche: { tranche_name: string };
+  investisseur: { nom_raison_sociale: string; cgp?: string };
+  cgp?: string;
+  date_souscription: string;
+  montant_investi: number;
+  nombre_obligations: number;
+  coupon_net: number;
+  [key: string]: unknown;
+}
+
 interface SubscriptionsModalProps {
   subscriptions: Record<string, unknown>[];
   onClose: () => void;
@@ -18,6 +30,8 @@ export function SubscriptionsModal({
   formatCurrency,
   formatDate,
 }: SubscriptionsModalProps) {
+  const typedSubscriptions = subscriptions as unknown as SubscriptionItem[];
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTranche, setFilterTranche] = useState('all');
   const [filterCGP, setFilterCGP] = useState('all');
@@ -37,18 +51,20 @@ export function SubscriptionsModal({
 
   // Extraire les tranches et CGP uniques
   const tranches = useMemo(() => {
-    const unique = new Set(subscriptions.map(s => s.tranche.tranche_name));
+    const unique = new Set(typedSubscriptions.map(s => s.tranche.tranche_name));
     return Array.from(unique).sort();
-  }, [subscriptions]);
+  }, [typedSubscriptions]);
 
   const cgps = useMemo(() => {
-    const unique = new Set(subscriptions.map(s => s.cgp || s.investisseur.cgp).filter(Boolean));
+    const unique = new Set(
+      typedSubscriptions.map(s => s.cgp || s.investisseur.cgp).filter(Boolean)
+    );
     return Array.from(unique).sort();
-  }, [subscriptions]);
+  }, [typedSubscriptions]);
 
   // Filtrer et trier
   const filteredSubs = useMemo(() => {
-    const result = subscriptions.filter(sub => {
+    const result = typedSubscriptions.filter(sub => {
       const matchesSearch = sub.investisseur.nom_raison_sociale
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
@@ -74,7 +90,7 @@ export function SubscriptionsModal({
     });
 
     return result;
-  }, [subscriptions, searchTerm, filterTranche, filterCGP, sortBy, sortOrder]);
+  }, [typedSubscriptions, searchTerm, filterTranche, filterCGP, sortBy, sortOrder]);
 
   const handleExport = () => {
     const csvContent = [
@@ -134,7 +150,8 @@ export function SubscriptionsModal({
                 <h2 className="text-2xl font-bold text-slate-900">Toutes les souscriptions</h2>
                 <p className="text-sm text-slate-600 mt-1">
                   {filteredSubs.length} souscription{filteredSubs.length > 1 ? 's' : ''}
-                  {filteredSubs.length !== subscriptions.length && ` sur ${subscriptions.length}`}
+                  {filteredSubs.length !== typedSubscriptions.length &&
+                    ` sur ${typedSubscriptions.length}`}
                 </p>
               </div>
               <button

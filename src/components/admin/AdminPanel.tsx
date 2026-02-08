@@ -392,7 +392,7 @@ export default function AdminPanel() {
       setSelectedUserDetail({
         user_id: userId,
         email: profile?.email || 'N/A',
-        full_name: profile?.full_name,
+        full_name: profile?.full_name ?? undefined,
         created_at: profile?.created_at || membership.created_at,
         org_name: org?.name,
         role: membership.role,

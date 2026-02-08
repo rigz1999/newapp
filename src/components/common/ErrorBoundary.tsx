@@ -80,19 +80,22 @@ export class ErrorBoundary extends Component<Props, State> {
       const showDetails = this.props.showDetails ?? import.meta.env.DEV;
 
       return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4" role="alert" aria-live="assertive">
+        <div
+          className="min-h-screen bg-slate-50 flex items-center justify-center p-4"
+          role="alert"
+          aria-live="assertive"
+        >
           <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8">
             <div className="text-center mb-8">
               <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <AlertTriangle className="w-10 h-10 text-finixar-red" />
               </div>
 
-              <h1 className="text-2xl font-bold text-slate-900 mb-3">
-                Une erreur est survenue
-              </h1>
+              <h1 className="text-2xl font-bold text-slate-900 mb-3">Une erreur est survenue</h1>
 
               <p className="text-slate-600 mb-6 leading-relaxed">
-                Nous sommes désolés, une erreur inattendue s'est produite. Veuillez réessayer ou revenir à l'accueil.
+                Nous sommes désolés, une erreur inattendue s'est produite. Veuillez réessayer ou
+                revenir à l'accueil.
               </p>
             </div>
 

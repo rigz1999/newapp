@@ -1,4 +1,3 @@
-import React from 'react';
 import { Info } from 'lucide-react';
 import type { TaxRegime } from '../../lib/database.types';
 
@@ -31,13 +30,11 @@ export function TaxInfoTooltip({
 
     switch (taxRegime) {
       case 'pea':
-        return 'PEA : exonération d\'impôt';
+        return "PEA : exonération d'impôt";
       case 'assurance_vie':
         return 'Assurance vie : fiscalité selon ancienneté';
       case 'custom':
-        return customTaxRate
-          ? `Taux personnalisé : ${customTaxRate}%`
-          : 'Taux personnalisé';
+        return customTaxRate ? `Taux personnalisé : ${customTaxRate}%` : 'Taux personnalisé';
       case 'default':
       default:
         return 'PFU (Prélèvement Forfaitaire Unique) : 30%';
@@ -79,9 +76,7 @@ export function TaxInfoTooltip({
 
           {/* Tax regime info */}
           <div className="mt-3 pt-3 border-t border-gray-700">
-            <div className="text-xs text-gray-400">
-              {getTaxDescription()}
-            </div>
+            <div className="text-xs text-gray-400">{getTaxDescription()}</div>
             {isPhysique && taxRegime === 'default' && (
               <div className="text-xs text-gray-500 mt-1">
                 12,8% IR + 17,2% prélèvements sociaux

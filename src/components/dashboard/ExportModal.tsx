@@ -4,9 +4,6 @@ import Decimal from 'decimal.js';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { supabase } from '../../lib/supabase';
 
-type _ExcelJS = unknown;
-type _JsPDF = unknown;
-
 interface JsPDFWithAutoTable {
   text: (text: string, x: number, y: number, options?: Record<string, unknown>) => void;
   setFontSize: (size: number) => void;
@@ -159,11 +156,6 @@ const PRESET_CONFIGS: Record<ExportPreset, Partial<ExportOptions>> = {
 };
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
-const _getMonthAgoString = (months: number) => {
-  const date = new Date();
-  date.setMonth(date.getMonth() - months);
-  return date.toISOString().split('T')[0];
-};
 const getWeekAgoString = () => {
   const date = new Date();
   date.setDate(date.getDate() - 7);
@@ -359,10 +351,10 @@ export function ExportModal({
         )
         .order('date_paiement', { ascending: false });
 
-      if (options.paymentsStartDate && options.paymentsDateRange !== 'all') {
+      if (options.paymentsStartDate && (options.paymentsDateRange as string) !== 'all') {
         query = query.gte('date_paiement', options.paymentsStartDate);
       }
-      if (options.paymentsEndDate && options.paymentsDateRange !== 'all') {
+      if (options.paymentsEndDate && (options.paymentsDateRange as string) !== 'all') {
         query = query.lte('date_paiement', options.paymentsEndDate);
       }
       if (options.paymentsLimit > 0) {
@@ -371,7 +363,7 @@ export function ExportModal({
 
       const { data, error } = await query;
       if (!error && data) {
-        payments = data;
+        payments = data as Record<string, unknown>[];
       }
     }
 
@@ -401,23 +393,15 @@ export function ExportModal({
       const { data, error } = await query;
       if (!error && data) {
         // Group by tranche and date
-        const grouped = data.reduce(
-          (
-            acc: Record<string, unknown>[],
-            coupon: {
-              tranche_id: string;
-              prochaine_date_coupon: string;
-              coupon_brut: number;
-              investor_count?: number;
-            }
-          ) => {
+        const grouped = (data as Record<string, unknown>[]).reduce(
+          (acc: Record<string, unknown>[], coupon: Record<string, unknown>) => {
             const key = `${coupon.tranche_id}-${coupon.prochaine_date_coupon}`;
             const existing = acc.find(c => `${c.tranche_id}-${c.prochaine_date_coupon}` === key);
 
             if (existing) {
-              existing.investor_count += 1;
-              existing.coupon_brut = new Decimal(existing.coupon_brut)
-                .plus(new Decimal(coupon.coupon_brut))
+              existing.investor_count = (existing.investor_count as number) + 1;
+              existing.coupon_brut = new Decimal(existing.coupon_brut as number)
+                .plus(new Decimal(coupon.coupon_brut as number))
                 .toNumber();
             } else {
               acc.push({ ...coupon, investor_count: 1 });
@@ -536,9 +520,9 @@ export function ExportModal({
         payments.forEach(payment => {
           paymentsSheet.addRow({
             id: payment.id_paiement || payment.id,
-            tranche: payment.tranche?.tranche_name || 'N/A',
-            montant: formatCurrency(payment.montant),
-            date: formatDate(payment.date_paiement),
+            tranche: (payment.tranche as { tranche_name?: string })?.tranche_name || 'N/A',
+            montant: formatCurrency(payment.montant as number),
+            date: formatDate(payment.date_paiement as string),
             statut: payment.statut,
           });
         });
@@ -567,15 +551,15 @@ export function ExportModal({
 
         coupons.forEach(coupon => {
           const daysUntil = Math.ceil(
-            (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) /
+            (new Date(coupon.prochaine_date_coupon as string).getTime() - new Date().getTime()) /
               (1000 * 60 * 60 * 24)
           );
 
           couponsSheet.addRow({
-            projet: coupon.tranche?.projet?.projet || 'N/A',
-            tranche: coupon.tranche?.tranche_name || 'N/A',
-            montant: formatCurrency(parseFloat(coupon.coupon_brut.toString())),
-            date: formatDate(coupon.prochaine_date_coupon),
+            projet: (coupon.tranche as { projet?: { projet?: string } })?.projet?.projet || 'N/A',
+            tranche: (coupon.tranche as { tranche_name?: string })?.tranche_name || 'N/A',
+            montant: formatCurrency(parseFloat((coupon.coupon_brut as number).toString())),
+            date: formatDate(coupon.prochaine_date_coupon as string),
             investors: coupon.investor_count || 1,
             days: daysUntil,
           });
@@ -682,7 +666,7 @@ export function ExportModal({
       const { payments, coupons } = await fetchFilteredData();
       setExportProgress(45);
 
-      const doc = new jsPDF() as JsPDFWithAutoTable;
+      const doc = new jsPDF() as unknown as JsPDFWithAutoTable;
       const pageWidth = doc.internal.pageSize.width;
       let yPos = 25;
 
@@ -802,16 +786,24 @@ export function ExportModal({
 
         // Calculate summary statistics from filtered payments
         const totalPayments = payments.length;
-        const totalAmount = payments.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
+        const totalAmount = payments.reduce(
+          (sum, p) => sum + parseFloat(String(p.montant || 0)),
+          0
+        );
         const completedPayments = payments.filter(
-          p => p.statut?.toLowerCase() === 'payé' || p.statut?.toLowerCase() === 'paid'
+          p =>
+            (p.statut as string)?.toLowerCase() === 'payé' ||
+            (p.statut as string)?.toLowerCase() === 'paid'
         ).length;
         const pendingPayments = payments.filter(
-          p => p.statut?.toLowerCase() === 'en attente' || p.statut?.toLowerCase() === 'pending'
+          p =>
+            (p.statut as string)?.toLowerCase() === 'en attente' ||
+            (p.statut as string)?.toLowerCase() === 'pending'
         ).length;
         const latePayments = payments.filter(
           p =>
-            p.statut?.toLowerCase()?.includes('retard') || p.statut?.toLowerCase()?.includes('late')
+            (p.statut as string)?.toLowerCase()?.includes('retard') ||
+            (p.statut as string)?.toLowerCase()?.includes('late')
         ).length;
         const completionRate =
           totalPayments > 0 ? Math.round((completedPayments / totalPayments) * 100) : 0;
@@ -892,10 +884,15 @@ export function ExportModal({
           startY: yPos,
           head: [['Projet', 'Montant', 'Date', 'Statut']],
           body: displayPayments.map(p => [
-            fixTextForPDF(p.tranche?.projet?.projet || p.tranche?.tranche_name || 'N/A'),
-            formatCurrencyForPDF(p.montant),
-            formatDate(p.date_paiement),
-            fixTextForPDF(p.statut),
+            fixTextForPDF(
+              (p.tranche as { projet?: { projet?: string }; tranche_name?: string })?.projet
+                ?.projet ||
+                (p.tranche as { tranche_name?: string })?.tranche_name ||
+                'N/A'
+            ),
+            formatCurrencyForPDF(p.montant as number),
+            formatDate(p.date_paiement as string),
+            fixTextForPDF(p.statut as string),
           ]),
           theme: 'striped',
           headStyles: {
@@ -924,16 +921,24 @@ export function ExportModal({
         // Summary box after payments table
         const allPayments = payments; // This includes all filtered payments
         const totalAllPayments = allPayments.length;
-        const totalAllAmount = allPayments.reduce((sum, p) => sum + parseFloat(p.montant || 0), 0);
+        const totalAllAmount = allPayments.reduce(
+          (sum, p) => sum + parseFloat(String(p.montant || 0)),
+          0
+        );
         const completedAll = allPayments.filter(
-          p => p.statut?.toLowerCase() === 'payé' || p.statut?.toLowerCase() === 'paid'
+          p =>
+            (p.statut as string)?.toLowerCase() === 'payé' ||
+            (p.statut as string)?.toLowerCase() === 'paid'
         ).length;
         const pendingAll = allPayments.filter(
-          p => p.statut?.toLowerCase() === 'en attente' || p.statut?.toLowerCase() === 'pending'
+          p =>
+            (p.statut as string)?.toLowerCase() === 'en attente' ||
+            (p.statut as string)?.toLowerCase() === 'pending'
         ).length;
         const lateAll = allPayments.filter(
           p =>
-            p.statut?.toLowerCase()?.includes('retard') || p.statut?.toLowerCase()?.includes('late')
+            (p.statut as string)?.toLowerCase()?.includes('retard') ||
+            (p.statut as string)?.toLowerCase()?.includes('late')
         ).length;
 
         doc.setFillColor(248, 250, 252); // slate-50
@@ -1094,7 +1099,7 @@ export function ExportModal({
         yPos += SPACING.SMALL;
         const totalCoupons = coupons.length;
         const totalCouponAmount = coupons.reduce(
-          (sum, c) => sum + parseFloat(c.coupon_brut.toString()),
+          (sum, c) => sum + parseFloat((c.coupon_brut as number).toString()),
           0
         );
 

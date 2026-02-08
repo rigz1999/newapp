@@ -54,8 +54,8 @@ export function FilterPresets({
           <input
             type="text"
             value={newPresetName}
-            onChange={(e) => setNewPresetName(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSave()}
+            onChange={e => setNewPresetName(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && handleSave()}
             placeholder="Nom du filtre..."
             className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
             autoFocus
@@ -80,7 +80,7 @@ export function FilterPresets({
 
       {presets.length > 0 ? (
         <div className="space-y-1">
-          {presets.map((preset) => (
+          {presets.map(preset => (
             <div
               key={preset.id}
               className="flex items-center justify-between p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors group"
@@ -102,9 +102,7 @@ export function FilterPresets({
           ))}
         </div>
       ) : (
-        <p className="text-xs text-slate-500 italic">
-          Aucun filtre enregistré
-        </p>
+        <p className="text-xs text-slate-500 italic">Aucun filtre enregistré</p>
       )}
     </div>
   );
