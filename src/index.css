@@ -19,6 +19,25 @@
   *:focus-visible {
     @apply outline-none ring-2 ring-blue-600 ring-offset-2 rounded;
   }
+
+  /* Scale the interface proportionally on smaller screens */
+  @media (max-width: 1279px) and (min-width: 1024px) {
+    #root {
+      zoom: 0.9;
+    }
+  }
+
+  @media (max-width: 1023px) and (min-width: 768px) {
+    #root {
+      zoom: 0.8;
+    }
+  }
+
+  @media (max-width: 767px) {
+    #root {
+      zoom: 0.7;
+    }
+  }
 }
 
 @layer utilities {
