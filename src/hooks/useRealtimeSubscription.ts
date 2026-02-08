@@ -13,7 +13,9 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
 
-interface UseRealtimeSubscriptionOptions<T extends { [key: string]: any } = any> {
+interface UseRealtimeSubscriptionOptions<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> {
   table: string;
   event?: RealtimeEvent;
   filter?: string; // e.g., "project_id=eq.123"
@@ -30,9 +32,9 @@ interface UseRealtimeSubscriptionReturn {
   error: Error | null;
 }
 
-export function useRealtimeSubscription<T extends { [key: string]: any } = any>(
-  options: UseRealtimeSubscriptionOptions<T>
-): UseRealtimeSubscriptionReturn {
+export function useRealtimeSubscription<
+  T extends Record<string, unknown> = Record<string, unknown>,
+>(options: UseRealtimeSubscriptionOptions<T>): UseRealtimeSubscriptionReturn {
   const {
     table,
     event = '*',
@@ -58,14 +60,9 @@ export function useRealtimeSubscription<T extends { [key: string]: any } = any>(
     const channelName = `${table}-changes-${Math.random().toString(36).substr(2, 9)}`;
     const newChannel = supabase.channel(channelName);
 
-    // Build filter string
-    let _subscriptionFilter = `public:${table}`;
-    if (filter) {
-      _subscriptionFilter += `:${filter}`;
-    }
-
     // Subscribe to changes
-    const subscription = newChannel.on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const subscription = (newChannel as any).on(
       'postgres_changes',
       {
         event,

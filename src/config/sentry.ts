@@ -27,10 +27,6 @@ export function initSentry() {
     // Performance tracking for specific operations
     tracePropagationTargets: ['localhost', /^\//],
 
-    // Track long tasks and interactions
-    enableLongTask: true,
-    enableInp: true,
-
     // Session Replay
     replaysSessionSampleRate: ENVIRONMENT === 'production' ? 0.1 : 0, // 10% in prod
     replaysOnErrorSampleRate: 1.0, // 100% on errors
