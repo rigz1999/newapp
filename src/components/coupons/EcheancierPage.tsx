@@ -980,15 +980,10 @@ export function EcheancierPage() {
                                 </div>
                               </button>
                               <div className="flex items-center gap-3">
-                                {dateGroup.isLastEcheance && (
-                                  <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded">
-                                    + Nominal
-                                  </span>
-                                )}
                                 <div className="text-right">
                                   <p className="text-xs text-slate-500">Net</p>
                                   <p className="text-sm font-semibold text-slate-900">
-                                    {formatCurrency(dateGroup.totalNet + dateGroup.totalNominal)}
+                                    {formatCurrency(dateGroup.totalNet)}
                                   </p>
                                 </div>
                                 {(() => {
