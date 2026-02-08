@@ -495,7 +495,9 @@ export default function Settings() {
           <div className="p-6 space-y-6">
             {/* Email (Read-only) */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Adresse e-mail</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Adresse e-mail
+              </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
