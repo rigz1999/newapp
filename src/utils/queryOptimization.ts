@@ -91,7 +91,8 @@ export async function batchLoad<T>(
     return { data: [], error: null };
   }
 
-  return supabase.from(table).select(selectFields).in('id', ids);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (supabase.from(table as any) as any).select(selectFields).in('id', ids);
 }
 
 /**
@@ -116,7 +117,10 @@ export async function paginatedQuery<T>(
   const start = (page - 1) * pageSize;
   const end = start + pageSize - 1;
 
-  let query = supabase.from(table).select(select, { count: 'exact' }).range(start, end);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase.from(table as any) as any)
+    .select(select, { count: 'exact' })
+    .range(start, end);
 
   if (filters) {
     Object.keys(filters).forEach(key => {
@@ -145,7 +149,8 @@ export async function queryWithRelations<T>(
 ): Promise<{ data: T[] | null; error: unknown }> {
   const selectFields = `*, ${relations.join(', ')}`;
 
-  let query = supabase.from(table).select(selectFields);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase.from(table as any) as any).select(selectFields);
 
   if (filters) {
     Object.keys(filters).forEach(key => {
@@ -176,7 +181,8 @@ export async function getAggregates(
   // Il faudrait utiliser des fonctions RPC côté serveur pour de vraies performances
   // Ceci est une implémentation client-side basique
 
-  let query = supabase.from(table).select('*');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase.from(table as any) as any).select('*');
 
   if (filters) {
     Object.keys(filters).forEach(key => {
@@ -200,26 +206,36 @@ export async function getAggregates(
 
   if (aggregations.sum) {
     aggregations.sum.forEach(field => {
-      result[`sum_${field}`] = data.reduce((acc, item) => acc + (Number(item[field]) || 0), 0);
+      result[`sum_${field}`] = data.reduce(
+        (acc: number, item: Record<string, unknown>) => acc + (Number(item[field]) || 0),
+        0
+      );
     });
   }
 
   if (aggregations.avg) {
     aggregations.avg.forEach(field => {
-      const sum = data.reduce((acc, item) => acc + (Number(item[field]) || 0), 0);
+      const sum = data.reduce(
+        (acc: number, item: Record<string, unknown>) => acc + (Number(item[field]) || 0),
+        0
+      );
       result[`avg_${field}`] = data.length > 0 ? sum / data.length : 0;
     });
   }
 
   if (aggregations.min) {
     aggregations.min.forEach(field => {
-      result[`min_${field}`] = Math.min(...data.map(item => Number(item[field]) || 0));
+      result[`min_${field}`] = Math.min(
+        ...data.map((item: Record<string, unknown>) => Number(item[field]) || 0)
+      );
     });
   }
 
   if (aggregations.max) {
     aggregations.max.forEach(field => {
-      result[`max_${field}`] = Math.max(...data.map(item => Number(item[field]) || 0));
+      result[`max_${field}`] = Math.max(
+        ...data.map((item: Record<string, unknown>) => Number(item[field]) || 0)
+      );
     });
   }
 

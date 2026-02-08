@@ -369,7 +369,9 @@ export function useAdvancedFilters(
         const startDate = new Date(filters.dateRange.startDate);
         const endDate = new Date(filters.dateRange.endDate);
         filtered = filtered.filter(item => {
-          const itemDate = new Date(item[options.dateField!]);
+          const itemDate = new Date(
+            (item as Record<string, unknown>)[options.dateField! as string] as string
+          );
           return itemDate >= startDate && itemDate <= endDate;
         });
       }

@@ -32,7 +32,7 @@ export function ValidatedInput({
   required = false,
   showValidIcon = true,
   validateOnChange = true,
-  className = ''
+  className = '',
 }: ValidatedInputProps) {
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -77,8 +77,8 @@ export function ValidatedInput({
             error && touched
               ? 'border-red-300 focus:ring-red-500 bg-red-50'
               : isValid && showValidIcon
-              ? 'border-green-300 focus:ring-green-500 bg-green-50'
-              : 'border-slate-300 focus:ring-finixar-brand-blue'
+                ? 'border-green-300 focus:ring-green-500 bg-green-50'
+                : 'border-slate-300 focus:ring-finixar-brand-blue'
           }`}
         />
         {touched && showValidIcon && (

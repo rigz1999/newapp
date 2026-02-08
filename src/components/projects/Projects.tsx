@@ -229,9 +229,9 @@ export function Projects({ organization }: ProjectsProps) {
         };
       });
 
-      setProjects(projectsWithStats);
+      setProjects(projectsWithStats as unknown as ProjectWithStats[]);
     } catch (error) {
-      logger.error('Failed to fetch projects', error);
+      logger.error('Failed to fetch projects', error as Record<string, unknown>);
       toast.error('Erreur lors du chargement des projets');
     } finally {
       setLoading(false);

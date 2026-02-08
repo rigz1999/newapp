@@ -66,12 +66,14 @@ export function PaymentWizardHeader({
           <h3 id="payment-wizard-title" className="text-xl font-bold text-slate-900">
             {getTitle()}
           </h3>
-          <p className="text-sm text-slate-600 mt-1">
-            {getSubtitle()}
-          </p>
+          <p className="text-sm text-slate-600 mt-1">{getSubtitle()}</p>
         </div>
       </div>
-      <button onClick={onClose} className="text-slate-400 hover:text-slate-600" aria-label="Fermer la fenêtre">
+      <button
+        onClick={onClose}
+        className="text-slate-400 hover:text-slate-600"
+        aria-label="Fermer la fenêtre"
+      >
         <X className="w-6 h-6" aria-hidden="true" />
       </button>
     </div>

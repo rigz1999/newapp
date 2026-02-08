@@ -33,7 +33,7 @@ export function DemoRequest() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
+          Authorization: `Bearer ${supabaseAnonKey}`,
         },
         body: JSON.stringify(formData),
       });
@@ -76,11 +76,7 @@ export function DemoRequest() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <a href="/" className="flex items-center">
-              <img
-                src="/branding/logo/logo-full-blue.png"
-                alt="Finixar"
-                className="h-10"
-              />
+              <img src="/branding/logo/logo-full-blue.png" alt="Finixar" className="h-10" />
             </a>
             <a
               href="https://app.finixar.com"
@@ -104,7 +100,8 @@ export function DemoRequest() {
               Demande envoyée avec succès !
             </h1>
             <p className="text-xl text-slate-600 mb-8">
-              Merci {formData.name || 'pour votre intérêt'}. Nous avons bien reçu votre demande de démonstration.
+              Merci {formData.name || 'pour votre intérêt'}. Nous avons bien reçu votre demande de
+              démonstration.
             </p>
 
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 mb-8">
@@ -115,8 +112,12 @@ export function DemoRequest() {
                     <span className="text-blue-600 font-bold text-sm">1</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">Notre équipe vous contactera sous 24 heures</p>
-                    <p className="text-slate-600 text-sm">Vérifiez votre boîte mail (et vos spams)</p>
+                    <p className="font-semibold text-slate-900">
+                      Notre équipe vous contactera sous 24 heures
+                    </p>
+                    <p className="text-slate-600 text-sm">
+                      Vérifiez votre boîte mail (et vos spams)
+                    </p>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
@@ -124,7 +125,9 @@ export function DemoRequest() {
                     <span className="text-blue-600 font-bold text-sm">2</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">Nous préparerons une démonstration personnalisée</p>
+                    <p className="font-semibold text-slate-900">
+                      Nous préparerons une démonstration personnalisée
+                    </p>
                     <p className="text-slate-600 text-sm">Adaptée à vos besoins et votre secteur</p>
                   </div>
                 </li>
@@ -133,7 +136,9 @@ export function DemoRequest() {
                     <span className="text-blue-600 font-bold text-sm">3</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900">Vous recevrez un lien de visioconférence</p>
+                    <p className="font-semibold text-slate-900">
+                      Vous recevrez un lien de visioconférence
+                    </p>
                     <p className="text-slate-600 text-sm">Pour une session interactive en direct</p>
                   </div>
                 </li>
@@ -190,7 +195,10 @@ export function DemoRequest() {
 
                 {/* Email Field */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-semibold text-slate-900 mb-2">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-semibold text-slate-900 mb-2"
+                  >
                     E-mail professionnel *
                   </label>
                   <input
@@ -208,7 +216,10 @@ export function DemoRequest() {
 
                 {/* Company Field */}
                 <div>
-                  <label htmlFor="company" className="block text-sm font-semibold text-slate-900 mb-2">
+                  <label
+                    htmlFor="company"
+                    className="block text-sm font-semibold text-slate-900 mb-2"
+                  >
                     Entreprise *
                   </label>
                   <input
@@ -250,9 +261,25 @@ export function DemoRequest() {
                 >
                   {isSubmitting ? (
                     <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Envoi en cours...
                     </>

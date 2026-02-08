@@ -67,6 +67,8 @@ interface Investor {
   rib_file_path?: string | null;
   rib_uploaded_at?: string | null;
   rib_status?: string | null;
+  tax_regime?: string | null;
+  custom_tax_rate?: number | null;
 }
 
 interface InvestorWithStats extends Investor {
@@ -309,14 +311,16 @@ function Investors({ organization: _organization }: InvestorsProps) {
         field === 'cgp' ||
         field === 'type'
       ) {
-        aValue = (aValue || '').toLowerCase();
-        bValue = (bValue || '').toLowerCase();
+        aValue = String(aValue || '').toLowerCase();
+        bValue = String(bValue || '').toLowerCase();
       }
 
-      if (aValue < bValue) {
+      const aComp = aValue ?? '';
+      const bComp = bValue ?? '';
+      if (aComp < bComp) {
         return direction === 'asc' ? -1 : 1;
       }
-      if (aValue > bValue) {
+      if (aComp > bComp) {
         return direction === 'asc' ? 1 : -1;
       }
       return 0;
@@ -508,7 +512,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
       };
     });
 
-    setInvestors(investorsWithStats);
+    setInvestors(investorsWithStats as unknown as InvestorWithStats[]);
     setLoading(false);
   };
 
@@ -559,7 +563,8 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
     const { error } = await supabase
       .from('investisseurs')
-      .update(editFormData)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update(editFormData as any)
       .eq('id', selectedInvestor.id);
 
     if (error) {
@@ -1751,7 +1756,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                             const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
                             setEditFormData({
                               ...editFormData,
-                              siren: digits ? Number(digits) : undefined,
+                              siren: digits ? Number(digits) : (undefined as unknown as null),
                             });
                           }}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
@@ -2046,7 +2051,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   if (file) {
                     const fakeEvent = {
                       target: { files: [file] },
-                    } as React.ChangeEvent<HTMLInputElement>;
+                    } as unknown as React.ChangeEvent<HTMLInputElement>;
                     handleFileChange(fakeEvent);
                   }
                 }}

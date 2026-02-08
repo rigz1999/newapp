@@ -52,7 +52,7 @@ describe('formatErrorMessage', () => {
     };
     const result = formatErrorMessage(error);
 
-    expect(result).toContain('liée à d\'autres données');
+    expect(result).toContain("liée à d'autres données");
   });
 
   it('should handle connection errors', () => {
@@ -100,7 +100,7 @@ describe('formatErrorMessage', () => {
     };
     const result = formatErrorMessage(error);
 
-    expect(result).toContain('La ressource demandée n\'existe pas');
+    expect(result).toContain("La ressource demandée n'existe pas");
   });
 
   it('should handle timeout errors', () => {
@@ -116,12 +116,12 @@ describe('formatErrorMessage', () => {
     const error = {};
     const result = formatErrorMessage(error);
 
-    expect(result).toBe('Une erreur inattendue s\'est produite');
+    expect(result).toBe("Une erreur inattendue s'est produite");
   });
 
   it('should handle null and undefined', () => {
-    expect(formatErrorMessage(null)).toBe('Une erreur inattendue s\'est produite');
-    expect(formatErrorMessage(undefined)).toBe('Une erreur inattendue s\'est produite');
+    expect(formatErrorMessage(null)).toBe("Une erreur inattendue s'est produite");
+    expect(formatErrorMessage(undefined)).toBe("Une erreur inattendue s'est produite");
   });
 
   it('should sanitize SQL injection attempts in error messages', () => {

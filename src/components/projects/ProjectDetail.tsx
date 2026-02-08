@@ -47,6 +47,7 @@ interface ProjectDetailProps {
 
 interface Project {
   id: string;
+  org_id: string | null;
   projet: string;
   emetteur: string;
   siren_emetteur: number | null;
@@ -289,7 +290,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
       const projectData = projectRes.data;
       const tranchesData = tranchesRes.data || [];
-      const subscriptionsData = subscriptionsRes.data || [];
+      const subscriptionsData = (subscriptionsRes.data || []) as unknown as Omit<
+        Subscription,
+        'prochain_coupon'
+      >[];
       const paymentsData = paymentsRes.data || [];
       const prochainsCouponsData = prochainsCouponsRes.data || [];
 
@@ -309,10 +313,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         };
       });
 
-      setProject(projectData);
-      setTranches(tranchesData);
-      setSubscriptions(subscriptionsWithCoupons);
-      setPayments(paymentsData);
+      setProject(projectData as unknown as Project | null);
+      setTranches(tranchesData as Tranche[]);
+      setSubscriptions(subscriptionsWithCoupons as Subscription[]);
+      setPayments(paymentsData as Payment[]);
       setHasOutdatedExport(!!calendarExportsRes.data);
 
       if (subscriptionsWithCoupons.length > 0) {
@@ -337,7 +341,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               s.prochain_coupon?.date_prochain_coupon ===
               nextCoupon?.prochain_coupon?.date_prochain_coupon
           )
-          .reduce((sum, s) => sum + Number(s.prochain_coupon.montant_prochain_coupon || 0), 0);
+          .reduce((sum, s) => sum + Number(s.prochain_coupon?.montant_prochain_coupon || 0), 0);
 
         setStats({
           totalLeve,
@@ -1321,7 +1325,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         />
 
         {/* ✅ SECTION REMPLACÉE - Commentaires du projet */}
-        {project && <ProjectActualites projectId={projectId!} orgId={project.org_id} />}
+        {project && <ProjectActualites projectId={projectId!} orgId={project.org_id || ''} />}
 
         {showTrancheWizard && (
           <TrancheWizard
@@ -1392,7 +1396,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
                 <div className="flex-1 overflow-y-auto bg-white">
                   <div className="p-6">
-                    {(normalizePeriodicite(editedProject.periodicite_coupons) !==
+                    {(normalizePeriodicite(editedProject.periodicite_coupons ?? null) !==
                       normalizePeriodicite(project.periodicite_coupons) ||
                       editedProject.taux_nominal !== project.taux_nominal ||
                       editedProject.duree_mois !== project.duree_mois) &&
@@ -1910,13 +1914,13 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
         {showSubscriptionsModal && (
           <SubscriptionsModal
-            subscriptions={subscriptions}
+            subscriptions={subscriptions as unknown as Record<string, unknown>[]}
             onClose={() => setShowSubscriptionsModal(false)}
             onEdit={sub => {
-              setEditingSubscription(sub);
+              setEditingSubscription(sub as unknown as Subscription);
               setShowEditSubscription(true);
             }}
-            onDelete={handleDeleteSubscription}
+            onDelete={sub => handleDeleteSubscription(sub as unknown as Subscription)}
             formatCurrency={formatCurrency}
             formatDate={formatDate}
           />
@@ -1924,13 +1928,13 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
         {showTranchesModal && (
           <TranchesModal
-            tranches={tranches}
-            subscriptions={subscriptions}
+            tranches={tranches as never}
+            subscriptions={subscriptions as never}
             onClose={() => setShowTranchesModal(false)}
             onEdit={tranche => {
-              navigate(`/tranches/${tranche.id}/edit`);
+              navigate(`/tranches/${(tranche as unknown as Tranche).id}/edit`);
             }}
-            onDelete={handleDeleteTranche}
+            onDelete={tranche => handleDeleteTranche(tranche as unknown as Tranche)}
             formatCurrency={formatCurrency}
             formatDate={formatDate}
           />

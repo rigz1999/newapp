@@ -42,7 +42,7 @@ function SingleToast({ toast, onClose }: ToastProps) {
           bg: 'bg-green-50',
           border: 'border-green-200',
           titleColor: 'text-green-900',
-          messageColor: 'text-green-700'
+          messageColor: 'text-green-700',
         };
       case 'error':
         return {
@@ -50,7 +50,7 @@ function SingleToast({ toast, onClose }: ToastProps) {
           bg: 'bg-red-50',
           border: 'border-red-200',
           titleColor: 'text-red-900',
-          messageColor: 'text-red-700'
+          messageColor: 'text-red-700',
         };
       case 'warning':
         return {
@@ -58,7 +58,7 @@ function SingleToast({ toast, onClose }: ToastProps) {
           bg: 'bg-amber-50',
           border: 'border-amber-200',
           titleColor: 'text-amber-900',
-          messageColor: 'text-amber-700'
+          messageColor: 'text-amber-700',
         };
       case 'info':
       default:
@@ -67,7 +67,7 @@ function SingleToast({ toast, onClose }: ToastProps) {
           bg: 'bg-blue-50',
           border: 'border-blue-200',
           titleColor: 'text-blue-900',
-          messageColor: 'text-blue-700'
+          messageColor: 'text-blue-700',
         };
     }
   };
@@ -78,16 +78,12 @@ function SingleToast({ toast, onClose }: ToastProps) {
     <div
       className={`flex items-start gap-3 p-4 rounded-lg border-2 shadow-lg transition-all duration-300 min-w-[320px] max-w-md ${
         styles.bg
-      } ${styles.border} ${
-        isExiting ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'
-      }`}
+      } ${styles.border} ${isExiting ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}`}
     >
       {styles.icon}
       <div className="flex-1">
         <p className={`font-semibold text-sm ${styles.titleColor}`}>{toast.title}</p>
-        {toast.message && (
-          <p className={`text-sm mt-1 ${styles.messageColor}`}>{toast.message}</p>
-        )}
+        {toast.message && <p className={`text-sm mt-1 ${styles.messageColor}`}>{toast.message}</p>}
       </div>
       <button
         onClick={() => {
@@ -110,7 +106,7 @@ interface ToastContainerProps {
 export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
   return (
     <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
-      {toasts.map((toast) => (
+      {toasts.map(toast => (
         <SingleToast key={toast.id} toast={toast} onClose={onClose} />
       ))}
     </div>
@@ -121,19 +117,14 @@ export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
 export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const addToast = (
-    type: ToastType,
-    title: string,
-    message?: string,
-    duration?: number
-  ) => {
+  const addToast = (type: ToastType, title: string, message?: string, duration?: number) => {
     const id = Math.random().toString(36).substr(2, 9);
     const newToast: Toast = { id, type, title, message, duration };
-    setToasts((prev) => [...prev, newToast]);
+    setToasts(prev => [...prev, newToast]);
   };
 
   const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
   const toast = {

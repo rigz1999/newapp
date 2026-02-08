@@ -609,7 +609,8 @@ export function PaymentWizard({
             canvas.height = viewport.height;
             canvas.width = viewport.width;
 
-            await page.render({ canvasContext: context, viewport }).promise;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await page.render({ canvasContext: context, viewport } as any).promise;
 
             const imageDataUrl = canvas.toDataURL('image/png');
             const compressed = await compressImage(
@@ -696,10 +697,14 @@ export function PaymentWizard({
       }
 
       const enrichedMatches = data.correspondances.map(
-        (match: Omit<PaymentMatch, 'matchedSubscription'>) => {
+        (
+          match: Omit<PaymentMatch, 'matchedSubscription'> & {
+            attendu?: { subscriptionId?: string };
+          }
+        ) => {
           // Use the subscriptionId from backend's fuzzy matching result
           const subscription = match.attendu?.subscriptionId
-            ? subscriptions.find(s => s.id === match.attendu.subscriptionId)
+            ? subscriptions.find(s => s.id === match.attendu!.subscriptionId)
             : undefined;
           return { ...match, matchedSubscription: subscription };
         }

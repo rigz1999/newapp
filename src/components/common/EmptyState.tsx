@@ -27,7 +27,7 @@ export function EmptyState({
   description,
   action,
   secondaryAction,
-  size = 'md'
+  size = 'md',
 }: EmptyStateProps) {
   const sizeClasses = {
     sm: {
@@ -57,7 +57,9 @@ export function EmptyState({
 
   return (
     <div className={`text-center ${classes.container} animate-fade-in`}>
-      <div className={`inline-flex items-center justify-center ${classes.iconCircle} bg-gradient-to-br from-blue-50 to-blue-100 rounded-full mb-4`}>
+      <div
+        className={`inline-flex items-center justify-center ${classes.iconCircle} bg-gradient-to-br from-blue-50 to-blue-100 rounded-full mb-4`}
+      >
         <Icon className={`${classes.icon} text-blue-600`} />
       </div>
       <h3 className={`${classes.title} font-semibold text-slate-900 mb-2`}>{title}</h3>

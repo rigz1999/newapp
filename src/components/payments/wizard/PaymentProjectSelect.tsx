@@ -42,7 +42,10 @@ export function PaymentProjectSelect({
 
       {!preselectedProjectId && (
         <div>
-          <label htmlFor="payment-project-select" className="block text-sm font-semibold text-slate-900 mb-2">
+          <label
+            htmlFor="payment-project-select"
+            className="block text-sm font-semibold text-slate-900 mb-2"
+          >
             Projet
           </label>
           <select
@@ -76,7 +79,10 @@ export function PaymentProjectSelect({
 
       {!preselectedTrancheId && (
         <div>
-          <label htmlFor="payment-tranche-select" className="block text-sm font-semibold text-slate-900 mb-2">
+          <label
+            htmlFor="payment-tranche-select"
+            className="block text-sm font-semibold text-slate-900 mb-2"
+          >
             Tranche
           </label>
           <select
@@ -89,9 +95,7 @@ export function PaymentProjectSelect({
             aria-disabled={!selectedProjectId}
           >
             <option value="">
-              {selectedProjectId
-                ? 'Sélectionnez une tranche'
-                : "Sélectionnez d'abord un projet"}
+              {selectedProjectId ? 'Sélectionnez une tranche' : "Sélectionnez d'abord un projet"}
             </option>
             {tranches.map(tranche => (
               <option key={tranche.id} value={tranche.id}>
@@ -105,11 +109,12 @@ export function PaymentProjectSelect({
       {selectedProjectId && tranches.length === 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4" role="alert">
           <div className="flex items-start gap-2">
-            <FolderOpen className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <FolderOpen
+              className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5"
+              aria-hidden="true"
+            />
             <div>
-              <p className="text-sm font-medium text-yellow-900">
-                Aucune tranche trouvée
-              </p>
+              <p className="text-sm font-medium text-yellow-900">Aucune tranche trouvée</p>
               <p className="text-xs text-yellow-700 mt-1">
                 Ce projet n'a pas encore de tranches créées.
               </p>

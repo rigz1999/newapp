@@ -61,10 +61,12 @@ describe('useOrganization', () => {
     // Mock successful response
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({
-          data: [mockOrgData],
-          error: null,
-        })),
+        eq: vi.fn(() =>
+          Promise.resolve({
+            data: [mockOrgData],
+            error: null,
+          })
+        ),
       })),
     } as any);
 
@@ -88,10 +90,12 @@ describe('useOrganization', () => {
     // Mock error response
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({
-          data: null,
-          error: mockError,
-        })),
+        eq: vi.fn(() =>
+          Promise.resolve({
+            data: null,
+            error: mockError,
+          })
+        ),
       })),
     } as any);
 
@@ -110,10 +114,12 @@ describe('useOrganization', () => {
     // Mock empty response
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({
-          data: [],
-          error: null,
-        })),
+        eq: vi.fn(() =>
+          Promise.resolve({
+            data: [],
+            error: null,
+          })
+        ),
       })),
     } as any);
 
@@ -143,10 +149,12 @@ describe('useOrganization', () => {
 
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn(() => ({
-        eq: vi.fn(() => Promise.resolve({
-          data: mockMemberships,
-          error: null,
-        })),
+        eq: vi.fn(() =>
+          Promise.resolve({
+            data: mockMemberships,
+            error: null,
+          })
+        ),
       })),
     } as any);
 

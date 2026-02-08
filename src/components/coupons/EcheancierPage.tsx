@@ -69,31 +69,6 @@ interface TrancheGroup {
   totalCount: number;
 }
 
-interface _SubscriptionData {
-  id: string;
-  id_souscription: string;
-  coupon_brut: number;
-  coupon_net: number;
-  montant_investi: number;
-  investisseur: {
-    nom_raison_sociale: string;
-    type: string;
-  };
-  tranche: {
-    id: string;
-    tranche_name: string;
-    date_echeance_finale: string;
-  };
-}
-
-interface _EcheanceData {
-  id: string;
-  souscription_id: string;
-  date_echeance: string;
-  montant_coupon: number;
-  statut: string;
-}
-
 export function EcheancierPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -183,7 +158,7 @@ export function EcheancierPage() {
 
     if (!error && data) {
       setProjectName(data.projet);
-      setProjectInfo({ id: data.id, short_id: data.short_id });
+      setProjectInfo({ id: data.id as string, short_id: data.short_id as string });
     }
   };
 
@@ -239,8 +214,9 @@ export function EcheancierPage() {
       }
 
       const enrichedEcheances = echeancesData.map((ech: Record<string, unknown>) => {
-        const sub = ech.souscription;
-        const isLastEcheance = sub?.tranche?.date_echeance_finale === ech.date_echeance;
+        const sub = ech.souscription as Record<string, unknown> | undefined;
+        const tranche = sub?.tranche as Record<string, unknown> | undefined;
+        const isLastEcheance = tranche?.date_echeance_finale === ech.date_echeance;
 
         return {
           ...ech,
@@ -250,11 +226,11 @@ export function EcheancierPage() {
             coupon_net: sub?.coupon_net || 0,
             montant_investi: sub?.montant_investi || 0,
             investisseur: sub?.investisseur || { nom_raison_sociale: '', type: 'Physique' },
-            tranche: sub?.tranche || { id: '', tranche_name: '', date_echeance_finale: '' },
+            tranche: tranche || { id: '', tranche_name: '', date_echeance_finale: '' },
           },
           isLastEcheance,
         };
-      });
+      }) as Echeance[];
 
       setEcheances(enrichedEcheances);
 
@@ -408,72 +384,6 @@ export function EcheancierPage() {
       newExpanded.add(key);
     }
     setExpandedDates(newExpanded);
-  };
-
-  const _handleViewPaymentProof = async (echeance: Echeance) => {
-    // First, we need to find the paiement_id from the echeance
-    const { data: echeanceData, error: _echeanceError } = await supabase
-      .from('coupons_echeances')
-      .select('paiement_id')
-      .eq('id', echeance.id)
-      .single();
-
-    if (!echeanceData?.paiement_id) {
-      // Try to find payment by matching subscription and date
-      const { data: paymentByMatch } = await supabase
-        .from('paiements')
-        .select(
-          `
-          *,
-          tranche:tranches(tranche_name),
-          investisseur:investisseurs(nom_raison_sociale)
-        `
-        )
-        .eq('souscription_id', echeance.souscription_id)
-        .eq('date_paiement', echeance.date_echeance)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (paymentByMatch) {
-        const { data: proofsData } = await supabase
-          .from('payment_proofs')
-          .select('*')
-          .eq('paiement_id', paymentByMatch.id)
-          .order('validated_at', { ascending: false });
-
-        setSelectedPaymentForProof(paymentByMatch);
-        setPaymentProofs(proofsData || []);
-      }
-      return;
-    }
-
-    // Fetch the payment with its related data
-    const { data: paymentData } = await supabase
-      .from('paiements')
-      .select(
-        `
-        *,
-        tranche:tranches(tranche_name),
-        investisseur:investisseurs(nom_raison_sociale)
-      `
-      )
-      .eq('id', echeanceData.paiement_id)
-      .single();
-
-    if (!paymentData) {
-      return;
-    }
-
-    // Fetch payment proofs
-    const { data: proofsData } = await supabase
-      .from('payment_proofs')
-      .select('*')
-      .eq('paiement_id', echeanceData.paiement_id)
-      .order('validated_at', { ascending: false });
-
-    setSelectedPaymentForProof(paymentData);
-    setPaymentProofs(proofsData || []);
   };
 
   const handleMarkAsUnpaid = async (echeance: Echeance) => {
@@ -1359,8 +1269,24 @@ export function EcheancierPage() {
 
       {!readOnly && selectedPaymentForProof && (
         <ViewProofsModal
-          payment={selectedPaymentForProof}
-          proofs={paymentProofs}
+          payment={
+            selectedPaymentForProof as unknown as {
+              id: string;
+              date_paiement: string;
+              tranche?: { tranche_name: string };
+              investisseur?: { nom_raison_sociale: string } | null;
+            }
+          }
+          proofs={
+            paymentProofs as unknown as {
+              id: string;
+              file_url: string;
+              file_name: string;
+              validated_at: string;
+              extracted_data?: { montant: number; date?: string } | null;
+              confidence?: number;
+            }[]
+          }
           onClose={() => {
             setSelectedPaymentForProof(null);
             setPaymentProofs([]);

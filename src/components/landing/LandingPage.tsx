@@ -664,8 +664,8 @@ export function LandingPage(): JSX.Element {
                 Centralisez vos coupons et échéances.
               </h2>
               <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                Visualisez tous vos coupons en un coup d'œil. Suivez les statuts (Prévu, Payés,
-                En Retard), les montants et les échéances pour garantir un suivi parfait de vos
+                Visualisez tous vos coupons en un coup d'œil. Suivez les statuts (Prévu, Payés, En
+                Retard), les montants et les échéances pour garantir un suivi parfait de vos
                 paiements.
               </p>
               <ul className="space-y-3">

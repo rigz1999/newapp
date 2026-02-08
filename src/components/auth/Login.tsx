@@ -91,7 +91,8 @@ export function Login() {
               <div>
                 <div className="bg-blue-50 border border-blue-200 text-blue-900 px-4 py-3 rounded-lg text-sm mb-6">
                   <p className="font-medium mb-2">
-                    Un e-mail de réinitialisation a été envoyé si un compte existe avec cette adresse.
+                    Un e-mail de réinitialisation a été envoyé si un compte existe avec cette
+                    adresse.
                   </p>
                   <p className="text-xs text-blue-800 mb-2">Vous ne recevez rien ?</p>
                   <ul className="text-xs text-blue-800 space-y-1 ml-4 list-disc">

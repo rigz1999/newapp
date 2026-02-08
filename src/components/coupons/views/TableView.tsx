@@ -333,7 +333,8 @@ export function TableView({
                         </div>
                         {group.isLastEcheance ? (
                           <div className="text-xs text-slate-600 leading-tight">
-                            Coupon: {formatCurrency(group.totalNet)} + Nominal: {formatCurrency(group.totalNominal)}
+                            Coupon: {formatCurrency(group.totalNet)} + Nominal:{' '}
+                            {formatCurrency(group.totalNominal)}
                           </div>
                         ) : (
                           <div className="text-xs text-slate-600 leading-tight">
@@ -437,12 +438,16 @@ export function TableView({
                                   investorType={coupon.investisseur_type || 'physique'}
                                 />
                                 <div className="text-sm font-bold text-finixar-green leading-tight">
-                                  {formatCurrency(coupon.montant_net + (coupon.is_last_echeance ? coupon.montant_investi : 0))}
+                                  {formatCurrency(
+                                    coupon.montant_net +
+                                      (coupon.is_last_echeance ? coupon.montant_investi : 0)
+                                  )}
                                 </div>
                               </div>
                               {coupon.is_last_echeance ? (
                                 <div className="text-xs text-slate-500 leading-tight">
-                                  Coupon: {formatCurrency(coupon.montant_net)} + Nominal: {formatCurrency(coupon.montant_investi)}
+                                  Coupon: {formatCurrency(coupon.montant_net)} + Nominal:{' '}
+                                  {formatCurrency(coupon.montant_investi)}
                                 </div>
                               ) : (
                                 <div className="text-xs text-slate-500 leading-tight">
@@ -496,7 +501,11 @@ export function TableView({
                                       ) : (
                                         <XCircle className="w-4 h-4 text-finixar-red flex-shrink-0" />
                                       )}
-                                      <span>{markingUnpaid === coupon.id ? 'Traitement...' : 'Marquer impayé'}</span>
+                                      <span>
+                                        {markingUnpaid === coupon.id
+                                          ? 'Traitement...'
+                                          : 'Marquer impayé'}
+                                      </span>
                                     </button>
                                   )}
 

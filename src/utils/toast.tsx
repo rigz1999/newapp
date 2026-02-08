@@ -18,7 +18,8 @@ const getToastContainer = () => {
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.id = 'toast-container';
-    toastContainer.className = 'fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none';
+    toastContainer.className =
+      'fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none';
     document.body.appendChild(toastContainer);
   }
   return toastContainer;
@@ -91,10 +92,7 @@ const showToast = (message: string, type: ToastType = 'info', options: ToastOpti
             </button>
           )}
         </div>
-        <button
-          onClick={dismiss}
-          className="text-slate-400 hover:text-slate-600 transition-colors"
-        >
+        <button onClick={dismiss} className="text-slate-400 hover:text-slate-600 transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>

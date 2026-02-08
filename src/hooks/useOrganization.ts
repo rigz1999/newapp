@@ -57,7 +57,7 @@ export function useOrganization(userId: string | undefined) {
           setOrganization({
             id: 'super_admin',
             name: 'Super Admin',
-            role: 'super_admin'
+            role: 'super_admin',
           });
           setLoading(false);
           return;
@@ -72,7 +72,10 @@ export function useOrganization(userId: string | undefined) {
         logger.log('useOrganization - Memberships result:', { memberships, error });
 
         if (error) {
-          logger.error('useOrganization - Error fetching memberships:', error);
+          logger.error(
+            'useOrganization - Error fetching memberships:',
+            error as unknown as Record<string, unknown>
+          );
           setOrganization(null);
           setLoading(false);
           return;
@@ -87,7 +90,8 @@ export function useOrganization(userId: string | undefined) {
 
         // Check if user is super admin (org_id = NULL) via membership
         const superAdminMembership = memberships.find(
-          (m: MembershipData) => (m.role === 'super_admin' || m.role === 'superadmin') && m.org_id === null
+          (m: MembershipData) =>
+            (m.role === 'super_admin' || m.role === 'superadmin') && m.org_id === null
         );
 
         if (superAdminMembership) {
@@ -96,7 +100,7 @@ export function useOrganization(userId: string | undefined) {
           setOrganization({
             id: 'super_admin',
             name: 'Super Admin',
-            role: 'super_admin'
+            role: 'super_admin',
           });
           setLoading(false);
           return;
@@ -135,7 +139,7 @@ export function useOrganization(userId: string | undefined) {
           setOrganization(null);
         }
       } catch (error) {
-        logger.error('useOrganization - Unexpected error:', error);
+        logger.error('useOrganization - Unexpected error:', error as Record<string, unknown>);
         setOrganization(null);
       } finally {
         setLoading(false);

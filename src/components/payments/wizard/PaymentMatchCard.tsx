@@ -89,9 +89,7 @@ export function PaymentMatchCard({
           </div>
         </div>
         {match.paiement.reference && (
-          <span className="text-xs text-slate-500">
-            Réf: {match.paiement.reference}
-          </span>
+          <span className="text-xs text-slate-500">Réf: {match.paiement.reference}</span>
         )}
       </div>
 
@@ -109,9 +107,7 @@ export function PaymentMatchCard({
           <div className="bg-slate-50 rounded-lg p-3 space-y-2">
             <div>
               <p className="text-xs text-slate-600">Bénéficiaire</p>
-              <p className="text-sm font-semibold text-slate-900">
-                {match.paiement.beneficiaire}
-              </p>
+              <p className="text-sm font-semibold text-slate-900">{match.paiement.beneficiaire}</p>
             </div>
 
             <div className="flex items-baseline gap-4">
@@ -124,9 +120,7 @@ export function PaymentMatchCard({
               {match.paiement.date && (
                 <div>
                   <p className="text-xs text-slate-600">Date</p>
-                  <p className="text-sm text-slate-700">
-                    {match.paiement.date}
-                  </p>
+                  <p className="text-sm text-slate-700">{match.paiement.date}</p>
                 </div>
               )}
             </div>
@@ -188,8 +182,7 @@ export function PaymentMatchCard({
                   </p>
                   {Math.abs(amountDiff) >= 0.01 && (
                     <p className="text-xs text-red-600 mt-1">
-                      Écart: {formatCurrency(amountDiff)} (
-                      {amountDiffPercent.toFixed(1)}%)
+                      Écart: {formatCurrency(amountDiff)} ({amountDiffPercent.toFixed(1)}%)
                     </p>
                   )}
                 </div>
@@ -197,9 +190,7 @@ export function PaymentMatchCard({
             </div>
           ) : (
             <div className="bg-red-50 rounded-lg p-3">
-              <p className="text-sm text-red-800 font-medium">
-                Aucune correspondance trouvée
-              </p>
+              <p className="text-sm text-red-800 font-medium">Aucune correspondance trouvée</p>
               <p className="text-xs text-red-600 mt-1">
                 Vérifiez le nom du bénéficiaire et le montant
               </p>

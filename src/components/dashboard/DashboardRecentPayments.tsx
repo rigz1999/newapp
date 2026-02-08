@@ -35,7 +35,7 @@ export function DashboardRecentPayments({
           <div className="space-y-3">
             {upcomingCoupons.map(coupon => {
               const daysUntil = Math.ceil(
-                (new Date(coupon.prochaine_date_coupon).getTime() - new Date().getTime()) /
+                (new Date(coupon.prochaine_date_coupon || '').getTime() - new Date().getTime()) /
                   (1000 * 60 * 60 * 24)
               );
               const isOverdue = daysUntil < 0;
@@ -45,7 +45,8 @@ export function DashboardRecentPayments({
                 <div
                   key={coupon.id}
                   onClick={() => {
-                    const projetId = coupon.tranche?.projet_id || coupon.souscription?.tranche?.projet_id;
+                    const projetId =
+                      coupon.tranche?.projet_id || coupon.souscription?.tranche?.projet_id;
                     if (projetId) {
                       navigate(`/projets/${projetId}/echeancier`);
                     }
@@ -55,7 +56,7 @@ export function DashboardRecentPayments({
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-bold text-slate-900">
-                        {formatCurrency(parseFloat(coupon.coupon_brut.toString()))}
+                        {formatCurrency(parseFloat((coupon.coupon_brut || 0).toString()))}
                       </p>
                       {isOverdue ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
@@ -75,14 +76,17 @@ export function DashboardRecentPayments({
                     </p>
                     <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
                       <Users className="w-3 h-3" />
-                      {coupon.investor_count || 0} investisseur{(coupon.investor_count || 0) > 1 ? 's' : ''}
+                      {coupon.investor_count || 0} investisseur
+                      {(coupon.investor_count || 0) > 1 ? 's' : ''}
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-semibold text-slate-700">
-                      {formatDate(coupon.prochaine_date_coupon)}
+                      {formatDate(coupon.prochaine_date_coupon || '')}
                     </p>
-                    <p className={`text-xs mt-1 ${isOverdue ? 'text-red-600 font-semibold' : 'text-slate-500'}`}>
+                    <p
+                      className={`text-xs mt-1 ${isOverdue ? 'text-red-600 font-semibold' : 'text-slate-500'}`}
+                    >
                       {daysUntil === 0
                         ? "Aujourd'hui"
                         : isOverdue
@@ -125,9 +129,7 @@ export function DashboardRecentPayments({
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="font-bold text-slate-900">
-                        {formatCurrency(payment.montant)}
-                      </p>
+                      <p className="font-bold text-slate-900">{formatCurrency(payment.montant)}</p>
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                           payment.statut?.toLowerCase() === 'payé' ||
@@ -140,16 +142,15 @@ export function DashboardRecentPayments({
                                 : 'bg-gray-100 text-gray-700'
                         }`}
                       >
-                        {payment.statut?.charAt(0).toUpperCase() + payment.statut?.slice(1).toLowerCase()}
+                        {payment.statut?.charAt(0).toUpperCase() +
+                          payment.statut?.slice(1).toLowerCase()}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600 mt-1">
                       {payment.tranche?.projet?.projet || 'Projet'} •{' '}
                       {payment.tranche?.tranche_name || 'Tranche'}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {payment.type || 'Coupon'}
-                    </p>
+                    <p className="text-xs text-slate-500 mt-1">{payment.type || 'Coupon'}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-semibold text-slate-700">

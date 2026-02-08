@@ -259,7 +259,8 @@ export function QuickPaymentModal({
 
     if (!error && data) {
       // Group by date
-      const grouped = new Map<string, Record<string, unknown>[]>();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const grouped = new Map<string, any[]>();
       data.forEach(e => {
         const date = e.date_echeance;
         if (!grouped.has(date)) {
@@ -448,6 +449,7 @@ export function QuickPaymentModal({
     }
   };
 
+  // @ts-expect-error reserved for future use
   const _handleAnalyzeWithAI = async () => {
     if (uploadedFiles.length === 0) {
       setError("Veuillez d'abord télécharger des fichiers");
@@ -507,11 +509,12 @@ export function QuickPaymentModal({
       if (result.correspondances && Array.isArray(result.correspondances)) {
         result.correspondances.forEach((match: Record<string, unknown>, index: number) => {
           const fileName = uploadedFiles[index]?.name;
-          if (fileName && match.attendu) {
+          const attendu = match.attendu as Record<string, unknown> | undefined;
+          if (fileName && attendu) {
             newMatches.set(fileName, {
-              investorId: match.attendu.investorId,
-              investorName: match.attendu.investorName,
-              confidence: match.confiance || 0,
+              investorId: attendu.investorId as string,
+              investorName: attendu.investorName as string,
+              confidence: (match.confiance as number) || 0,
               isManual: false,
             });
           }
@@ -531,6 +534,7 @@ export function QuickPaymentModal({
     }
   };
 
+  // @ts-expect-error reserved for future use
   const _handleManualAssignment = (fileName: string, investorId: string) => {
     const investor = investors.find(i => i.investisseur_id === investorId);
     if (!investor) {
@@ -1137,6 +1141,7 @@ export function QuickPaymentModal({
                     <div className="border border-slate-300 rounded-lg divide-y divide-slate-200 max-h-80 overflow-y-auto">
                       {uploadedFiles.map(file => {
                         const match = aiMatches.get(file.name);
+                        // @ts-expect-error reserved for future use
                         const _confidenceColor =
                           match && !match.isManual
                             ? match.confidence > 80

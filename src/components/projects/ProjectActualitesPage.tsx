@@ -41,7 +41,7 @@ interface Actualite {
 
 interface Project {
   projet: string;
-  org_id: string;
+  org_id: string | null;
 }
 
 export function ProjectActualitesPage() {
@@ -140,16 +140,14 @@ export function ProjectActualitesPage() {
       }
 
       if (loadMore) {
-        setActualites([...actualites, ...(data || [])]);
+        setActualites([...actualites, ...((data || []) as unknown as Actualite[])]);
         setPage(page + 1);
       } else {
-        setActualites(data || []);
+        setActualites((data || []) as unknown as Actualite[]);
         setPage(0);
       }
 
-      const totalFetched = loadMore
-        ? actualites.length + (data?.length || 0)
-        : data?.length || 0;
+      const totalFetched = loadMore ? actualites.length + (data?.length || 0) : data?.length || 0;
       setHasMore(totalFetched < (count || 0));
     } catch (error) {
       console.error('Error fetching actualites:', error);
@@ -186,8 +184,8 @@ export function ProjectActualitesPage() {
       const type = file.type.startsWith('image/')
         ? 'image'
         : file.type.startsWith('video/')
-        ? 'video'
-        : 'document';
+          ? 'video'
+          : 'document';
 
       attachments.push({
         filename: file.name,
@@ -215,7 +213,7 @@ export function ProjectActualitesPage() {
           org_id: project.org_id,
           comment_text: newActualite.trim(),
           user_id: currentUserId,
-        })
+        } as never)
         .select()
         .single();
 
@@ -228,7 +226,7 @@ export function ProjectActualitesPage() {
 
         const { error: updateError } = await supabase
           .from('project_comments')
-          .update({ attachments })
+          .update({ attachments } as never)
           .eq('id', insertedData.id);
 
         if (updateError) {
@@ -315,7 +313,10 @@ export function ProjectActualitesPage() {
         }
       }
 
-      const { error } = await supabase.from('project_comments').delete().eq('id', actualiteToDelete);
+      const { error } = await supabase
+        .from('project_comments')
+        .delete()
+        .eq('id', actualiteToDelete);
 
       if (error) {
         throw error;

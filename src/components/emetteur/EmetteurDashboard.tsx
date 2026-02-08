@@ -33,6 +33,17 @@ interface EmetteurProject {
   latest_actualite: { text: string; date: string; author: string } | null;
 }
 
+interface RpcEmetteurProject {
+  projet_id: string;
+  projet_name: string;
+  emetteur_name: string;
+  org_id: string;
+  org_name: string;
+  date_emission: string | null;
+  taux_interet: number | null;
+  montant_global: number | null;
+}
+
 const ACCENT_GRADIENTS = [
   'from-blue-500 to-blue-600',
   'from-emerald-500 to-emerald-600',
@@ -90,22 +101,23 @@ export default function EmetteurDashboard() {
       setLoading(true);
       setError(null);
 
-      const { data, error: projectsError } = await supabase.rpc('get_emetteur_projects', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: projectsError } = (await supabase.rpc('get_emetteur_projects' as any, {
         p_user_id: user!.id,
-      });
+      })) as unknown as { data: RpcEmetteurProject[] | null; error: { message: string } | null };
 
       if (projectsError) {
         throw projectsError;
       }
 
       const projectsWithDetails = await Promise.all(
-        (data || []).map(async (project: Record<string, unknown>) => {
+        (data || []).map(async (project: RpcEmetteurProject) => {
           const { data: subs } = await supabase
             .from('souscriptions')
             .select('id')
             .eq('projet_id', project.projet_id);
 
-          const subscriptionIds = (subs || []).map((s: Record<string, unknown>) => s.id);
+          const subscriptionIds = (subs || []).map((s: Record<string, unknown>) => s.id as string);
 
           let nextPayment = null;
           if (subscriptionIds.length > 0) {
@@ -155,8 +167,8 @@ export default function EmetteurDashboard() {
                   text: latestComment.comment_text,
                   date: latestComment.created_at,
                   author:
-                    ((latestComment.user as Record<string, unknown>)?.full_name as string) ||
-                    'Utilisateur',
+                    ((latestComment.user as unknown as Record<string, unknown>)
+                      ?.full_name as string) || 'Utilisateur',
                 }
               : null,
           };
@@ -166,7 +178,7 @@ export default function EmetteurDashboard() {
       setProjects(projectsWithDetails);
     } catch (err: unknown) {
       console.error('Error loading emetteur projects:', err);
-      setError(err.message);
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }

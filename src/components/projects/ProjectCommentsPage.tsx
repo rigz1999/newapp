@@ -30,7 +30,7 @@ interface Comment {
 
 interface Project {
   projet: string;
-  org_id: string;
+  org_id: string | null;
 }
 
 export function ProjectCommentsPage() {
@@ -126,10 +126,10 @@ export function ProjectCommentsPage() {
       }
 
       if (loadMore) {
-        setComments([...comments, ...(data || [])]);
+        setComments([...comments, ...((data || []) as unknown as Comment[])]);
         setPage(page + 1);
       } else {
-        setComments(data || []);
+        setComments((data || []) as unknown as Comment[]);
         setPage(0);
       }
 
@@ -152,11 +152,12 @@ export function ProjectCommentsPage() {
     setSubmitting(true);
     try {
       const { error } = await supabase.from('project_comments').insert({
-        projet_id: projectId,
+        projet_id: projectId!,
         org_id: project.org_id,
         comment_text: newComment.trim(),
         user_id: currentUserId,
-      });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
       if (error) {
         throw error;

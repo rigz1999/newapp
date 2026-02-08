@@ -8,7 +8,7 @@ interface Tranche {
   id: string;
   tranche_name: string;
   frequence: string;
-  taux_interet: string;
+  taux_interet: number;
   maturite_mois: number;
   date_emission: string | null;
   date_echeance: string | null;
@@ -52,7 +52,7 @@ export function Tranches({
       .eq('projet_id', projectId)
       .order('created_at', { ascending: false });
 
-    setTranches(data || []);
+    setTranches((data || []) as unknown as Tranche[]);
     setLoading(false);
   }, [projectId]);
 
@@ -277,9 +277,12 @@ export function Tranches({
                   </p>
                   {uploadResult.stats && (
                     <div className="mt-2 text-sm text-slate-700">
-                      <p>Lignes traitées: {uploadResult.stats.processed || 0}</p>
-                      <p>Souscriptions créées: {uploadResult.stats.subscriptionsCreated || 0}</p>
-                      <p>Lignes rejetées: {uploadResult.stats.rejected || 0}</p>
+                      <p>Lignes traitées: {(uploadResult.stats.processed as number) || 0}</p>
+                      <p>
+                        Souscriptions créées:{' '}
+                        {(uploadResult.stats.subscriptionsCreated as number) || 0}
+                      </p>
+                      <p>Lignes rejetées: {(uploadResult.stats.rejected as number) || 0}</p>
                     </div>
                   )}
                   {uploadResult.errorFileUrl && (

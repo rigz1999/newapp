@@ -38,8 +38,8 @@ interface ProofItem {
   paiement_id: string;
   file_url: string;
   file_name: string;
-  file_size: number;
-  validated_at: string;
+  file_size: number | null;
+  validated_at: string | null;
   investisseur_nom?: string;
 }
 
@@ -503,7 +503,7 @@ export function EcheanceProofsModal({
                       <p className="font-medium text-slate-900 truncate">{proof.file_name}</p>
                       <p className="text-sm text-slate-500">
                         {proof.investisseur_nom} •{' '}
-                        {new Date(proof.validated_at).toLocaleDateString('fr-FR')}
+                        {new Date(proof.validated_at || '').toLocaleDateString('fr-FR')}
                       </p>
                     </div>
 

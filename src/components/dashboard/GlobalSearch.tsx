@@ -193,7 +193,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
     } catch (err) {
       if (retries > 0) {
         await new Promise(r => setTimeout(r, 1000));
-        return performSearchWithRetry(searchQuery, retries - 1);
+        return _performSearchWithRetry(searchQuery, retries - 1);
       }
       throw err;
     }
@@ -225,7 +225,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             // Filter client-side
             const search = searchQuery.toLowerCase();
             const filtered = data
-              .filter((p: Record<string, unknown>) => {
+              .filter(p => {
                 const projet = (p.projet || '').toLowerCase();
                 const emetteur = (p.emetteur || '').toLowerCase();
                 return projet.includes(search) || emetteur.includes(search);
@@ -250,7 +250,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
             // Filter client-side
             const search = searchQuery.toLowerCase();
             const filtered = data
-              .filter((inv: Record<string, unknown>) => {
+              .filter(inv => {
                 const name = (inv.nom_raison_sociale || '').toLowerCase();
                 const email = (inv.email || '').toLowerCase();
                 return name.includes(search) || email.includes(search);
@@ -277,9 +277,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
               .limit(50);
 
             // Filter by org_id in code since nested filter causes 400 error
-            const filtered = (data || [])
-              .filter((t: Record<string, unknown>) => t.projets?.org_id === orgId)
-              .slice(0, 10);
+            const filtered = (data || []).filter(t => t.projets?.org_id === orgId).slice(0, 10);
             return { data: filtered, error };
           })(),
 
@@ -301,7 +299,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
             // Filter by org_id and search term in code
             const filtered = (data || [])
-              .filter((s: Record<string, unknown>) => {
+              .filter(s => {
                 // First filter by org_id from nested project
                 if (s.tranches?.projets?.org_id !== orgId) {
                   return false;
@@ -345,7 +343,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
             // Filter by org_id and search term in code
             const filtered = (data || [])
-              .filter((p: Record<string, unknown>) => {
+              .filter(p => {
                 // First filter by org_id from nested project
                 if (p.souscriptions?.tranches?.projets?.org_id !== orgId) {
                   return false;
@@ -384,7 +382,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
             // Filter by org_id and search term in code
             const filtered = (data || [])
-              .filter((c: Record<string, unknown>) => {
+              .filter(c => {
                 // First filter by org_id from nested project
                 if (c.souscriptions?.tranches?.projets?.org_id !== orgId) {
                   return false;
@@ -409,74 +407,62 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
         ]);
 
       // Process Projects
-      const projects: SearchResult[] = (projectsRes.data || []).map(
-        (p: Record<string, unknown>) => ({
-          type: 'project' as const,
-          id: p.id,
-          title: p.projet,
-          subtitle: `Émetteur: ${p.emetteur}`,
-          metadata: [],
-          icon: <Folder className="w-5 h-5 text-blue-600" />,
-          link: `/projets/${p.id}`,
-        })
-      );
+      const projects: SearchResult[] = (projectsRes.data || []).map(p => ({
+        type: 'project' as const,
+        id: p.id,
+        title: p.projet,
+        subtitle: `Émetteur: ${p.emetteur}`,
+        metadata: [],
+        icon: <Folder className="w-5 h-5 text-blue-600" />,
+        link: `/projets/${p.id}`,
+      }));
 
       // Process Investors
-      const investors: SearchResult[] = (investorsRes.data || []).map(
-        (inv: Record<string, unknown>) => ({
-          type: 'investor' as const,
-          id: inv.id,
-          title: inv.nom_raison_sociale || 'Sans nom',
-          subtitle: inv.email || "Pas d'email",
-          metadata: [inv.type === 'morale' ? 'Personne Morale' : 'Personne Physique'].filter(
-            Boolean
-          ),
-          icon: <Users className="w-5 h-5 text-finixar-green" />,
-          link: `/investisseurs?id=${inv.id}`,
-        })
-      );
+      const investors: SearchResult[] = (investorsRes.data || []).map(inv => ({
+        type: 'investor' as const,
+        id: inv.id,
+        title: inv.nom_raison_sociale || 'Sans nom',
+        subtitle: inv.email || "Pas d'email",
+        metadata: [inv.type === 'morale' ? 'Personne Morale' : 'Personne Physique'].filter(Boolean),
+        icon: <Users className="w-5 h-5 text-finixar-green" />,
+        link: `/investisseurs?id=${inv.id}`,
+      }));
 
       // Process Tranches
-      const tranches: SearchResult[] = (tranchesRes.data || []).map(
-        (t: Record<string, unknown>) => ({
-          type: 'tranche' as const,
-          id: t.id,
-          title: t.tranche_name,
-          subtitle: `Projet: ${t.projets?.projet || 'Inconnu'}`,
-          metadata: t.taux_interet ? [`Taux: ${t.taux_interet}%`] : [],
-          icon: <Layers className="w-5 h-5 text-purple-600" />,
-          link: `/projets/${t.projets?.id}`,
-        })
-      );
+      const tranches: SearchResult[] = (tranchesRes.data || []).map(t => ({
+        type: 'tranche' as const,
+        id: t.id,
+        title: t.tranche_name,
+        subtitle: `Projet: ${t.projets?.projet || 'Inconnu'}`,
+        metadata: t.taux_interet ? [`Taux: ${t.taux_interet}%`] : [],
+        icon: <Layers className="w-5 h-5 text-purple-600" />,
+        link: `/projets/${t.projets?.id}`,
+      }));
 
       // Process Subscriptions - already filtered by database query
-      const subscriptions: SearchResult[] = (subscriptionsRes.data || []).map(
-        (s: Record<string, unknown>) => ({
-          type: 'subscription' as const,
-          id: s.id,
-          title: `Souscription - ${s.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
-          subtitle: `${s.tranches?.projets?.projet || 'Projet'} - ${formatDate(s.date_souscription)}`,
-          metadata: [`${s.nombre_obligations} obligations`, formatCurrency(s.montant_investi)],
-          icon: <FileText className="w-5 h-5 text-orange-600" />,
-          link: `/souscriptions?id=${s.id}`,
-        })
-      );
+      const subscriptions: SearchResult[] = (subscriptionsRes.data || []).map(s => ({
+        type: 'subscription' as const,
+        id: s.id,
+        title: `Souscription - ${s.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
+        subtitle: `${s.tranches?.projets?.projet || 'Projet'} - ${formatDate(s.date_souscription)}`,
+        metadata: [`${s.nombre_obligations} obligations`, formatCurrency(s.montant_investi)],
+        icon: <FileText className="w-5 h-5 text-orange-600" />,
+        link: `/souscriptions?id=${s.id}`,
+      }));
 
       // Process Payments - already filtered by database query
-      const payments: SearchResult[] = (paymentsRes.data || []).map(
-        (p: Record<string, unknown>) => ({
-          type: 'payment' as const,
-          id: p.id,
-          title: `Paiement - ${p.souscriptions?.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
-          subtitle: `${p.souscriptions?.tranches?.projets?.projet || 'Projet'} - ${formatDate(p.date_paiement)}`,
-          metadata: [formatCurrency(p.montant), p.type || 'Paiement'],
-          icon: <Euro className="w-5 h-5 text-emerald-600" />,
-          link: `/paiements?id=${p.id}`,
-        })
-      );
+      const payments: SearchResult[] = (paymentsRes.data || []).map(p => ({
+        type: 'payment' as const,
+        id: p.id,
+        title: `Paiement - ${p.souscriptions?.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
+        subtitle: `${p.souscriptions?.tranches?.projets?.projet || 'Projet'} - ${formatDate(p.date_paiement)}`,
+        metadata: [formatCurrency(p.montant), p.type || 'Paiement'],
+        icon: <Euro className="w-5 h-5 text-emerald-600" />,
+        link: `/paiements?id=${p.id}`,
+      }));
 
       // Process Coupons - already filtered by database query
-      const coupons: SearchResult[] = (couponsRes.data || []).map((c: Record<string, unknown>) => ({
+      const coupons: SearchResult[] = (couponsRes.data || []).map(c => ({
         type: 'coupon' as const,
         id: c.id,
         title: `Coupon - ${c.souscriptions?.investisseurs?.nom_raison_sociale || 'Investisseur'}`,

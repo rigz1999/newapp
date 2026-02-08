@@ -35,7 +35,7 @@ export function LiveIndicator({
       const seconds = Math.floor((Date.now() - lastUpdate.getTime()) / 1000);
 
       if (seconds < 10) {
-        setTimeAgo('à l\'instant');
+        setTimeAgo("à l'instant");
       } else if (seconds < 60) {
         setTimeAgo(`il y a ${seconds}s`);
       } else if (seconds < 3600) {
@@ -118,11 +118,7 @@ interface LiveDotProps {
 export function LiveDot({ isLive, className = '' }: LiveDotProps) {
   return (
     <div className={`relative ${className}`}>
-      <div
-        className={`w-2 h-2 rounded-full ${
-          isLive ? 'bg-green-500' : 'bg-slate-300'
-        }`}
-      />
+      <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500' : 'bg-slate-300'}`} />
       {isLive && (
         <div className="absolute inset-0 animate-ping">
           <div className="w-2 h-2 rounded-full bg-green-500 opacity-75" />

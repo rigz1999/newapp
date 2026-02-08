@@ -67,7 +67,7 @@ export function useAuth() {
       setUserRole(orgMembership?.role || null);
       setLoading(false);
     } catch (error) {
-      logger.error('Failed to check admin status', error);
+      logger.error('Failed to check admin status', error as Record<string, unknown>);
       setIsAdmin(false);
       setIsSuperAdmin(false);
       setIsOrgAdmin(false);

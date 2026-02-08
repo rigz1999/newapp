@@ -11,12 +11,15 @@ vi.mock('../lib/supabase', () => ({
       onAuthStateChange: vi.fn(),
     },
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }));
 
 describe('useAuth', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default rpc mock - returns false for check_super_admin_status
+    (supabase.rpc as any).mockResolvedValue({ data: false });
   });
 
   it('should initialize with loading state', async () => {
@@ -95,6 +98,8 @@ describe('useAuth', () => {
       data: { subscription: { unsubscribe: vi.fn() } },
     });
 
+    (supabase.rpc as any).mockResolvedValue({ data: true });
+
     (supabase.from as any).mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockResolvedValue({
@@ -133,6 +138,8 @@ describe('useAuth', () => {
     (supabase.auth.onAuthStateChange as any).mockReturnValue({
       data: { subscription: { unsubscribe: vi.fn() } },
     });
+
+    (supabase.rpc as any).mockResolvedValue({ data: false });
 
     (supabase.from as any).mockReturnValue({
       select: vi.fn().mockReturnThis(),
@@ -229,9 +236,12 @@ describe('useAuth', () => {
       authCallback('SIGNED_IN', { user: mockUser });
     });
 
-    await waitFor(() => {
-      expect(result.current.user).toEqual(mockUser);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(result.current.user).toEqual(mockUser);
+      },
+      { timeout: 3000 }
+    );
 
     // Simulate sign-out
     await act(async () => {

@@ -103,7 +103,7 @@ export function ProjectActualites({ projectId, orgId }: ProjectActualitesProps) 
       if (error) {
         throw error;
       }
-      setActualites(data || []);
+      setActualites((data || []) as unknown as Actualite[]);
     } catch (error) {
       console.error('Error fetching actualites:', error);
     } finally {
@@ -138,8 +138,8 @@ export function ProjectActualites({ projectId, orgId }: ProjectActualitesProps) 
       const type = file.type.startsWith('image/')
         ? 'image'
         : file.type.startsWith('video/')
-        ? 'video'
-        : 'document';
+          ? 'video'
+          : 'document';
 
       attachments.push({
         filename: file.name,
@@ -180,7 +180,9 @@ export function ProjectActualites({ projectId, orgId }: ProjectActualitesProps) 
 
         const { error: updateError } = await supabase
           .from('project_comments')
-          .update({ attachments })
+          .update({
+            attachments: attachments as unknown as import('../../lib/database.types').Json,
+          })
           .eq('id', insertedData.id);
 
         if (updateError) {
@@ -268,7 +270,10 @@ export function ProjectActualites({ projectId, orgId }: ProjectActualitesProps) 
         }
       }
 
-      const { error } = await supabase.from('project_comments').delete().eq('id', actualiteToDelete);
+      const { error } = await supabase
+        .from('project_comments')
+        .delete()
+        .eq('id', actualiteToDelete);
 
       if (error) {
         throw error;

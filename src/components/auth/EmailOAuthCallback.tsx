@@ -36,13 +36,19 @@ export function EmailOAuthCallback() {
         }
 
         // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
         if (userError || !user) {
           throw new Error('Utilisateur non authentifié');
         }
 
         // Exchange code for tokens via edge function
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
         if (sessionError || !session) {
           throw new Error('Session non trouvée');
         }
@@ -61,15 +67,14 @@ export function EmailOAuthCallback() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Échec de l\'échange du code OAuth');
+          throw new Error(errorData.error || "Échec de l'échange du code OAuth");
         }
 
         const { data: tokenData } = await response.json();
 
         // Store tokens in database
-        const { error: insertError } = await supabase
-          .from('user_email_connections')
-          .upsert({
+        const { error: insertError } = await supabase.from('user_email_connections').upsert(
+          {
             user_id: user.id,
             provider,
             email_address: tokenData.email,
@@ -79,9 +84,11 @@ export function EmailOAuthCallback() {
             scope: tokenData.scope,
             token_type: tokenData.token_type || 'Bearer',
             connected_at: new Date().toISOString(),
-          }, {
+          },
+          {
             onConflict: 'user_id',
-          });
+          }
+        );
 
         if (insertError) {
           throw new Error('Échec de la sauvegarde de la connexion email');
@@ -93,13 +100,10 @@ export function EmailOAuthCallback() {
         setTimeout(() => {
           navigate('/parametres');
         }, 2000);
-
       } catch (err) {
         console.error('OAuth callback error:', err);
         setStatus('error');
-        setErrorMessage(
-          err instanceof Error ? err.message : 'Une erreur est survenue'
-        );
+        setErrorMessage(err instanceof Error ? err.message : 'Une erreur est survenue');
 
         // Redirect to settings after 3 seconds
         setTimeout(() => {
@@ -123,9 +127,7 @@ export function EmailOAuthCallback() {
               <h2 className="text-xl font-semibold text-finixar-text mb-2">
                 Connexion en cours...
               </h2>
-              <p className="text-slate-600 text-sm">
-                Nous configurons votre connexion email
-              </p>
+              <p className="text-slate-600 text-sm">Nous configurons votre connexion email</p>
             </div>
           )}
 
@@ -136,9 +138,7 @@ export function EmailOAuthCallback() {
                   <CheckCircle className="w-12 h-12 text-green-600" />
                 </div>
               </div>
-              <h2 className="text-xl font-semibold text-finixar-text mb-2">
-                Connexion réussie !
-              </h2>
+              <h2 className="text-xl font-semibold text-finixar-text mb-2">Connexion réussie !</h2>
               <p className="text-slate-600 text-sm">
                 Votre email a été connecté avec succès. Redirection...
               </p>
@@ -152,15 +152,9 @@ export function EmailOAuthCallback() {
                   <XCircle className="w-12 h-12 text-red-600" />
                 </div>
               </div>
-              <h2 className="text-xl font-semibold text-finixar-text mb-2">
-                Erreur de connexion
-              </h2>
-              <p className="text-slate-600 text-sm mb-4">
-                {errorMessage}
-              </p>
-              <p className="text-slate-500 text-xs">
-                Redirection vers les paramètres...
-              </p>
+              <h2 className="text-xl font-semibold text-finixar-text mb-2">Erreur de connexion</h2>
+              <p className="text-slate-600 text-sm mb-4">{errorMessage}</p>
+              <p className="text-slate-500 text-xs">Redirection vers les paramètres...</p>
             </div>
           )}
         </div>
