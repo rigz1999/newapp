@@ -1433,7 +1433,7 @@ export function TrancheWizard({
                     </div>
                     {selectedInvestorDetails.email && (
                       <div>
-                        <p className="text-sm text-slate-600 mb-1">Email</p>
+                        <p className="text-sm text-slate-600 mb-1">E-mail</p>
                         <p className="text-sm text-slate-900">{selectedInvestorDetails.email}</p>
                       </div>
                     )}

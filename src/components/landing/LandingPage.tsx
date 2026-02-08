@@ -378,7 +378,7 @@ export function LandingPage(): JSX.Element {
                   className="flex-1 px-6 py-4 bg-white border-2 border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2E62FF] transition-colors"
                   required
                   disabled={isSubmitting}
-                  aria-label="Adresse email pour demander une démo"
+                  aria-label="Adresse e-mail pour demander une démo"
                   aria-required="true"
                 />
                 <button

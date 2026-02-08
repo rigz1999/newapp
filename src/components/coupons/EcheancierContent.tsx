@@ -246,9 +246,9 @@ export function EcheancierContent({
 
       if (connError || !connection) {
         setAlertModalConfig({
-          title: 'Email non connecté',
+          title: 'E-mail non connecté',
           message:
-            "Veuillez d'abord connecter votre email dans les paramètres pour envoyer des rappels.",
+            "Veuillez d'abord connecter votre e-mail dans les paramètres pour envoyer des rappels.",
           type: 'warning',
         });
         setShowAlertModal(true);
@@ -288,7 +288,7 @@ export function EcheancierContent({
 
       setAlertModalConfig({
         title: 'Brouillon créé !',
-        message: `Un brouillon d'email a été créé dans votre ${connection.provider === 'microsoft' ? 'Outlook' : 'Gmail'}. Ouvrez votre boîte email pour le consulter et l'envoyer.`,
+        message: `Un brouillon d'e-mail a été créé dans votre ${connection.provider === 'microsoft' ? 'Outlook' : 'Gmail'}. Ouvrez votre boîte e-mail pour le consulter et l'envoyer.`,
         type: 'success',
       });
       setShowAlertModal(true);
@@ -922,20 +922,11 @@ export function EcheancierContent({
                                     </div>
                                     <div className="text-right">
                                       <div className="text-sm font-bold text-finixar-green">
-                                        {formatCurrency(
-                                          dateGroup.totalNet + dateGroup.totalNominal
-                                        )}
+                                        {formatCurrency(dateGroup.totalNet)}
                                       </div>
-                                      {dateGroup.isLastEcheance ? (
-                                        <div className="text-xs text-slate-500">
-                                          Coupon: {formatCurrency(dateGroup.totalNet)} + Nominal:{' '}
-                                          {formatCurrency(dateGroup.totalNominal)}
-                                        </div>
-                                      ) : (
-                                        <div className="text-xs text-slate-500">
-                                          Brut: {formatCurrency(dateGroup.totalBrut)}
-                                        </div>
-                                      )}
+                                      <div className="text-xs text-slate-500">
+                                        Brut: {formatCurrency(dateGroup.totalBrut)}
+                                      </div>
                                     </div>
                                     {(() => {
                                       const totalCount = dateGroup.echeances.length;

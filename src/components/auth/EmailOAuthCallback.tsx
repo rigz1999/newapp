@@ -127,7 +127,7 @@ export function EmailOAuthCallback() {
               <h2 className="text-xl font-semibold text-finixar-text mb-2">
                 Connexion en cours...
               </h2>
-              <p className="text-slate-600 text-sm">Nous configurons votre connexion email</p>
+              <p className="text-slate-600 text-sm">Nous configurons votre connexion e-mail</p>
             </div>
           )}
 

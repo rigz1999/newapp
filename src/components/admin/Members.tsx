@@ -579,8 +579,8 @@ function InviteMemberModal({
     // Validate email format
     if (!isValidEmail(email)) {
       setAlertConfig({
-        title: 'Email invalide',
-        message: 'Veuillez entrer une adresse email valide (ex: nom@exemple.com)',
+        title: 'E-mail invalide',
+        message: 'Veuillez entrer une adresse e-mail valide (ex: nom@exemple.com)',
         type: 'error',
       });
       setShowAlert(true);
@@ -671,7 +671,7 @@ function InviteMemberModal({
 
           <div className="space-y-4 mb-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Email *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">E-mail *</label>
               <input
                 type="email"
                 value={email}
@@ -1000,7 +1000,7 @@ function SuccessModal({
           <h3 className="text-2xl font-bold text-slate-900 mb-3">Invitation envoyée !</h3>
 
           {/* Message */}
-          <p className="text-slate-600 mb-2">Un email d'invitation a été envoyé à</p>
+          <p className="text-slate-600 mb-2">Un e-mail d'invitation a été envoyé à</p>
           <p className="text-lg font-semibold text-blue-600 mb-6">{email}</p>
 
           {/* Info Box */}
@@ -1010,7 +1010,7 @@ function SuccessModal({
                 <span className="text-lg">📧</span>
                 Prochaines étapes :
               </strong>
-              <span className="block ml-7">• L'utilisateur recevra un email d'invitation</span>
+              <span className="block ml-7">• L'utilisateur recevra un e-mail d'invitation</span>
               <span className="block ml-7">
                 • Il pourra créer son compte en cliquant sur le lien
               </span>

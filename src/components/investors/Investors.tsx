@@ -969,11 +969,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
             <input
               id="investor-search"
               type="search"
-              placeholder="Rechercher par nom, ID, CGP, email..."
+              placeholder="Rechercher par nom, ID, CGP, e-mail..."
               value={advancedFilters.filters.search}
               onChange={e => advancedFilters.setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-              aria-label="Rechercher des investisseurs par nom, ID, CGP ou email"
+              aria-label="Rechercher des investisseurs par nom, ID, CGP ou e-mail"
             />
           </div>
 
@@ -1450,7 +1450,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-600">Email</p>
+                    <p className="text-sm text-slate-600">E-mail</p>
                     <p className="text-sm font-medium text-slate-900">
                       {selectedInvestor.email || '-'}
                     </p>
@@ -1555,7 +1555,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         htmlFor="edit-email"
                         className="block text-sm font-medium text-slate-700 mb-2"
                       >
-                        Email
+                        E-mail
                       </label>
                       <input
                         id="edit-email"
@@ -1710,7 +1710,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         htmlFor="edit-cgp-email"
                         className="block text-sm font-medium text-slate-700 mb-2"
                       >
-                        Email du CGP *
+                        E-mail du CGP *
                       </label>
                       <input
                         id="edit-cgp-email"

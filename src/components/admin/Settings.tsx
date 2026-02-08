@@ -349,7 +349,7 @@ export default function Settings() {
       } else if (data?.error) {
         setErrorMessage(data.error);
       } else {
-        setSuccessMessage('Email de test envoyé avec succès ! Vérifiez votre boîte de réception.');
+        setSuccessMessage('E-mail de test envoyé avec succès ! Vérifiez votre boîte de réception.');
         setShowSuccessModal(true);
       }
     } catch (err) {
@@ -495,7 +495,9 @@ export default function Settings() {
           <div className="p-6 space-y-6">
             {/* Email (Read-only) */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Adresse email</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Adresse e-mail
+              </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
@@ -505,7 +507,7 @@ export default function Settings() {
                   className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg bg-slate-50 text-slate-600 cursor-not-allowed"
                 />
               </div>
-              <p className="text-xs text-slate-500 mt-2">L'email ne peut pas être modifié</p>
+              <p className="text-xs text-slate-500 mt-2">L'e-mail ne peut pas être modifié</p>
             </div>
 
             {/* First Name */}
@@ -752,7 +754,7 @@ export default function Settings() {
                 </button>
               </div>
               <p className="text-sm text-slate-600 mt-2">
-                Recevez des rappels par email pour les coupons à échéance prochaine
+                Recevez des rappels par e-mail pour les coupons à échéance prochaine
               </p>
             </div>
 
@@ -841,7 +843,7 @@ export default function Settings() {
                     <p className="font-medium mb-1">Comment ça marche ?</p>
                     <p className="text-blue-800">
                       Les rappels sont envoyés automatiquement chaque jour à 7h00. Vous recevrez un
-                      email listant tous les coupons correspondant aux périodes que vous avez
+                      e-mail listant tous les coupons correspondant aux périodes que vous avez
                       sélectionnées.
                     </p>
                   </div>
@@ -881,7 +883,7 @@ export default function Settings() {
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      Email test
+                      E-mail test
                     </>
                   )}
                 </button>

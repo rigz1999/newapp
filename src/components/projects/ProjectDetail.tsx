@@ -1010,7 +1010,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               </p>
             </div>
             <div>
-              <p className="text-sm text-slate-600">Email Représentant</p>
+              <p className="text-sm text-slate-600">E-mail Représentant</p>
               <p className="text-base font-medium text-slate-900">
                 {project.email_representant || '-'}
               </p>
@@ -1669,7 +1669,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                               htmlFor="edit-email-rep"
                               className="block text-sm font-medium text-slate-900 mb-2"
                             >
-                              Email représentant
+                              E-mail représentant
                             </label>
                             <input
                               id="edit-email-rep"
@@ -1711,7 +1711,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                               htmlFor="edit-email-rep-masse"
                               className="block text-sm font-medium text-slate-900 mb-2"
                             >
-                              Email représentant de la masse
+                              E-mail représentant de la masse
                             </label>
                             <input
                               id="edit-email-rep-masse"

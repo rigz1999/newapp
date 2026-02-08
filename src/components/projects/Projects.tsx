@@ -554,12 +554,6 @@ export function Projects({ organization }: ProjectsProps) {
       {showCreateModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
-          onClick={e => {
-            if (e.target === e.currentTarget) {
-              resetNewProjectForm();
-              setShowCreateModal(false);
-            }
-          }}
         >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-white">
@@ -1041,7 +1035,7 @@ export function Projects({ organization }: ProjectsProps) {
                       htmlFor="emailrep"
                       className="block text-sm font-medium text-slate-900 mb-2"
                     >
-                      Email du représentant <span className="text-finixar-red">*</span>
+                      E-mail du représentant <span className="text-finixar-red">*</span>
                     </label>
                     <input
                       id="emailrep"
@@ -1098,7 +1092,7 @@ export function Projects({ organization }: ProjectsProps) {
                         htmlFor="emailmasse"
                         className="block text-sm font-medium text-slate-900 mb-2"
                       >
-                        Email du représentant de la masse{' '}
+                        E-mail du représentant de la masse{' '}
                         <span className="text-finixar-red">*</span>
                       </label>
                       <input

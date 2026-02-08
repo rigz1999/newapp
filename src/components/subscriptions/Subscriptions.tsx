@@ -512,7 +512,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       { header: 'Tranche', key: 'tranche', width: 20 },
       { header: 'Investisseur', key: 'investisseur', width: 25 },
       { header: 'Type', key: 'type', width: 15 },
-      { header: 'Email', key: 'email', width: 25 },
+      { header: 'E-mail', key: 'email', width: 25 },
       { header: 'CGP', key: 'cgp', width: 20 },
       { header: 'Date souscription', key: 'dateSouscription', width: 18 },
       { header: 'Montant investi', key: 'montantInvesti', width: 18 },
@@ -1194,7 +1194,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Email:</span>
+                    <span className="text-sm text-slate-600">E-mail :</span>
                     <span className="text-sm font-medium text-slate-900">
                       {viewingSubscription.investisseurs.email || '-'}
                     </span>
