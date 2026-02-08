@@ -395,12 +395,11 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
       </aside>
 
       <main className="flex-1 overflow-y-auto relative">
-        {isLoading && (
-          <div className="absolute inset-0 bg-finixar-background z-50">
-            <DashboardSkeleton />
-          </div>
+        {isLoading ? (
+          <DashboardSkeleton />
+        ) : (
+          <Outlet />
         )}
-        <Outlet />
       </main>
 
       {/* Global Search Modal */}
