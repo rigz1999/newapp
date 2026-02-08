@@ -16,6 +16,8 @@ import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { PaymentProofUpload } from './PaymentProofUpload';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { logAuditEvent, auditFormatCurrency } from '../../utils/auditLogger';
+import { ActivityTimeline } from '../audit/ActivityTimeline';
 
 interface PaymentDetail {
   id: string;
@@ -156,6 +158,19 @@ export function PaymentDetailPage() {
       if (deleteError) {
         throw deleteError;
       }
+
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'paiement',
+        entityId: payment.id,
+        description: `a supprimé le paiement ${payment.id_paiement} de ${auditFormatCurrency(payment.montant)}`,
+        metadata: {
+          id_paiement: payment.id_paiement,
+          montant: payment.montant,
+          investisseur: payment.investisseur?.nom_raison_sociale,
+          projet: payment.tranche?.projet?.projet,
+        },
+      });
 
       // Invalidate cache
       triggerCacheInvalidation();
@@ -405,7 +420,8 @@ export function PaymentDetailPage() {
             {/* Timeline */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
               <h2 className="text-lg font-bold text-slate-900 mb-4">Historique</h2>
-              <div className="space-y-4">
+              <ActivityTimeline entityType="paiement" entityId={payment.id} />
+              <div className="space-y-4 mt-3 pt-3 border-t border-slate-100">
                 {payment.created_at && (
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 w-2 h-2 bg-finixar-brand-blue rounded-full mt-2"></div>

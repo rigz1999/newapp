@@ -24,6 +24,7 @@ import {
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { AlertModal } from '../common/Modals';
 import { logger } from '../../utils/logger';
+import { logAuditEvent } from '../../utils/auditLogger';
 import { TableSkeleton } from '../common/Skeleton';
 import { isValidEmail } from '../../utils/validators';
 
@@ -190,6 +191,14 @@ export default function Members() {
         throw new Error(data.error || 'Failed to delete user');
       }
 
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'membre',
+        entityId: selectedMember.user_id,
+        description: `a supprimé le membre "${selectedMember.email}"`,
+        metadata: { email: selectedMember.email, role: selectedMember.role },
+      });
+
       setShowRemoveModal(false);
       setSelectedMember(null);
 
@@ -239,6 +248,13 @@ export default function Members() {
       });
       setShowAlertModal(true);
     } else {
+      logAuditEvent({
+        action: 'updated',
+        entityType: 'membre',
+        entityId: selectedMember.user_id,
+        description: `a changé le rôle de "${selectedMember.email}" en "${newRole}"`,
+        metadata: { email: selectedMember.email, oldRole: selectedMember.role, newRole },
+      });
       setShowRoleModal(false);
       setSelectedMember(null);
       fetchMembers();
@@ -246,6 +262,7 @@ export default function Members() {
   };
 
   const handleCancelInvitation = async (invitationId: string) => {
+    const invitation = invitations.find(i => i.id === invitationId);
     const { error } = await supabase.from('invitations').delete().eq('id', invitationId);
 
     if (error) {
@@ -256,6 +273,13 @@ export default function Members() {
       });
       setShowAlertModal(true);
     } else {
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'invitation',
+        entityId: invitationId,
+        description: `a annulé l'invitation pour "${invitation?.email || 'inconnu'}"`,
+        metadata: { email: invitation?.email },
+      });
       fetchInvitations();
     }
   };

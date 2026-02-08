@@ -27,6 +27,7 @@ import { DateRangePicker } from '../filters/DateRangePicker';
 import { MultiSelectFilter } from '../filters/MultiSelectFilter';
 import { FilterPresets } from '../filters/FilterPresets';
 import * as ExcelJS from 'exceljs';
+import { logAuditEvent, auditFormatCurrency } from '../../utils/auditLogger';
 
 interface Subscription {
   id: string;
@@ -297,6 +298,14 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         throw error;
       }
 
+      logAuditEvent({
+        action: 'updated',
+        entityType: 'souscription',
+        entityId: editingSubscription.id,
+        description: `a modifié une souscription (${auditFormatCurrency(editFormData.montant_investi)})`,
+        metadata: { montant_investi: editFormData.montant_investi, nombre_obligations: editFormData.nombre_obligations },
+      });
+
       // Refresh data
       await fetchSubscriptions();
 
@@ -347,6 +356,14 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       if (error) {
         throw error;
       }
+
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'souscription',
+        entityId: deletingSubscription.id,
+        description: `a supprimé une souscription`,
+        metadata: { id: deletingSubscription.id },
+      });
 
       // Refresh data
       await fetchSubscriptions();

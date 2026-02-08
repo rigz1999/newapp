@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { logger } from '../../utils/logger';
+import { logAuditEvent } from '../../utils/auditLogger';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Users,
@@ -239,6 +240,12 @@ export default function AdminPanel() {
       });
       setShowAlertModal(true);
     } else {
+      logAuditEvent({
+        action: 'created',
+        entityType: 'organization',
+        description: `a créé l'organisation "${newOrgName.trim()}"`,
+        metadata: { name: newOrgName.trim() },
+      });
       setNewOrgName('');
       setShowNewOrgModal(false);
       fetchData();
@@ -267,6 +274,13 @@ export default function AdminPanel() {
       });
       setShowAlertModal(true);
     } else {
+      logAuditEvent({
+        action: 'updated',
+        entityType: 'organization',
+        entityId: editingOrg.id,
+        description: `a renommé l'organisation en "${newOrgName.trim()}"`,
+        metadata: { name: newOrgName.trim() },
+      });
       setNewOrgName('');
       setShowEditOrgModal(false);
       setEditingOrg(null);
@@ -308,6 +322,13 @@ export default function AdminPanel() {
       });
       setShowAlertModal(true);
     } else {
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'organization',
+        entityId: deletingItem.id,
+        description: `a supprimé l'organisation "${deletingItem.name}"`,
+        metadata: { name: deletingItem.name },
+      });
       setShowDeleteModal(false);
       setDeletingItem(null);
       fetchData();

@@ -44,6 +44,7 @@ const Members = lazy(() => import('./components/admin/Members'));
 const Settings = lazy(() => import('./components/admin/Settings'));
 const EmetteurDashboard = lazy(() => import('./components/emetteur/EmetteurDashboard'));
 const EmetteurProjectView = lazy(() => import('./components/emetteur/EmetteurProjectView'));
+const AuditLogPage = lazy(() => import('./components/audit/AuditLogPage'));
 
 // Default organization for super admin users
 const DEFAULT_ORG = { id: 'admin', name: 'Admin', role: 'admin' } as const;
@@ -371,6 +372,16 @@ function App(): JSX.Element {
                       <ErrorBoundary>
                         <Suspense fallback={<LoadingFallback />}>
                           <PaymentDetailPage />
+                        </Suspense>
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="historique"
+                    element={
+                      <ErrorBoundary>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <AuditLogPage organization={organization || DEFAULT_ORG} />
                         </Suspense>
                       </ErrorBoundary>
                     }

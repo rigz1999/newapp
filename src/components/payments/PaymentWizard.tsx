@@ -18,6 +18,7 @@ import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidatio
 import { isValidAmount } from '../../utils/validators';
 import { logger } from '../../utils/logger';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { logAuditEvent, auditFormatCurrency } from '../../utils/auditLogger';
 import { PaymentWizardHeader } from './wizard/PaymentWizardHeader';
 import { PaymentProjectSelect } from './wizard/PaymentProjectSelect';
 import { PaymentFileUpload as _PaymentFileUpload } from './wizard/PaymentFileUpload';
@@ -896,6 +897,16 @@ export function PaymentWizard({
         await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
       }
 
+      const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
+      const totalAmount = selectedMatchesList.filter(m => m.matchedSubscription).reduce((sum, m) => sum + m.paiement.montant, 0);
+      logAuditEvent({
+        action: 'created',
+        entityType: 'paiement',
+        description: `a créé ${selectedMatchesList.filter(m => m.matchedSubscription).length} paiement(s) pour un total de ${auditFormatCurrency(totalAmount)}`,
+        orgId: projet.org_id,
+        metadata: { count: selectedMatchesList.filter(m => m.matchedSubscription).length, totalAmount },
+      });
+
       setShowConfirmModal(false);
       setSuccessMessage(
         `Paiement validé avec succès${tempFileNames.length > 0 ? ' avec justificatif' : ''} !`
@@ -1033,6 +1044,15 @@ export function PaymentWizard({
       if (tempFileNames.length > 0) {
         await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
       }
+
+      const bulkTotalAmount = validMatchesList.reduce((sum, m) => sum + m.paiement.montant, 0);
+      logAuditEvent({
+        action: 'created',
+        entityType: 'paiement',
+        description: `a créé ${validMatchesList.length} paiement(s) pour un total de ${auditFormatCurrency(bulkTotalAmount)}`,
+        orgId: projet.org_id,
+        metadata: { count: validMatchesList.length, totalAmount: bulkTotalAmount },
+      });
 
       setSuccessMessage(
         `${validMatchesList.length} paiement${validMatchesList.length > 1 ? 's validés' : ' validé'} avec succès !`

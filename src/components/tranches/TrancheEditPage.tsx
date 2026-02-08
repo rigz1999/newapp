@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { logger } from '../../utils/logger';
+import { logAuditEvent, auditFormatCurrency } from '../../utils/auditLogger';
 
 interface Tranche {
   id: string;
@@ -318,6 +319,14 @@ export function TrancheEditPage(): JSX.Element {
         throw error;
       }
 
+      logAuditEvent({
+        action: 'updated',
+        entityType: 'souscription',
+        entityId: souscriptionId,
+        description: `a réassigné une souscription à un autre investisseur`,
+        metadata: { souscriptionId, newInvestorId },
+      });
+
       logger.info('Souscription réassignée', { souscriptionId, newInvestorId });
       await fetchSouscriptions();
       setReassigningSouscriptionId(null);
@@ -352,6 +361,14 @@ export function TrancheEditPage(): JSX.Element {
       if (error) {
         throw error;
       }
+      logAuditEvent({
+        action: 'updated',
+        entityType: 'souscription',
+        entityId: souscription.id,
+        description: `a modifié une souscription (${auditFormatCurrency(souscription.montant_investi)})`,
+        metadata: { montant_investi: souscription.montant_investi, nombre_obligations: souscription.nombre_obligations },
+      });
+
       logger.info('Souscription mise à jour', { id: souscription.id });
       setEditingRow(null);
     } catch (err) {
@@ -386,6 +403,14 @@ export function TrancheEditPage(): JSX.Element {
       if (updateError) {
         throw updateError;
       }
+
+      logAuditEvent({
+        action: 'updated',
+        entityType: 'tranche',
+        entityId: tranche.id,
+        description: `a modifié la tranche "${trancheName}"`,
+        metadata: { tranche_name: trancheName, date_emission: dateEmission },
+      });
 
       logger.info('Tranche mise à jour', { id: tranche.id });
       // Navigate back to project page

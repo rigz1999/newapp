@@ -10,6 +10,7 @@ import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
 import { logger } from '../../utils/logger';
+import { logAuditEvent } from '../../utils/auditLogger';
 
 interface ProjectWithStats {
   id: string;
@@ -256,6 +257,15 @@ export function Projects({ organization }: ProjectsProps) {
         throw error;
       }
 
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'projet',
+        entityId: projectToDelete.id,
+        description: `a supprimé le projet "${projectToDelete.name}"`,
+        orgId: organization.id,
+        metadata: { projet: projectToDelete.name },
+      });
+
       toast.success('Projet supprimé avec succès !');
 
       // Close modal and reset state
@@ -337,6 +347,15 @@ export function Projects({ organization }: ProjectsProps) {
       if (error) {
         throw error;
       }
+
+      logAuditEvent({
+        action: 'created',
+        entityType: 'projet',
+        entityId: data?.id,
+        description: `a créé le projet "${newProjectData.projet}"`,
+        orgId: (projectToCreate.org_id as string) || organization.id,
+        metadata: { projet: newProjectData.projet, emetteur: newProjectData.emetteur },
+      });
 
       // Invalidate dashboard cache since new project affects stats
       triggerCacheInvalidation(organization.id);

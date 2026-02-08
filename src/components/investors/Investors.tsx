@@ -28,6 +28,7 @@ import * as ExcelJS from 'exceljs';
 import { ConfirmModal, AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
 import { toast } from '../../utils/toast';
+import { logAuditEvent } from '../../utils/auditLogger';
 import { Pagination, paginate } from '../common/Pagination';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { isValidSIREN } from '../../utils/validators';
@@ -572,6 +573,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
       return;
     }
 
+    logAuditEvent({
+      action: 'updated',
+      entityType: 'investisseur',
+      entityId: selectedInvestor.id,
+      description: `a modifié l'investisseur "${selectedInvestor.nom_raison_sociale}"`,
+      metadata: { nom_raison_sociale: selectedInvestor.nom_raison_sociale },
+    });
+
     toast.success('Investisseur mis à jour avec succès !');
     setShowEditModal(false);
     fetchInvestors();
@@ -587,6 +596,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
       return;
     }
 
+    const investorName = selectedInvestor.nom_raison_sociale;
     const { error } = await supabase.from('investisseurs').delete().eq('id', selectedInvestor.id);
 
     if (error) {
@@ -598,6 +608,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
       setShowAlertModal(true);
       return;
     }
+
+    logAuditEvent({
+      action: 'deleted',
+      entityType: 'investisseur',
+      entityId: selectedInvestor.id,
+      description: `a supprimé l'investisseur "${investorName}"`,
+      metadata: { nom_raison_sociale: investorName },
+    });
 
     setShowDeleteModal(false);
     fetchInvestors();
@@ -642,6 +660,13 @@ function Investors({ organization: _organization }: InvestorsProps) {
       toast.error(`Erreur lors de la suppression: ${error.message}`);
       return;
     }
+
+    logAuditEvent({
+      action: 'deleted',
+      entityType: 'investisseur',
+      description: `a supprimé ${idsToDelete.length} investisseur(s) en masse`,
+      metadata: { count: idsToDelete.length },
+    });
 
     toast.success(`${idsToDelete.length} investisseur(s) supprimé(s) avec succès`);
     setShowBulkDeleteModal(false);
