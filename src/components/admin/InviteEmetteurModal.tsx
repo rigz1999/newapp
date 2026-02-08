@@ -265,7 +265,7 @@ export default function InviteEmetteurModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
               <input
                 type="email"
                 value={email}
@@ -277,7 +277,7 @@ export default function InviteEmetteurModal({
 
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
               <p className="text-sm text-blue-800">
-                L'émetteur recevra un email pour activer son accès et pourra consulter le calendrier
+                L'émetteur recevra un e-mail pour activer son accès et pourra consulter le calendrier
                 de paiement et les actualités du projet.
               </p>
             </div>

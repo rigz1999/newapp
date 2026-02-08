@@ -30,7 +30,7 @@ export function Login() {
 
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        setError('Email ou mot de passe incorrect.');
+        setError('E-mail ou mot de passe incorrect.');
       } else {
         setError(formatErrorMessage(error));
       }
@@ -117,7 +117,7 @@ export function Login() {
               <form onSubmit={handleForgotPassword} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
-                    Adresse email
+                    Adresse e-mail
                   </label>
                   <input
                     id="email"
@@ -181,7 +181,7 @@ export function Login() {
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
-                Adresse email
+                Adresse e-mail
               </label>
               <input
                 id="email"

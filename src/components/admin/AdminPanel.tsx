@@ -1309,7 +1309,7 @@ function UserDetailModal({
             <div className="flex items-start gap-3">
               <Mail className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-500 mb-1">Email</p>
+                <p className="text-xs text-slate-500 mb-1">E-mail</p>
                 <p className="text-sm font-medium text-slate-900 break-words">{user.email}</p>
               </div>
             </div>
@@ -1443,8 +1443,8 @@ function InviteMemberModal({
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setAlertConfig({
-        title: 'Email invalide',
-        message: 'Veuillez entrer une adresse email valide',
+        title: 'E-mail invalide',
+        message: 'Veuillez entrer une adresse e-mail valide',
         type: 'error',
       });
       setShowAlert(true);
@@ -1565,7 +1565,7 @@ function InviteMemberModal({
                 htmlFor="invite-email"
                 className="block text-sm font-medium text-slate-700 mb-2"
               >
-                Email *
+                E-mail *
               </label>
               <input
                 id="invite-email"
@@ -1728,7 +1728,7 @@ function SuccessModal({
           </h3>
 
           {/* Message */}
-          <p className="text-slate-600 mb-2">Un email d'invitation a été envoyé à</p>
+          <p className="text-slate-600 mb-2">Un e-mail d'invitation a été envoyé à</p>
           <p className="text-lg font-semibold text-blue-600 mb-6">{email}</p>
 
           {/* Info Box */}
@@ -1738,7 +1738,7 @@ function SuccessModal({
                 <span className="text-lg">📧</span>
                 Prochaines étapes :
               </strong>
-              <span className="block ml-7">• L'utilisateur recevra un email d'invitation</span>
+              <span className="block ml-7">• L'utilisateur recevra un e-mail d'invitation</span>
               <span className="block ml-7">
                 • Il pourra créer son compte en cliquant sur le lien
               </span>

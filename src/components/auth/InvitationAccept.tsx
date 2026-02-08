@@ -188,7 +188,7 @@ export function InvitationAccept() {
 
         // Handle specific errors from the Edge Function
         if (data.userExists) {
-          setError('Un compte existe déjà avec cet email. Veuillez vous connecter.');
+          setError('Un compte existe déjà avec cet e-mail. Veuillez vous connecter.');
           setCreating(false);
           return;
         }
@@ -345,10 +345,10 @@ export function InvitationAccept() {
               />
             </div>
 
-            {/* Email */}
+            {/* E-mail */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
-                Email
+                E-mail
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -384,6 +384,7 @@ export function InvitationAccept() {
                   onChange={e => setPassword(e.target.value)}
                   required
                   minLength={12}
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
                   placeholder="Minimum 12 caractères"
                 />
@@ -454,6 +455,7 @@ export function InvitationAccept() {
                   onChange={e => setConfirmPassword(e.target.value)}
                   required
                   minLength={12}
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
                   placeholder="Confirmer votre mot de passe"
                 />

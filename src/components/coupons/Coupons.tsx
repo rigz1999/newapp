@@ -1072,7 +1072,7 @@ export function Coupons() {
                     {selectedCoupon.investisseur_nom}
                   </p>
                   <p className="text-xs text-slate-600">
-                    Email: {selectedCoupon.investisseur_email}
+                    E-mail : {selectedCoupon.investisseur_email}
                   </p>
                   {selectedCoupon.investisseur_cgp && (
                     <p className="text-xs text-slate-600">CGP: {selectedCoupon.investisseur_cgp}</p>
