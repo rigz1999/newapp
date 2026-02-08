@@ -28,6 +28,7 @@ import * as ExcelJS from 'exceljs';
 import { toast } from '../../utils/toast';
 import { supabase } from '../../lib/supabase';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { logAuditEvent, auditFormatDate } from '../../utils/auditLogger';
 
 interface CouponsPageNewProps {
   organization?: { id: string; name: string; role: string };
@@ -276,6 +277,18 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       // Invalidate dashboard cache to reflect status change
       triggerCacheInvalidation();
 
+      logAuditEvent({
+        action: 'status_changed',
+        entityType: 'coupon_echeance',
+        entityId: coupon.id,
+        description: `a marqué le coupon du ${auditFormatDate(coupon.date_echeance)} comme non payé (${coupon.investisseur_nom})`,
+        metadata: {
+          date_echeance: coupon.date_echeance,
+          investisseur: coupon.investisseur_nom,
+          projet: coupon.projet_nom,
+        },
+      });
+
       toast.success(
         'Le coupon a été marqué comme non payé et tous les enregistrements associés ont été supprimés.'
       );
@@ -414,6 +427,15 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
       // Invalidate dashboard cache
       triggerCacheInvalidation();
+
+      if (successCount > 0) {
+        logAuditEvent({
+          action: 'status_changed',
+          entityType: 'coupon_echeance',
+          description: `a marqué ${successCount} coupon(s) de l'échéance du ${auditFormatDate(bulkUnmarkData.date)} comme non payés`,
+          metadata: { count: successCount, date_echeance: bulkUnmarkData.date },
+        });
+      }
 
       if (failCount === 0) {
         toast.success(

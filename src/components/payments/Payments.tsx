@@ -28,6 +28,7 @@ import { FilterPresets } from '../filters/FilterPresets';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { logger } from '../../utils/logger';
 import { formatErrorMessage } from '../../utils/errorMessages';
+import { logAuditEvent, auditFormatCurrency } from '../../utils/auditLogger';
 import * as ExcelJS from 'exceljs';
 
 interface PaymentsProps {
@@ -397,6 +398,15 @@ export function Payments({ organization }: PaymentsProps) {
         throw error;
       }
 
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'paiement',
+        entityId: Array.from(selectedPayments).join(','),
+        description: `a supprimé ${selectedPayments.size} paiement(s) en masse`,
+        orgId: organization.id,
+        metadata: { count: selectedPayments.size },
+      });
+
       // Refresh data
       await fetchPayments();
       setSelectedPayments(new Set());
@@ -451,6 +461,20 @@ export function Payments({ organization }: PaymentsProps) {
       if (error) {
         throw error;
       }
+
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'paiement',
+        entityId: paymentToDelete.id,
+        description: `a supprimé le paiement ${paymentToDelete.id_paiement} de ${auditFormatCurrency(paymentToDelete.montant)}`,
+        orgId: organization.id,
+        metadata: {
+          id_paiement: paymentToDelete.id_paiement,
+          montant: paymentToDelete.montant,
+          investisseur: paymentToDelete.investisseur?.nom_raison_sociale,
+          projet: paymentToDelete.tranche?.projet?.projet,
+        },
+      });
 
       // Refresh data
       await fetchPayments();

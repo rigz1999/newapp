@@ -13,6 +13,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   LogOut,
+  History,
   LucideIcon,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -329,6 +330,7 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
                 <NavItem to="/investisseurs" icon={Users} label="Investisseurs" />
                 <NavItem to="/souscriptions" icon={FileText} label="Souscriptions" />
                 <NavItem to="/paiements" icon={Euro} label="Paiements" />
+                <NavItem to="/historique" icon={History} label="Journal d'audit" />
 
                 <div className="border-t border-slate-700 my-2"></div>
                 <NavItem to="/parametres" icon={Settings} label="Paramètres" />

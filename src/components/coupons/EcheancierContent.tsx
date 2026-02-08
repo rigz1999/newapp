@@ -24,6 +24,7 @@ import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { AlertModal } from '../common/Modals';
 import { QuickPaymentModal } from './QuickPaymentModal';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { logAuditEvent, auditFormatDate } from '../../utils/auditLogger';
 import { logger } from '../../utils/logger';
 import { isDateOverdue } from '../../utils/formatters';
 
@@ -495,6 +496,14 @@ export function EcheancierContent({
 
       // Invalidate dashboard cache to reflect status change
       triggerCacheInvalidation();
+
+      logAuditEvent({
+        action: 'status_changed',
+        entityType: 'coupon_echeance',
+        entityId: echeance.id,
+        description: `a marqué l'échéance du ${auditFormatDate(echeance.date_echeance)} comme non payée`,
+        metadata: { date_echeance: echeance.date_echeance },
+      });
 
       setAlertModalConfig({
         title: 'Succès',

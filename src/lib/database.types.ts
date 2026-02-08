@@ -897,6 +897,56 @@ export interface Database {
         };
         Relationships: [];
       };
+      audit_logs: {
+        Row: {
+          id: string;
+          org_id: string | null;
+          user_id: string | null;
+          user_email: string | null;
+          user_name: string | null;
+          action: string;
+          entity_type: string;
+          entity_id: string | null;
+          description: string;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id?: string | null;
+          user_id?: string | null;
+          user_email?: string | null;
+          user_name?: string | null;
+          action: string;
+          entity_type: string;
+          entity_id?: string | null;
+          description: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string | null;
+          user_id?: string | null;
+          user_email?: string | null;
+          user_name?: string | null;
+          action?: string;
+          entity_type?: string;
+          entity_id?: string | null;
+          description?: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'audit_logs_org_id_fkey';
+            columns: ['org_id'];
+            isOneToOne: false;
+            referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       coupons_optimized: {

@@ -13,6 +13,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { logAuditEvent, auditFormatCurrency, auditFormatDate } from '../../utils/auditLogger';
 
 interface QuickPaymentModalProps {
   preselectedProjectId?: string;
@@ -662,6 +663,20 @@ export function QuickPaymentModal({
           throw echeanceError;
         }
       }
+
+      const totalPaid = selectedInvestorsList.reduce((sum, i) => sum + i.montant_net, 0);
+      logAuditEvent({
+        action: 'created',
+        entityType: 'paiement',
+        description: `a enregistré ${selectedInvestorsList.length} paiement(s) coupon pour un total de ${auditFormatCurrency(totalPaid)} (échéance du ${auditFormatDate(selectedEcheanceData!.date_echeance)})`,
+        orgId: selectedEcheanceData!.org_id,
+        metadata: {
+          count: selectedInvestorsList.length,
+          totalAmount: totalPaid,
+          date_echeance: selectedEcheanceData!.date_echeance,
+          projet: selectedEcheanceData!.projet_nom,
+        },
+      });
 
       toast.success(
         `${selectedInvestorsList.length} paiement${selectedInvestorsList.length > 1 ? 's' : ''} enregistré${selectedInvestorsList.length > 1 ? 's' : ''} avec succès`
