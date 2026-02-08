@@ -475,7 +475,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           normalizePeriodicite(project.periodicite_coupons)) ||
       (editedProject.taux_nominal !== undefined &&
         editedProject.taux_nominal !== project.taux_nominal) ||
-      (editedProject.duree_mois !== undefined && editedProject.duree_mois !== project.duree_mois);
+      (editedProject.duree_mois !== undefined && editedProject.duree_mois !== project.duree_mois) ||
+      (editedProject.base_interet !== undefined &&
+        editedProject.base_interet !== project.base_interet);
 
     if (hasFinancialChanges && subscriptions.length > 0) {
       const confirmMsg =
@@ -1325,7 +1327,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         />
 
         {/* ✅ SECTION REMPLACÉE - Commentaires du projet */}
-        {project && <ProjectActualites projectId={projectId!} orgId={project.org_id || ''} />}
+        {project && <ProjectActualites projectId={project.id} orgId={project.org_id || ''} />}
 
         {showTrancheWizard && (
           <TrancheWizard

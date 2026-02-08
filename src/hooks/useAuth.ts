@@ -24,17 +24,25 @@ export function useAuth() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        checkAdminStatus(session.user.id);
-      } else {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only clear user state on explicit sign-out.
+      // During token refresh, the session may briefly be null before the new
+      // token arrives. Reacting to that would redirect the user to /login,
+      // and once the refresh completes the login page redirects to /,
+      // making the user lose their current page.
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
         setIsAdmin(false);
         setIsSuperAdmin(false);
         setIsOrgAdmin(false);
         setUserRole(null);
         setLoading(false);
+        return;
+      }
+
+      if (session?.user) {
+        setUser(session.user);
+        checkAdminStatus(session.user.id);
       }
     });
 
