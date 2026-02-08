@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ConfirmModal, AlertModal } from './Modals';
 
@@ -17,7 +17,7 @@ describe('ConfirmModal', () => {
         title="Test"
         message="Test message"
         onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
+        onClose={mockOnCancel}
       />
     );
 
@@ -31,7 +31,7 @@ describe('ConfirmModal', () => {
         title="Confirm Action"
         message="Are you sure?"
         onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
+        onClose={mockOnCancel}
       />
     );
 
@@ -47,7 +47,7 @@ describe('ConfirmModal', () => {
         message="Proceed?"
         confirmText="Yes"
         onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
+        onClose={mockOnCancel}
       />
     );
 
@@ -65,7 +65,7 @@ describe('ConfirmModal', () => {
         message="Proceed?"
         cancelText="No"
         onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
+        onClose={mockOnCancel}
       />
     );
 
@@ -83,7 +83,7 @@ describe('ConfirmModal', () => {
         message="This action is permanent"
         type="danger"
         onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
+        onClose={mockOnCancel}
       />
     );
 
@@ -99,7 +99,7 @@ describe('ConfirmModal', () => {
         message="Please be careful"
         type="warning"
         onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
+        onClose={mockOnCancel}
       />
     );
 
@@ -114,7 +114,7 @@ describe('ConfirmModal', () => {
         title="Confirm"
         message="Proceed?"
         onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
+        onClose={mockOnCancel}
       />
     );
 
@@ -131,7 +131,7 @@ describe('ConfirmModal', () => {
         confirmText="Accept"
         cancelText="Decline"
         onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
+        onClose={mockOnCancel}
       />
     );
 
@@ -146,7 +146,7 @@ describe('ConfirmModal', () => {
         title="Confirm"
         message="Proceed?"
         onConfirm={mockOnConfirm}
-        onCancel={mockOnCancel}
+        onClose={mockOnCancel}
       />
     );
 
@@ -166,12 +166,7 @@ describe('AlertModal', () => {
 
   it('should not render when isOpen is false', () => {
     render(
-      <AlertModal
-        isOpen={false}
-        title="Alert"
-        message="Alert message"
-        onClose={mockOnClose}
-      />
+      <AlertModal isOpen={false} title="Alert" message="Alert message" onClose={mockOnClose} />
     );
 
     expect(screen.queryByText('Alert')).not.toBeInTheDocument();
@@ -192,14 +187,7 @@ describe('AlertModal', () => {
   });
 
   it('should call onClose when button is clicked', () => {
-    render(
-      <AlertModal
-        isOpen={true}
-        title="Alert"
-        message="Message"
-        onClose={mockOnClose}
-      />
-    );
+    render(<AlertModal isOpen={true} title="Alert" message="Message" onClose={mockOnClose} />);
 
     const closeButton = screen.getByRole('button', { name: /ok/i });
     fireEvent.click(closeButton);
@@ -253,14 +241,7 @@ describe('AlertModal', () => {
   });
 
   it('should display info styling by default', () => {
-    render(
-      <AlertModal
-        isOpen={true}
-        title="Information"
-        message="FYI"
-        onClose={mockOnClose}
-      />
-    );
+    render(<AlertModal isOpen={true} title="Information" message="FYI" onClose={mockOnClose} />);
 
     const icon = screen.getByTitle('Info');
     expect(icon).toBeInTheDocument();
@@ -281,14 +262,7 @@ describe('AlertModal', () => {
   });
 
   it('should close when clicking X button', () => {
-    render(
-      <AlertModal
-        isOpen={true}
-        title="Alert"
-        message="Message"
-        onClose={mockOnClose}
-      />
-    );
+    render(<AlertModal isOpen={true} title="Alert" message="Message" onClose={mockOnClose} />);
 
     const xButton = screen.getAllByRole('button')[0]; // First button is the X
     fireEvent.click(xButton);

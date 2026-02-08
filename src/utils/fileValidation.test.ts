@@ -71,7 +71,7 @@ describe('fileValidation', () => {
       const file = new File(['content'], 'test.pdf', { type: 'application/pdf' });
       Object.defineProperty(file, 'size', { value: 4 * 1024 * 1024 }); // 4MB
 
-      const result = validateFile(file, ['application/pdf'], 5);
+      const result = validateFile(file, { allowedTypes: ['application/pdf'], maxSizeMB: 5 });
       expect(result.valid).toBe(true);
       expect(result.error).toBeUndefined();
     });
@@ -80,7 +80,7 @@ describe('fileValidation', () => {
       const file = new File(['content'], 'test.pdf', { type: 'application/pdf' });
       Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024 }); // 10MB
 
-      const result = validateFile(file, ['application/pdf'], 5);
+      const result = validateFile(file, { allowedTypes: ['application/pdf'], maxSizeMB: 5 });
       expect(result.valid).toBe(false);
       expect(result.error).toContain('5 Mo');
     });
@@ -89,7 +89,7 @@ describe('fileValidation', () => {
       const file = new File(['content'], 'test.txt', { type: 'text/plain' });
       Object.defineProperty(file, 'size', { value: 1 * 1024 * 1024 }); // 1MB
 
-      const result = validateFile(file, ['application/pdf'], 5);
+      const result = validateFile(file, { allowedTypes: ['application/pdf'], maxSizeMB: 5 });
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Type de fichier non supporté');
     });
@@ -98,7 +98,7 @@ describe('fileValidation', () => {
       const file = new File(['content'], 'test.txt', { type: 'text/plain' });
       Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024 }); // 10MB
 
-      const result = validateFile(file, ['application/pdf'], 5);
+      const result = validateFile(file, { allowedTypes: ['application/pdf'], maxSizeMB: 5 });
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
     });

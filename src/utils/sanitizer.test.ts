@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeInput, sanitizeHtml } from './sanitizer';
+import { sanitizeUserInput as sanitizeInput, sanitizeHTML as sanitizeHtml } from './sanitizer';
 
 describe('sanitizer', () => {
   describe('sanitizeInput', () => {
@@ -76,6 +76,7 @@ describe('sanitizer', () => {
     it('should remove javascript: links', () => {
       const html = '<a href="javascript:alert(1)">Link</a>';
       const result = sanitizeHtml(html);
+      // eslint-disable-next-line no-script-url
       expect(result).not.toContain('javascript:');
     });
 
