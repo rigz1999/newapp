@@ -116,55 +116,66 @@ serve(async (req) => {
           continue;
         }
 
-        // Get user's organization
-        const { data: membership } = await supabase
+        // Get user's organization(s)
+        let orgIds: string[] = [];
+
+        const { data: memberships } = await supabase
           .from('memberships')
           .select('org_id')
-          .eq('user_id', userSettings.user_id)
-          .single();
+          .eq('user_id', userSettings.user_id);
 
-        if (!membership?.org_id) {
-          console.log(`User ${userSettings.user_id} has no organization`);
-          // In test mode, still send the email with no coupons to verify delivery
-          if (testMode) {
-            await sendReminderEmail(userData.user.email, [], userSettings, testMode);
-            results.push({
-              user_id: userSettings.user_id,
-              email: userData.user.email,
-              coupons_count: 0,
-              status: 'sent',
-            });
+        if (memberships && memberships.length > 0) {
+          orgIds = memberships.map((m: any) => m.org_id);
+        } else {
+          // No membership — check if superadmin (treated as member of all orgs)
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_superadmin')
+            .eq('id', userSettings.user_id)
+            .single();
+
+          if (profile?.is_superadmin) {
+            const { data: allOrgs } = await supabase
+              .from('organizations')
+              .select('id');
+            orgIds = (allOrgs || []).map((o: any) => o.id);
           }
+        }
+
+        if (orgIds.length === 0) {
+          console.log(`User ${userSettings.user_id} has no organization and is not superadmin`);
           continue;
         }
 
-        // Collect coupons for all enabled reminder periods
+        // Collect coupons for all enabled reminder periods across all orgs
         const allCoupons: CouponReminder[] = [];
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Check 7 days
-        if (userSettings.remind_7_days) {
-          const targetDate = new Date(today);
-          targetDate.setDate(targetDate.getDate() + 7);
-          const coupons = await getCouponsForDate(supabase, membership.org_id, targetDate);
-          allCoupons.push(...coupons);
-        }
+        for (const orgId of orgIds) {
+          // Check 7 days
+          if (userSettings.remind_7_days) {
+            const targetDate = new Date(today);
+            targetDate.setDate(targetDate.getDate() + 7);
+            const coupons = await getCouponsForDate(supabase, orgId, targetDate);
+            allCoupons.push(...coupons);
+          }
 
-        // Check 14 days
-        if (userSettings.remind_14_days) {
-          const targetDate = new Date(today);
-          targetDate.setDate(targetDate.getDate() + 14);
-          const coupons = await getCouponsForDate(supabase, membership.org_id, targetDate);
-          allCoupons.push(...coupons);
-        }
+          // Check 14 days
+          if (userSettings.remind_14_days) {
+            const targetDate = new Date(today);
+            targetDate.setDate(targetDate.getDate() + 14);
+            const coupons = await getCouponsForDate(supabase, orgId, targetDate);
+            allCoupons.push(...coupons);
+          }
 
-        // Check 30 days
-        if (userSettings.remind_30_days) {
-          const targetDate = new Date(today);
-          targetDate.setDate(targetDate.getDate() + 30);
-          const coupons = await getCouponsForDate(supabase, membership.org_id, targetDate);
-          allCoupons.push(...coupons);
+          // Check 30 days
+          if (userSettings.remind_30_days) {
+            const targetDate = new Date(today);
+            targetDate.setDate(targetDate.getDate() + 30);
+            const coupons = await getCouponsForDate(supabase, orgId, targetDate);
+            allCoupons.push(...coupons);
+          }
         }
 
         // Remove duplicates (coupon might match multiple periods)
