@@ -51,48 +51,29 @@ serve(async (req) => {
     const testUserId = body?.userId;
 
     // Get all users with reminders enabled (or just test user)
-    let settings;
+    let query = supabase
+      .from('user_reminder_settings')
+      .select(`
+        user_id,
+        remind_7_days,
+        remind_14_days,
+        remind_30_days
+      `)
+      .eq('enabled', true);
 
+    // If test mode, filter to specific user
     if (testMode && testUserId) {
-      // In test mode, fetch user settings regardless of enabled status
-      const { data, error: settingsError } = await supabase
-        .from('user_reminder_settings')
-        .select('user_id, enabled, remind_7_days, remind_14_days, remind_30_days')
-        .eq('user_id', testUserId)
-        .maybeSingle();
+      query = query.eq('user_id', testUserId);
+    }
 
-      if (settingsError) {
-        console.error('Error fetching settings:', settingsError);
-        return new Response(JSON.stringify({ error: settingsError.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    const { data: settings, error: settingsError } = await query;
 
-      // For test mode, use saved settings or defaults so test email always sends
-      settings = [
-        data || {
-          user_id: testUserId,
-          remind_7_days: true,
-          remind_14_days: true,
-          remind_30_days: true,
-        },
-      ];
-    } else {
-      const { data, error: settingsError } = await supabase
-        .from('user_reminder_settings')
-        .select('user_id, remind_7_days, remind_14_days, remind_30_days')
-        .eq('enabled', true);
-
-      if (settingsError) {
-        console.error('Error fetching settings:', settingsError);
-        return new Response(JSON.stringify({ error: settingsError.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      settings = data;
+    if (settingsError) {
+      console.error('Error fetching settings:', settingsError);
+      return new Response(JSON.stringify({ error: settingsError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (!settings || settings.length === 0) {
