@@ -6,7 +6,7 @@ interface GlobalKeyboardShortcutsProps {
   onSearch?: () => void;
 }
 
-export function GlobalKeyboardShortcuts({ onSearch }: GlobalKeyboardShortcutsProps) {
+export function GlobalKeyboardShortcuts({ onSearch: _onSearch }: GlobalKeyboardShortcutsProps) {
   // Disabled - no functionality
   return null;
 }

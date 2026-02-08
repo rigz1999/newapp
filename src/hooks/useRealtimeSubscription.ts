@@ -13,7 +13,9 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
 
-interface UseRealtimeSubscriptionOptions<T extends { [key: string]: any } = any> {
+interface UseRealtimeSubscriptionOptions<
+  T extends { [key: string]: unknown } = Record<string, unknown>,
+> {
   table: string;
   event?: RealtimeEvent;
   filter?: string; // e.g., "project_id=eq.123"
@@ -30,9 +32,9 @@ interface UseRealtimeSubscriptionReturn {
   error: Error | null;
 }
 
-export function useRealtimeSubscription<T extends { [key: string]: any } = any>(
-  options: UseRealtimeSubscriptionOptions<T>
-): UseRealtimeSubscriptionReturn {
+export function useRealtimeSubscription<
+  T extends { [key: string]: unknown } = Record<string, unknown>,
+>(options: UseRealtimeSubscriptionOptions<T>): UseRealtimeSubscriptionReturn {
   const {
     table,
     event = '*',

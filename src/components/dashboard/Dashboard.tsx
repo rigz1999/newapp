@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { TrancheWizard } from '../tranches/TrancheWizard';
@@ -12,13 +12,11 @@ import { DashboardAlerts } from './DashboardAlerts';
 import { DashboardQuickActions } from './DashboardQuickActions';
 import { DashboardRecentPayments } from './DashboardRecentPayments';
 import { DashboardChart } from './DashboardChart';
-import { formatCurrency } from '../../utils/formatters';
 import { logger } from '../../utils/logger';
 import { toast } from '../../utils/toast';
 import {
   generateAlerts,
   type Alert,
-  type AlertTargetFilters,
   type Payment,
   type UpcomingCoupon,
 } from '../../utils/dashboardAlerts';
@@ -80,47 +78,66 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
   };
 
   // Fonction pour gérer les clics sur les alertes avec deep linking
-  const handleAlertClick = useCallback((alert: Alert): void => {
-    if (alert.id === 'no-alerts') {
-      return;
-    } // Ne rien faire si message positif
+  const handleAlertClick = useCallback(
+    (alert: Alert): void => {
+      if (alert.id === 'no-alerts') {
+        return;
+      } // Ne rien faire si message positif
 
-    const filters = alert.targetFilters;
+      const filters = alert.targetFilters;
 
-    if (alert.id === 'overdue-coupons') {
-      // Deep link to coupons page with status filter
-      const params = new URLSearchParams();
-      if (filters?.status) params.set('status', filters.status);
-      navigate(`/coupons${params.toString() ? `?${params.toString()}` : ''}`);
-    } else if (alert.id === 'late-payments') {
-      // Deep link to payments page with status filter
-      const params = new URLSearchParams();
-      if (filters?.status) params.set('status', filters.status);
-      navigate(`/paiements${params.toString() ? `?${params.toString()}` : ''}`);
-    } else if (alert.id === 'upcoming-week') {
-      // Deep link to coupons page with status filter
-      const params = new URLSearchParams();
-      if (filters?.status) params.set('status', filters.status);
-      navigate(`/coupons${params.toString() ? `?${params.toString()}` : ''}`);
-    } else if (alert.id === 'missing-ribs') {
-      // Deep link to investors page with RIB status filter
-      const params = new URLSearchParams();
-      if (filters?.ribStatus) params.set('ribStatus', filters.ribStatus);
-      navigate(`/investisseurs${params.toString() ? `?${params.toString()}` : ''}`);
-    } else if (alert.id.startsWith('deadline-')) {
-      // Navigate to EcheanceDetailPage if we have all required short IDs
-      if (filters?.projectShortId && filters?.trancheShortId && filters?.dateEcheance) {
-        navigate(`/echeance/${filters.projectShortId}/${filters.trancheShortId}/${filters.dateEcheance}?returnTo=dashboard`);
-      } else {
-        // Fallback to coupons page with filters
+      if (alert.id === 'overdue-coupons') {
+        // Deep link to coupons page with status filter
         const params = new URLSearchParams();
-        if (filters?.trancheName) params.set('tranche', filters.trancheName);
-        if (filters?.dateEcheance) params.set('date', filters.dateEcheance);
-        if (filters?.status) params.set('status', filters.status);
+        if (filters?.status) {
+          params.set('status', filters.status);
+        }
         navigate(`/coupons${params.toString() ? `?${params.toString()}` : ''}`);
+      } else if (alert.id === 'late-payments') {
+        // Deep link to payments page with status filter
+        const params = new URLSearchParams();
+        if (filters?.status) {
+          params.set('status', filters.status);
+        }
+        navigate(`/paiements${params.toString() ? `?${params.toString()}` : ''}`);
+      } else if (alert.id === 'upcoming-week') {
+        // Deep link to coupons page with status filter
+        const params = new URLSearchParams();
+        if (filters?.status) {
+          params.set('status', filters.status);
+        }
+        navigate(`/coupons${params.toString() ? `?${params.toString()}` : ''}`);
+      } else if (alert.id === 'missing-ribs') {
+        // Deep link to investors page with RIB status filter
+        const params = new URLSearchParams();
+        if (filters?.ribStatus) {
+          params.set('ribStatus', filters.ribStatus);
+        }
+        navigate(`/investisseurs${params.toString() ? `?${params.toString()}` : ''}`);
+      } else if (alert.id.startsWith('deadline-')) {
+        // Navigate to EcheanceDetailPage if we have all required short IDs
+        if (filters?.projectShortId && filters?.trancheShortId && filters?.dateEcheance) {
+          navigate(
+            `/echeance/${filters.projectShortId}/${filters.trancheShortId}/${filters.dateEcheance}?returnTo=dashboard`
+          );
+        } else {
+          // Fallback to coupons page with filters
+          const params = new URLSearchParams();
+          if (filters?.trancheName) {
+            params.set('tranche', filters.trancheName);
+          }
+          if (filters?.dateEcheance) {
+            params.set('date', filters.dateEcheance);
+          }
+          if (filters?.status) {
+            params.set('status', filters.status);
+          }
+          navigate(`/coupons${params.toString() ? `?${params.toString()}` : ''}`);
+        }
       }
-    }
-  }, [navigate]);
+    },
+    [navigate]
+  );
 
   const [stats, setStats] = useState<Stats>({
     totalInvested: 0,

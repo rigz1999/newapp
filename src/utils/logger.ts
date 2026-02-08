@@ -8,11 +8,14 @@ import * as Sentry from '@sentry/react';
 const isDev = import.meta.env.DEV;
 
 export const logger = {
-  log: (...args: any[]) => {
-    if (isDev) console.log('[App]', ...args);
+  log: (...args: unknown[]) => {
+    // eslint-disable-next-line no-console
+    if (isDev) {
+      console.log('[App]', ...args);
+    }
   },
 
-  error: (error: Error | string, context?: Record<string, any>) => {
+  error: (error: Error | string, context?: Record<string, unknown>) => {
     // Always log to console in development
     if (isDev) {
       console.error('[Error]', error, context);
@@ -32,29 +35,37 @@ export const logger = {
     }
   },
 
-  warn: (...args: any[]) => {
-    if (isDev) console.warn('[Warning]', ...args);
+  warn: (...args: unknown[]) => {
+    if (isDev) {
+      console.warn('[Warning]', ...args);
+    }
 
     // Also send warnings to Sentry (lower priority)
-    const message = args.map(arg =>
-      typeof arg === 'string' ? arg : JSON.stringify(arg)
-    ).join(' ');
+    const message = args
+      .map(arg => (typeof arg === 'string' ? arg : JSON.stringify(arg)))
+      .join(' ');
 
     Sentry.captureMessage(message, {
       level: 'warning',
     });
   },
 
-  info: (...args: any[]) => {
-    if (isDev) console.info('[Info]', ...args);
+  info: (...args: unknown[]) => {
+    // eslint-disable-next-line no-console
+    if (isDev) {
+      console.info('[Info]', ...args);
+    }
   },
 
-  debug: (...args: any[]) => {
-    if (isDev) console.debug('[Debug]', ...args);
+  debug: (...args: unknown[]) => {
+    // eslint-disable-next-line no-console
+    if (isDev) {
+      console.debug('[Debug]', ...args);
+    }
   },
 
   // New method: Add breadcrumb for context
-  addBreadcrumb: (message: string, data?: Record<string, any>) => {
+  addBreadcrumb: (message: string, data?: Record<string, unknown>) => {
     Sentry.addBreadcrumb({
       message,
       data,

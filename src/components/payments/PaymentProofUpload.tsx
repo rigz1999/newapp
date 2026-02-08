@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Upload, X, CheckCircle, AlertTriangle, XCircle, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
+import { Upload, X, CheckCircle, AlertTriangle, XCircle, Trash2, Loader2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { sanitizeFileName } from '../../utils/sanitizer';
@@ -36,11 +36,17 @@ interface PaymentProofUploadProps {
   onSuccess: () => void;
 }
 
-export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose, onSuccess }: PaymentProofUploadProps) {
+export function PaymentProofUpload({
+  payment,
+  trancheId,
+  subscriptions,
+  onClose,
+  onSuccess,
+}: PaymentProofUploadProps) {
   const isTrancheMode = Boolean(trancheId && subscriptions);
   const [files, setFiles] = useState<File[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -111,8 +117,10 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
     setError(null);
   };
 
-  const handleAnalyze = async () => {
-    if (files.length === 0) return;
+  const _handleAnalyze = async () => {
+    if (files.length === 0) {
+      return;
+    }
 
     if (isTrancheMode && (!trancheId || !subscriptions || subscriptions.length === 0)) {
       setError('Données de tranche manquantes');
@@ -151,16 +159,16 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
 
             await page.render({
               canvasContext: context,
-              viewport: viewport
+              viewport: viewport,
             }).promise;
 
             // Convert canvas to blob and base64
-            const blob = await new Promise<Blob>((resolve) => {
-              canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.95);
+            const blob = await new Promise<Blob>(resolve => {
+              canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.95);
             });
 
             // Convert to base64
-            const base64 = await new Promise<string>((resolve) => {
+            const base64 = await new Promise<string>(resolve => {
               const reader = new FileReader();
               reader.onloadend = () => {
                 const base64String = reader.result as string;
@@ -179,7 +187,7 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           }
         } else {
           // Convert image to base64
-          const base64 = await new Promise<string>((resolve) => {
+          const base64 = await new Promise<string>(resolve => {
             const reader = new FileReader();
             reader.onloadend = () => {
               const base64String = reader.result as string;
@@ -207,52 +215,63 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
         ? subscriptions!.map(sub => ({
             investorName: sub.investisseur.nom_raison_sociale,
             expectedAmount: Number(sub.coupon_net) || 0,
-            subscriptionId: sub.id
+            subscriptionId: sub.id,
           }))
-        : [{
-            investorName: payment!.investisseur?.nom_raison_sociale || '',
-            expectedAmount: payment!.montant,
-            paymentId: payment!.id
-          }];
+        : [
+            {
+              investorName: payment!.investisseur?.nom_raison_sociale || '',
+              expectedAmount: payment!.montant,
+              paymentId: payment!.id,
+            },
+          ];
 
       const requestBody = {
         base64Images,
-        expectedPayments
+        expectedPayments,
       };
 
       const response = await supabase.functions.invoke('analyze-payment-batch', {
-        body: requestBody
+        body: requestBody,
       });
 
       const data = response.data;
       const funcError = response.error;
 
-
       if (funcError) {
         // Check if the function doesn't exist
-        if (funcError.message?.includes('not found') || funcError.message?.includes('FunctionsRelayError')) {
-          throw new Error(`La fonction d'analyse des paiements n'est pas disponible. Veuillez contacter l'administrateur pour déployer la fonction Edge "analyze-payment-batch".`);
+        if (
+          funcError.message?.includes('not found') ||
+          funcError.message?.includes('FunctionsRelayError')
+        ) {
+          throw new Error(
+            `La fonction d'analyse des paiements n'est pas disponible. Veuillez contacter l'administrateur pour déployer la fonction Edge "analyze-payment-batch".`
+          );
         }
         throw funcError;
       }
-      if (!data?.succes) throw new Error(data?.erreur || 'Erreur lors de l\'analyse du paiement');
+      if (!data?.succes) {
+        throw new Error(data?.erreur || "Erreur lors de l'analyse du paiement");
+      }
 
       setAnalysisResult({
         ...data,
         tempFileNames: tempFileNames,
-        uploadedBlobs: uploadedBlobs
+        uploadedBlobs: uploadedBlobs,
       });
-
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de l\'analyse');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'analyse");
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const handleConfirm = async (match: any) => {
+  const _handleConfirm = async (match: {
+    attendu?: Record<string, unknown>;
+    paiement: Record<string, unknown>;
+    confiance: number;
+  }) => {
     try {
-      const uploadedBlobs = analysisResult.uploadedBlobs;
+      const uploadedBlobs = analysisResult?.uploadedBlobs as Blob[] | undefined;
 
       if (!uploadedBlobs || uploadedBlobs.length === 0) {
         throw new Error('Aucune image à sauvegarder');
@@ -275,7 +294,9 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           .eq('id', subscriptionId)
           .single();
 
-        if (subError) throw subError;
+        if (subError) {
+          throw subError;
+        }
 
         // Get tranche with projet to get org_id
         const { data: tranche, error: trancheError } = await supabase
@@ -284,8 +305,12 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           .eq('id', trancheId)
           .single();
 
-        if (trancheError) throw trancheError;
-        if (!tranche?.projet?.org_id) throw new Error('Impossible de récupérer l\'organisation de la tranche');
+        if (trancheError) {
+          throw trancheError;
+        }
+        if (!tranche?.projet?.org_id) {
+          throw new Error("Impossible de récupérer l'organisation de la tranche");
+        }
 
         // Create payment record
         const { data: paymentData, error: paymentError } = await supabase
@@ -296,12 +321,14 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
             org_id: tranche.projet.org_id,
             type: 'Coupon',
             montant: match.paiement.montant,
-            date_paiement: match.paiement.date
+            date_paiement: match.paiement.date,
           })
           .select()
           .single();
 
-        if (paymentError) throw paymentError;
+        if (paymentError) {
+          throw paymentError;
+        }
 
         // Upload file to permanent storage
         const safeName = sanitizeFileName(files[0].name);
@@ -310,7 +337,9 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           .from('payment-proofs')
           .upload(permanentFileName, firstBlob);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          throw uploadError;
+        }
 
         // Get permanent URL
         const { data: urlData } = supabase.storage
@@ -318,19 +347,18 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           .getPublicUrl(permanentFileName);
 
         // Save proof to database
-        const { error: dbError } = await supabase
-          .from('payment_proofs')
-          .insert({
-            paiement_id: paymentData.id,
-            file_url: urlData.publicUrl,
-            file_name: files[0].name,
-            file_size: files[0].size,
-            extracted_data: match.paiement,
-            confidence: match.confiance
-          });
+        const { error: dbError } = await supabase.from('payment_proofs').insert({
+          paiement_id: paymentData.id,
+          file_url: urlData.publicUrl,
+          file_name: files[0].name,
+          file_size: files[0].size,
+          extracted_data: match.paiement,
+          confidence: match.confiance,
+        });
 
-        if (dbError) throw dbError;
-
+        if (dbError) {
+          throw dbError;
+        }
       } else {
         // Single payment confirmation
         const safeName = sanitizeFileName(files[0].name);
@@ -339,7 +367,9 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           .from('payment-proofs')
           .upload(permanentFileName, firstBlob);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          throw uploadError;
+        }
 
         // Obtenir URL permanente
         const { data: urlData } = supabase.storage
@@ -347,49 +377,55 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
           .getPublicUrl(permanentFileName);
 
         // Sauvegarder dans la base de données
-        const { error: dbError } = await supabase
-          .from('payment_proofs')
-          .insert({
-            paiement_id: payment!.id,
-            file_url: urlData.publicUrl,
-            file_name: files[0].name,
-            file_size: files[0].size,
-            extracted_data: match.paiement,
-            confidence: match.confiance
-          });
+        const { error: dbError } = await supabase.from('payment_proofs').insert({
+          paiement_id: payment!.id,
+          file_url: urlData.publicUrl,
+          file_name: files[0].name,
+          file_size: files[0].size,
+          extracted_data: match.paiement,
+          confidence: match.confiance,
+        });
 
-        if (dbError) throw dbError;
+        if (dbError) {
+          throw dbError;
+        }
       }
 
       onSuccess();
       onClose();
-
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la confirmation');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de la confirmation');
     }
   };
 
-  const handleReject = async () => {
+  const _handleReject = async () => {
     setAnalysisResult(null);
     setError(null);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'EUR',
     }).format(amount);
-  };
 
-  const getMatchIcon = (status: string) => {
-    if (status === 'correspondance') return <CheckCircle className="w-6 h-6 text-finixar-green" />;
-    if (status === 'partielle') return <AlertTriangle className="w-6 h-6 text-finixar-amber" />;
+  const _getMatchIcon = (status: string) => {
+    if (status === 'correspondance') {
+      return <CheckCircle className="w-6 h-6 text-finixar-green" />;
+    }
+    if (status === 'partielle') {
+      return <AlertTriangle className="w-6 h-6 text-finixar-amber" />;
+    }
     return <XCircle className="w-6 h-6 text-finixar-red" />;
   };
 
-  const getMatchColor = (status: string) => {
-    if (status === 'correspondance') return 'bg-green-50 border-green-200';
-    if (status === 'partielle') return 'bg-yellow-50 border-yellow-200';
+  const _getMatchColor = (status: string) => {
+    if (status === 'correspondance') {
+      return 'bg-green-50 border-green-200';
+    }
+    if (status === 'partielle') {
+      return 'bg-yellow-50 border-yellow-200';
+    }
     return 'bg-red-50 border-red-200';
   };
 
@@ -397,22 +433,23 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
       onClick={onClose}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => e.preventDefault()}
+      onDragOver={e => e.preventDefault()}
+      onDrop={e => e.preventDefault()}
     >
       <div
         className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="p-6 border-b border-slate-200">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-xl font-bold text-slate-900">Télécharger Justificatif de Paiement</h3>
+              <h3 className="text-xl font-bold text-slate-900">
+                Télécharger Justificatif de Paiement
+              </h3>
               <p className="text-sm text-slate-600 mt-1">
                 {isTrancheMode
                   ? `Paiement de tranche - ${subscriptions?.length || 0} investisseurs`
-                  : `${payment?.tranche?.tranche_name} • ${payment?.investisseur?.nom_raison_sociale}`
-                }
+                  : `${payment?.tranche?.tranche_name} • ${payment?.investisseur?.nom_raison_sociale}`}
               </p>
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -428,17 +465,29 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <h4 className="font-semibold text-blue-900 mb-2">Paiements Attendus</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {subscriptions?.map((sub) => (
-                      <div key={sub.id} className="flex items-center justify-between text-sm bg-white p-2 rounded">
-                        <span className="text-slate-700">{sub.investisseur.nom_raison_sociale}</span>
-                        <span className="font-semibold text-slate-900">{formatCurrency(Number(sub.coupon_net) || 0)}</span>
+                    {subscriptions?.map(sub => (
+                      <div
+                        key={sub.id}
+                        className="flex items-center justify-between text-sm bg-white p-2 rounded"
+                      >
+                        <span className="text-slate-700">
+                          {sub.investisseur.nom_raison_sociale}
+                        </span>
+                        <span className="font-semibold text-slate-900">
+                          {formatCurrency(Number(sub.coupon_net) || 0)}
+                        </span>
                       </div>
                     ))}
                   </div>
                   <div className="mt-3 pt-3 border-t border-blue-200 flex justify-between items-center">
                     <span className="font-semibold text-blue-900">Total:</span>
                     <span className="font-bold text-blue-900 text-lg">
-                      {formatCurrency(subscriptions?.reduce((sum, sub) => sum + (Number(sub.coupon_net) || 0), 0) || 0)}
+                      {formatCurrency(
+                        subscriptions?.reduce(
+                          (sum, sub) => sum + (Number(sub.coupon_net) || 0),
+                          0
+                        ) || 0
+                      )}
                     </span>
                   </div>
                 </div>
@@ -447,12 +496,16 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-slate-600">Montant attendu</p>
-                      <p className="font-bold text-slate-900">{formatCurrency(payment?.montant || 0)}</p>
+                      <p className="font-bold text-slate-900">
+                        {formatCurrency(payment?.montant || 0)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-slate-600">Date d'échéance</p>
                       <p className="font-bold text-slate-900">
-                        {payment?.date_paiement ? new Date(payment.date_paiement).toLocaleDateString('fr-FR') : '-'}
+                        {payment?.date_paiement
+                          ? new Date(payment.date_paiement).toLocaleDateString('fr-FR')
+                          : '-'}
                       </p>
                     </div>
                   </div>
@@ -470,7 +523,9 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               >
-                <Upload className={`w-12 h-12 mx-auto mb-4 ${isDragging ? 'text-finixar-teal' : 'text-slate-400'}`} />
+                <Upload
+                  className={`w-12 h-12 mx-auto mb-4 ${isDragging ? 'text-finixar-teal' : 'text-slate-400'}`}
+                />
                 <input
                   type="file"
                   onChange={handleFileChange}
@@ -482,23 +537,32 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                   htmlFor="file-upload"
                   className="cursor-pointer text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  {files.length > 0 ? 'Ajouter d\'autres fichiers' : 'Choisir des fichiers'}
+                  {files.length > 0 ? "Ajouter d'autres fichiers" : 'Choisir des fichiers'}
                 </label>
                 <p className="text-sm text-slate-500 mt-2">
                   {isDragging ? 'Déposez vos fichiers ici' : 'ou glissez-déposez vos fichiers'}
                 </p>
-                <p className="text-xs text-slate-400 mt-1">PDF, PNG, JPG ou WEBP (max 10MB par fichier)</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  PDF, PNG, JPG ou WEBP (max 10MB par fichier)
+                </p>
               </div>
 
               {files.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="font-medium text-slate-900 mb-2">Fichier{files.length > 1 ? 's' : ''} sélectionné{files.length > 1 ? 's' : ''}:</h4>
+                  <h4 className="font-medium text-slate-900 mb-2">
+                    Fichier{files.length > 1 ? 's' : ''} sélectionné{files.length > 1 ? 's' : ''}:
+                  </h4>
                   <ul className="space-y-2">
                     {files.map((file, idx) => (
-                      <li key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
+                      <li
+                        key={idx}
+                        className="flex items-center justify-between bg-slate-50 p-3 rounded-lg"
+                      >
                         <div className="flex-1">
                           <span className="text-sm text-slate-700">{file.name}</span>
-                          <span className="text-xs text-slate-500 ml-2">({(file.size / 1024).toFixed(0)} KB)</span>
+                          <span className="text-xs text-slate-500 ml-2">
+                            ({(file.size / 1024).toFixed(0)} KB)
+                          </span>
                         </div>
                         <button
                           onClick={() => handleRemoveFile(idx)}
@@ -522,7 +586,9 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
               {/* Simple upload button (AI analysis disabled) */}
               <button
                 onClick={async () => {
-                  if (!payment) return;
+                  if (!payment) {
+                    return;
+                  }
                   setAnalyzing(true);
                   setError(null);
 
@@ -536,7 +602,9 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                         .from('payment-proofs')
                         .upload(fileName, file);
 
-                      if (uploadError) throw uploadError;
+                      if (uploadError) {
+                        throw uploadError;
+                      }
 
                       const { data: urlData } = supabase.storage
                         .from('payment-proofs')
@@ -546,14 +614,14 @@ export function PaymentProofUpload({ payment, trancheId, subscriptions, onClose,
                         paiement_id: payment.id,
                         file_url: urlData.publicUrl,
                         file_name: file.name,
-                        file_size: file.size
+                        file_size: file.size,
                       });
                     }
 
                     onSuccess();
                     onClose();
-                  } catch (err: any) {
-                    setError(err.message || 'Erreur lors de l\'upload');
+                  } catch (err: unknown) {
+                    setError(err instanceof Error ? err.message : "Erreur lors de l'upload");
                   } finally {
                     setAnalyzing(false);
                   }

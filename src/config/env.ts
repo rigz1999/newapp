@@ -41,8 +41,8 @@ function getEnvVar(key: string, required: boolean = true): string {
   if (required && !value) {
     throw new Error(
       `Missing required environment variable: ${key}\n` +
-      `Please ensure ${key} is set in your .env file.\n` +
-      `See .env.example for reference.`
+        `Please ensure ${key} is set in your .env file.\n` +
+        `See .env.example for reference.`
     );
   }
 
@@ -51,7 +51,9 @@ function getEnvVar(key: string, required: boolean = true): string {
 
 function getEnvVarAsNumber(key: string, defaultValue: number): number {
   const value = import.meta.env[key];
-  if (!value) return defaultValue;
+  if (!value) {
+    return defaultValue;
+  }
 
   const parsed = parseInt(value, 10);
   if (isNaN(parsed)) {
@@ -64,7 +66,9 @@ function getEnvVarAsNumber(key: string, defaultValue: number): number {
 
 function getEnvVarAsBoolean(key: string, defaultValue: boolean): boolean {
   const value = import.meta.env[key];
-  if (!value) return defaultValue;
+  if (!value) {
+    return defaultValue;
+  }
 
   return value === 'true' || value === '1';
 }
@@ -80,7 +84,8 @@ export const env: EnvConfig = {
   },
   storage: {
     bucketPaymentProofs: getEnvVar('VITE_STORAGE_BUCKET_PAYMENT_PROOFS', false) || 'payment-proofs',
-    bucketPaymentProofsTemp: getEnvVar('VITE_STORAGE_BUCKET_PAYMENT_PROOFS_TEMP', false) || 'payment-proofs-temp',
+    bucketPaymentProofsTemp:
+      getEnvVar('VITE_STORAGE_BUCKET_PAYMENT_PROOFS_TEMP', false) || 'payment-proofs-temp',
     bucketRibs: getEnvVar('VITE_STORAGE_BUCKET_RIBS', false) || 'ribs',
   },
   limits: {
@@ -104,7 +109,9 @@ export const env: EnvConfig = {
 if (isProduction) {
   // Warn if Sentry is not configured in production
   if (!import.meta.env.VITE_SENTRY_DSN) {
-    console.warn('[Production Warning] VITE_SENTRY_DSN is not configured. Error tracking is disabled.');
+    console.warn(
+      '[Production Warning] VITE_SENTRY_DSN is not configured. Error tracking is disabled.'
+    );
   }
 
   // Warn if using default support email
@@ -120,10 +127,11 @@ if (isProduction) {
 
 // Log configuration in development (without sensitive data)
 if (import.meta.env.DEV) {
+  // eslint-disable-next-line no-console -- intentional dev-only configuration log
   console.log('Environment configuration loaded:', {
     supabase: {
       url: env.supabase.url,
-      anonKey: '***' + env.supabase.anonKey.slice(-8),
+      anonKey: `***${env.supabase.anonKey.slice(-8)}`,
     },
     storage: env.storage,
     limits: env.limits,

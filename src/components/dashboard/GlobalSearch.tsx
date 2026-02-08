@@ -4,7 +4,18 @@
 // ============================================
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, X, Folder, Users, Layers, FileText, Euro, Receipt, TrendingUp, Clock } from 'lucide-react';
+import {
+  Search,
+  X,
+  Folder,
+  Users,
+  Layers,
+  FileText,
+  Euro,
+  Receipt,
+  TrendingUp,
+  Clock,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,7 +44,14 @@ interface GlobalSearchProps {
   onClose?: () => void;
 }
 
-type FilterType = 'all' | 'project' | 'investor' | 'tranche' | 'subscription' | 'payment' | 'coupon';
+type FilterType =
+  | 'all'
+  | 'project'
+  | 'investor'
+  | 'tranche'
+  | 'subscription'
+  | 'payment'
+  | 'coupon';
 
 export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
   const [query, setQuery] = useState('');
@@ -43,14 +61,14 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
     tranches: [],
     subscriptions: [],
     payments: [],
-    coupons: []
+    coupons: [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isMobile, setIsMobile] = useState(false);
-  
+
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -111,7 +129,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
         tranches: [],
         subscriptions: [],
         payments: [],
-        coupons: []
+        coupons: [],
       });
       setError(null);
       return;
@@ -133,14 +151,18 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
   // Highlight matching text
   const highlightText = (text: string, query: string): JSX.Element => {
-    if (!query.trim()) return <>{text}</>;
-    
+    if (!query.trim()) {
+      return <>{text}</>;
+    }
+
     const parts = text.split(new RegExp(`(${query})`, 'gi'));
     return (
       <>
-        {parts.map((part, i) => 
+        {parts.map((part, i) =>
           part.toLowerCase() === query.toLowerCase() ? (
-            <mark key={i} className="bg-yellow-200 text-slate-900">{part}</mark>
+            <mark key={i} className="bg-yellow-200 text-slate-900">
+              {part}
+            </mark>
           ) : (
             <span key={i}>{part}</span>
           )
@@ -150,24 +172,22 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
   };
 
   // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'EUR',
     }).format(amount);
-  };
 
   // Format date
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('fr-FR', {
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
     });
-  };
 
   // Perform search with retry logic
-  const performSearchWithRetry = async (searchQuery: string, retries = 2): Promise<void> => {
+  const _performSearchWithRetry = async (searchQuery: string, retries = 2): Promise<void> => {
     try {
       await performSearch(searchQuery);
     } catch (err) {
@@ -188,107 +208,127 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       const searchTerm = `%${searchQuery}%`;
 
       // Run all searches in parallel for maximum performance
-      const [projectsRes, investorsRes, tranchesRes, subscriptionsRes, paymentsRes, couponsRes] = await Promise.all([
-        // Search Projects - fetch all and filter client-side to avoid 400 errors
-        (async () => {
-          const { data, error } = await supabase
-            .from('projets')
-            .select('id, projet, emetteur')
-            .eq('org_id', orgId)
-            .limit(100);
+      const [projectsRes, investorsRes, tranchesRes, subscriptionsRes, paymentsRes, couponsRes] =
+        await Promise.all([
+          // Search Projects - fetch all and filter client-side to avoid 400 errors
+          (async () => {
+            const { data, error } = await supabase
+              .from('projets')
+              .select('id, projet, emetteur')
+              .eq('org_id', orgId)
+              .limit(100);
 
-          if (!data) {
-            return { data: [], error };
-          }
+            if (!data) {
+              return { data: [], error };
+            }
 
-          // Filter client-side
-          const search = searchQuery.toLowerCase();
-          const filtered = data.filter((p: any) => {
-            const projet = (p.projet || '').toLowerCase();
-            const emetteur = (p.emetteur || '').toLowerCase();
-            return projet.includes(search) || emetteur.includes(search);
-          }).slice(0, 10);
+            // Filter client-side
+            const search = searchQuery.toLowerCase();
+            const filtered = data
+              .filter((p: Record<string, unknown>) => {
+                const projet = (p.projet || '').toLowerCase();
+                const emetteur = (p.emetteur || '').toLowerCase();
+                return projet.includes(search) || emetteur.includes(search);
+              })
+              .slice(0, 10);
 
-          return { data: filtered, error };
-        })(),
+            return { data: filtered, error };
+          })(),
 
-        // Search Investors - fetch all and filter client-side to avoid 400 errors
-        (async () => {
-          const { data, error } = await supabase
-            .from('investisseurs')
-            .select('id, nom_raison_sociale, type, email')
-            .eq('org_id', orgId)
-            .limit(100);
+          // Search Investors - fetch all and filter client-side to avoid 400 errors
+          (async () => {
+            const { data, error } = await supabase
+              .from('investisseurs')
+              .select('id, nom_raison_sociale, type, email')
+              .eq('org_id', orgId)
+              .limit(100);
 
-          if (!data) {
-            return { data: [], error };
-          }
+            if (!data) {
+              return { data: [], error };
+            }
 
-          // Filter client-side
-          const search = searchQuery.toLowerCase();
-          const filtered = data.filter((inv: any) => {
-            const name = (inv.nom_raison_sociale || '').toLowerCase();
-            const email = (inv.email || '').toLowerCase();
-            return name.includes(search) || email.includes(search);
-          }).slice(0, 10);
+            // Filter client-side
+            const search = searchQuery.toLowerCase();
+            const filtered = data
+              .filter((inv: Record<string, unknown>) => {
+                const name = (inv.nom_raison_sociale || '').toLowerCase();
+                const email = (inv.email || '').toLowerCase();
+                return name.includes(search) || email.includes(search);
+              })
+              .slice(0, 10);
 
-          return { data: filtered, error };
-        })(),
+            return { data: filtered, error };
+          })(),
 
-        // Search Tranches - simplified without inner join issues
-        (async () => {
-          const { data, error } = await supabase
-            .from('tranches')
-            .select(`
+          // Search Tranches - simplified without inner join issues
+          (async () => {
+            const { data, error } = await supabase
+              .from('tranches')
+              .select(
+                `
               id,
               tranche_name,
               taux_interet,
               projet_id,
               projets(id, projet, org_id)
-            `)
-            .ilike('tranche_name', searchTerm)
-            .limit(50);
+            `
+              )
+              .ilike('tranche_name', searchTerm)
+              .limit(50);
 
-          // Filter by org_id in code since nested filter causes 400 error
-          const filtered = (data || []).filter((t: any) => t.projets?.org_id === orgId).slice(0, 10);
-          return { data: filtered, error };
-        })(),
+            // Filter by org_id in code since nested filter causes 400 error
+            const filtered = (data || [])
+              .filter((t: Record<string, unknown>) => t.projets?.org_id === orgId)
+              .slice(0, 10);
+            return { data: filtered, error };
+          })(),
 
-        // Search Subscriptions - simplified
-        (async () => {
-          const { data, error } = await supabase
-            .from('souscriptions')
-            .select(`
+          // Search Subscriptions - simplified
+          (async () => {
+            const { data, error } = await supabase
+              .from('souscriptions')
+              .select(
+                `
               id,
               date_souscription,
               nombre_obligations,
               montant_investi,
               tranches(id, tranche_name, projets(id, projet, org_id)),
               investisseurs(id, nom_raison_sociale)
-            `)
-            .limit(100);
+            `
+              )
+              .limit(100);
 
-          // Filter by org_id and search term in code
-          const filtered = (data || []).filter((s: any) => {
-            // First filter by org_id from nested project
-            if (s.tranches?.projets?.org_id !== orgId) return false;
+            // Filter by org_id and search term in code
+            const filtered = (data || [])
+              .filter((s: Record<string, unknown>) => {
+                // First filter by org_id from nested project
+                if (s.tranches?.projets?.org_id !== orgId) {
+                  return false;
+                }
 
-            // Then filter by search term
-            const investorName = s.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
-            const trancheName = s.tranches?.tranche_name?.toLowerCase() || '';
-            const projectName = s.tranches?.projets?.projet?.toLowerCase() || '';
-            const search = searchQuery.toLowerCase();
-            return investorName.includes(search) || trancheName.includes(search) || projectName.includes(search);
-          }).slice(0, 10);
+                // Then filter by search term
+                const investorName = s.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
+                const trancheName = s.tranches?.tranche_name?.toLowerCase() || '';
+                const projectName = s.tranches?.projets?.projet?.toLowerCase() || '';
+                const search = searchQuery.toLowerCase();
+                return (
+                  investorName.includes(search) ||
+                  trancheName.includes(search) ||
+                  projectName.includes(search)
+                );
+              })
+              .slice(0, 10);
 
-          return { data: filtered, error };
-        })(),
+            return { data: filtered, error };
+          })(),
 
-        // Search Payments - simplified
-        (async () => {
-          const { data, error } = await supabase
-            .from('paiements')
-            .select(`
+          // Search Payments - simplified
+          (async () => {
+            const { data, error } = await supabase
+              .from('paiements')
+              .select(
+                `
               id,
               date_paiement,
               montant,
@@ -298,30 +338,37 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
                 investisseurs(id, nom_raison_sociale),
                 tranches(id, projets(id, projet, org_id))
               )
-            `)
-            .neq('type', 'coupon')
-            .limit(100);
+            `
+              )
+              .neq('type', 'coupon')
+              .limit(100);
 
-          // Filter by org_id and search term in code
-          const filtered = (data || []).filter((p: any) => {
-            // First filter by org_id from nested project
-            if (p.souscriptions?.tranches?.projets?.org_id !== orgId) return false;
+            // Filter by org_id and search term in code
+            const filtered = (data || [])
+              .filter((p: Record<string, unknown>) => {
+                // First filter by org_id from nested project
+                if (p.souscriptions?.tranches?.projets?.org_id !== orgId) {
+                  return false;
+                }
 
-            // Then filter by search term
-            const investorName = p.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
-            const projectName = p.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
-            const search = searchQuery.toLowerCase();
-            return investorName.includes(search) || projectName.includes(search);
-          }).slice(0, 10);
+                // Then filter by search term
+                const investorName =
+                  p.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
+                const projectName = p.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
+                const search = searchQuery.toLowerCase();
+                return investorName.includes(search) || projectName.includes(search);
+              })
+              .slice(0, 10);
 
-          return { data: filtered, error };
-        })(),
+            return { data: filtered, error };
+          })(),
 
-        // Search Coupons - simplified
-        (async () => {
-          const { data, error } = await supabase
-            .from('paiements')
-            .select(`
+          // Search Coupons - simplified
+          (async () => {
+            const { data, error } = await supabase
+              .from('paiements')
+              .select(
+                `
               id,
               date_paiement,
               montant,
@@ -330,102 +377,113 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
                 investisseurs(id, nom_raison_sociale),
                 tranches(id, tranche_name, projets(id, projet, org_id))
               )
-            `)
-            .eq('type', 'coupon')
-            .limit(100);
+            `
+              )
+              .eq('type', 'coupon')
+              .limit(100);
 
-          // Filter by org_id and search term in code
-          const filtered = (data || []).filter((c: any) => {
-            // First filter by org_id from nested project
-            if (c.souscriptions?.tranches?.projets?.org_id !== orgId) return false;
+            // Filter by org_id and search term in code
+            const filtered = (data || [])
+              .filter((c: Record<string, unknown>) => {
+                // First filter by org_id from nested project
+                if (c.souscriptions?.tranches?.projets?.org_id !== orgId) {
+                  return false;
+                }
 
-            // Then filter by search term
-            const investorName = c.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
-            const projectName = c.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
-            const trancheName = c.souscriptions?.tranches?.tranche_name?.toLowerCase() || '';
-            const search = searchQuery.toLowerCase();
-            return investorName.includes(search) || projectName.includes(search) || trancheName.includes(search);
-          }).slice(0, 10);
+                // Then filter by search term
+                const investorName =
+                  c.souscriptions?.investisseurs?.nom_raison_sociale?.toLowerCase() || '';
+                const projectName = c.souscriptions?.tranches?.projets?.projet?.toLowerCase() || '';
+                const trancheName = c.souscriptions?.tranches?.tranche_name?.toLowerCase() || '';
+                const search = searchQuery.toLowerCase();
+                return (
+                  investorName.includes(search) ||
+                  projectName.includes(search) ||
+                  trancheName.includes(search)
+                );
+              })
+              .slice(0, 10);
 
-          return { data: filtered, error };
-        })()
-      ]);
+            return { data: filtered, error };
+          })(),
+        ]);
 
       // Process Projects
-      const projects: SearchResult[] = (projectsRes.data || []).map((p: any) => ({
-        type: 'project' as const,
-        id: p.id,
-        title: p.projet,
-        subtitle: `Émetteur: ${p.emetteur}`,
-        metadata: [],
-        icon: <Folder className="w-5 h-5 text-blue-600" />,
-        link: `/projets/${p.id}`
-      }));
+      const projects: SearchResult[] = (projectsRes.data || []).map(
+        (p: Record<string, unknown>) => ({
+          type: 'project' as const,
+          id: p.id,
+          title: p.projet,
+          subtitle: `Émetteur: ${p.emetteur}`,
+          metadata: [],
+          icon: <Folder className="w-5 h-5 text-blue-600" />,
+          link: `/projets/${p.id}`,
+        })
+      );
 
       // Process Investors
-      const investors: SearchResult[] = (investorsRes.data || []).map((inv: any) => ({
-        type: 'investor' as const,
-        id: inv.id,
-        title: inv.nom_raison_sociale || 'Sans nom',
-        subtitle: inv.email || 'Pas d\'email',
-        metadata: [
-          inv.type === 'morale' ? 'Personne Morale' : 'Personne Physique'
-        ].filter(Boolean),
-        icon: <Users className="w-5 h-5 text-finixar-green" />,
-        link: `/investisseurs?id=${inv.id}`
-      }));
+      const investors: SearchResult[] = (investorsRes.data || []).map(
+        (inv: Record<string, unknown>) => ({
+          type: 'investor' as const,
+          id: inv.id,
+          title: inv.nom_raison_sociale || 'Sans nom',
+          subtitle: inv.email || "Pas d'email",
+          metadata: [inv.type === 'morale' ? 'Personne Morale' : 'Personne Physique'].filter(
+            Boolean
+          ),
+          icon: <Users className="w-5 h-5 text-finixar-green" />,
+          link: `/investisseurs?id=${inv.id}`,
+        })
+      );
 
       // Process Tranches
-      const tranches: SearchResult[] = (tranchesRes.data || []).map((t: any) => ({
-        type: 'tranche' as const,
-        id: t.id,
-        title: t.tranche_name,
-        subtitle: `Projet: ${t.projets?.projet || 'Inconnu'}`,
-        metadata: t.taux_interet ? [`Taux: ${t.taux_interet}%`] : [],
-        icon: <Layers className="w-5 h-5 text-purple-600" />,
-        link: `/projets/${t.projets?.id}`
-      }));
+      const tranches: SearchResult[] = (tranchesRes.data || []).map(
+        (t: Record<string, unknown>) => ({
+          type: 'tranche' as const,
+          id: t.id,
+          title: t.tranche_name,
+          subtitle: `Projet: ${t.projets?.projet || 'Inconnu'}`,
+          metadata: t.taux_interet ? [`Taux: ${t.taux_interet}%`] : [],
+          icon: <Layers className="w-5 h-5 text-purple-600" />,
+          link: `/projets/${t.projets?.id}`,
+        })
+      );
 
       // Process Subscriptions - already filtered by database query
-      const subscriptions: SearchResult[] = (subscriptionsRes.data || []).map((s: any) => ({
-        type: 'subscription' as const,
-        id: s.id,
-        title: `Souscription - ${s.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
-        subtitle: `${s.tranches?.projets?.projet || 'Projet'} - ${formatDate(s.date_souscription)}`,
-        metadata: [
-          `${s.nombre_obligations} obligations`,
-          formatCurrency(s.montant_investi)
-        ],
-        icon: <FileText className="w-5 h-5 text-orange-600" />,
-        link: `/souscriptions?id=${s.id}`
-      }));
+      const subscriptions: SearchResult[] = (subscriptionsRes.data || []).map(
+        (s: Record<string, unknown>) => ({
+          type: 'subscription' as const,
+          id: s.id,
+          title: `Souscription - ${s.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
+          subtitle: `${s.tranches?.projets?.projet || 'Projet'} - ${formatDate(s.date_souscription)}`,
+          metadata: [`${s.nombre_obligations} obligations`, formatCurrency(s.montant_investi)],
+          icon: <FileText className="w-5 h-5 text-orange-600" />,
+          link: `/souscriptions?id=${s.id}`,
+        })
+      );
 
       // Process Payments - already filtered by database query
-      const payments: SearchResult[] = (paymentsRes.data || []).map((p: any) => ({
-        type: 'payment' as const,
-        id: p.id,
-        title: `Paiement - ${p.souscriptions?.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
-        subtitle: `${p.souscriptions?.tranches?.projets?.projet || 'Projet'} - ${formatDate(p.date_paiement)}`,
-        metadata: [
-          formatCurrency(p.montant),
-          p.type || 'Paiement'
-        ],
-        icon: <Euro className="w-5 h-5 text-emerald-600" />,
-        link: `/paiements?id=${p.id}`
-      }));
+      const payments: SearchResult[] = (paymentsRes.data || []).map(
+        (p: Record<string, unknown>) => ({
+          type: 'payment' as const,
+          id: p.id,
+          title: `Paiement - ${p.souscriptions?.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
+          subtitle: `${p.souscriptions?.tranches?.projets?.projet || 'Projet'} - ${formatDate(p.date_paiement)}`,
+          metadata: [formatCurrency(p.montant), p.type || 'Paiement'],
+          icon: <Euro className="w-5 h-5 text-emerald-600" />,
+          link: `/paiements?id=${p.id}`,
+        })
+      );
 
       // Process Coupons - already filtered by database query
-      const coupons: SearchResult[] = (couponsRes.data || []).map((c: any) => ({
+      const coupons: SearchResult[] = (couponsRes.data || []).map((c: Record<string, unknown>) => ({
         type: 'coupon' as const,
         id: c.id,
         title: `Coupon - ${c.souscriptions?.investisseurs?.nom_raison_sociale || 'Investisseur'}`,
         subtitle: `${c.souscriptions?.tranches?.projets?.projet || 'Projet'} - ${formatDate(c.date_paiement)}`,
-        metadata: [
-          formatCurrency(c.montant),
-          c.souscriptions?.tranches?.tranche_name || ''
-        ],
+        metadata: [formatCurrency(c.montant), c.souscriptions?.tranches?.tranche_name || ''],
         icon: <Receipt className="w-5 h-5 text-pink-600" />,
-        link: `/coupons?id=${c.id}`
+        link: `/coupons?id=${c.id}`,
       }));
 
       setResults({
@@ -434,18 +492,22 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
         tranches,
         subscriptions,
         payments,
-        coupons
+        coupons,
       });
 
       // Save to recent searches if we got results
-      const totalResults = projects.length + investors.length + tranches.length + 
-                          subscriptions.length + payments.length + coupons.length;
+      const totalResults =
+        projects.length +
+        investors.length +
+        tranches.length +
+        subscriptions.length +
+        payments.length +
+        coupons.length;
       if (totalResults > 0) {
         saveToRecentSearches(searchQuery);
       }
 
       // Log search analytics
-
     } catch {
       setError('Une erreur est survenue lors de la recherche. Veuillez réessayer.');
     } finally {
@@ -475,10 +537,12 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       ...results.tranches,
       ...results.subscriptions,
       ...results.payments,
-      ...results.coupons
+      ...results.coupons,
     ];
 
-    if (activeFilter === 'all') return allResults;
+    if (activeFilter === 'all') {
+      return allResults;
+    }
     return allResults.filter(r => r.type === activeFilter);
   };
 
@@ -487,43 +551,84 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
   // Count results by type
   const resultCounts = {
-    all: results.projects.length + results.investors.length + results.tranches.length + 
-         results.subscriptions.length + results.payments.length + results.coupons.length,
+    all:
+      results.projects.length +
+      results.investors.length +
+      results.tranches.length +
+      results.subscriptions.length +
+      results.payments.length +
+      results.coupons.length,
     project: results.projects.length,
     investor: results.investors.length,
     tranche: results.tranches.length,
     subscription: results.subscriptions.length,
     payment: results.payments.length,
-    coupon: results.coupons.length
+    coupon: results.coupons.length,
   };
 
   // Render results grouped by type
   const renderGroupedResults = () => {
     const groups = [
-      { key: 'projects', title: 'Projets', icon: <Folder className="w-4 h-4" />, color: 'text-blue-600', results: results.projects },
-      { key: 'investors', title: 'Investisseurs', icon: <Users className="w-4 h-4" />, color: 'text-finixar-green', results: results.investors },
-      { key: 'tranches', title: 'Tranches', icon: <Layers className="w-4 h-4" />, color: 'text-purple-600', results: results.tranches },
-      { key: 'subscriptions', title: 'Souscriptions', icon: <FileText className="w-4 h-4" />, color: 'text-orange-600', results: results.subscriptions },
-      { key: 'payments', title: 'Paiements', icon: <Euro className="w-4 h-4" />, color: 'text-emerald-600', results: results.payments },
-      { key: 'coupons', title: 'Coupons', icon: <Receipt className="w-4 h-4" />, color: 'text-pink-600', results: results.coupons }
+      {
+        key: 'projects',
+        title: 'Projets',
+        icon: <Folder className="w-4 h-4" />,
+        color: 'text-blue-600',
+        results: results.projects,
+      },
+      {
+        key: 'investors',
+        title: 'Investisseurs',
+        icon: <Users className="w-4 h-4" />,
+        color: 'text-finixar-green',
+        results: results.investors,
+      },
+      {
+        key: 'tranches',
+        title: 'Tranches',
+        icon: <Layers className="w-4 h-4" />,
+        color: 'text-purple-600',
+        results: results.tranches,
+      },
+      {
+        key: 'subscriptions',
+        title: 'Souscriptions',
+        icon: <FileText className="w-4 h-4" />,
+        color: 'text-orange-600',
+        results: results.subscriptions,
+      },
+      {
+        key: 'payments',
+        title: 'Paiements',
+        icon: <Euro className="w-4 h-4" />,
+        color: 'text-emerald-600',
+        results: results.payments,
+      },
+      {
+        key: 'coupons',
+        title: 'Coupons',
+        icon: <Receipt className="w-4 h-4" />,
+        color: 'text-pink-600',
+        results: results.coupons,
+      },
     ];
 
     return groups
-      .filter(group => activeFilter === 'all' ? group.results.length > 0 : group.key === activeFilter)
+      .filter(group =>
+        activeFilter === 'all' ? group.results.length > 0 : group.key === activeFilter
+      )
       .map(group => (
         <div key={group.key} className="mb-4">
           {/* Group Header */}
           <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
             <span className={group.color}>{group.icon}</span>
-            <span className="font-semibold text-slate-700 text-sm">
-              {group.title}
-            </span>
+            <span className="font-semibold text-slate-700 text-sm">{group.title}</span>
             <span className="text-xs text-slate-500">({group.results.length})</span>
           </div>
 
           {/* Group Results */}
           <div>
-            {group.results.slice(0, 5).map((result) => (
+            {group.results.slice(0, 5).map(result => (
               <button
                 key={`${result.type}-${result.id}`}
                 onClick={() => handleSelect(result)}
@@ -564,7 +669,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
                     tranches: '/projets',
                     subscriptions: '/souscriptions',
                     payments: '/paiements',
-                    coupons: '/coupons'
+                    coupons: '/coupons',
                   };
                   navigate(routes[group.key as keyof typeof routes]);
                   onClose?.();
@@ -581,12 +686,10 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-20 px-4">
-      <div 
-        ref={modalRef} 
+      <div
+        ref={modalRef}
         className={`bg-white shadow-2xl w-full flex flex-col ${
-          isMobile 
-            ? 'fixed inset-0 rounded-none max-h-full' 
-            : 'rounded-2xl max-w-3xl max-h-[80vh]'
+          isMobile ? 'fixed inset-0 rounded-none max-h-full' : 'rounded-2xl max-w-3xl max-h-[80vh]'
         }`}
       >
         {/* Header with Search */}
@@ -597,7 +700,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
               ref={inputRef}
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={e => setQuery(e.target.value)}
               placeholder="Rechercher projets, investisseurs, tranches, souscriptions..."
               className="w-full pl-12 pr-12 py-4 text-lg border-none focus:outline-none focus:ring-0"
             />
@@ -620,7 +723,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
               { key: 'tranche', label: 'Tranches', count: resultCounts.tranche },
               { key: 'subscription', label: 'Souscriptions', count: resultCounts.subscription },
               { key: 'payment', label: 'Paiements', count: resultCounts.payment },
-              { key: 'coupon', label: 'Coupons', count: resultCounts.coupon }
+              { key: 'coupon', label: 'Coupons', count: resultCounts.coupon },
             ].map(filter => (
               <button
                 key={filter.key}
@@ -633,7 +736,9 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
               >
                 {filter.label}
                 {filter.count > 0 && (
-                  <span className={`ml-1.5 ${activeFilter === filter.key ? 'text-blue-100' : 'text-slate-500'}`}>
+                  <span
+                    className={`ml-1.5 ${activeFilter === filter.key ? 'text-blue-100' : 'text-slate-500'}`}
+                  >
                     ({filter.count})
                   </span>
                 )}
@@ -684,9 +789,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
 
           {/* Results - Grouped by Type */}
           {!loading && !error && totalResults > 0 && (
-            <div className="pb-4">
-              {renderGroupedResults()}
-            </div>
+            <div className="pb-4">{renderGroupedResults()}</div>
           )}
 
           {/* Recent Searches */}
@@ -725,7 +828,8 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
               <Search className="w-16 h-16 mb-4 opacity-20" />
               <p className="text-lg font-medium mb-2">Recherche globale</p>
               <p className="text-sm text-center max-w-md px-4">
-                Tapez au moins 2 caractères pour rechercher dans les projets, investisseurs, tranches, souscriptions, paiements et coupons
+                Tapez au moins 2 caractères pour rechercher dans les projets, investisseurs,
+                tranches, souscriptions, paiements et coupons
               </p>
             </div>
           )}
@@ -735,7 +839,8 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
         {!loading && totalResults > 0 && (
           <div className="px-4 py-3 bg-slate-50 border-t border-slate-200">
             <p className="text-xs text-slate-600 text-center">
-              {totalResults} résultat{totalResults > 1 ? 's' : ''} trouvé{totalResults > 1 ? 's' : ''} pour "{query}"
+              {totalResults} résultat{totalResults > 1 ? 's' : ''} trouvé
+              {totalResults > 1 ? 's' : ''} pour "{query}"
             </p>
           </div>
         )}

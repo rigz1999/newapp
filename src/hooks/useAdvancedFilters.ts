@@ -25,7 +25,7 @@ export interface FilterState {
   search: string;
   dateRange: DateRangeFilter;
   multiSelect: MultiSelectFilter[];
-  customFilters: Record<string, any>;
+  customFilters: Record<string, unknown>;
 }
 
 export interface FilterPreset {
@@ -60,7 +60,7 @@ interface UseAdvancedFiltersReturn {
   addMultiSelectFilter: (field: string, value: string) => void;
   removeMultiSelectFilter: (field: string, value: string) => void;
   clearMultiSelectFilter: (field: string) => void;
-  setCustomFilter: (key: string, value: any) => void;
+  setCustomFilter: (key: string, value: unknown) => void;
   clearAllFilters: () => void;
 
   // Presets
@@ -78,7 +78,7 @@ interface UseAdvancedFiltersReturn {
   analytics: FilterAnalytics;
 
   // Apply filters to data
-  applyFilters: <T extends Record<string, any>>(
+  applyFilters: <T extends Record<string, unknown>>(
     data: T[],
     options?: {
       searchFields?: (keyof T)[];
@@ -147,8 +147,7 @@ export function useAdvancedFilters(
       if (saved) {
         try {
           setAnalytics(JSON.parse(saved));
-        } catch {
-        }
+        } catch {}
       }
     }
   }, [persistKey]);
@@ -187,11 +186,11 @@ export function useAdvancedFilters(
       const newFieldUsage = { ...analytics.fieldUsage };
 
       if (filters.search) {
-        newFieldUsage['search'] = (newFieldUsage['search'] || 0) + 1;
+        newFieldUsage.search = (newFieldUsage.search || 0) + 1;
       }
 
       if (filters.dateRange.startDate || filters.dateRange.endDate) {
-        newFieldUsage['dateRange'] = (newFieldUsage['dateRange'] || 0) + 1;
+        newFieldUsage.dateRange = (newFieldUsage.dateRange || 0) + 1;
       }
 
       filters.multiSelect.forEach(f => {
@@ -241,32 +240,27 @@ export function useAdvancedFilters(
   }, [filters, persistKey, maxRecentFilters]);
 
   const setSearch = useCallback((search: string) => {
-    setFilters((prev) => ({ ...prev, search }));
+    setFilters(prev => ({ ...prev, search }));
   }, []);
 
-  const setDateRange = useCallback(
-    (startDate: string | null, endDate: string | null) => {
-      setFilters((prev) => ({
-        ...prev,
-        dateRange: { startDate, endDate },
-      }));
-    },
-    []
-  );
+  const setDateRange = useCallback((startDate: string | null, endDate: string | null) => {
+    setFilters(prev => ({
+      ...prev,
+      dateRange: { startDate, endDate },
+    }));
+  }, []);
 
   const addMultiSelectFilter = useCallback((field: string, value: string) => {
-    setFilters((prev) => {
-      const existing = prev.multiSelect.find((f) => f.field === field);
+    setFilters(prev => {
+      const existing = prev.multiSelect.find(f => f.field === field);
       if (existing) {
         if (existing.values.includes(value)) {
           return prev; // Already exists
         }
         return {
           ...prev,
-          multiSelect: prev.multiSelect.map((f) =>
-            f.field === field
-              ? { ...f, values: [...f.values, value] }
-              : f
+          multiSelect: prev.multiSelect.map(f =>
+            f.field === field ? { ...f, values: [...f.values, value] } : f
           ),
         };
       } else {
@@ -279,27 +273,23 @@ export function useAdvancedFilters(
   }, []);
 
   const removeMultiSelectFilter = useCallback((field: string, value: string) => {
-    setFilters((prev) => ({
+    setFilters(prev => ({
       ...prev,
       multiSelect: prev.multiSelect
-        .map((f) =>
-          f.field === field
-            ? { ...f, values: f.values.filter((v) => v !== value) }
-            : f
-        )
-        .filter((f) => f.values.length > 0),
+        .map(f => (f.field === field ? { ...f, values: f.values.filter(v => v !== value) } : f))
+        .filter(f => f.values.length > 0),
     }));
   }, []);
 
   const clearMultiSelectFilter = useCallback((field: string) => {
-    setFilters((prev) => ({
+    setFilters(prev => ({
       ...prev,
-      multiSelect: prev.multiSelect.filter((f) => f.field !== field),
+      multiSelect: prev.multiSelect.filter(f => f.field !== field),
     }));
   }, []);
 
-  const setCustomFilter = useCallback((key: string, value: any) => {
-    setFilters((prev) => ({
+  const setCustomFilter = useCallback((key: string, value: unknown) => {
+    setFilters(prev => ({
       ...prev,
       customFilters: { ...prev.customFilters, [key]: value },
     }));
@@ -316,28 +306,34 @@ export function useAdvancedFilters(
         name,
         filters: { ...filters },
       };
-      setPresets((prev) => [...prev, newPreset]);
+      setPresets(prev => [...prev, newPreset]);
     },
     [filters]
   );
 
-  const loadPreset = useCallback((id: string) => {
-    const preset = presets.find((p) => p.id === id);
-    if (preset) {
-      setFilters(preset.filters);
-    }
-  }, [presets]);
+  const loadPreset = useCallback(
+    (id: string) => {
+      const preset = presets.find(p => p.id === id);
+      if (preset) {
+        setFilters(preset.filters);
+      }
+    },
+    [presets]
+  );
 
   const deletePreset = useCallback((id: string) => {
-    setPresets((prev) => prev.filter((p) => p.id !== id));
+    setPresets(prev => prev.filter(p => p.id !== id));
   }, []);
 
-  const loadRecentFilter = useCallback((id: string) => {
-    const recent = recentFilters.find(rf => rf.id === id);
-    if (recent) {
-      setFilters(recent.filters);
-    }
-  }, [recentFilters]);
+  const loadRecentFilter = useCallback(
+    (id: string) => {
+      const recent = recentFilters.find(rf => rf.id === id);
+      if (recent) {
+        setFilters(recent.filters);
+      }
+    },
+    [recentFilters]
+  );
 
   const clearRecentFilters = useCallback(() => {
     setRecentFilters([]);
@@ -347,7 +343,7 @@ export function useAdvancedFilters(
   }, [persistKey]);
 
   const applyFilters = useCallback(
-    <T extends Record<string, any>>(
+    <T extends Record<string, unknown>>(
       data: T[],
       options: {
         searchFields?: (keyof T)[];
@@ -359,31 +355,29 @@ export function useAdvancedFilters(
       // Apply search filter
       if (filters.search && options.searchFields) {
         const searchLower = filters.search.toLowerCase();
-        filtered = filtered.filter((item) =>
-          options.searchFields!.some((field) =>
-            String(item[field] || '').toLowerCase().includes(searchLower)
+        filtered = filtered.filter(item =>
+          options.searchFields!.some(field =>
+            String(item[field] || '')
+              .toLowerCase()
+              .includes(searchLower)
           )
         );
       }
 
       // Apply date range filter
-      if (
-        filters.dateRange.startDate &&
-        filters.dateRange.endDate &&
-        options.dateField
-      ) {
+      if (filters.dateRange.startDate && filters.dateRange.endDate && options.dateField) {
         const startDate = new Date(filters.dateRange.startDate);
         const endDate = new Date(filters.dateRange.endDate);
-        filtered = filtered.filter((item) => {
+        filtered = filtered.filter(item => {
           const itemDate = new Date(item[options.dateField!]);
           return itemDate >= startDate && itemDate <= endDate;
         });
       }
 
       // Apply multi-select filters
-      filters.multiSelect.forEach((multiFilter) => {
+      filters.multiSelect.forEach(multiFilter => {
         if (multiFilter.values.length > 0) {
-          filtered = filtered.filter((item) =>
+          filtered = filtered.filter(item =>
             multiFilter.values.includes(String(item[multiFilter.field]))
           );
         }

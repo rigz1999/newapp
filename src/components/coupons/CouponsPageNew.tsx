@@ -42,10 +42,19 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
     const tranche = searchParams.get('tranche');
     const date = searchParams.get('date');
 
-    const filters: { statut?: string[]; tranches?: string[]; dateStart?: string; dateEnd?: string } = {};
+    const filters: {
+      statut?: string[];
+      tranches?: string[];
+      dateStart?: string;
+      dateEnd?: string;
+    } = {};
 
-    if (status) filters.statut = [status];
-    if (tranche) filters.tranches = [tranche];
+    if (status) {
+      filters.statut = [status];
+    }
+    if (tranche) {
+      filters.tranches = [tranche];
+    }
     if (date) {
       filters.dateStart = date;
       filters.dateEnd = date;
@@ -55,9 +64,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // View state - show filters if URL params present
-  const [showFilters, setShowFilters] = useState(() => {
-    return !!(searchParams.get('status') || searchParams.get('tranche') || searchParams.get('date'));
-  });
+  const [showFilters, setShowFilters] = useState(
+    () => !!(searchParams.get('status') || searchParams.get('tranche') || searchParams.get('date'))
+  );
 
   // Filter state - initialize with URL params
   const filterState = useCouponFilters(initialFilters);
@@ -75,10 +84,20 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Data fetching
-  const { coupons, loading, totalCount, page, pageSize, totalPages, setPage, refresh, stats, filterOptions } =
-    useCoupons({
-      filters: filterState.filters,
-    });
+  const {
+    coupons,
+    loading,
+    totalCount,
+    page,
+    pageSize,
+    totalPages,
+    setPage,
+    refresh,
+    stats,
+    filterOptions,
+  } = useCoupons({
+    filters: filterState.filters,
+  });
 
   // Selection state
   const [selectedCoupons, setSelectedCoupons] = useState<Set<string>>(new Set());
@@ -431,9 +450,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         'Montant Brut': c.montant_brut,
         'Montant Net': c.montant_net,
         'Remboursement Nominal': c.is_last_echeance ? c.montant_investi : 0,
-        'Total à Payer': c.is_last_echeance
-          ? c.montant_net + c.montant_investi
-          : c.montant_net,
+        'Total à Payer': c.is_last_echeance ? c.montant_net + c.montant_investi : c.montant_net,
         Statut: c.statut_calculated,
         'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
       }));
@@ -838,7 +855,9 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                     <div>
                       <p className="text-xs text-purple-600">Total à Payer</p>
                       <p className="text-sm font-bold text-purple-900">
-                        {formatCurrency(selectedCoupon.montant_net + selectedCoupon.montant_investi)}
+                        {formatCurrency(
+                          selectedCoupon.montant_net + selectedCoupon.montant_investi
+                        )}
                       </p>
                     </div>
                   </div>

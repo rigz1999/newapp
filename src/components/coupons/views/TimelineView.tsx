@@ -1,10 +1,27 @@
 import { useMemo, useState } from 'react';
 import { Coupon } from '../../../hooks/coupons/useCoupons';
-import { Calendar, ChevronDown, ChevronRight, Layers, Upload, Building2, User, Eye, AlertCircle, Clock } from 'lucide-react';
+import {
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Layers,
+  Upload,
+  Building2,
+  User,
+  Eye,
+  AlertCircle,
+  Clock,
+} from 'lucide-react';
 
 interface TimelineViewProps {
   coupons: Coupon[];
-  onPayTranche: (projectId: string, trancheId: string, echeanceDate: string, projectName: string, trancheName: string) => void;
+  onPayTranche: (
+    projectId: string,
+    trancheId: string,
+    echeanceDate: string,
+    projectName: string,
+    trancheName: string
+  ) => void;
   onViewDetails: (coupon: Coupon) => void;
   selectedCoupons: Set<string>;
   onToggleSelect: (couponId: string) => void;
@@ -25,29 +42,23 @@ interface GroupedData {
   allPaid: boolean;
 }
 
-export function TimelineView({
-  coupons,
-  onPayTranche,
-  onViewDetails,
-}: TimelineViewProps) {
+export function TimelineView({ coupons, onPayTranche, onViewDetails }: TimelineViewProps) {
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
-  };
 
   const getDaysUntil = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -73,10 +84,14 @@ export function TimelineView({
   const groupedData = useMemo<GroupedData[]>(() => {
     const grouped: { [date: string]: { [trancheId: string]: Coupon[] } } = {};
 
-    coupons.forEach((coupon) => {
+    coupons.forEach(coupon => {
       const date = coupon.date_echeance;
-      if (!grouped[date]) grouped[date] = {};
-      if (!grouped[date][coupon.tranche_id]) grouped[date][coupon.tranche_id] = [];
+      if (!grouped[date]) {
+        grouped[date] = {};
+      }
+      if (!grouped[date][coupon.tranche_id]) {
+        grouped[date][coupon.tranche_id] = [];
+      }
       grouped[date][coupon.tranche_id].push(coupon);
     });
 
@@ -126,12 +141,15 @@ export function TimelineView({
 
   return (
     <div className="space-y-6">
-      {groupedData.map((group) => {
+      {groupedData.map(group => {
         const daysUntil = getDaysUntil(group.date);
         const dateTotal = group.tranches.reduce((sum, t) => sum + t.total, 0);
 
         return (
-          <div key={group.date} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div
+            key={group.date}
+            className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+          >
             {/* Date Header */}
             <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <div>
@@ -141,7 +159,10 @@ export function TimelineView({
                     {daysUntil < 0 ? (
                       <>
                         <AlertCircle className="w-3.5 h-3.5 text-red-600" />
-                        <span>En retard de {Math.abs(daysUntil)} jour{Math.abs(daysUntil) > 1 ? 's' : ''}</span>
+                        <span>
+                          En retard de {Math.abs(daysUntil)} jour
+                          {Math.abs(daysUntil) > 1 ? 's' : ''}
+                        </span>
                       </>
                     ) : daysUntil === 0 ? (
                       <>
@@ -151,7 +172,9 @@ export function TimelineView({
                     ) : (
                       <>
                         <Clock className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Dans {daysUntil} jour{daysUntil > 1 ? 's' : ''}</span>
+                        <span>
+                          Dans {daysUntil} jour{daysUntil > 1 ? 's' : ''}
+                        </span>
                       </>
                     )}
                   </div>
@@ -159,7 +182,9 @@ export function TimelineView({
               </div>
               <div className="text-right">
                 <p className="text-sm text-slate-600">Total du jour</p>
-                <p className="text-base font-bold text-finixar-green">{formatCurrency(dateTotal)}</p>
+                <p className="text-base font-bold text-finixar-green">
+                  {formatCurrency(dateTotal)}
+                </p>
                 <p className="text-xs text-slate-500">
                   {group.tranches.length} tranche{group.tranches.length > 1 ? 's' : ''}
                 </p>
@@ -168,7 +193,7 @@ export function TimelineView({
 
             {/* Tranches */}
             <div className="divide-y divide-slate-200">
-              {group.tranches.map((tranche) => {
+              {group.tranches.map(tranche => {
                 const trancheKey = `${group.date}-${tranche.trancheId}`;
                 const isExpanded = expandedTranches.has(trancheKey);
 
@@ -196,14 +221,19 @@ export function TimelineView({
                         </button>
                         <div className="flex items-center gap-3">
                           <div className="text-right">
-                            <p className="text-sm font-bold text-finixar-green">{formatCurrency(tranche.total)}</p>
+                            <p className="text-sm font-bold text-finixar-green">
+                              {formatCurrency(tranche.total)}
+                            </p>
                             <p className="text-xs text-slate-500">
-                              {tranche.coupons.length} investisseur{tranche.coupons.length > 1 ? 's' : ''}
+                              {tranche.coupons.length} investisseur
+                              {tranche.coupons.length > 1 ? 's' : ''}
                             </p>
                           </div>
                           {(() => {
                             const totalCount = tranche.coupons.length;
-                            const paidCount = tranche.coupons.filter(c => c.statut_calculated === 'paye').length;
+                            const paidCount = tranche.coupons.filter(
+                              c => c.statut_calculated === 'paye'
+                            ).length;
 
                             if (paidCount === totalCount) {
                               return (
@@ -227,7 +257,7 @@ export function TimelineView({
                           })()}
                           {tranche.hasUnpaid && (
                             <button
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
                                 onPayTranche(
                                   tranche.projetId,
@@ -251,7 +281,7 @@ export function TimelineView({
                     {isExpanded && (
                       <div className="bg-slate-50 border-t border-slate-200">
                         <div className="divide-y divide-slate-100">
-                          {tranche.coupons.map((coupon) => {
+                          {tranche.coupons.map(coupon => {
                             const badge = getStatusBadge(coupon);
 
                             return (

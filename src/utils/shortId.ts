@@ -34,7 +34,7 @@ export function generateRandomBase62(length: number = 12): string {
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
   return Array.from(array)
-    .map((byte) => BASE62_CHARS[byte % 62])
+    .map(byte => BASE62_CHARS[byte % 62])
     .join('');
 }
 
@@ -69,19 +69,27 @@ export function getResourceType(shortId: string): ResourceType | null {
  * @param expectedType - Optional expected resource type
  */
 export function isValidShortId(shortId: string, expectedType?: ResourceType): boolean {
-  if (!shortId || typeof shortId !== 'string') return false;
+  if (!shortId || typeof shortId !== 'string') {
+    return false;
+  }
 
   const resourceType = getResourceType(shortId);
-  if (!resourceType) return false;
+  if (!resourceType) {
+    return false;
+  }
 
-  if (expectedType && resourceType !== expectedType) return false;
+  if (expectedType && resourceType !== expectedType) {
+    return false;
+  }
 
   // Check that the random part is valid Base62
   const prefix = ID_PREFIXES[resourceType];
   const randomPart = shortId.slice(prefix.length);
 
   // Should be at least 8 characters for security
-  if (randomPart.length < 8) return false;
+  if (randomPart.length < 8) {
+    return false;
+  }
 
   // All characters should be Base62
   return /^[0-9A-Za-z]+$/.test(randomPart);
@@ -100,7 +108,11 @@ export function isUUID(str: string): boolean {
  * Useful for backwards compatibility during migration
  */
 export function getIdFormat(id: string): 'short' | 'uuid' | 'unknown' {
-  if (isValidShortId(id)) return 'short';
-  if (isUUID(id)) return 'uuid';
+  if (isValidShortId(id)) {
+    return 'short';
+  }
+  if (isUUID(id)) {
+    return 'uuid';
+  }
   return 'unknown';
 }

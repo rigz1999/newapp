@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export function DiagnosticPage() {
-  const [diagnostics, setDiagnostics] = useState<any>({});
+  const [diagnostics, setDiagnostics] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -10,7 +10,7 @@ export function DiagnosticPage() {
   }, []);
 
   const runDiagnostics = async () => {
-    const results: any = {};
+    const results: Record<string, unknown> = {};
 
     try {
       // 1. Check session
@@ -42,7 +42,7 @@ export function DiagnosticPage() {
         error: projetsError?.message,
         code: projetsError?.code,
         details: projetsError?.details,
-        hint: projetsError?.hint
+        hint: projetsError?.hint,
       };
 
       // 5. Try to insert a test projet
@@ -61,16 +61,15 @@ export function DiagnosticPage() {
         error: insertError?.message,
         code: insertError?.code,
         details: insertError?.details,
-        hint: insertError?.hint
+        hint: insertError?.hint,
       };
 
       // Clean up test projet if it was created
       if (insertResult?.id) {
         await supabase.from('projets').delete().eq('id', insertResult.id);
       }
-
-    } catch (error: any) {
-      results.unexpectedError = error.message;
+    } catch (error: unknown) {
+      results.unexpectedError = error instanceof Error ? error.message : String(error);
     }
 
     setDiagnostics(results);

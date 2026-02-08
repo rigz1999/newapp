@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
-  X,
   CheckCircle,
   AlertCircle,
   Loader,
   FileText,
   AlertTriangle,
   Upload,
-  ArrowLeft,
   Trash2,
   Calendar,
   FolderOpen,
@@ -22,8 +20,8 @@ import { logger } from '../../utils/logger';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { PaymentWizardHeader } from './wizard/PaymentWizardHeader';
 import { PaymentProjectSelect } from './wizard/PaymentProjectSelect';
-import { PaymentFileUpload } from './wizard/PaymentFileUpload';
-import { PaymentMatchCard } from './wizard/PaymentMatchCard';
+import { PaymentFileUpload as _PaymentFileUpload } from './wizard/PaymentFileUpload';
+import { PaymentMatchCard as _PaymentMatchCard } from './wizard/PaymentMatchCard';
 import type {
   Project,
   Tranche,
@@ -31,7 +29,7 @@ import type {
   Echeance,
   EcheanceGroup,
   PaymentMatch,
-  WizardStep
+  WizardStep,
 } from './wizard/types';
 import { IMAGE_PROCESSING, FILE_LIMITS } from '../../constants';
 
@@ -54,7 +52,7 @@ export function PaymentWizard({
   showProjectName,
   showTrancheName,
 }: PaymentWizardProps) {
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -90,7 +88,6 @@ export function PaymentWizard({
   };
 
   const [step, setStep] = useState<WizardStep>(getInitialStep());
-
 
   // Close modal on ESC key
   useEffect(() => {
@@ -333,7 +330,9 @@ export function PaymentWizard({
 
       setEcheanceGroups(groups);
     } catch (err) {
-      logger.error(err instanceof Error ? err : new Error('Error fetching écheances'), { error: err });
+      logger.error(err instanceof Error ? err : new Error('Error fetching écheances'), {
+        error: err,
+      });
       setEcheanceGroups([]);
     } finally {
       setLoading(false);
@@ -403,7 +402,10 @@ export function PaymentWizard({
 
       setSubscriptions(subsWithEcheanceAmounts);
     } catch (err) {
-      logger.error(err instanceof Error ? err : new Error('Error fetching subscriptions for échéance'), { error: err, trancheId, echeanceDate });
+      logger.error(
+        err instanceof Error ? err : new Error('Error fetching subscriptions for échéance'),
+        { error: err, trancheId, echeanceDate }
+      );
       setSubscriptions([]);
     } finally {
       setLoading(false);
@@ -435,7 +437,9 @@ export function PaymentWizard({
 
           if (uploadError) {
             logger.error(new Error('Error uploading to temp storage'), { error: uploadError });
-            setError(`Erreur lors du téléchargement: ${uploadError.message || String(uploadError)}`);
+            setError(
+              `Erreur lors du téléchargement: ${uploadError.message || String(uploadError)}`
+            );
             return;
           }
 
@@ -444,8 +448,12 @@ export function PaymentWizard({
 
         setTempFileNames(uploadedNames);
       } catch (err) {
-        logger.error(err instanceof Error ? err : new Error('Error in file upload'), { error: err });
-        setError(`Erreur lors du téléchargement: ${err instanceof Error ? err.message : String(err)}`);
+        logger.error(err instanceof Error ? err : new Error('Error in file upload'), {
+          error: err,
+        });
+        setError(
+          `Erreur lors du téléchargement: ${err instanceof Error ? err.message : String(err)}`
+        );
         return;
       }
 
@@ -460,7 +468,10 @@ export function PaymentWizard({
       try {
         await supabase.storage.from('payment-proofs-temp').remove([tempFileNames[indexToRemove]]);
       } catch (err) {
-        logger.error(err instanceof Error ? err : new Error('Error removing from temp storage'), { error: err, fileName: tempFileNames[indexToRemove] });
+        logger.error(err instanceof Error ? err : new Error('Error removing from temp storage'), {
+          error: err,
+          fileName: tempFileNames[indexToRemove],
+        });
       }
     }
 
@@ -522,7 +533,9 @@ export function PaymentWizard({
       setTempFileNames(uploadedNames);
     } catch (err) {
       logger.error(err instanceof Error ? err : new Error('Error in file upload'), { error: err });
-      setError(`Erreur lors du téléchargement: ${err instanceof Error ? err.message : String(err)}`);
+      setError(
+        `Erreur lors du téléchargement: ${err instanceof Error ? err.message : String(err)}`
+      );
       return;
     }
 
@@ -530,7 +543,10 @@ export function PaymentWizard({
     setError('');
   };
 
-  const compressImage = (imageDataUrl: string, quality: number = IMAGE_PROCESSING.COMPRESSION_QUALITY): Promise<string> =>
+  const compressImage = (
+    imageDataUrl: string,
+    quality: number = IMAGE_PROCESSING.COMPRESSION_QUALITY
+  ): Promise<string> =>
     new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -596,7 +612,10 @@ export function PaymentWizard({
             await page.render({ canvasContext: context, viewport }).promise;
 
             const imageDataUrl = canvas.toDataURL('image/png');
-            const compressed = await compressImage(imageDataUrl, IMAGE_PROCESSING.COMPRESSION_QUALITY);
+            const compressed = await compressImage(
+              imageDataUrl,
+              IMAGE_PROCESSING.COMPRESSION_QUALITY
+            );
             base64Images.push(compressed);
           }
         } else {
@@ -605,7 +624,10 @@ export function PaymentWizard({
             reader.onload = async e => {
               const dataUrl = e.target?.result as string;
               try {
-                const compressed = await compressImage(dataUrl, IMAGE_PROCESSING.COMPRESSION_QUALITY);
+                const compressed = await compressImage(
+                  dataUrl,
+                  IMAGE_PROCESSING.COMPRESSION_QUALITY
+                );
                 resolve(compressed);
               } catch (err) {
                 reject(err);
@@ -721,7 +743,9 @@ export function PaymentWizard({
           await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
           setTempFileNames([]);
         } catch (cleanupErr) {
-          logger.error(new Error('Failed to cleanup temp files after analysis error'), { error: cleanupErr });
+          logger.error(new Error('Failed to cleanup temp files after analysis error'), {
+            error: cleanupErr,
+          });
         }
       }
     } finally {
@@ -873,7 +897,9 @@ export function PaymentWizard({
       );
       setShowSuccessModal(true);
     } catch (err) {
-      logger.error(err instanceof Error ? err : new Error('Payment validation failed'), { error: err });
+      logger.error(err instanceof Error ? err : new Error('Payment validation failed'), {
+        error: err,
+      });
       const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la validation';
       setError(errorMessage);
 
@@ -883,7 +909,9 @@ export function PaymentWizard({
           await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
           setTempFileNames([]);
         } catch (cleanupErr) {
-          logger.error(new Error('Failed to cleanup temp files after validation error'), { error: cleanupErr });
+          logger.error(new Error('Failed to cleanup temp files after validation error'), {
+            error: cleanupErr,
+          });
         }
       }
     } finally {
@@ -1006,7 +1034,9 @@ export function PaymentWizard({
       );
       setShowSuccessModal(true);
     } catch (err) {
-      logger.error(err instanceof Error ? err : new Error('Bulk payment validation failed'), { error: err });
+      logger.error(err instanceof Error ? err : new Error('Bulk payment validation failed'), {
+        error: err,
+      });
       const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la validation';
       setError(errorMessage);
 
@@ -1016,7 +1046,9 @@ export function PaymentWizard({
           await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
           setTempFileNames([]);
         } catch (cleanupErr) {
-          logger.error(new Error('Failed to cleanup temp files after bulk validation error'), { error: cleanupErr });
+          logger.error(new Error('Failed to cleanup temp files after bulk validation error'), {
+            error: cleanupErr,
+          });
         }
       }
     } finally {
@@ -1040,7 +1072,12 @@ export function PaymentWizard({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="payment-wizard-title">
+      <div
+        className="fixed inset-0 z-50 overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="payment-wizard-title"
+      >
         {/* Backdrop */}
         <div className="fixed inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
 
@@ -1433,8 +1470,15 @@ export function PaymentWizard({
                   )}
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2" role="alert" aria-live="assertive">
-                      <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <div
+                      className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2"
+                      role="alert"
+                      aria-live="assertive"
+                    >
+                      <AlertCircle
+                        className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+                        aria-hidden="true"
+                      />
                       <p className="text-sm text-red-700">{error}</p>
                     </div>
                   )}
@@ -1444,7 +1488,11 @@ export function PaymentWizard({
                     disabled={files.length === 0 || analyzing}
                     className="w-full bg-finixar-teal text-white py-3 rounded-lg font-medium hover:bg-finixar-teal-hover disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                     aria-busy={analyzing}
-                    aria-label={analyzing ? "Analyse du justificatif en cours" : "Analyser le justificatif de paiement"}
+                    aria-label={
+                      analyzing
+                        ? 'Analyse du justificatif en cours'
+                        : 'Analyser le justificatif de paiement'
+                    }
                   >
                     {analyzing ? (
                       <>
@@ -1708,8 +1756,15 @@ export function PaymentWizard({
                   </div>
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2" role="alert" aria-live="assertive">
-                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <div
+                      className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2"
+                      role="alert"
+                      aria-live="assertive"
+                    >
+                      <AlertCircle
+                        className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"
+                        aria-hidden="true"
+                      />
                       <p className="text-sm text-red-700">{error}</p>
                     </div>
                   )}

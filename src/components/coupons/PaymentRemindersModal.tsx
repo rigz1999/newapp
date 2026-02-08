@@ -18,7 +18,7 @@ interface PaymentRemindersModalProps {
 export default function PaymentRemindersModal({
   isOpen,
   onClose,
-  onSettingsUpdated
+  onSettingsUpdated,
 }: PaymentRemindersModalProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,9 @@ export default function PaymentRemindersModal({
 
   // Handle ESC key to close modal
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !saving) {
@@ -63,7 +65,9 @@ export default function PaymentRemindersModal({
   }, [isOpen, onClose, saving]);
 
   const fetchReminderSettings = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     setLoading(true);
 
@@ -84,7 +88,9 @@ export default function PaymentRemindersModal({
   };
 
   const handleUpdateReminderSettings = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     // Validate that at least one reminder period is selected ONLY if reminders are being enabled
     if (remindersEnabled && !remind7Days && !remind14Days && !remind30Days) {
@@ -99,18 +105,19 @@ export default function PaymentRemindersModal({
 
     try {
       // Upsert reminder settings
-      const { error } = await supabase
-        .from('user_reminder_settings')
-        .upsert({
+      const { error } = await supabase.from('user_reminder_settings').upsert(
+        {
           user_id: user.id,
           enabled: remindersEnabled,
           remind_7_days: remind7Days,
           remind_14_days: remind14Days,
           remind_30_days: remind30Days,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id',
+        }
+      );
 
       setSaving(false);
 
@@ -134,7 +141,9 @@ export default function PaymentRemindersModal({
   };
 
   const handleSendTestEmail = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     setSendingTestEmail(true);
     setErrorMessage('');
@@ -143,7 +152,7 @@ export default function PaymentRemindersModal({
     try {
       // Call the Edge Function directly for test email
       const { data, error } = await supabase.functions.invoke('send-coupon-reminders', {
-        body: { testMode: true, userId: user.id }
+        body: { testMode: true, userId: user.id },
       });
 
       setSendingTestEmail(false);
@@ -161,11 +170,19 @@ export default function PaymentRemindersModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -179,10 +196,7 @@ export default function PaymentRemindersModal({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
             <X className="w-5 h-5 text-slate-500" />
           </button>
         </div>
@@ -197,7 +211,10 @@ export default function PaymentRemindersModal({
           <div className="p-6">
             {/* Error message */}
             {errorMessage && (
-              <div ref={errorMessageRef} className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div
+                ref={errorMessageRef}
+                className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4"
+              >
                 <div className="flex gap-3">
                   <AlertCircle className="w-5 h-5 text-finixar-red flex-shrink-0" />
                   <p className="text-sm text-red-800">{errorMessage}</p>
@@ -239,24 +256,26 @@ export default function PaymentRemindersModal({
 
             {/* Reminder periods */}
             <div className="space-y-4 mb-6">
-              <label className="block text-sm font-medium text-slate-700">
-                Périodes de rappel
-              </label>
+              <label className="block text-sm font-medium text-slate-700">Périodes de rappel</label>
 
               {/* 7 days */}
               <label className="flex items-start gap-3 cursor-pointer group p-3 rounded-lg hover:bg-slate-50 transition-colors">
                 <input
                   type="checkbox"
                   checked={remind7Days}
-                  onChange={(e) => setRemind7Days(e.target.checked)}
+                  onChange={e => setRemind7Days(e.target.checked)}
                   disabled={!remindersEnabled}
                   className="w-5 h-5 mt-0.5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 />
                 <div className="flex-1">
-                  <span className={`block text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                  <span
+                    className={`block text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}
+                  >
                     7 jours avant l'échéance
                   </span>
-                  <p className={`text-xs mt-0.5 ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <p
+                    className={`text-xs mt-0.5 ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}
+                  >
                     Rappel une semaine avant la date de paiement
                   </p>
                 </div>
@@ -267,15 +286,19 @@ export default function PaymentRemindersModal({
                 <input
                   type="checkbox"
                   checked={remind14Days}
-                  onChange={(e) => setRemind14Days(e.target.checked)}
+                  onChange={e => setRemind14Days(e.target.checked)}
                   disabled={!remindersEnabled}
                   className="w-5 h-5 mt-0.5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 />
                 <div className="flex-1">
-                  <span className={`block text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                  <span
+                    className={`block text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}
+                  >
                     14 jours avant l'échéance
                   </span>
-                  <p className={`text-xs mt-0.5 ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <p
+                    className={`text-xs mt-0.5 ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}
+                  >
                     Rappel deux semaines avant la date de paiement
                   </p>
                 </div>
@@ -286,15 +309,19 @@ export default function PaymentRemindersModal({
                 <input
                   type="checkbox"
                   checked={remind30Days}
-                  onChange={(e) => setRemind30Days(e.target.checked)}
+                  onChange={e => setRemind30Days(e.target.checked)}
                   disabled={!remindersEnabled}
                   className="w-5 h-5 mt-0.5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 />
                 <div className="flex-1">
-                  <span className={`block text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                  <span
+                    className={`block text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}
+                  >
                     30 jours avant l'échéance
                   </span>
-                  <p className={`text-xs mt-0.5 ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <p
+                    className={`text-xs mt-0.5 ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}
+                  >
                     Rappel un mois avant la date de paiement
                   </p>
                 </div>
@@ -308,8 +335,9 @@ export default function PaymentRemindersModal({
                 <div className="text-sm text-blue-900">
                   <p className="font-medium mb-1">Comment ça marche ?</p>
                   <p className="text-blue-800">
-                    Les rappels sont envoyés automatiquement chaque jour à 7h00. Vous recevrez un email
-                    listant tous les coupons correspondant aux périodes que vous avez sélectionnées.
+                    Les rappels sont envoyés automatiquement chaque jour à 7h00. Vous recevrez un
+                    email listant tous les coupons correspondant aux périodes que vous avez
+                    sélectionnées.
                   </p>
                 </div>
               </div>

@@ -7,7 +7,7 @@ import { AlertCircle, X } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 
 interface ErrorMessageProps {
-  error?: any;
+  error?: unknown;
   message?: string;
   onDismiss?: () => void;
   className?: string;
@@ -25,7 +25,9 @@ export function ErrorMessage({ error, message, onDismiss, className = '' }: Erro
   }
 
   return (
-    <div className={`bg-red-50 border-2 border-red-200 rounded-lg p-4 flex items-start gap-3 ${className}`}>
+    <div
+      className={`bg-red-50 border-2 border-red-200 rounded-lg p-4 flex items-start gap-3 ${className}`}
+    >
       <AlertCircle className="w-5 h-5 text-finixar-red flex-shrink-0 mt-0.5" />
       <div className="flex-1">
         <p className="text-red-900 font-medium">Erreur</p>

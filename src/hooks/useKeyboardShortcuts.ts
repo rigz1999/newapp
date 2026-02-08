@@ -18,7 +18,7 @@ export interface KeyboardShortcut {
 export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      shortcuts.forEach((shortcut) => {
+      shortcuts.forEach(shortcut => {
         const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
         const ctrlMatches = !shortcut.ctrlKey || event.ctrlKey;
         const shiftMatches = !shortcut.shiftKey || event.shiftKey;
@@ -38,18 +38,25 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
 }
 
 // Helper to check if user is on Mac
-export const isMac = () => {
-  return typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-};
+export const isMac = () =>
+  typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 
 // Format shortcut key for display
 export const formatShortcutKey = (shortcut: KeyboardShortcut): string => {
   const parts: string[] = [];
 
-  if (shortcut.metaKey) parts.push(isMac() ? '⌘' : 'Ctrl');
-  if (shortcut.ctrlKey) parts.push('Ctrl');
-  if (shortcut.altKey) parts.push('Alt');
-  if (shortcut.shiftKey) parts.push('Shift');
+  if (shortcut.metaKey) {
+    parts.push(isMac() ? '⌘' : 'Ctrl');
+  }
+  if (shortcut.ctrlKey) {
+    parts.push('Ctrl');
+  }
+  if (shortcut.altKey) {
+    parts.push('Alt');
+  }
+  if (shortcut.shiftKey) {
+    parts.push('Shift');
+  }
   parts.push(shortcut.key.toUpperCase());
 
   return parts.join('+');

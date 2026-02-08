@@ -9,19 +9,21 @@ import { supabase } from '../lib/supabase';
  * Cache simple en mémoire pour éviter les requêtes répétées
  */
 class QueryCache {
-  private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private cache: Map<string, { data: unknown; timestamp: number }> = new Map();
   private ttl: number = 5 * 60 * 1000; // 5 minutes par défaut
 
-  set(key: string, data: any, ttl?: number) {
+  set(key: string, data: unknown, ttl?: number): void {
     this.cache.set(key, {
       data,
-      timestamp: Date.now() + (ttl || this.ttl)
+      timestamp: Date.now() + (ttl || this.ttl),
     });
   }
 
-  get(key: string): any | null {
+  get(key: string): unknown {
     const cached = this.cache.get(key);
-    if (!cached) return null;
+    if (!cached) {
+      return null;
+    }
 
     if (Date.now() > cached.timestamp) {
       this.cache.delete(key);
@@ -31,7 +33,7 @@ class QueryCache {
     return cached.data;
   }
 
-  clear(pattern?: string) {
+  clear(pattern?: string): void {
     if (!pattern) {
       this.cache.clear();
       return;
@@ -45,7 +47,7 @@ class QueryCache {
     });
   }
 
-  invalidate(key: string) {
+  invalidate(key: string): void {
     this.cache.delete(key);
   }
 }
@@ -57,13 +59,13 @@ export const queryCache = new QueryCache();
  */
 export async function cachedQuery<T>(
   cacheKey: string,
-  queryFn: () => Promise<{ data: T | null; error: any }>,
+  queryFn: () => Promise<{ data: T | null; error: unknown }>,
   ttl?: number
-): Promise<{ data: T | null; error: any; fromCache: boolean }> {
+): Promise<{ data: T | null; error: unknown; fromCache: boolean }> {
   // Vérifier le cache
   const cached = queryCache.get(cacheKey);
   if (cached) {
-    return { data: cached, error: null, fromCache: true };
+    return { data: cached as T, error: null, fromCache: true };
   }
 
   // Exécuter la requête
@@ -84,15 +86,12 @@ export async function batchLoad<T>(
   table: string,
   ids: string[],
   selectFields: string = '*'
-): Promise<{ data: T[] | null; error: any }> {
+): Promise<{ data: T[] | null; error: unknown }> {
   if (ids.length === 0) {
     return { data: [], error: null };
   }
 
-  return supabase
-    .from(table)
-    .select(selectFields)
-    .in('id', ids);
+  return supabase.from(table).select(selectFields).in('id', ids);
 }
 
 /**
@@ -103,24 +102,21 @@ export async function paginatedQuery<T>(
   options: {
     page: number;
     pageSize: number;
-    filters?: any;
+    filters?: Record<string, unknown>;
     orderBy?: { column: string; ascending?: boolean };
     select?: string;
   }
 ): Promise<{
   data: T[] | null;
   count: number | null;
-  error: any;
+  error: unknown;
 }> {
   const { page, pageSize, filters, orderBy, select = '*' } = options;
 
   const start = (page - 1) * pageSize;
   const end = start + pageSize - 1;
 
-  let query = supabase
-    .from(table)
-    .select(select, { count: 'exact' })
-    .range(start, end);
+  let query = supabase.from(table).select(select, { count: 'exact' }).range(start, end);
 
   if (filters) {
     Object.keys(filters).forEach(key => {
@@ -145,8 +141,8 @@ export async function paginatedQuery<T>(
 export async function queryWithRelations<T>(
   table: string,
   relations: string[],
-  filters?: any
-): Promise<{ data: T[] | null; error: any }> {
+  filters?: Record<string, unknown>
+): Promise<{ data: T[] | null; error: unknown }> {
   const selectFields = `*, ${relations.join(', ')}`;
 
   let query = supabase.from(table).select(selectFields);
@@ -174,7 +170,7 @@ export async function getAggregates(
     min?: string[];
     max?: string[];
   },
-  filters?: any
+  filters?: Record<string, unknown>
 ) {
   // Note: Supabase ne supporte pas nativement les agrégations complexes
   // Il faudrait utiliser des fonctions RPC côté serveur pour de vraies performances
@@ -196,7 +192,7 @@ export async function getAggregates(
     return { data: null, error };
   }
 
-  const result: any = {};
+  const result: Record<string, number> = {};
 
   if (aggregations.count) {
     result.count = data.length;
@@ -234,20 +230,19 @@ export async function getAggregates(
  * Debounced search - éviter trop de requêtes pendant la saisie
  */
 export function createDebouncedSearch(
-  searchFn: (query: string) => Promise<any>,
+  searchFn: (query: string) => Promise<unknown>,
   delay: number = 300
 ) {
   let timeoutId: NodeJS.Timeout;
 
-  return (query: string) => {
-    return new Promise((resolve) => {
+  return (query: string) =>
+    new Promise(resolve => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(async () => {
         const result = await searchFn(query);
         resolve(result);
       }, delay);
     });
-  };
 }
 
 /**
@@ -264,10 +259,7 @@ export async function preloadCriticalData(orgId: string) {
       .limit(20),
 
     // Précharger les statistiques basiques
-    supabase
-      .from('memberships')
-      .select('user_id, role')
-      .eq('org_id', orgId)
+    supabase.from('memberships').select('user_id, role').eq('org_id', orgId),
   ];
 
   const results = await Promise.all(promises);
