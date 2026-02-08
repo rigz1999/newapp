@@ -125,6 +125,16 @@ serve(async (req) => {
 
         if (!membership?.org_id) {
           console.log(`User ${userSettings.user_id} has no organization`);
+          // In test mode, still send the email with no coupons to verify delivery
+          if (testMode) {
+            await sendReminderEmail(userData.user.email, [], userSettings, testMode);
+            results.push({
+              user_id: userSettings.user_id,
+              email: userData.user.email,
+              coupons_count: 0,
+              status: 'sent',
+            });
+          }
           continue;
         }
 
