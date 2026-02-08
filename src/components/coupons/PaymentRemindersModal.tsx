@@ -161,8 +161,13 @@ export default function PaymentRemindersModal({
         setErrorMessage(formatErrorMessage(error));
       } else if (data?.error) {
         setErrorMessage(data.error);
-      } else {
+      } else if (data?.success && data?.results?.some((r: any) => r.status === 'sent')) {
         setSuccessMessage('Email de test envoyé avec succès ! Vérifiez votre boîte de réception.');
+      } else if (data?.results?.some((r: any) => r.status === 'error')) {
+        const errResult = data.results.find((r: any) => r.status === 'error');
+        setErrorMessage(errResult?.error || "Erreur lors de l'envoi de l'email de test.");
+      } else {
+        setErrorMessage("L'email de test n'a pas pu être envoyé. Vérifiez vos paramètres.");
       }
     } catch (err) {
       setSendingTestEmail(false);
