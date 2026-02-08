@@ -187,30 +187,26 @@ serve(async (req) => {
 async function getCouponsForDate(supabase: any, orgId: string, targetDate: Date) {
   const dateStr = targetDate.toISOString().split('T')[0];
 
+  // Get all project IDs for this organization
+  const { data: projects, error: projError } = await supabase
+    .from('projets')
+    .select('id')
+    .eq('org_id', orgId);
+
+  if (projError || !projects || projects.length === 0) {
+    if (projError) console.error('Error fetching projects:', projError);
+    return [];
+  }
+
+  const projectIds = projects.map((p: any) => p.id);
+
+  // Query the coupons_optimized view which has all pre-joined data
   const { data: coupons, error } = await supabase
-    .from('payments')
-    .select(`
-      id,
-      echeance_date,
-      montant_brut,
-      montant_net,
-      subscription:subscriptions (
-        investor:investors (
-          nom,
-          prenom
-        ),
-        tranche:tranches (
-          nom,
-          projet:projects (
-            projet
-          )
-        )
-      )
-    `)
-    .eq('subscription.tranche.projet.org_id', orgId)
-    .gte('echeance_date', dateStr)
-    .lt('echeance_date', `${dateStr}T23:59:59`)
-    .neq('statut', 'paid');
+    .from('coupons_optimized')
+    .select('id, date_echeance, montant_brut, montant_net, projet_nom, tranche_nom, investisseur_nom')
+    .in('projet_id', projectIds)
+    .eq('date_echeance', dateStr)
+    .neq('statut_calculated', 'paye');
 
   if (error) {
     console.error('Error fetching coupons:', error);
@@ -219,12 +215,12 @@ async function getCouponsForDate(supabase: any, orgId: string, targetDate: Date)
 
   return (coupons || []).map((c: any) => ({
     id: c.id,
-    echeance_date: c.echeance_date,
-    montant_brut: c.montant_brut,
-    montant_net: c.montant_net,
-    project_name: c.subscription?.tranche?.projet?.projet || 'N/A',
-    tranche_name: c.subscription?.tranche?.nom || 'N/A',
-    investor_name: `${c.subscription?.investor?.prenom || ''} ${c.subscription?.investor?.nom || ''}`.trim() || 'N/A',
+    echeance_date: c.date_echeance,
+    montant_brut: c.montant_brut || 0,
+    montant_net: c.montant_net || 0,
+    project_name: c.projet_nom || 'N/A',
+    tranche_name: c.tranche_nom || 'N/A',
+    investor_name: c.investisseur_nom || 'N/A',
   }));
 }
 
