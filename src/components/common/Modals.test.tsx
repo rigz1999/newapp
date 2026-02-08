@@ -104,7 +104,7 @@ describe('ConfirmModal', () => {
     );
 
     const confirmButton = screen.getByRole('button', { name: /confirmer/i });
-    expect(confirmButton).toHaveClass('bg-orange-600');
+    expect(confirmButton).toHaveClass('bg-amber-600');
   });
 
   it('should display default button text', () => {
@@ -139,8 +139,8 @@ describe('ConfirmModal', () => {
     expect(screen.getByText('Decline')).toBeInTheDocument();
   });
 
-  it('should close when clicking backdrop if allowed', () => {
-    render(
+  it('should close when clicking backdrop', () => {
+    const { container } = render(
       <ConfirmModal
         isOpen={true}
         title="Confirm"
@@ -150,7 +150,8 @@ describe('ConfirmModal', () => {
       />
     );
 
-    const backdrop = screen.getByRole('button', { hidden: true });
+    // The backdrop is the outermost div with the onClick handler
+    const backdrop = container.firstElementChild as HTMLElement;
     fireEvent.click(backdrop);
 
     expect(mockOnCancel).toHaveBeenCalled();
@@ -196,7 +197,7 @@ describe('AlertModal', () => {
   });
 
   it('should display success styling', () => {
-    render(
+    const { container } = render(
       <AlertModal
         isOpen={true}
         title="Success"
@@ -206,12 +207,13 @@ describe('AlertModal', () => {
       />
     );
 
-    const icon = screen.getByTitle('Success');
-    expect(icon).toBeInTheDocument();
+    // Success type uses green background for icon container
+    const iconContainer = container.querySelector('.bg-green-100');
+    expect(iconContainer).toBeInTheDocument();
   });
 
   it('should display error styling', () => {
-    render(
+    const { container } = render(
       <AlertModal
         isOpen={true}
         title="Error"
@@ -221,12 +223,13 @@ describe('AlertModal', () => {
       />
     );
 
-    const icon = screen.getByTitle('Error');
-    expect(icon).toBeInTheDocument();
+    // Error type uses red background for icon container
+    const iconContainer = container.querySelector('.bg-red-100');
+    expect(iconContainer).toBeInTheDocument();
   });
 
   it('should display warning styling', () => {
-    render(
+    const { container } = render(
       <AlertModal
         isOpen={true}
         title="Warning"
@@ -236,15 +239,19 @@ describe('AlertModal', () => {
       />
     );
 
-    const icon = screen.getByTitle('Warning');
-    expect(icon).toBeInTheDocument();
+    // Warning type uses amber background for icon container
+    const iconContainer = container.querySelector('.bg-amber-100');
+    expect(iconContainer).toBeInTheDocument();
   });
 
   it('should display info styling by default', () => {
-    render(<AlertModal isOpen={true} title="Information" message="FYI" onClose={mockOnClose} />);
+    const { container } = render(
+      <AlertModal isOpen={true} title="Information" message="FYI" onClose={mockOnClose} />
+    );
 
-    const icon = screen.getByTitle('Info');
-    expect(icon).toBeInTheDocument();
+    // Info type (default) uses blue background for icon container
+    const iconContainer = container.querySelector('.bg-blue-100');
+    expect(iconContainer).toBeInTheDocument();
   });
 
   it('should use custom button text', () => {
@@ -261,11 +268,14 @@ describe('AlertModal', () => {
     expect(screen.getByText('Got it')).toBeInTheDocument();
   });
 
-  it('should close when clicking X button', () => {
-    render(<AlertModal isOpen={true} title="Alert" message="Message" onClose={mockOnClose} />);
+  it('should close when clicking backdrop', () => {
+    const { container } = render(
+      <AlertModal isOpen={true} title="Alert" message="Message" onClose={mockOnClose} />
+    );
 
-    const xButton = screen.getAllByRole('button')[0]; // First button is the X
-    fireEvent.click(xButton);
+    // The backdrop is the outermost div with onClick
+    const backdrop = container.firstElementChild as HTMLElement;
+    fireEvent.click(backdrop);
 
     expect(mockOnClose).toHaveBeenCalled();
   });

@@ -148,11 +148,17 @@ export function formatErrorMessage(error: unknown): string {
     cleanMessage.includes('INSERT') ||
     cleanMessage.includes('UPDATE') ||
     cleanMessage.includes('DELETE') ||
+    cleanMessage.includes('DROP') ||
     cleanMessage.includes('pg_') ||
     cleanMessage.includes('supabase_') ||
     cleanMessage.length > 150
   ) {
     return "Une erreur s'est produite. Veuillez réessayer ou contacter le support";
+  }
+
+  // If message is not meaningful (e.g. [object Object]), return default
+  if (!cleanMessage || cleanMessage === '[object Object]') {
+    return "Une erreur inattendue s'est produite";
   }
 
   return cleanMessage;

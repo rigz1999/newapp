@@ -55,8 +55,13 @@ export const isValidIBAN = (iban: string): boolean => {
  * Validate amount (positive number)
  */
 export const isValidAmount = (amount: string | number): boolean => {
+  if (typeof amount === 'string') {
+    if (amount === '' || !/^-?\d+(\.\d+)?$/.test(amount)) {
+      return false;
+    }
+  }
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-  return !isNaN(num) && num > 0;
+  return !isNaN(num) && isFinite(num) && num > 0;
 };
 
 /**

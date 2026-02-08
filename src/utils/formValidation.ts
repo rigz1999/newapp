@@ -152,6 +152,9 @@ export function validateSIREN(value: string): string {
   if (!/^\d{9}$/.test(value)) {
     return 'SIREN : 9 chiffres requis';
   }
+  if (/^0{9}$/.test(value)) {
+    return 'SIREN invalide';
+  }
   // Luhn check
   let sum = 0;
   for (let i = 0; i < 9; i++) {

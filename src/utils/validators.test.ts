@@ -14,9 +14,9 @@ describe('validators', () => {
   describe('isValidSIREN', () => {
     it('should validate correct SIREN numbers', () => {
       // Using valid SIREN numbers (verified with Luhn algorithm)
-      expect(isValidSIREN('228678221')).toBe(true);
-      expect(isValidSIREN('469624110')).toBe(true);
-      expect(isValidSIREN('551096065')).toBe(true);
+      expect(isValidSIREN('732829320')).toBe(true);
+      expect(isValidSIREN('443061841')).toBe(true);
+      expect(isValidSIREN('552032534')).toBe(true);
     });
 
     it('should reject invalid SIREN numbers', () => {
