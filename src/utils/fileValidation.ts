@@ -65,9 +65,7 @@ export function validateFile(
 
   // Check file extension
   const fileName = file.name.toLowerCase();
-  const hasValidExtension = allowedExtensions.some((ext) =>
-    fileName.endsWith(ext.toLowerCase())
-  );
+  const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext.toLowerCase()));
 
   if (!hasValidExtension) {
     return {
@@ -93,7 +91,7 @@ export function validateFile(
     '.jar',
   ];
 
-  const hasDangerousExtension = dangerousExtensions.some((ext) =>
+  const hasDangerousExtension = dangerousExtensions.some(ext =>
     fileName.endsWith(ext.toLowerCase())
   );
 
@@ -127,6 +125,32 @@ export function validateFiles(
     }
   }
 
+  return { valid: true };
+}
+
+/**
+ * Validates file size only
+ */
+export function validateFileSize(file: File, maxSizeMB: number = 5): FileValidationResult {
+  const maxSizeBytes = maxSizeMB * 1024 * 1024;
+  if (file.size > maxSizeBytes) {
+    return { valid: false, error: `Le fichier dépasse la taille maximale de ${maxSizeMB} Mo` };
+  }
+  return { valid: true };
+}
+
+/**
+ * Validates file type only
+ */
+export function validateFileType(file: File, allowedTypes: string[]): FileValidationResult {
+  if (allowedTypes.length === 0) {
+    return { valid: false, error: 'Type de fichier non supporté' };
+  }
+  const fileType = file.type.toLowerCase();
+  const isAllowed = allowedTypes.some(t => t.toLowerCase() === fileType);
+  if (!isAllowed) {
+    return { valid: false, error: 'Type de fichier non supporté' };
+  }
   return { valid: true };
 }
 
@@ -166,12 +190,7 @@ export const FILE_VALIDATION_PRESETS = {
   // RIB/Bank documents (images and PDF)
   rib: {
     maxSizeMB: fileUpload.maxSizeRib,
-    allowedTypes: [
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'application/pdf',
-    ],
+    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'],
     allowedExtensions: ['.jpg', '.jpeg', '.png', '.pdf'],
   },
 };

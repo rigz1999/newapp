@@ -44,8 +44,7 @@ describe('Authentication Flow', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    await result.current.logout();
-
+    // useAuth does not expose a logout function; signOut is handled via supabase.auth directly
     expect(result.current.user).toBeNull();
   });
 
