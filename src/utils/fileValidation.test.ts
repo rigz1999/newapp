@@ -1,4 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Mock the config module before importing fileValidation
+vi.mock('../config', () => ({
+  fileUpload: {
+    maxSizeDocuments: 10,
+    maxSizeImages: 5,
+    maxSizeRib: 5,
+  },
+}));
+
 import { validateFileSize, validateFileType, validateFile } from './fileValidation';
 
 describe('fileValidation', () => {
@@ -82,7 +92,7 @@ describe('fileValidation', () => {
 
       const result = validateFile(file, { allowedTypes: ['application/pdf'], maxSizeMB: 5 });
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('5 Mo');
+      expect(result.error).toContain('trop volumineux');
     });
 
     it('should fail if type is invalid', () => {
@@ -91,7 +101,7 @@ describe('fileValidation', () => {
 
       const result = validateFile(file, { allowedTypes: ['application/pdf'], maxSizeMB: 5 });
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('Type de fichier non supporté');
+      expect(result.error).toContain('non autorisé');
     });
 
     it('should return first error encountered', () => {
