@@ -50,38 +50,63 @@ serve(async (req) => {
     const testMode = body?.testMode === true;
     const testUserId = body?.userId;
 
+    console.log(`send-coupon-reminders invoked: testMode=${testMode}, userId=${testUserId || 'all'}`);
+
     // Get all users with reminders enabled (or just test user)
-    let query = supabase
-      .from('user_reminder_settings')
-      .select(`
-        user_id,
-        remind_7_days,
-        remind_14_days,
-        remind_30_days
-      `)
-      .eq('enabled', true);
+    let settings;
 
-    // If test mode, filter to specific user
     if (testMode && testUserId) {
-      query = query.eq('user_id', testUserId);
-    }
+      // In test mode, fetch user settings regardless of enabled status
+      const { data, error: settingsError } = await supabase
+        .from('user_reminder_settings')
+        .select('user_id, enabled, remind_7_days, remind_14_days, remind_30_days')
+        .eq('user_id', testUserId)
+        .maybeSingle();
 
-    const { data: settings, error: settingsError } = await query;
+      if (settingsError) {
+        console.error('Error fetching settings:', settingsError);
+        return new Response(JSON.stringify({ error: settingsError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
-    if (settingsError) {
-      console.error('Error fetching settings:', settingsError);
-      return new Response(JSON.stringify({ error: settingsError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      // For test mode, use saved settings or defaults so test email always sends
+      settings = [
+        data || {
+          user_id: testUserId,
+          remind_7_days: true,
+          remind_14_days: true,
+          remind_30_days: true,
+        },
+      ];
+      console.log(`Test mode: settings found=${!!data}, using defaults=${!data}`);
+    } else {
+      const { data, error: settingsError } = await supabase
+        .from('user_reminder_settings')
+        .select('user_id, remind_7_days, remind_14_days, remind_30_days')
+        .eq('enabled', true);
+
+      if (settingsError) {
+        console.error('Error fetching settings:', settingsError);
+        return new Response(JSON.stringify({ error: settingsError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      settings = data;
     }
 
     if (!settings || settings.length === 0) {
+      console.log('No users with reminders enabled, returning early');
       return new Response(JSON.stringify({ message: 'No users with reminders enabled' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log(`Processing ${settings.length} user(s)`);
 
     // Process each user
     const results = [];
@@ -107,6 +132,7 @@ serve(async (req) => {
 
         if (memberships && memberships.length > 0) {
           orgIds = memberships.map((m: any) => m.org_id);
+          console.log(`User has ${orgIds.length} org membership(s)`);
         } else {
           // No membership — check if superadmin (treated as member of all orgs)
           const { data: profile } = await supabase
@@ -115,11 +141,14 @@ serve(async (req) => {
             .eq('id', userSettings.user_id)
             .single();
 
+          console.log(`No membership found. is_superadmin=${profile?.is_superadmin}`);
+
           if (profile?.is_superadmin) {
             const { data: allOrgs } = await supabase
               .from('organizations')
               .select('id');
             orgIds = (allOrgs || []).map((o: any) => o.id);
+            console.log(`Superadmin: fetched ${orgIds.length} org(s)`);
           }
         }
 
@@ -165,13 +194,16 @@ serve(async (req) => {
         );
 
         // Send email if there are coupons (or if test mode, send anyway)
+        console.log(`Found ${uniqueCoupons.length} coupon(s). testMode=${testMode}`);
         if (uniqueCoupons.length > 0 || testMode) {
+          console.log(`Sending email to ${userData.user.email}...`);
           await sendReminderEmail(
             userData.user.email,
             uniqueCoupons,
             userSettings,
             testMode
           );
+          console.log(`Email sent successfully to ${userData.user.email}`);
           results.push({
             user_id: userSettings.user_id,
             email: userData.user.email,
