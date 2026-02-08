@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar,
-  TrendingUp,
   Banknote,
   MessageSquare,
-  ArrowUpRight,
   Clock,
   FolderOpen,
   Megaphone,
@@ -82,7 +80,9 @@ export default function EmetteurDashboard() {
       .select('full_name')
       .eq('id', user!.id)
       .maybeSingle();
-    if (data) setUserProfile(data);
+    if (data) {
+      setUserProfile(data);
+    }
   };
 
   const loadEmetteurProjects = async () => {
@@ -90,21 +90,22 @@ export default function EmetteurDashboard() {
       setLoading(true);
       setError(null);
 
-      const { data, error: projectsError } = await supabase.rpc(
-        'get_emetteur_projects',
-        { p_user_id: user!.id }
-      );
+      const { data, error: projectsError } = await supabase.rpc('get_emetteur_projects', {
+        p_user_id: user!.id,
+      });
 
-      if (projectsError) throw projectsError;
+      if (projectsError) {
+        throw projectsError;
+      }
 
       const projectsWithDetails = await Promise.all(
-        (data || []).map(async (project: any) => {
+        (data || []).map(async (project: Record<string, unknown>) => {
           const { data: subs } = await supabase
             .from('souscriptions')
             .select('id')
             .eq('projet_id', project.projet_id);
 
-          const subscriptionIds = (subs || []).map((s: any) => s.id);
+          const subscriptionIds = (subs || []).map((s: Record<string, unknown>) => s.id);
 
           let nextPayment = null;
           if (subscriptionIds.length > 0) {
@@ -127,8 +128,7 @@ export default function EmetteurDashboard() {
               .eq('date_echeance', nextPayment.date_echeance)
               .eq('statut', 'en_attente')
               .in('souscription_id', subscriptionIds);
-            totalAmount =
-              allPayments?.reduce((sum, p) => sum + Number(p.montant_coupon), 0) || 0;
+            totalAmount = allPayments?.reduce((sum, p) => sum + Number(p.montant_coupon), 0) || 0;
           }
 
           const { count: recentCount } = await supabase
@@ -154,7 +154,9 @@ export default function EmetteurDashboard() {
               ? {
                   text: latestComment.comment_text,
                   date: latestComment.created_at,
-                  author: (latestComment.user as any)?.full_name || 'Utilisateur',
+                  author:
+                    ((latestComment.user as Record<string, unknown>)?.full_name as string) ||
+                    'Utilisateur',
                 }
               : null,
           };
@@ -162,7 +164,7 @@ export default function EmetteurDashboard() {
       );
 
       setProjects(projectsWithDetails);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading emetteur projects:', err);
       setError(err.message);
     } finally {
@@ -185,17 +187,32 @@ export default function EmetteurDashboard() {
   };
 
   const truncateText = (text: string, maxLength: number) => {
-    const cleaned = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/\[.*?\]\(.*?\)/g, '');
-    if (cleaned.length <= maxLength) return cleaned;
-    return cleaned.substring(0, maxLength) + '...';
+    const cleaned = text
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/\[.*?\]\(.*?\)/g, '');
+    if (cleaned.length <= maxLength) {
+      return cleaned;
+    }
+    return `${cleaned.substring(0, maxLength)}...`;
   };
 
   const getUrgencyLabel = (days: number) => {
-    if (days < 0) return { text: 'En retard', className: 'bg-red-100 text-red-700' };
-    if (days === 0) return { text: "Aujourd'hui", className: 'bg-red-100 text-red-700' };
-    if (days <= 3) return { text: `${days}j`, className: 'bg-red-100 text-red-700' };
-    if (days <= 14) return { text: `${days}j`, className: 'bg-amber-100 text-amber-700' };
-    if (days <= 30) return { text: `${days}j`, className: 'bg-blue-100 text-blue-700' };
+    if (days < 0) {
+      return { text: 'En retard', className: 'bg-red-100 text-red-700' };
+    }
+    if (days === 0) {
+      return { text: "Aujourd'hui", className: 'bg-red-100 text-red-700' };
+    }
+    if (days <= 3) {
+      return { text: `${days}j`, className: 'bg-red-100 text-red-700' };
+    }
+    if (days <= 14) {
+      return { text: `${days}j`, className: 'bg-amber-100 text-amber-700' };
+    }
+    if (days <= 30) {
+      return { text: `${days}j`, className: 'bg-blue-100 text-blue-700' };
+    }
     return { text: `${days}j`, className: 'bg-slate-100 text-slate-600' };
   };
 
@@ -221,10 +238,9 @@ export default function EmetteurDashboard() {
   const firstName = userProfile?.full_name?.split(' ')[0] || '';
   const totalNextPayment = projects.reduce((sum, p) => sum + (p.next_payment_amount || 0), 0);
   const nearestPayment = projects
-    .filter((p) => p.next_payment_date)
+    .filter(p => p.next_payment_date)
     .sort(
-      (a, b) =>
-        new Date(a.next_payment_date!).getTime() - new Date(b.next_payment_date!).getTime()
+      (a, b) => new Date(a.next_payment_date!).getTime() - new Date(b.next_payment_date!).getTime()
     )[0];
   const totalRecentActivity = projects.reduce((sum, p) => sum + p.recent_actualites, 0);
   const nearestDays = nearestPayment?.next_payment_date
@@ -429,9 +445,7 @@ export default function EmetteurDashboard() {
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <MessageSquare className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                           <p className="text-xs text-slate-600 truncate">
-                            <span className="font-medium">
-                              {project.latest_actualite.author}
-                            </span>{' '}
+                            <span className="font-medium">{project.latest_actualite.author}</span>{' '}
                             {truncateText(project.latest_actualite.text, 50)}
                           </p>
                           <span className="text-[10px] text-slate-400 whitespace-nowrap flex-shrink-0">

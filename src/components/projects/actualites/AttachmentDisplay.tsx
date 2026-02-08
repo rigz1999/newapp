@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  Image as ImageIcon,
-  Video as VideoIcon,
-  FileText,
-  Download,
-  X,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { Image as ImageIcon, FileText, Download, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Attachment {
   filename: string;
@@ -65,9 +57,13 @@ export function AttachmentDisplay({ attachments }: AttachmentDisplayProps) {
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -97,12 +93,7 @@ export function AttachmentDisplay({ attachments }: AttachmentDisplayProps) {
         <div className="space-y-2">
           {videos.map((attachment, index) => (
             <div key={index} className="relative rounded-lg overflow-hidden bg-black">
-              <video
-                src={attachment.url}
-                controls
-                className="w-full max-h-96"
-                preload="metadata"
-              >
+              <video src={attachment.url} controls className="w-full max-h-96" preload="metadata">
                 Votre navigateur ne supporte pas la lecture de vidéos.
               </video>
               <a

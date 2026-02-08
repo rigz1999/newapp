@@ -42,7 +42,9 @@ export function FileUpload({
     e.stopPropagation();
     setIsDragging(false);
 
-    if (disabled) return;
+    if (disabled) {
+      return;
+    }
 
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
@@ -87,7 +89,9 @@ export function FileUpload({
         ${className}
       `}
     >
-      <Upload className={`w-12 h-12 mx-auto mb-4 ${isDragging ? 'text-blue-500' : 'text-slate-400'}`} />
+      <Upload
+        className={`w-12 h-12 mx-auto mb-4 ${isDragging ? 'text-blue-500' : 'text-slate-400'}`}
+      />
       <input
         ref={inputRef}
         type="file"
@@ -97,20 +101,18 @@ export function FileUpload({
         className="hidden"
         disabled={disabled}
       />
-      <div className={`inline-block px-6 py-2 rounded-lg transition-colors ${
-        disabled
-          ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-          : 'bg-slate-900 text-white hover:bg-slate-800'
-      }`}>
+      <div
+        className={`inline-block px-6 py-2 rounded-lg transition-colors ${
+          disabled
+            ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+            : 'bg-slate-900 text-white hover:bg-slate-800'
+        }`}
+      >
         {label}
       </div>
-      {description && (
-        <p className="text-sm text-slate-600 mt-2">{description}</p>
-      )}
+      {description && <p className="text-sm text-slate-600 mt-2">{description}</p>}
       {isDragging && (
-        <p className="text-sm text-blue-600 font-medium mt-2">
-          Déposez les fichiers ici
-        </p>
+        <p className="text-sm text-blue-600 font-medium mt-2">Déposez les fichiers ici</p>
       )}
     </div>
   );

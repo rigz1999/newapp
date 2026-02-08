@@ -25,15 +25,13 @@ export function usePagination(customItemsPerPage?: number): UsePaginationReturn 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
 
-  const paginate = <T,>(items: T[]): T[] => {
+  const paginate = <T>(items: T[]): T[] => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return items.slice(startIndex, endIndex);
   };
 
-  const totalPages = (totalItems: number): number => {
-    return Math.ceil(totalItems / itemsPerPage);
-  };
+  const totalPages = (totalItems: number): number => Math.ceil(totalItems / itemsPerPage);
 
   const reset = () => {
     setCurrentPage(1);

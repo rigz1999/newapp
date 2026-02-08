@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
-import { X, Upload, Download, Eye, Trash2, AlertTriangle, ZoomIn, Plus, Users, User } from 'lucide-react';
+import {
+  X,
+  Upload,
+  Download,
+  Eye,
+  Trash2,
+  AlertTriangle,
+  ZoomIn,
+  Plus,
+  Users,
+  User,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
@@ -71,18 +82,22 @@ export function EcheanceProofsModal({
 
       const { data, error } = await supabase
         .from('payment_proofs')
-        .select(`
+        .select(
+          `
           id,
           paiement_id,
           file_url,
           file_name,
           file_size,
           validated_at
-        `)
+        `
+        )
         .in('paiement_id', paiementIds)
         .order('validated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       // Enrich with investor names
       const enrichedProofs = (data || []).map(proof => {
@@ -101,20 +116,18 @@ export function EcheanceProofsModal({
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
-  };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
     });
-  };
 
   const processFiles = (selectedFiles: File[]) => {
     const validFiles: File[] = [];
@@ -144,7 +157,9 @@ export function EcheanceProofsModal({
   };
 
   const handleUpload = async () => {
-    if (files.length === 0) return;
+    if (files.length === 0) {
+      return;
+    }
 
     setUploading(true);
     setError(null);
@@ -182,11 +197,11 @@ export function EcheanceProofsModal({
           .from('payment-proofs')
           .upload(fileName, file);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          throw uploadError;
+        }
 
-        const { data: urlData } = supabase.storage
-          .from('payment-proofs')
-          .getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
 
         // Create proof records for all target payments
         for (const paymentId of targetPaymentIds) {
@@ -199,14 +214,16 @@ export function EcheanceProofsModal({
         }
       }
 
-      toast.success(`${files.length} justificatif${files.length > 1 ? 's' : ''} ajouté${files.length > 1 ? 's' : ''}`);
+      toast.success(
+        `${files.length} justificatif${files.length > 1 ? 's' : ''} ajouté${files.length > 1 ? 's' : ''}`
+      );
       setFiles([]);
       setShowUploadSection(false);
       fetchProofs();
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload error:', err);
-      setError(err.message || 'Erreur lors du téléchargement');
+      setError(err instanceof Error ? err.message : 'Erreur lors du téléchargement');
     } finally {
       setUploading(false);
     }
@@ -215,20 +232,19 @@ export function EcheanceProofsModal({
   const handleDeleteProof = async (proof: ProofItem) => {
     setDeleting(true);
     try {
-      const { error: dbError } = await supabase
-        .from('payment_proofs')
-        .delete()
-        .eq('id', proof.id);
+      const { error: dbError } = await supabase.from('payment_proofs').delete().eq('id', proof.id);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        throw dbError;
+      }
 
       toast.success('Justificatif supprimé');
       setConfirmDelete(null);
       fetchProofs();
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Delete error:', err);
-      toast.error(err.message || 'Erreur lors de la suppression');
+      toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression');
     } finally {
       setDeleting(false);
     }
@@ -251,7 +267,7 @@ export function EcheanceProofsModal({
       >
         <div
           className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className="p-6 border-b border-slate-200">
@@ -262,7 +278,8 @@ export function EcheanceProofsModal({
                   {projetName} • {trancheName}
                 </p>
                 <p className="text-sm text-slate-500">
-                  Échéance du {formatDate(echeanceDate)} • {paidEcheances.length} investisseur{paidEcheances.length > 1 ? 's' : ''} • {formatCurrency(totalAmount)}
+                  Échéance du {formatDate(echeanceDate)} • {paidEcheances.length} investisseur
+                  {paidEcheances.length > 1 ? 's' : ''} • {formatCurrency(totalAmount)}
                 </p>
               </div>
               <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -303,7 +320,9 @@ export function EcheanceProofsModal({
 
                 {/* Upload Mode Selection */}
                 <div className="mb-4">
-                  <p className="text-sm font-medium text-slate-700 mb-2">Ce justificatif concerne :</p>
+                  <p className="text-sm font-medium text-slate-700 mb-2">
+                    Ce justificatif concerne :
+                  </p>
                   <div className="flex gap-3">
                     <button
                       onClick={() => setUploadMode('all')}
@@ -338,11 +357,11 @@ export function EcheanceProofsModal({
                     </label>
                     <select
                       value={selectedInvestorPaymentId}
-                      onChange={(e) => setSelectedInvestorPaymentId(e.target.value)}
+                      onChange={e => setSelectedInvestorPaymentId(e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Choisir un investisseur...</option>
-                      {paidEcheances.map((echeance) => (
+                      {paidEcheances.map(echeance => (
                         <option key={echeance.paiement_id} value={echeance.paiement_id}>
                           {echeance.investisseur_nom} - {formatCurrency(echeance.montant_coupon)}
                         </option>
@@ -358,12 +377,20 @@ export function EcheanceProofsModal({
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-slate-300 hover:border-slate-400'
                   }`}
-                  onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                  onDragEnter={e => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragOver={e => e.preventDefault()}
+                  onDragLeave={e => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                  }}
                   onDrop={handleDrop}
                 >
-                  <Upload className={`w-10 h-10 mx-auto mb-3 ${isDragging ? 'text-blue-500' : 'text-slate-400'}`} />
+                  <Upload
+                    className={`w-10 h-10 mx-auto mb-3 ${isDragging ? 'text-blue-500' : 'text-slate-400'}`}
+                  />
                   <input
                     type="file"
                     onChange={handleFileChange}
@@ -386,7 +413,10 @@ export function EcheanceProofsModal({
                 {files.length > 0 && (
                   <div className="mt-4 space-y-2">
                     {files.map((file, idx) => (
-                      <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-lg border border-slate-200">
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between bg-white p-3 rounded-lg border border-slate-200"
+                      >
                         <span className="text-sm text-slate-700 truncate">{file.name}</span>
                         <button
                           onClick={() => setFiles(prev => prev.filter((_, i) => i !== idx))}
@@ -446,7 +476,7 @@ export function EcheanceProofsModal({
                 <h4 className="font-medium text-slate-700 text-sm uppercase tracking-wide">
                   Justificatifs existants ({proofs.length})
                 </h4>
-                {proofs.map((proof) => (
+                {proofs.map(proof => (
                   <div
                     key={proof.id}
                     className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200"
@@ -461,7 +491,7 @@ export function EcheanceProofsModal({
                           src={proof.file_url}
                           alt={proof.file_name}
                           className="w-full h-full object-cover"
-                          onError={(e) => {
+                          onError={e => {
                             e.currentTarget.style.display = 'none';
                           }}
                         />
@@ -472,7 +502,8 @@ export function EcheanceProofsModal({
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-slate-900 truncate">{proof.file_name}</p>
                       <p className="text-sm text-slate-500">
-                        {proof.investisseur_nom} • {new Date(proof.validated_at).toLocaleDateString('fr-FR')}
+                        {proof.investisseur_nom} •{' '}
+                        {new Date(proof.validated_at).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
 
@@ -525,9 +556,7 @@ export function EcheanceProofsModal({
               </div>
               <h3 className="text-lg font-bold text-slate-900">Supprimer ce justificatif ?</h3>
             </div>
-            <p className="text-slate-600 mb-4">
-              {confirmDelete.file_name}
-            </p>
+            <p className="text-slate-600 mb-4">{confirmDelete.file_name}</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmDelete(null)}
@@ -562,9 +591,12 @@ export function EcheanceProofsModal({
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
-                    downloadFile(selectedProofForPreview.file_url, selectedProofForPreview.file_name);
+                    downloadFile(
+                      selectedProofForPreview.file_url,
+                      selectedProofForPreview.file_name
+                    );
                   }}
                   className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg"
                 >
@@ -578,7 +610,10 @@ export function EcheanceProofsModal({
                 </button>
               </div>
             </div>
-            <div className="flex-1 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="flex-1 flex items-center justify-center"
+              onClick={e => e.stopPropagation()}
+            >
               <img
                 src={selectedProofForPreview.file_url}
                 alt={selectedProofForPreview.file_name}

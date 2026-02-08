@@ -53,11 +53,13 @@ export function useAuth() {
 
       // Check if user is an org admin (has admin role in an organization)
       const orgAdminMembership = memberships?.find(
-        (m: any) => m.role === 'admin' && m.org_id !== null
+        (m: { role: string; org_id: string | null }) => m.role === 'admin' && m.org_id !== null
       );
 
       // Get user's role in their organization
-      const orgMembership = memberships?.find((m: any) => m.org_id !== null);
+      const orgMembership = memberships?.find(
+        (m: { role: string; org_id: string | null }) => m.org_id !== null
+      );
 
       setIsSuperAdmin(!!isSuperAdminUser);
       setIsOrgAdmin(!!orgAdminMembership);

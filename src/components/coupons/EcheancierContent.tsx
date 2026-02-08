@@ -1,5 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Coins, TrendingUp, ChevronRight, ChevronDown, User, Building2, Download, AlertCircle, Upload, FileText, XCircle, Mail, Loader2, CreditCard } from 'lucide-react';
+import {
+  Calendar,
+  Coins,
+  TrendingUp,
+  ChevronRight,
+  ChevronDown,
+  User,
+  Building2,
+  Download,
+  AlertCircle,
+  Upload,
+  FileText,
+  XCircle,
+  Mail,
+  Loader2,
+  CreditCard,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import * as ExcelJS from 'exceljs';
@@ -64,7 +80,7 @@ export function EcheancierContent({
   formatCurrency,
   formatDate,
   onOpenFullPage,
-  isFullPage = false
+  isFullPage = false,
 }: EcheancierContentProps) {
   const navigate = useNavigate();
   const [echeances, setEcheances] = useState<Echeance[]>([]);
@@ -73,12 +89,17 @@ export function EcheancierContent({
   const [expandedTranches, setExpandedTranches] = useState<Set<string>>(new Set());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
-  const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<any>(null);
-  const [paymentProofs, setPaymentProofs] = useState<any[]>([]);
+  const [selectedPaymentForProof, setSelectedPaymentForProof] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const [paymentProofs, setPaymentProofs] = useState<Record<string, unknown>[]>([]);
   const [markingUnpaid, setMarkingUnpaid] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [showQuickPayment, setShowQuickPayment] = useState(false);
-  const [selectedEcheanceForQuickPay, setSelectedEcheanceForQuickPay] = useState<Echeance | null>(null);
+  const [selectedEcheanceForQuickPay, setSelectedEcheanceForQuickPay] = useState<Echeance | null>(
+    null
+  );
   const [preselectedProjectName, setPreselectedProjectName] = useState('');
   const [preselectedTrancheId, setPreselectedTrancheId] = useState('');
   const [preselectedTrancheName, setPreselectedTrancheName] = useState('');
@@ -94,7 +115,8 @@ export function EcheancierContent({
     try {
       const { data: subscriptionsData, error: subsError } = await supabase
         .from('souscriptions')
-        .select(`
+        .select(
+          `
           id,
           id_souscription,
           coupon_brut,
@@ -102,12 +124,15 @@ export function EcheancierContent({
           montant_investi,
           investisseur:investisseurs(nom_raison_sociale, type),
           tranche:tranches(tranche_name, date_echeance_finale)
-        `)
+        `
+        )
         .eq('projet_id', projectId);
 
-      if (subsError) throw subsError;
+      if (subsError) {
+        throw subsError;
+      }
 
-      const subscriptionIds = subscriptionsData?.map((s: any) => s.id) || [];
+      const subscriptionIds = subscriptionsData?.map((s: { id: string }) => s.id) || [];
 
       if (subscriptionIds.length === 0) {
         setEcheances([]);
@@ -121,10 +146,14 @@ export function EcheancierContent({
         .in('souscription_id', subscriptionIds)
         .order('date_echeance', { ascending: true });
 
-      if (echError) throw echError;
+      if (echError) {
+        throw echError;
+      }
 
-      const enrichedEcheances = (echeancesData || []).map((ech: any) => {
-        const sub = subscriptionsData?.find((s: any) => s.id === ech.souscription_id);
+      const enrichedEcheances = (echeancesData || []).map((ech: Record<string, unknown>) => {
+        const sub = subscriptionsData?.find(
+          (s: { id: string }) => s.id === (ech as { souscription_id: string }).souscription_id
+        );
         const isLastEcheance = sub?.tranche?.date_echeance_finale === ech.date_echeance;
 
         return {
@@ -135,15 +164,17 @@ export function EcheancierContent({
             coupon_net: sub?.coupon_net || 0,
             montant_investi: sub?.montant_investi || 0,
             investisseur: sub?.investisseur || { nom_raison_sociale: '', type: 'Physique' },
-            tranche: sub?.tranche || { tranche_name: '', date_echeance_finale: '' }
+            tranche: sub?.tranche || { tranche_name: '', date_echeance_finale: '' },
           },
-          isLastEcheance
+          isLastEcheance,
         };
       });
 
       setEcheances(enrichedEcheances);
     } catch (err) {
-      logger.error(err instanceof Error ? err : new Error('Failed to fetch echeances'), { projectId });
+      logger.error(err instanceof Error ? err : new Error('Failed to fetch echeances'), {
+        projectId,
+      });
       setEcheances([]);
     } finally {
       setLoading(false);
@@ -165,13 +196,19 @@ export function EcheancierContent({
   };
 
   const isOverdue = (echeance: Echeance) => {
-    if (echeance.statut === 'paye') return false;
+    if (echeance.statut === 'paye') {
+      return false;
+    }
     return isDateOverdue(echeance.date_echeance);
   };
 
   const getEcheanceStatus = (echeance: Echeance) => {
-    if (echeance.statut === 'paye') return 'paye';
-    if (isOverdue(echeance)) return 'en_retard';
+    if (echeance.statut === 'paye') {
+      return 'paye';
+    }
+    if (isOverdue(echeance)) {
+      return 'en_retard';
+    }
     return 'a_venir';
   };
 
@@ -180,7 +217,9 @@ export function EcheancierContent({
 
     try {
       // First check if user has email connected
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -194,7 +233,8 @@ export function EcheancierContent({
       if (connError || !connection) {
         setAlertModalConfig({
           title: 'Email non connecté',
-          message: 'Veuillez d\'abord connecter votre email dans les paramètres pour envoyer des rappels.',
+          message:
+            "Veuillez d'abord connecter votre email dans les paramètres pour envoyer des rappels.",
           type: 'warning',
         });
         setShowAlertModal(true);
@@ -208,7 +248,9 @@ export function EcheancierContent({
       }
 
       // Call edge function to create draft
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('No session found');
       }
@@ -240,7 +282,10 @@ export function EcheancierContent({
       console.error('Error sending reminder:', error);
       setAlertModalConfig({
         title: 'Erreur',
-        message: error instanceof Error ? error.message : 'Une erreur est survenue lors de la création du brouillon',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Une erreur est survenue lors de la création du brouillon',
         type: 'error',
       });
       setShowAlertModal(true);
@@ -271,11 +316,13 @@ export function EcheancierContent({
       // Try to find payment by matching subscription and date
       const { data: paymentByMatch } = await supabase
         .from('paiements')
-        .select(`
+        .select(
+          `
           *,
           tranche:tranches(tranche_name),
           investisseur:investisseurs(nom_raison_sociale)
-        `)
+        `
+        )
         .eq('souscription_id', echeanceData?.souscription_id || echeance.souscription_id)
         .eq('date_paiement', echeance.date_echeance)
         .order('created_at', { ascending: false })
@@ -298,15 +345,19 @@ export function EcheancierContent({
     // Fetch the payment with its related data
     const { data: paymentData } = await supabase
       .from('paiements')
-      .select(`
+      .select(
+        `
         *,
         tranche:tranches(tranche_name),
         investisseur:investisseurs(nom_raison_sociale)
-      `)
+      `
+      )
       .eq('id', echeanceData.paiement_id)
       .single();
 
-    if (!paymentData) return;
+    if (!paymentData) {
+      return;
+    }
 
     // Fetch payment proofs
     const { data: proofsData } = await supabase
@@ -320,7 +371,9 @@ export function EcheancierContent({
   };
 
   const handleMarkAsUnpaid = async (echeance: Echeance) => {
-    if (markingUnpaid) return;
+    if (markingUnpaid) {
+      return;
+    }
 
     setMarkingUnpaid(echeance.id);
     try {
@@ -331,7 +384,9 @@ export function EcheancierContent({
         .eq('id', echeance.id)
         .single();
 
-      if (echeanceQueryError) throw echeanceQueryError;
+      if (echeanceQueryError) {
+        throw echeanceQueryError;
+      }
 
       const paiementId = echeanceData?.paiement_id;
 
@@ -342,7 +397,9 @@ export function EcheancierContent({
           .select('id, file_url')
           .eq('paiement_id', paiementId);
 
-        if (proofsError) throw proofsError;
+        if (proofsError) {
+          throw proofsError;
+        }
 
         // 2. For each proof, check if it's used by other payments (reference counting)
         const filesToDelete: string[] = [];
@@ -356,7 +413,9 @@ export function EcheancierContent({
               .eq('file_url', proof.file_url)
               .neq('paiement_id', paiementId);
 
-            if (countError) throw countError;
+            if (countError) {
+              throw countError;
+            }
 
             // Only delete file if no other payments reference it
             if (!otherProofs || otherProofs.length === 0) {
@@ -374,7 +433,9 @@ export function EcheancierContent({
             .delete()
             .eq('paiement_id', paiementId);
 
-          if (deleteProofsError) throw deleteProofsError;
+          if (deleteProofsError) {
+            throw deleteProofsError;
+          }
 
           // 4. Delete storage files (only those not referenced by other payments)
           if (filesToDelete.length > 0) {
@@ -395,7 +456,9 @@ export function EcheancierContent({
           .delete()
           .eq('id', paiementId);
 
-        if (deletePaiementError) throw deletePaiementError;
+        if (deletePaiementError) {
+          throw deletePaiementError;
+        }
       }
 
       // 6. Update the echeance to remove payment link and reset to unpaid state
@@ -405,11 +468,13 @@ export function EcheancierContent({
           paiement_id: null,
           statut: 'en_attente',
           date_paiement: null,
-          montant_paye: null
+          montant_paye: null,
         } as never)
         .eq('id', echeance.id);
 
-      if (echeanceUpdateError) throw echeanceUpdateError;
+      if (echeanceUpdateError) {
+        throw echeanceUpdateError;
+      }
 
       // Refresh the echeances list
       await fetchEcheances();
@@ -419,15 +484,16 @@ export function EcheancierContent({
 
       setAlertModalConfig({
         title: 'Succès',
-        message: 'L\'échéance a été marquée comme non payée et tous les enregistrements associés ont été supprimés.',
-        type: 'success'
+        message:
+          "L'échéance a été marquée comme non payée et tous les enregistrements associés ont été supprimés.",
+        type: 'success',
       });
       setShowAlertModal(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setAlertModalConfig({
         title: 'Erreur',
-        message: 'Erreur lors de la mise à jour: ' + err.message,
-        type: 'error'
+        message: `Erreur lors de la mise à jour: ${err instanceof Error ? err.message : 'Erreur inconnue'}`,
+        type: 'error',
       });
       setShowAlertModal(true);
     } finally {
@@ -438,16 +504,16 @@ export function EcheancierContent({
   const handleExportExcel = async () => {
     const exportData = filteredEcheances.map(e => ({
       'Date Échéance': formatDate(e.date_echeance),
-      'Tranche': e.souscription.tranche.tranche_name,
-      'Investisseur': e.souscription.investisseur.nom_raison_sociale,
-      'Type': e.souscription.investisseur.type,
+      Tranche: e.souscription.tranche.tranche_name,
+      Investisseur: e.souscription.investisseur.nom_raison_sociale,
+      Type: e.souscription.investisseur.type,
       'Coupon Brut': e.souscription.coupon_brut,
       'Coupon Net': e.souscription.coupon_net,
       'Remboursement Nominal': e.isLastEcheance ? e.souscription.montant_investi : 0,
       'Total à Payer': e.isLastEcheance
         ? e.souscription.coupon_net + e.souscription.montant_investi
         : e.souscription.coupon_net,
-      'Statut': e.statut === 'paye' ? 'Payé' : (isOverdue(e) ? 'En retard' : 'À venir'),
+      Statut: e.statut === 'paye' ? 'Payé' : isOverdue(e) ? 'En retard' : 'À venir',
     }));
 
     const workbook = new ExcelJS.Workbook();
@@ -462,13 +528,15 @@ export function EcheancierContent({
       { header: 'Coupon Net', key: 'Coupon Net', width: 12 },
       { header: 'Remboursement Nominal', key: 'Remboursement Nominal', width: 20 },
       { header: 'Total à Payer', key: 'Total à Payer', width: 15 },
-      { header: 'Statut', key: 'Statut', width: 10 }
+      { header: 'Statut', key: 'Statut', width: 10 },
     ];
 
     exportData.forEach(row => worksheet.addRow(row));
 
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -477,58 +545,69 @@ export function EcheancierContent({
     window.URL.revokeObjectURL(url);
   };
 
-  const filteredEcheances = echeances.filter((e) => {
-    if (filter === 'all') return true;
-    if (filter === 'paye') return e.statut === 'paye';
-    if (filter === 'en_retard') return getEcheanceStatus(e) === 'en_retard';
-    if (filter === 'a_venir') return getEcheanceStatus(e) === 'a_venir';
+  const filteredEcheances = echeances.filter(e => {
+    if (filter === 'all') {
+      return true;
+    }
+    if (filter === 'paye') {
+      return e.statut === 'paye';
+    }
+    if (filter === 'en_retard') {
+      return getEcheanceStatus(e) === 'en_retard';
+    }
+    if (filter === 'a_venir') {
+      return getEcheanceStatus(e) === 'a_venir';
+    }
     return true;
   });
 
   const trancheGroups: TrancheGroup[] = Object.values(
-    filteredEcheances.reduce((acc, echeance) => {
-      const trancheName = echeance.souscription.tranche.tranche_name;
-      const date = echeance.date_echeance;
+    filteredEcheances.reduce(
+      (acc, echeance) => {
+        const trancheName = echeance.souscription.tranche.tranche_name;
+        const date = echeance.date_echeance;
 
-      if (!acc[trancheName]) {
-        acc[trancheName] = {
-          trancheName,
-          dateGroups: [],
-          totalBrut: 0,
-          totalNet: 0,
-          totalCount: 0
-        };
-      }
+        if (!acc[trancheName]) {
+          acc[trancheName] = {
+            trancheName,
+            dateGroups: [],
+            totalBrut: 0,
+            totalNet: 0,
+            totalCount: 0,
+          };
+        }
 
-      let dateGroup = acc[trancheName].dateGroups.find(dg => dg.date === date);
-      if (!dateGroup) {
-        dateGroup = {
-          date,
-          echeances: [],
-          totalBrut: 0,
-          totalNet: 0,
-          totalNominal: 0,
-          count: 0,
-          isLastEcheance: false
-        };
-        acc[trancheName].dateGroups.push(dateGroup);
-      }
+        let dateGroup = acc[trancheName].dateGroups.find(dg => dg.date === date);
+        if (!dateGroup) {
+          dateGroup = {
+            date,
+            echeances: [],
+            totalBrut: 0,
+            totalNet: 0,
+            totalNominal: 0,
+            count: 0,
+            isLastEcheance: false,
+          };
+          acc[trancheName].dateGroups.push(dateGroup);
+        }
 
-      dateGroup.echeances.push(echeance);
-      dateGroup.totalBrut += echeance.souscription.coupon_brut;
-      dateGroup.totalNet += echeance.souscription.coupon_net;
-      if (echeance.isLastEcheance) {
-        dateGroup.totalNominal += echeance.souscription.montant_investi;
-        dateGroup.isLastEcheance = true;
-      }
-      dateGroup.count += 1;
+        dateGroup.echeances.push(echeance);
+        dateGroup.totalBrut += echeance.souscription.coupon_brut;
+        dateGroup.totalNet += echeance.souscription.coupon_net;
+        if (echeance.isLastEcheance) {
+          dateGroup.totalNominal += echeance.souscription.montant_investi;
+          dateGroup.isLastEcheance = true;
+        }
+        dateGroup.count += 1;
 
-      acc[trancheName].totalBrut += echeance.souscription.coupon_brut;
-      acc[trancheName].totalNet += echeance.souscription.coupon_net;
-      acc[trancheName].totalCount += 1;
+        acc[trancheName].totalBrut += echeance.souscription.coupon_brut;
+        acc[trancheName].totalNet += echeance.souscription.coupon_net;
+        acc[trancheName].totalCount += 1;
 
-      return acc;
-    }, {} as Record<string, TrancheGroup>)
+        return acc;
+      },
+      {} as Record<string, TrancheGroup>
+    )
   );
 
   trancheGroups.forEach(group => {
@@ -537,15 +616,15 @@ export function EcheancierContent({
 
   const stats = {
     total: echeances.length,
-    paye: echeances.filter((e) => e.statut === 'paye').length,
-    enRetard: echeances.filter((e) => getEcheanceStatus(e) === 'en_retard').length,
-    aVenir: echeances.filter((e) => getEcheanceStatus(e) === 'a_venir').length,
+    paye: echeances.filter(e => e.statut === 'paye').length,
+    enRetard: echeances.filter(e => getEcheanceStatus(e) === 'en_retard').length,
+    aVenir: echeances.filter(e => getEcheanceStatus(e) === 'a_venir').length,
     montantTotal: echeances.reduce((sum, e) => sum + e.souscription.coupon_net, 0),
     montantEnRetard: echeances
-      .filter((e) => getEcheanceStatus(e) === 'en_retard')
+      .filter(e => getEcheanceStatus(e) === 'en_retard')
       .reduce((sum, e) => sum + e.souscription.coupon_net, 0),
     montantAVenir: echeances
-      .filter((e) => getEcheanceStatus(e) === 'a_venir')
+      .filter(e => getEcheanceStatus(e) === 'a_venir')
       .reduce((sum, e) => sum + e.souscription.coupon_net, 0),
   };
 
@@ -617,7 +696,9 @@ export function EcheancierContent({
               <Coins className="w-4 h-4 text-purple-600" />
               <p className="text-xs font-medium text-purple-900">Montant total net</p>
             </div>
-            <p className="text-lg font-bold text-purple-900">{formatCurrency(stats.montantTotal)}</p>
+            <p className="text-lg font-bold text-purple-900">
+              {formatCurrency(stats.montantTotal)}
+            </p>
           </div>
         </div>
 
@@ -678,17 +759,22 @@ export function EcheancierContent({
           </div>
         ) : (
           <div className="space-y-3">
-            {trancheGroups.map((group) => {
+            {trancheGroups.map(group => {
               const isTrancheExpanded = expandedTranches.has(group.trancheName);
 
               const trancheEcheances = group.dateGroups.flatMap(dg => dg.echeances);
               const totalCoupons = trancheEcheances.length;
               const paidCoupons = trancheEcheances.filter(e => e.statut === 'paye').length;
-              const overdueCoupons = trancheEcheances.filter(e => getEcheanceStatus(e) === 'en_retard').length;
+              const overdueCoupons = trancheEcheances.filter(
+                e => getEcheanceStatus(e) === 'en_retard'
+              ).length;
               const progressPercentage = totalCoupons > 0 ? (paidCoupons / totalCoupons) * 100 : 0;
 
               return (
-                <div key={group.trancheName} className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                <div
+                  key={group.trancheName}
+                  className="border border-slate-200 rounded-lg overflow-hidden bg-white"
+                >
                   <button
                     onClick={() => toggleTranche(group.trancheName)}
                     className="w-full px-6 py-4 hover:bg-slate-50 transition-colors"
@@ -702,12 +788,14 @@ export function EcheancierContent({
                         )}
                         <h4 className="text-base font-bold text-slate-900">{group.trancheName}</h4>
                         <span className="text-sm text-slate-600">
-                          ({group.dateGroups.length} échéance{group.dateGroups.length > 1 ? 's' : ''})
+                          ({group.dateGroups.length} échéance
+                          {group.dateGroups.length > 1 ? 's' : ''})
                         </span>
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="text-sm text-slate-600">
-                          <span className="font-medium">{group.totalCount}</span> coupon{group.totalCount > 1 ? 's' : ''}
+                          <span className="font-medium">{group.totalCount}</span> coupon
+                          {group.totalCount > 1 ? 's' : ''}
                         </div>
                         <div className="text-right">
                           <div className="text-base font-bold text-finixar-green">
@@ -761,8 +849,8 @@ export function EcheancierContent({
                             progressPercentage === 100
                               ? 'bg-gradient-to-r from-green-500 to-green-600'
                               : overdueCoupons > 0
-                              ? 'bg-gradient-to-r from-orange-500 to-amber-600'
-                              : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                                ? 'bg-gradient-to-r from-orange-500 to-amber-600'
+                                : 'bg-gradient-to-r from-blue-500 to-blue-600'
                           }`}
                           style={{ width: `${progressPercentage}%` }}
                         />
@@ -773,15 +861,22 @@ export function EcheancierContent({
                   {isTrancheExpanded && (
                     <div className="border-t border-slate-200 bg-slate-50">
                       <div className="space-y-2 p-4">
-                        {group.dateGroups.map((dateGroup) => {
+                        {group.dateGroups.map(dateGroup => {
                           const dateKey = `${group.trancheName}-${dateGroup.date}`;
                           const isDateExpanded = expandedDates.has(dateKey);
-                          const hasOverdueCoupons = dateGroup.echeances.some((e) => getEcheanceStatus(e) === 'en_retard');
+                          const hasOverdueCoupons = dateGroup.echeances.some(
+                            e => getEcheanceStatus(e) === 'en_retard'
+                          );
 
                           return (
-                            <div key={dateKey} className={`border rounded-lg overflow-hidden bg-white ${
-                              dateGroup.isLastEcheance ? 'border-amber-300 shadow-sm' : 'border-slate-200'
-                            }`}>
+                            <div
+                              key={dateKey}
+                              className={`border rounded-lg overflow-hidden bg-white ${
+                                dateGroup.isLastEcheance
+                                  ? 'border-amber-300 shadow-sm'
+                                  : 'border-slate-200'
+                              }`}
+                            >
                               <button
                                 onClick={() => toggleDate(dateKey)}
                                 className="w-full px-4 py-3 hover:bg-slate-50 transition-colors"
@@ -813,11 +908,14 @@ export function EcheancierContent({
                                     </div>
                                     <div className="text-right">
                                       <div className="text-sm font-bold text-finixar-green">
-                                        {formatCurrency(dateGroup.totalNet + dateGroup.totalNominal)}
+                                        {formatCurrency(
+                                          dateGroup.totalNet + dateGroup.totalNominal
+                                        )}
                                       </div>
                                       {dateGroup.isLastEcheance ? (
                                         <div className="text-xs text-slate-500">
-                                          Coupon: {formatCurrency(dateGroup.totalNet)} + Nominal: {formatCurrency(dateGroup.totalNominal)}
+                                          Coupon: {formatCurrency(dateGroup.totalNet)} + Nominal:{' '}
+                                          {formatCurrency(dateGroup.totalNominal)}
                                         </div>
                                       ) : (
                                         <div className="text-xs text-slate-500">
@@ -827,8 +925,12 @@ export function EcheancierContent({
                                     </div>
                                     {(() => {
                                       const totalCount = dateGroup.echeances.length;
-                                      const paidCount = dateGroup.echeances.filter(e => e.statut === 'paye').length;
-                                      const overdueCount = dateGroup.echeances.filter(e => getEcheanceStatus(e) === 'en_retard').length;
+                                      const paidCount = dateGroup.echeances.filter(
+                                        e => e.statut === 'paye'
+                                      ).length;
+                                      const overdueCount = dateGroup.echeances.filter(
+                                        e => getEcheanceStatus(e) === 'en_retard'
+                                      ).length;
 
                                       if (paidCount === totalCount) {
                                         return (
@@ -891,17 +993,21 @@ export function EcheancierContent({
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 bg-white">
-                                      {dateGroup.echeances.map((echeance) => (
+                                      {dateGroup.echeances.map(echeance => (
                                         <tr key={echeance.id} className="hover:bg-slate-50">
                                           <td className="px-4 py-2">
                                             <div className="flex items-center gap-2">
-                                              {echeance.souscription.investisseur.type === 'Morale' ? (
+                                              {echeance.souscription.investisseur.type ===
+                                              'Morale' ? (
                                                 <Building2 className="w-4 h-4 text-purple-600" />
                                               ) : (
                                                 <User className="w-4 h-4 text-blue-600" />
                                               )}
                                               <span className="text-sm text-slate-900">
-                                                {echeance.souscription.investisseur.nom_raison_sociale}
+                                                {
+                                                  echeance.souscription.investisseur
+                                                    .nom_raison_sociale
+                                                }
                                               </span>
                                             </div>
                                           </td>
@@ -910,24 +1016,27 @@ export function EcheancierContent({
                                               {formatCurrency(echeance.souscription.coupon_net)}
                                             </div>
                                             <div className="text-xs text-slate-500">
-                                              Brut: {formatCurrency(echeance.souscription.coupon_brut)}
+                                              Brut:{' '}
+                                              {formatCurrency(echeance.souscription.coupon_brut)}
                                             </div>
                                           </td>
                                           {echeance.isLastEcheance && (
                                             <td className="px-4 py-2 text-right">
                                               <div className="text-base font-bold text-blue-600">
-                                                {formatCurrency(echeance.souscription.montant_investi)}
+                                                {formatCurrency(
+                                                  echeance.souscription.montant_investi
+                                                )}
                                               </div>
-                                              <div className="text-xs text-slate-500">
-                                                Nominal
-                                              </div>
+                                              <div className="text-xs text-slate-500">Nominal</div>
                                             </td>
                                           )}
                                           <td className="px-4 py-2 text-right">
                                             <div className="text-lg font-bold text-slate-900">
                                               {formatCurrency(
                                                 echeance.souscription.coupon_net +
-                                                (echeance.isLastEcheance ? echeance.souscription.montant_investi : 0)
+                                                  (echeance.isLastEcheance
+                                                    ? echeance.souscription.montant_investi
+                                                    : 0)
                                               )}
                                             </div>
                                           </td>
@@ -937,15 +1046,15 @@ export function EcheancierContent({
                                                 getEcheanceStatus(echeance) === 'paye'
                                                   ? 'bg-green-100 text-green-700'
                                                   : getEcheanceStatus(echeance) === 'en_retard'
-                                                  ? 'bg-red-100 text-red-700'
-                                                  : 'bg-orange-100 text-orange-700'
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-orange-100 text-orange-700'
                                               }`}
                                             >
                                               {getEcheanceStatus(echeance) === 'paye'
                                                 ? 'Payé'
                                                 : getEcheanceStatus(echeance) === 'en_retard'
-                                                ? 'En retard'
-                                                : 'À venir'}
+                                                  ? 'En retard'
+                                                  : 'À venir'}
                                             </span>
                                           </td>
                                           <td className="px-4 py-2 text-center">
@@ -965,7 +1074,9 @@ export function EcheancierContent({
                                                   className="p-1 text-finixar-red hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                   title="Marquer comme non payé"
                                                 >
-                                                  <XCircle className={`w-4 h-4 ${markingUnpaid === echeance.id ? 'animate-pulse' : ''}`} />
+                                                  <XCircle
+                                                    className={`w-4 h-4 ${markingUnpaid === echeance.id ? 'animate-pulse' : ''}`}
+                                                  />
                                                 </button>
                                               </div>
                                             ) : (
@@ -980,7 +1091,9 @@ export function EcheancierContent({
                                                     // Fetch tranche data for this echeance
                                                     const { data: sousData } = await supabase
                                                       .from('souscriptions')
-                                                      .select('tranche_id, tranches!inner(tranche_name)')
+                                                      .select(
+                                                        'tranche_id, tranches!inner(tranche_name)'
+                                                      )
                                                       .eq('id', echeance.souscription_id)
                                                       .single();
 
@@ -992,7 +1105,9 @@ export function EcheancierContent({
 
                                                     if (sousData && projectData) {
                                                       setPreselectedTrancheId(sousData.tranche_id);
-                                                      setPreselectedTrancheName(sousData.tranches.tranche_name);
+                                                      setPreselectedTrancheName(
+                                                        sousData.tranches.tranche_name
+                                                      );
                                                       setPreselectedProjectName(projectData.projet);
                                                     }
                                                     setSelectedEcheanceForQuickPay(echeance);
@@ -1050,7 +1165,8 @@ export function EcheancierContent({
       <div className="p-6 border-t border-slate-200 bg-slate-50">
         <div className="flex justify-between items-center">
           <div className="text-sm text-slate-600">
-            {trancheGroups.length} tranche{trancheGroups.length > 1 ? 's' : ''} • {filteredEcheances.length} coupon{filteredEcheances.length > 1 ? 's' : ''}
+            {trancheGroups.length} tranche{trancheGroups.length > 1 ? 's' : ''} •{' '}
+            {filteredEcheances.length} coupon{filteredEcheances.length > 1 ? 's' : ''}
             {filter === 'en_retard' && (
               <span className="ml-2 font-medium text-red-600">
                 • Montant total en retard: {formatCurrency(stats.montantEnRetard)}

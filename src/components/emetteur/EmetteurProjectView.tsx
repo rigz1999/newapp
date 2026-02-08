@@ -47,14 +47,14 @@ export default function EmetteurProjectView() {
         return;
       }
 
-      const org = projectData.organizations as any;
+      const org = projectData.organizations as Record<string, unknown> | null;
       setOrgInfo({
         id: org?.id || projectData.org_id,
         name: org?.name || 'Organisation',
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error checking emetteur access:', err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -83,9 +83,5 @@ export default function EmetteurProjectView() {
     );
   }
 
-  return (
-    <ProjectDetail
-      organization={{ id: orgInfo.id, name: orgInfo.name, role: 'emetteur' }}
-    />
-  );
+  return <ProjectDetail organization={{ id: orgInfo.id, name: orgInfo.name, role: 'emetteur' }} />;
 }

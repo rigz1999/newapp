@@ -7,7 +7,18 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
-import { CheckCircle, AlertCircle, Lock, Mail, User, RefreshCw, Eye, EyeOff, Check, X } from 'lucide-react';
+import {
+  CheckCircle,
+  AlertCircle,
+  Lock,
+  Mail,
+  User,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Check,
+  X,
+} from 'lucide-react';
 
 // Create a fresh anonymous client without any stored session
 const anonSupabase = createClient(
@@ -52,7 +63,7 @@ export function InvitationAccept() {
 
   useEffect(() => {
     if (!token) {
-      setError('Lien d\'invitation invalide. Aucun token fourni.');
+      setError("Lien d'invitation invalide. Aucun token fourni.");
       setLoading(false);
       return;
     }
@@ -68,10 +79,12 @@ export function InvitationAccept() {
       // Récupérer l'invitation avec le token (using anonymous client)
       const { data: invitationData, error: invitationError } = await anonSupabase
         .from('invitations')
-        .select(`
+        .select(
+          `
           *,
           organizations:organizations(name)
-        `)
+        `
+        )
         .eq('token', token!)
         .single();
 
@@ -112,22 +125,20 @@ export function InvitationAccept() {
 
       setInvitation(invitationData);
     } catch {
-      setError('Erreur lors de la vérification de l\'invitation.');
+      setError("Erreur lors de la vérification de l'invitation.");
     } finally {
       setLoading(false);
     }
   };
 
   // Password strength checker
-  const checkPasswordRequirements = (password: string) => {
-    return {
-      hasLowercase: /[a-z]/.test(password),
-      hasUppercase: /[A-Z]/.test(password),
-      hasNumber: /[0-9]/.test(password),
-      hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password),
-      hasMinLength: password.length >= 12
-    };
-  };
+  const checkPasswordRequirements = (password: string) => ({
+    hasLowercase: /[a-z]/.test(password),
+    hasUppercase: /[A-Z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecial: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password),
+    hasMinLength: password.length >= 12,
+  });
 
   const passwordRequirements = checkPasswordRequirements(password);
   const isPasswordValid = Object.values(passwordRequirements).every(Boolean);
@@ -135,7 +146,9 @@ export function InvitationAccept() {
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!invitation) return;
+    if (!invitation) {
+      return;
+    }
 
     // Validation
     if (!isPasswordValid) {
@@ -160,7 +173,7 @@ export function InvitationAccept() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
+          Authorization: `Bearer ${supabaseAnonKey}`,
         },
         body: JSON.stringify({
           token: token,
@@ -200,10 +213,12 @@ export function InvitationAccept() {
       setTimeout(() => {
         navigate('/');
       }, 3000);
-
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Caught error:', err);
-      const errorMessage = err.message || 'Erreur lors de la création du compte. Veuillez réessayer.';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'Erreur lors de la création du compte. Veuillez réessayer.';
       console.error('Error message to display:', errorMessage);
       setError(errorMessage);
     } finally {
@@ -233,9 +248,7 @@ export function InvitationAccept() {
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
 
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">
-              Compte créé avec succès !
-            </h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">Compte créé avec succès !</h1>
             <p className="text-slate-600 mb-4">
               Bienvenue {invitation?.first_name} {invitation?.last_name}
             </p>
@@ -247,9 +260,7 @@ export function InvitationAccept() {
               </p>
             </div>
 
-            <p className="text-sm text-slate-500">
-              Redirection vers la page de connexion...
-            </p>
+            <p className="text-sm text-slate-500">Redirection vers la page de connexion...</p>
 
             <div className="mt-4">
               <RefreshCw className="w-5 h-5 text-slate-400 animate-spin mx-auto" />
@@ -275,9 +286,7 @@ export function InvitationAccept() {
             <h1 className="text-2xl font-bold text-center text-slate-900 mb-2">
               Invitation invalide
             </h1>
-            <p className="text-center text-slate-600 mb-6">
-              {error}
-            </p>
+            <p className="text-center text-slate-600 mb-6">{error}</p>
 
             <button
               onClick={() => navigate('/')}
@@ -302,12 +311,9 @@ export function InvitationAccept() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-center text-slate-900 mb-2">
-            Créer votre compte
-          </h1>
+          <h1 className="text-2xl font-bold text-center text-slate-900 mb-2">Créer votre compte</h1>
           <p className="text-center text-slate-600 mb-8">
-            Vous avez été invité à rejoindre{' '}
-            <strong>{invitation?.organizations?.name}</strong>
+            Vous avez été invité à rejoindre <strong>{invitation?.organizations?.name}</strong>
           </p>
 
           <form onSubmit={handleCreateAccount} className="space-y-6">
@@ -358,9 +364,7 @@ export function InvitationAccept() {
 
             {/* Rôle */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Rôle
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Rôle</label>
               <div className="px-4 py-3 border border-slate-300 rounded-lg bg-slate-50 text-slate-600 capitalize">
                 {invitation?.role === 'admin' ? 'Administrateur' : 'Membre'}
               </div>
@@ -375,9 +379,9 @@ export function InvitationAccept() {
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   id="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   required
                   minLength={12}
                   className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
@@ -389,18 +393,16 @@ export function InvitationAccept() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                   tabIndex={-1}
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
 
               {/* Password Requirements Visual Indicators */}
               {password && (
                 <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
-                  <p className="text-xs font-semibold text-slate-700 mb-2">Critères de sécurité :</p>
+                  <p className="text-xs font-semibold text-slate-700 mb-2">
+                    Critères de sécurité :
+                  </p>
 
                   <PasswordRequirement
                     met={passwordRequirements.hasMinLength}
@@ -437,16 +439,19 @@ export function InvitationAccept() {
 
             {/* Confirmer mot de passe */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-2">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
                 Confirmer le mot de passe *
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={e => setConfirmPassword(e.target.value)}
                   required
                   minLength={12}
                   className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all"
@@ -471,7 +476,11 @@ export function InvitationAccept() {
                 <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
                   <PasswordRequirement
                     met={password === confirmPassword}
-                    text={password === confirmPassword ? "Les mots de passe correspondent" : "Les mots de passe ne correspondent pas"}
+                    text={
+                      password === confirmPassword
+                        ? 'Les mots de passe correspondent'
+                        : 'Les mots de passe ne correspondent pas'
+                    }
                   />
                 </div>
               )}
@@ -515,9 +524,7 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
     <div className="flex items-center gap-2">
       <div
         className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200 ${
-          met
-            ? 'bg-green-500 text-white'
-            : 'bg-slate-300 text-slate-400'
+          met ? 'bg-green-500 text-white' : 'bg-slate-300 text-slate-400'
         }`}
       >
         {met ? (

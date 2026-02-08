@@ -3,7 +3,7 @@
 // Path: src/context/ThemeContext.tsx
 // ============================================
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, JSX } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -16,7 +16,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeProvider({ children }: { children: ReactNode }): JSX.Element {
   const [theme, setThemeState] = useState<Theme>(() => {
     const stored = localStorage.getItem('theme');
     return (stored as Theme) || 'system';
@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Update effective theme based on theme preference and system preference
   useEffect(() => {
-    const updateEffectiveTheme = () => {
+    const updateEffectiveTheme = (): void => {
       if (theme === 'system') {
         const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
           ? 'dark'
@@ -41,7 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
+    const handleChange = (): void => {
       if (theme === 'system') {
         updateEffectiveTheme();
       }
@@ -61,12 +61,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [effectiveTheme]);
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = (newTheme: Theme): void => {
     setThemeState(newTheme);
     localStorage.setItem('theme', newTheme);
   };
 
-  const toggleTheme = () => {
+  const toggleTheme = (): void => {
     setTheme(effectiveTheme === 'dark' ? 'light' : 'dark');
   };
 
@@ -77,7 +77,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useTheme() {
+// eslint-disable-next-line react-refresh/only-export-components -- hook is co-located with its provider intentionally
+export function useTheme(): ThemeContextType {
   const context = useContext(ThemeContext);
   if (context === undefined) {
     throw new Error('useTheme must be used within a ThemeProvider');

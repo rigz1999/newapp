@@ -1,4 +1,7 @@
-export function announceToScreenReader(message: string, priority: 'polite' | 'assertive' = 'polite'): void {
+export function announceToScreenReader(
+  message: string,
+  priority: 'polite' | 'assertive' = 'polite'
+): void {
   const announcement = document.createElement('div');
   announcement.setAttribute('role', 'status');
   announcement.setAttribute('aria-live', priority);
@@ -21,7 +24,9 @@ export function trapFocus(element: HTMLElement): () => void {
   const lastFocusable = focusableElements[focusableElements.length - 1];
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key !== 'Tab') return;
+    if (e.key !== 'Tab') {
+      return;
+    }
 
     if (e.shiftKey) {
       if (document.activeElement === firstFocusable) {
@@ -61,7 +66,9 @@ export function isReducedMotion(): boolean {
 }
 
 export function setFocusWithDelay(element: HTMLElement | null, delay = 100): void {
-  if (!element) return;
+  if (!element) {
+    return;
+  }
 
   setTimeout(() => {
     element.focus();

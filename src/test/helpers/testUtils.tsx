@@ -15,10 +15,8 @@ function AllTheProviders({ children }: AllTheProvidersProps) {
   );
 }
 
-const customRender = (
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
-) => render(ui, { wrapper: AllTheProviders, ...options });
+const customRender = (ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) =>
+  render(ui, { wrapper: AllTheProviders, ...options });
 
 export * from '@testing-library/react';
 export { customRender as render };
@@ -32,7 +30,7 @@ export function createMockOrganization(overrides?: Partial<Organization>) {
   };
 }
 
-export function createMockProject(overrides?: Partial<any>) {
+export function createMockProject(overrides?: Partial<Record<string, unknown>>) {
   return {
     id: 'test-project-id',
     projet: 'Test Project',
@@ -45,7 +43,7 @@ export function createMockProject(overrides?: Partial<any>) {
   };
 }
 
-export function createMockInvestor(overrides?: Partial<any>) {
+export function createMockInvestor(overrides?: Partial<Record<string, unknown>>) {
   return {
     id: 'test-investor-id',
     nom: 'Doe',
@@ -57,7 +55,7 @@ export function createMockInvestor(overrides?: Partial<any>) {
   };
 }
 
-export function createMockTranche(overrides?: Partial<any>) {
+export function createMockTranche(overrides?: Partial<Record<string, unknown>>) {
   return {
     id: 'test-tranche-id',
     projet_id: 'test-project-id',
@@ -71,7 +69,7 @@ export function createMockTranche(overrides?: Partial<any>) {
   };
 }
 
-export function createMockPayment(overrides?: Partial<any>) {
+export function createMockPayment(overrides?: Partial<Record<string, unknown>>) {
   return {
     id: 'test-payment-id',
     echeance_id: 'test-echeance-id',
@@ -84,10 +82,10 @@ export function createMockPayment(overrides?: Partial<any>) {
 }
 
 export function waitForLoadingToFinish() {
-  return new Promise((resolve) => setTimeout(resolve, 100));
+  return new Promise(resolve => setTimeout(resolve, 100));
 }
 
-export function mockSupabaseResponse<T>(data: T, error: any = null) {
+export function mockSupabaseResponse<T>(data: T, error: unknown = null) {
   return {
     data,
     error,
@@ -111,7 +109,15 @@ export function mockSupabaseQuery<T>(data: T) {
     limit: () => mockSupabaseQuery(data),
     single: () => Promise.resolve(mockSupabaseResponse(data)),
     maybeSingle: () => Promise.resolve(mockSupabaseResponse(data)),
-    then: (callback: (result: any) => void) => callback(mockSupabaseResponse(data)),
+    then: (
+      callback: (result: {
+        data: T;
+        error: unknown;
+        count: number | null;
+        status: number;
+        statusText: string;
+      }) => void
+    ) => callback(mockSupabaseResponse(data)),
   };
 }
 

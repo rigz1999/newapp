@@ -69,7 +69,7 @@ interface TrancheGroup {
   totalCount: number;
 }
 
-interface SubscriptionData {
+interface _SubscriptionData {
   id: string;
   id_souscription: string;
   coupon_brut: number;
@@ -86,7 +86,7 @@ interface SubscriptionData {
   };
 }
 
-interface EcheanceData {
+interface _EcheanceData {
   id: string;
   souscription_id: string;
   date_echeance: string;
@@ -110,7 +110,9 @@ export function EcheancierPage() {
   // Store resolved project info (UUID and short_id) for proper lookups and navigation
   const [projectInfo, setProjectInfo] = useState<{ id: string; short_id: string } | null>(null);
   const [preselectedTrancheId, setPreselectedTrancheId] = useState<string | undefined>(undefined);
-  const [preselectedTrancheName, setPreselectedTrancheName] = useState<string | undefined>(undefined);
+  const [preselectedTrancheName, setPreselectedTrancheName] = useState<string | undefined>(
+    undefined
+  );
   const [preselectedEcheanceDate, setPreselectedEcheanceDate] = useState<string | undefined>(
     undefined
   );
@@ -166,14 +168,14 @@ export function EcheancierPage() {
   }, [projectId, projectInfo]);
 
   const fetchProjectName = async () => {
-    if (!projectId) return;
+    if (!projectId) {
+      return;
+    }
 
     // Determine if using short_id or UUID format
     const isShortId = isValidShortId(projectId, 'projet');
 
-    const query = supabase
-      .from('projets')
-      .select('id, short_id, projet');
+    const query = supabase.from('projets').select('id, short_id, projet');
 
     const { data, error } = isShortId
       ? await query.eq('short_id', projectId).single()
@@ -209,7 +211,8 @@ export function EcheancierPage() {
       // This prevents écheances with invalid subscription_ids from being fetched
       const { data: echeancesData, error: echError } = await supabase
         .from('coupons_echeances')
-        .select(`
+        .select(
+          `
           *,
           souscription:souscriptions!inner(
             id,
@@ -220,7 +223,8 @@ export function EcheancierPage() {
             investisseur:investisseurs(nom_raison_sociale, type),
             tranche:tranches!inner(id, tranche_name, date_echeance_finale, projet_id)
           )
-        `)
+        `
+        )
         .eq('souscription.tranche.projet_id', resolvedProjectId)
         .order('date_echeance', { ascending: true });
 
@@ -234,7 +238,7 @@ export function EcheancierPage() {
         return;
       }
 
-      const enrichedEcheances = echeancesData.map((ech: any) => {
+      const enrichedEcheances = echeancesData.map((ech: Record<string, unknown>) => {
         const sub = ech.souscription;
         const isLastEcheance = sub?.tranche?.date_echeance_finale === ech.date_echeance;
 
@@ -265,7 +269,9 @@ export function EcheancierPage() {
 
   const fetchProofUrls = async (echeancesList: Echeance[]) => {
     const paidEcheances = echeancesList.filter(e => e.statut === 'paye');
-    if (paidEcheances.length === 0) return;
+    if (paidEcheances.length === 0) {
+      return;
+    }
 
     const proofUrlsMap = new Map<string, string>();
 
@@ -277,7 +283,9 @@ export function EcheancierPage() {
         .eq('id', echeance.id)
         .single();
 
-      if (!echeanceData?.paiement_id) continue;
+      if (!echeanceData?.paiement_id) {
+        continue;
+      }
 
       // Get proof for this paiement (only one proof per subscription)
       const { data: proofData } = await supabase
@@ -316,25 +324,25 @@ export function EcheancierPage() {
         .from('payment-proofs')
         .upload(fileName, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        throw uploadError;
+      }
 
       // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(fileName);
+      const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
 
       // Create payment_proof record
-      const { error: proofError } = await supabase
-        .from('payment_proofs')
-        .insert({
-          paiement_id: echeanceData.paiement_id,
-          file_url: urlData.publicUrl,
-          file_name: file.name,
-          file_size: file.size,
-          validated_at: new Date().toISOString(),
-        });
+      const { error: proofError } = await supabase.from('payment_proofs').insert({
+        paiement_id: echeanceData.paiement_id,
+        file_url: urlData.publicUrl,
+        file_name: file.name,
+        file_size: file.size,
+        validated_at: new Date().toISOString(),
+      });
 
-      if (proofError) throw proofError;
+      if (proofError) {
+        throw proofError;
+      }
 
       // Update local state
       const newProofUrls = new Map(echeanceProofUrls);
@@ -344,15 +352,16 @@ export function EcheancierPage() {
       setAlertModalConfig({
         title: 'Succès',
         message: 'Preuve ajoutée avec succès',
-        type: 'success'
+        type: 'success',
       });
       setShowAlertModal(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error uploading proof:', error);
       setAlertModalConfig({
         title: 'Erreur',
-        message: error.message || 'Erreur lors de l\'ajout de la preuve',
-        type: 'error'
+        message:
+          (error instanceof Error ? error.message : null) || "Erreur lors de l'ajout de la preuve",
+        type: 'error',
       });
       setShowAlertModal(true);
     } finally {
@@ -401,9 +410,9 @@ export function EcheancierPage() {
     setExpandedDates(newExpanded);
   };
 
-  const handleViewPaymentProof = async (echeance: Echeance) => {
+  const _handleViewPaymentProof = async (echeance: Echeance) => {
     // First, we need to find the paiement_id from the echeance
-    const { data: echeanceData, error: echeanceError } = await supabase
+    const { data: echeanceData, error: _echeanceError } = await supabase
       .from('coupons_echeances')
       .select('paiement_id')
       .eq('id', echeance.id)
@@ -563,7 +572,9 @@ export function EcheancierPage() {
 
     try {
       // First check if user has email connected
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -577,7 +588,8 @@ export function EcheancierPage() {
       if (connError || !connection) {
         setAlertModalConfig({
           title: 'E-mail non connecté',
-          message: 'Veuillez d\'abord connecter votre e-mail dans les paramètres pour envoyer des rappels.',
+          message:
+            "Veuillez d'abord connecter votre e-mail dans les paramètres pour envoyer des rappels.",
           type: 'warning',
           buttonText: 'Connecter mon e-mail',
         });
@@ -588,7 +600,9 @@ export function EcheancierPage() {
       }
 
       // Call edge function to create draft
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('No session found');
       }
@@ -606,7 +620,7 @@ export function EcheancierPage() {
           },
           body: JSON.stringify({
             echeanceIds,
-            projectId
+            projectId,
           }),
         }
       );
@@ -626,7 +640,10 @@ export function EcheancierPage() {
       console.error('Error sending reminder:', error);
       setAlertModalConfig({
         title: 'Erreur',
-        message: error instanceof Error ? error.message : 'Une erreur est survenue lors de la création du brouillon',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Une erreur est survenue lors de la création du brouillon',
         type: 'error',
       });
       setShowAlertModal(true);
@@ -1099,77 +1116,81 @@ export function EcheancierPage() {
                                     );
                                   }
                                 })()}
-                                {!readOnly && (() => {
-                                  const dateKey = `${trancheGroup.trancheId}-${dateGroup.date}`;
-                                  const isDropdownOpen = openDropdown === dateKey;
-                                  const isSending = sendingEmail === dateKey;
-                                  const hasUnpaid = dateGroup.echeances.some(
-                                    e => getEcheanceStatus(e) !== 'paye'
-                                  );
+                                {!readOnly &&
+                                  (() => {
+                                    const dateKey = `${trancheGroup.trancheId}-${dateGroup.date}`;
+                                    const isDropdownOpen = openDropdown === dateKey;
+                                    const isSending = sendingEmail === dateKey;
+                                    const hasUnpaid = dateGroup.echeances.some(
+                                      e => getEcheanceStatus(e) !== 'paye'
+                                    );
 
-                                  return (
-                                    <div className="relative">
-                                      <button
-                                        onClick={e => {
-                                          e.stopPropagation();
-                                          if (!isSending) {
-                                            setOpenDropdown(isDropdownOpen ? null : dateKey);
-                                          }
-                                        }}
-                                        disabled={isSending}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                        title={isSending ? 'Envoi en cours...' : 'Actions'}
-                                      >
-                                        {isSending ? (
-                                          <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Envoi...
-                                          </>
-                                        ) : (
-                                          <>
-                                            <MoreVertical className="w-4 h-4" />
-                                            Actions
-                                          </>
-                                        )}
-                                      </button>
-
-                                      {isDropdownOpen && !isSending && (
-                                        <div
-                                          className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
-                                          onClick={e => e.stopPropagation()}
+                                    return (
+                                      <div className="relative">
+                                        <button
+                                          onClick={e => {
+                                            e.stopPropagation();
+                                            if (!isSending) {
+                                              setOpenDropdown(isDropdownOpen ? null : dateKey);
+                                            }
+                                          }}
+                                          disabled={isSending}
+                                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                          title={isSending ? 'Envoi en cours...' : 'Actions'}
                                         >
-                                          {hasUnpaid && (
+                                          {isSending ? (
+                                            <>
+                                              <Loader2 className="w-4 h-4 animate-spin" />
+                                              Envoi...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <MoreVertical className="w-4 h-4" />
+                                              Actions
+                                            </>
+                                          )}
+                                        </button>
+
+                                        {isDropdownOpen && !isSending && (
+                                          <div
+                                            className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+                                            onClick={e => e.stopPropagation()}
+                                          >
+                                            {hasUnpaid && (
+                                              <button
+                                                onClick={e => {
+                                                  e.stopPropagation();
+                                                  setOpenDropdown(null);
+                                                  handleSendReminderForDate(
+                                                    dateGroup,
+                                                    trancheGroup.trancheId
+                                                  );
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                              >
+                                                <Mail className="w-4 h-4 text-finixar-brand-blue" />
+                                                <span>Rappeler l'émetteur</span>
+                                              </button>
+                                            )}
                                             <button
                                               onClick={e => {
                                                 e.stopPropagation();
                                                 setOpenDropdown(null);
-                                                handleSendReminderForDate(dateGroup, trancheGroup.trancheId);
+                                                setPreselectedTrancheId(trancheGroup.trancheId);
+                                                setPreselectedTrancheName(trancheGroup.trancheName);
+                                                setPreselectedEcheanceDate(dateGroup.date);
+                                                setShowPaymentWizard(true);
                                               }}
                                               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                                             >
-                                              <Mail className="w-4 h-4 text-finixar-brand-blue" />
-                                              <span>Rappeler l'émetteur</span>
+                                              <Upload className="w-4 h-4 text-green-600" />
+                                              <span>Enregistrer paiement</span>
                                             </button>
-                                          )}
-                                          <button
-                                            onClick={e => {
-                                              e.stopPropagation();
-                                              setOpenDropdown(null);
-                                              setPreselectedTrancheId(trancheGroup.trancheId);
-                                              setPreselectedTrancheName(trancheGroup.trancheName);
-                                              setPreselectedEcheanceDate(dateGroup.date);
-                                              setShowPaymentWizard(true);
-                                            }}
-                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                                          >
-                                            <Upload className="w-4 h-4 text-green-600" />
-                                            <span>Enregistrer paiement</span>
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })()}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                               </div>
                             </div>
 
@@ -1267,13 +1288,19 @@ export function EcheancierPage() {
                                                     accept="image/*,.pdf"
                                                     className="hidden"
                                                     disabled={uploadingProof === echeance.id}
-                                                    onChange={(e) => {
+                                                    onChange={e => {
                                                       const file = e.target.files?.[0];
-                                                      if (file) handleUploadProof(echeance.id, file);
+                                                      if (file) {
+                                                        handleUploadProof(echeance.id, file);
+                                                      }
                                                     }}
                                                   />
-                                                  <Upload className={`w-4 h-4 ${uploadingProof === echeance.id ? 'animate-pulse' : ''}`} />
-                                                  {uploadingProof === echeance.id ? 'Envoi...' : 'Preuve'}
+                                                  <Upload
+                                                    className={`w-4 h-4 ${uploadingProof === echeance.id ? 'animate-pulse' : ''}`}
+                                                  />
+                                                  {uploadingProof === echeance.id
+                                                    ? 'Envoi...'
+                                                    : 'Preuve'}
                                                 </label>
                                               )}
                                               <button

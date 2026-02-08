@@ -40,54 +40,72 @@ interface UseRealtimeDataReturn<T> {
 // Payments Realtime Hook with Pagination
 // ============================================
 export function useRealtimePayments(
-  options: UseRealtimeDataOptions<any> = {}
-): UseRealtimeDataReturn<any> {
+  options: UseRealtimeDataOptions<Record<string, unknown>> = {}
+): UseRealtimeDataReturn<Record<string, unknown>> {
   const {
     initialData = [],
     enabled = true,
     onDataChange,
     pageSize: initialPageSize = 50,
-    page: initialPage = 1
+    page: initialPage = 1,
   } = options;
 
-  const [data, setData] = useState<any[]>(initialData);
+  const [data, setData] = useState<Record<string, unknown>[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [page, setPage] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchPayments = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true);
-    try {
-      const start = (page - 1) * pageSize;
-      const end = start + pageSize - 1;
+  const fetchPayments = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      try {
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize - 1;
 
-      const { data: payments, error: fetchError, count } = await supabase
-        .from('paiements')
-        .select(`
+        const {
+          data: payments,
+          error: fetchError,
+          count,
+        } = await supabase
+          .from('paiements')
+          .select(
+            `
           *,
           tranche:tranches(tranche_name),
           investisseur:investisseurs(nom_raison_sociale)
-        `, { count: 'exact' })
-        .order('date_paiement', { ascending: false })
-        .range(start, end)
-        .abortSignal(signal as any);
+        `,
+            { count: 'exact' }
+          )
+          .order('date_paiement', { ascending: false })
+          .range(start, end)
+          .abortSignal(signal!);
 
-      if (signal?.aborted) return;
-      if (fetchError) throw fetchError;
-      setData(payments || []);
-      setTotalCount(count || 0);
-      if (onDataChange) onDataChange(payments || []);
-    } catch (err) {
-      if (signal?.aborted) return;
-      setError(err as Error);
-    } finally {
-      if (!signal?.aborted) {
-        setLoading(false);
+        if (signal?.aborted) {
+          return;
+        }
+        if (fetchError) {
+          throw fetchError;
+        }
+        setData(payments || []);
+        setTotalCount(count || 0);
+        if (onDataChange) {
+          onDataChange(payments || []);
+        }
+      } catch (err) {
+        if (signal?.aborted) {
+          return;
+        }
+        setError(err as Error);
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
       }
-    }
-  }, [page, pageSize, onDataChange]);
+    },
+    [page, pageSize, onDataChange]
+  );
 
   useEffect(() => {
     if (enabled) {
@@ -135,50 +153,65 @@ export function useRealtimePayments(
 // Investors Realtime Hook with Pagination
 // ============================================
 export function useRealtimeInvestors(
-  options: UseRealtimeDataOptions<any> = {}
-): UseRealtimeDataReturn<any> {
+  options: UseRealtimeDataOptions<Record<string, unknown>> = {}
+): UseRealtimeDataReturn<Record<string, unknown>> {
   const {
     initialData = [],
     enabled = true,
     onDataChange,
     pageSize: initialPageSize = 50,
-    page: initialPage = 1
+    page: initialPage = 1,
   } = options;
 
-  const [data, setData] = useState<any[]>(initialData);
+  const [data, setData] = useState<Record<string, unknown>[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [page, setPage] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchInvestors = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true);
-    try {
-      const start = (page - 1) * pageSize;
-      const end = start + pageSize - 1;
+  const fetchInvestors = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      try {
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize - 1;
 
-      const { data: investors, error: fetchError, count } = await supabase
-        .from('investisseurs')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(start, end)
-        .abortSignal(signal as any);
+        const {
+          data: investors,
+          error: fetchError,
+          count,
+        } = await supabase
+          .from('investisseurs')
+          .select('*', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(start, end)
+          .abortSignal(signal!);
 
-      if (signal?.aborted) return;
-      if (fetchError) throw fetchError;
-      setData(investors || []);
-      setTotalCount(count || 0);
-      if (onDataChange) onDataChange(investors || []);
-    } catch (err) {
-      if (signal?.aborted) return;
-      setError(err as Error);
-    } finally {
-      if (!signal?.aborted) {
-        setLoading(false);
+        if (signal?.aborted) {
+          return;
+        }
+        if (fetchError) {
+          throw fetchError;
+        }
+        setData(investors || []);
+        setTotalCount(count || 0);
+        if (onDataChange) {
+          onDataChange(investors || []);
+        }
+      } catch (err) {
+        if (signal?.aborted) {
+          return;
+        }
+        setError(err as Error);
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
       }
-    }
-  }, [page, pageSize, onDataChange]);
+    },
+    [page, pageSize, onDataChange]
+  );
 
   useEffect(() => {
     if (enabled) {
@@ -226,50 +259,65 @@ export function useRealtimeInvestors(
 // Projects Realtime Hook with Pagination
 // ============================================
 export function useRealtimeProjects(
-  options: UseRealtimeDataOptions<any> = {}
-): UseRealtimeDataReturn<any> {
+  options: UseRealtimeDataOptions<Record<string, unknown>> = {}
+): UseRealtimeDataReturn<Record<string, unknown>> {
   const {
     initialData = [],
     enabled = true,
     onDataChange,
     pageSize: initialPageSize = 50,
-    page: initialPage = 1
+    page: initialPage = 1,
   } = options;
 
-  const [data, setData] = useState<any[]>(initialData);
+  const [data, setData] = useState<Record<string, unknown>[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [page, setPage] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchProjects = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true);
-    try {
-      const start = (page - 1) * pageSize;
-      const end = start + pageSize - 1;
+  const fetchProjects = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      try {
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize - 1;
 
-      const { data: projects, error: fetchError, count } = await supabase
-        .from('projets')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(start, end)
-        .abortSignal(signal as any);
+        const {
+          data: projects,
+          error: fetchError,
+          count,
+        } = await supabase
+          .from('projets')
+          .select('*', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(start, end)
+          .abortSignal(signal!);
 
-      if (signal?.aborted) return;
-      if (fetchError) throw fetchError;
-      setData(projects || []);
-      setTotalCount(count || 0);
-      if (onDataChange) onDataChange(projects || []);
-    } catch (err) {
-      if (signal?.aborted) return;
-      setError(err as Error);
-    } finally {
-      if (!signal?.aborted) {
-        setLoading(false);
+        if (signal?.aborted) {
+          return;
+        }
+        if (fetchError) {
+          throw fetchError;
+        }
+        setData(projects || []);
+        setTotalCount(count || 0);
+        if (onDataChange) {
+          onDataChange(projects || []);
+        }
+      } catch (err) {
+        if (signal?.aborted) {
+          return;
+        }
+        setError(err as Error);
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
       }
-    }
-  }, [page, pageSize, onDataChange]);
+    },
+    [page, pageSize, onDataChange]
+  );
 
   useEffect(() => {
     if (enabled) {
@@ -317,54 +365,72 @@ export function useRealtimeProjects(
 // Subscriptions Realtime Hook with Pagination
 // ============================================
 export function useRealtimeSubscriptions(
-  options: UseRealtimeDataOptions<any> = {}
-): UseRealtimeDataReturn<any> {
+  options: UseRealtimeDataOptions<Record<string, unknown>> = {}
+): UseRealtimeDataReturn<Record<string, unknown>> {
   const {
     initialData = [],
     enabled = true,
     onDataChange,
     pageSize: initialPageSize = 50,
-    page: initialPage = 1
+    page: initialPage = 1,
   } = options;
 
-  const [data, setData] = useState<any[]>(initialData);
+  const [data, setData] = useState<Record<string, unknown>[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [page, setPage] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchSubscriptions = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true);
-    try {
-      const start = (page - 1) * pageSize;
-      const end = start + pageSize - 1;
+  const fetchSubscriptions = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      try {
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize - 1;
 
-      const { data: subscriptions, error: fetchError, count } = await supabase
-        .from('souscriptions')
-        .select(`
+        const {
+          data: subscriptions,
+          error: fetchError,
+          count,
+        } = await supabase
+          .from('souscriptions')
+          .select(
+            `
           *,
           investisseur:investisseurs(nom_raison_sociale),
           tranche:tranches(tranche_name)
-        `, { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(start, end)
-        .abortSignal(signal as any);
+        `,
+            { count: 'exact' }
+          )
+          .order('created_at', { ascending: false })
+          .range(start, end)
+          .abortSignal(signal!);
 
-      if (signal?.aborted) return;
-      if (fetchError) throw fetchError;
-      setData(subscriptions || []);
-      setTotalCount(count || 0);
-      if (onDataChange) onDataChange(subscriptions || []);
-    } catch (err) {
-      if (signal?.aborted) return;
-      setError(err as Error);
-    } finally {
-      if (!signal?.aborted) {
-        setLoading(false);
+        if (signal?.aborted) {
+          return;
+        }
+        if (fetchError) {
+          throw fetchError;
+        }
+        setData(subscriptions || []);
+        setTotalCount(count || 0);
+        if (onDataChange) {
+          onDataChange(subscriptions || []);
+        }
+      } catch (err) {
+        if (signal?.aborted) {
+          return;
+        }
+        setError(err as Error);
+      } finally {
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
       }
-    }
-  }, [page, pageSize, onDataChange]);
+    },
+    [page, pageSize, onDataChange]
+  );
 
   useEffect(() => {
     if (enabled) {

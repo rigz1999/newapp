@@ -9,7 +9,6 @@ import { toast } from '../../utils/toast';
 import { isValidSIREN } from '../../utils/validators';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
-import { slugify } from '../../utils/slugify';
 import { logger } from '../../utils/logger';
 
 interface ProjectWithStats {
@@ -87,14 +86,16 @@ export function Projects({ organization }: ProjectsProps) {
           parsed.filters.multiSelect = [];
           localStorage.setItem(filterKey, JSON.stringify(parsed));
         }
-      } catch (e) {
+      } catch (_e) {
         // Ignore parse errors
       }
     }
 
     let isMounted = true;
     const loadData = async () => {
-      if (isMounted) await fetchProjects();
+      if (isMounted) {
+        await fetchProjects();
+      }
     };
     loadData();
     return () => {
@@ -156,10 +157,11 @@ export function Projects({ organization }: ProjectsProps) {
     // Search filter
     if (advancedFilters.filters.search) {
       const term = advancedFilters.filters.search.toLowerCase();
-      filtered = filtered.filter(project =>
-        project.projet.toLowerCase().includes(term) ||
-        project.emetteur.toLowerCase().includes(term) ||
-        (project.representant_masse && project.representant_masse.toLowerCase().includes(term))
+      filtered = filtered.filter(
+        project =>
+          project.projet.toLowerCase().includes(term) ||
+          project.emetteur.toLowerCase().includes(term) ||
+          (project.representant_masse && project.representant_masse.toLowerCase().includes(term))
       );
     }
 
@@ -172,10 +174,14 @@ export function Projects({ organization }: ProjectsProps) {
       // Fetch projects with selected fields only
       const projectsRes = await supabase
         .from('projets')
-        .select('id, projet, emetteur, siren_emetteur, representant_masse, email_rep_masse, date_emission, montant_global_eur, org_id, created_at, periodicite_coupons, taux_nominal')
+        .select(
+          'id, projet, emetteur, siren_emetteur, representant_masse, email_rep_masse, date_emission, montant_global_eur, org_id, created_at, periodicite_coupons, taux_nominal'
+        )
         .order('created_at', { ascending: false });
 
-      if (projectsRes.error) throw projectsRes.error;
+      if (projectsRes.error) {
+        throw projectsRes.error;
+      }
 
       const projectsData = projectsRes.data || [];
 
@@ -187,7 +193,7 @@ export function Projects({ organization }: ProjectsProps) {
         supabase
           .from('souscriptions')
           .select('montant_investi, investisseur_id, tranche:tranches!inner(projet_id)')
-          .in('tranche.projet_id', projectIds)
+          .in('tranche.projet_id', projectIds),
       ]);
 
       const tranchesData = tranchesRes.data || [];
@@ -197,13 +203,15 @@ export function Projects({ organization }: ProjectsProps) {
       const tranchesMap = new Map<string, number>();
       const subscriptionsMap = new Map<string, { total: number; investors: Set<string> }>();
 
-      tranchesData.forEach((t: any) => {
+      tranchesData.forEach(t => {
         tranchesMap.set(t.projet_id, (tranchesMap.get(t.projet_id) || 0) + 1);
       });
 
-      subscriptionsData.forEach((s: any) => {
+      subscriptionsData.forEach(s => {
         const projetId = s.tranche?.projet_id;
-        if (!projetId) return;
+        if (!projetId) {
+          return;
+        }
 
         const current = subscriptionsMap.get(projetId) || { total: 0, investors: new Set() };
         current.total += Number(s.montant_investi) || 0;
@@ -211,7 +219,7 @@ export function Projects({ organization }: ProjectsProps) {
         subscriptionsMap.set(projetId, current);
       });
 
-      const projectsWithStats = projectsData.map((project: any) => {
+      const projectsWithStats = projectsData.map(project => {
         const stats = subscriptionsMap.get(project.id);
         return {
           ...project,
@@ -236,16 +244,17 @@ export function Projects({ organization }: ProjectsProps) {
   };
 
   const confirmDeleteProject = async () => {
-    if (!projectToDelete) return;
+    if (!projectToDelete) {
+      return;
+    }
 
     setDeletingProject(true);
     try {
-      const { error } = await supabase
-        .from('projets')
-        .delete()
-        .eq('id', projectToDelete.id);
+      const { error } = await supabase.from('projets').delete().eq('id', projectToDelete.id);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       toast.success('Projet supprimé avec succès !');
 
@@ -256,9 +265,11 @@ export function Projects({ organization }: ProjectsProps) {
       // Refresh project list
       await fetchProjects();
       triggerCacheInvalidation();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur lors de la suppression du projet:', err);
-      toast.error(`Erreur lors de la suppression: ${err.message}`);
+      toast.error(
+        `Erreur lors de la suppression: ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setDeletingProject(false);
     }
@@ -277,20 +288,17 @@ export function Projects({ organization }: ProjectsProps) {
 
     try {
       // Parse numeric fields
-      const tauxValue = newProjectData.taux_interet && newProjectData.taux_interet.trim() !== ''
-        ? parseFloat(newProjectData.taux_interet)
-        : null;
+      const tauxValue =
+        newProjectData.taux_interet && newProjectData.taux_interet.trim() !== ''
+          ? parseFloat(newProjectData.taux_interet)
+          : null;
       const montantGlobal = newProjectData.montant_global_eur
         ? parseInt(newProjectData.montant_global_eur.replace(/\s/g, ''))
         : null;
-      const maturite = newProjectData.maturite_mois
-        ? parseInt(newProjectData.maturite_mois)
-        : null;
-      const baseInteret = newProjectData.base_interet
-        ? parseInt(newProjectData.base_interet)
-        : 360;
+      const maturite = newProjectData.maturite_mois ? parseInt(newProjectData.maturite_mois) : null;
+      const baseInteret = newProjectData.base_interet ? parseInt(newProjectData.base_interet) : 360;
 
-      const projectToCreate: any = {
+      const projectToCreate: Record<string, unknown> = {
         projet: newProjectData.projet,
         type: newProjectData.type || null,
         emetteur: newProjectData.emetteur,
@@ -326,7 +334,9 @@ export function Projects({ organization }: ProjectsProps) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       // Invalidate dashboard cache since new project affects stats
       triggerCacheInvalidation(organization.id);
@@ -339,8 +349,10 @@ export function Projects({ organization }: ProjectsProps) {
       if (data) {
         navigate(`/projets/${data.id}`);
       }
-    } catch (err: any) {
-      toast.error('Erreur lors de la création du projet: ' + err.message);
+    } catch (err: unknown) {
+      toast.error(
+        `Erreur lors de la création du projet: ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setCreatingProject(false);
     }
@@ -369,7 +381,8 @@ export function Projects({ organization }: ProjectsProps) {
     setSelectedOrgId('');
   };
 
-  const isFormValid = newProjectData.projet.trim() !== '' &&
+  const isFormValid =
+    newProjectData.projet.trim() !== '' &&
     newProjectData.emetteur.trim() !== '' &&
     newProjectData.siren_emetteur.trim() !== '' &&
     !sirenError &&
@@ -381,7 +394,9 @@ export function Projects({ organization }: ProjectsProps) {
 
   const moveCaretBeforeEuro = () => {
     const input = montantRef.current;
-    if (!input) return;
+    if (!input) {
+      return;
+    }
     const val = input.value;
     const euroIndex = val.lastIndexOf('€');
     if (euroIndex > 0) {
@@ -399,7 +414,9 @@ export function Projects({ organization }: ProjectsProps) {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Tous les projets</h1>
-            <p className="text-slate-600">{projects.length} projet{projects.length > 1 ? 's' : ''}</p>
+            <p className="text-slate-600">
+              {projects.length} projet{projects.length > 1 ? 's' : ''}
+            </p>
           </div>
         </div>
         <button
@@ -421,7 +438,7 @@ export function Projects({ organization }: ProjectsProps) {
               type="text"
               placeholder="Rechercher un projet par nom ou émetteur..."
               value={advancedFilters.filters.search}
-              onChange={(e) => advancedFilters.setSearch(e.target.value)}
+              onChange={e => advancedFilters.setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             />
           </div>
@@ -452,7 +469,9 @@ export function Projects({ organization }: ProjectsProps) {
             {advancedFilters.filters.search ? 'Aucun projet trouvé' : 'Aucun projet'}
           </h3>
           <p className="text-slate-600 mb-4">
-            {advancedFilters.filters.search ? 'Essayez avec d\'autres termes de recherche' : 'Créez votre premier projet pour commencer'}
+            {advancedFilters.filters.search
+              ? "Essayez avec d'autres termes de recherche"
+              : 'Créez votre premier projet pour commencer'}
           </p>
           {!advancedFilters.filters.search && (
             <button
@@ -466,7 +485,7 @@ export function Projects({ organization }: ProjectsProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
+          {filteredProjects.map(project => (
             <div
               key={project.id}
               className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all overflow-hidden"
@@ -477,7 +496,9 @@ export function Projects({ organization }: ProjectsProps) {
                     <Layers className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-slate-900 mb-1 truncate">{project.projet}</h3>
+                    <h3 className="text-lg font-bold text-slate-900 mb-1 truncate">
+                      {project.projet}
+                    </h3>
                     <p className="text-sm text-slate-600 truncate">{project.emetteur}</p>
                   </div>
                 </div>
@@ -489,14 +510,18 @@ export function Projects({ organization }: ProjectsProps) {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600">Montant levé</span>
-                    <span className="font-semibold text-finixar-green">{formatCurrency(project.total_leve)}</span>
+                    <span className="font-semibold text-finixar-green">
+                      {formatCurrency(project.total_leve)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600 flex items-center gap-1">
                       <Users className="w-4 h-4" />
                       Investisseurs
                     </span>
-                    <span className="font-semibold text-slate-900">{project.investisseurs_count}</span>
+                    <span className="font-semibold text-slate-900">
+                      {project.investisseurs_count}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -510,7 +535,7 @@ export function Projects({ organization }: ProjectsProps) {
                   Voir détails
                 </button>
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     handleDeleteProject(project.id, project.projet);
                   }}
@@ -529,7 +554,7 @@ export function Projects({ organization }: ProjectsProps) {
       {showCreateModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
-          onClick={(e) => {
+          onClick={e => {
             if (e.target === e.currentTarget) {
               resetNewProjectForm();
               setShowCreateModal(false);
@@ -557,7 +582,10 @@ export function Projects({ organization }: ProjectsProps) {
               <form onSubmit={handleCreateProject} className="p-6 bg-white" autoComplete="off">
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="projet" className="block text-sm font-medium text-slate-900 mb-2">
+                    <label
+                      htmlFor="projet"
+                      className="block text-sm font-medium text-slate-900 mb-2"
+                    >
                       Nom du projet <span className="text-finixar-red">*</span>
                     </label>
                     <input
@@ -569,7 +597,9 @@ export function Projects({ organization }: ProjectsProps) {
                       aria-required="true"
                       autoComplete="nope"
                       value={newProjectData.projet}
-                      onChange={(e) => setNewProjectData({ ...newProjectData, projet: e.target.value })}
+                      onChange={e =>
+                        setNewProjectData({ ...newProjectData, projet: e.target.value })
+                      }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: GreenTech 2025"
                       data-form-type="other"
@@ -579,24 +609,28 @@ export function Projects({ organization }: ProjectsProps) {
                   {/* Organization selection for superadmin */}
                   {isSuperAdmin && (
                     <div>
-                      <label htmlFor="organization" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="organization"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Organisation
                       </label>
                       <select
                         id="organization"
                         value={selectedOrgId}
-                        onChange={(e) => setSelectedOrgId(e.target.value)}
+                        onChange={e => setSelectedOrgId(e.target.value)}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="">Aucune organisation (visible par tous)</option>
-                        {organizations.map((org) => (
+                        {organizations.map(org => (
                           <option key={org.id} value={org.id}>
                             {org.name}
                           </option>
                         ))}
                       </select>
                       <p className="mt-1 text-xs text-slate-600">
-                        Si aucune organisation n'est sélectionnée, le projet sera visible par tous les utilisateurs
+                        Si aucune organisation n'est sélectionnée, le projet sera visible par tous
+                        les utilisateurs
                       </p>
                     </div>
                   )}
@@ -604,7 +638,10 @@ export function Projects({ organization }: ProjectsProps) {
                   {/* Champs financiers */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="type" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="type"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Type d'obligations <span className="text-finixar-red">*</span>
                       </label>
                       <select
@@ -612,7 +649,9 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         aria-required="true"
                         value={newProjectData.type}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, type: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, type: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="obligations_simples">Obligations Simples</option>
@@ -621,7 +660,10 @@ export function Projects({ organization }: ProjectsProps) {
                     </div>
 
                     <div>
-                      <label htmlFor="taux" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="taux"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Taux d'intérêt (%) <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -636,7 +678,9 @@ export function Projects({ organization }: ProjectsProps) {
                         inputMode="decimal"
                         autoComplete="off"
                         value={newProjectData.taux_interet}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, taux_interet: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, taux_interet: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 8.50"
                       />
@@ -645,7 +689,10 @@ export function Projects({ organization }: ProjectsProps) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="maturite" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="maturite"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Maturité (mois) <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -658,7 +705,9 @@ export function Projects({ organization }: ProjectsProps) {
                         aria-required="true"
                         autoComplete="off"
                         value={newProjectData.maturite_mois}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, maturite_mois: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 60 (5 ans)"
                       />
@@ -666,7 +715,10 @@ export function Projects({ organization }: ProjectsProps) {
                     </div>
 
                     <div>
-                      <label htmlFor="base_interet" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="base_interet"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Base de calcul <span className="text-finixar-red">*</span>
                       </label>
                       <select
@@ -674,7 +726,9 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         aria-required="true"
                         value={newProjectData.base_interet}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, base_interet: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, base_interet: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
                         <option value="360">360 jours (30/360) - Standard</option>
@@ -687,11 +741,15 @@ export function Projects({ organization }: ProjectsProps) {
                   {/* Flat Tax Toggle */}
                   <div className="flex items-center justify-between py-4 px-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex-1">
-                      <label htmlFor="apply_flat_tax" className="block text-sm font-medium text-slate-900 mb-1">
+                      <label
+                        htmlFor="apply_flat_tax"
+                        className="block text-sm font-medium text-slate-900 mb-1"
+                      >
                         Appliquer le PFU (30%)
                       </label>
                       <p className="text-sm text-slate-600">
-                        Activer le prélèvement forfaitaire unique de 30% pour les personnes physiques
+                        Activer le prélèvement forfaitaire unique de 30% pour les personnes
+                        physiques
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer ml-4">
@@ -699,7 +757,9 @@ export function Projects({ organization }: ProjectsProps) {
                         id="apply_flat_tax"
                         type="checkbox"
                         checked={newProjectData.apply_flat_tax ?? true}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, apply_flat_tax: e.target.checked })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, apply_flat_tax: e.target.checked })
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -708,7 +768,10 @@ export function Projects({ organization }: ProjectsProps) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="montant" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="montant"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Montant global à lever (€) <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -721,36 +784,39 @@ export function Projects({ organization }: ProjectsProps) {
                         autoComplete="off"
                         inputMode="numeric"
                         value={formatMontantDisplay(newProjectData.montant_global_eur)}
-                        onInput={(e: any) => {
+                        onInput={(e: React.FormEvent<HTMLInputElement>) => {
                           // onInput catches browser autocomplete better than onChange
-                          const value = e.target.value;
+                          const value = (e.target as HTMLInputElement).value;
                           const digitsOnly = value.replace(/\D/g, '');
                           if (digitsOnly !== newProjectData.montant_global_eur) {
                             setNewProjectData(prev => ({
                               ...prev,
-                              montant_global_eur: digitsOnly
+                              montant_global_eur: digitsOnly,
                             }));
                           }
                         }}
-                        onChange={(e) => {
+                        onChange={e => {
                           // Fallback for browsers that use onChange for autocomplete
                           const value = e.target.value;
                           const digitsOnly = value.replace(/\D/g, '');
                           if (digitsOnly !== newProjectData.montant_global_eur) {
                             setNewProjectData(prev => ({
                               ...prev,
-                              montant_global_eur: digitsOnly
+                              montant_global_eur: digitsOnly,
                             }));
                           }
                         }}
                         onFocus={moveCaretBeforeEuro}
                         onClick={moveCaretBeforeEuro}
-                        onBeforeInput={(e: any) => {
-                          const data = e.data as string | null;
-                          const inputType = e.inputType as string;
+                        onBeforeInput={(e: React.FormEvent<HTMLInputElement>) => {
+                          const data = (e as unknown as InputEvent).data as string | null;
+                          const inputType = (e as unknown as InputEvent).inputType as string;
 
                           // Allow insertReplacementText (autocomplete) and multi-character insertions
-                          if (inputType === 'insertReplacementText' || (inputType === 'insertText' && data && data.length > 1)) {
+                          if (
+                            inputType === 'insertReplacementText' ||
+                            (inputType === 'insertText' && data && data.length > 1)
+                          ) {
                             return; // Let onInput/onChange handle autocomplete
                           }
 
@@ -758,7 +824,7 @@ export function Projects({ organization }: ProjectsProps) {
                             e.preventDefault();
                             setNewProjectData(prev => ({
                               ...prev,
-                              montant_global_eur: (prev.montant_global_eur || '') + data
+                              montant_global_eur: (prev.montant_global_eur || '') + data,
                             }));
                             requestAnimationFrame(moveCaretBeforeEuro);
                             return;
@@ -768,15 +834,25 @@ export function Projects({ organization }: ProjectsProps) {
                             return;
                           }
                         }}
-                        onKeyDown={(e) => {
-                          const navKeys = ['Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
-                          if (navKeys.includes(e.key)) return;
+                        onKeyDown={e => {
+                          const navKeys = [
+                            'Tab',
+                            'ArrowLeft',
+                            'ArrowRight',
+                            'ArrowUp',
+                            'ArrowDown',
+                            'Home',
+                            'End',
+                          ];
+                          if (navKeys.includes(e.key)) {
+                            return;
+                          }
 
                           if (/^\d$/.test(e.key)) {
                             e.preventDefault();
                             setNewProjectData(prev => ({
                               ...prev,
-                              montant_global_eur: (prev.montant_global_eur || '') + e.key
+                              montant_global_eur: (prev.montant_global_eur || '') + e.key,
                             }));
                             requestAnimationFrame(moveCaretBeforeEuro);
                             return;
@@ -786,7 +862,7 @@ export function Projects({ organization }: ProjectsProps) {
                             e.preventDefault();
                             setNewProjectData(prev => ({
                               ...prev,
-                              montant_global_eur: prev.montant_global_eur.slice(0, -1)
+                              montant_global_eur: prev.montant_global_eur.slice(0, -1),
                             }));
                             requestAnimationFrame(moveCaretBeforeEuro);
                             return;
@@ -794,14 +870,14 @@ export function Projects({ organization }: ProjectsProps) {
 
                           e.preventDefault();
                         }}
-                        onPaste={(e) => {
+                        onPaste={e => {
                           e.preventDefault();
                           const clipboardData = e.clipboardData;
                           const text = clipboardData?.getData('text') || '';
                           const digits = text.replace(/\D/g, '');
                           setNewProjectData(prev => ({
                             ...prev,
-                            montant_global_eur: digits
+                            montant_global_eur: digits,
                           }));
                           requestAnimationFrame(moveCaretBeforeEuro);
                         }}
@@ -811,7 +887,10 @@ export function Projects({ organization }: ProjectsProps) {
                     </div>
 
                     <div>
-                      <label htmlFor="periodicite" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="periodicite"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Périodicité du coupon <span className="text-finixar-red">*</span>
                       </label>
                       <select
@@ -819,10 +898,17 @@ export function Projects({ organization }: ProjectsProps) {
                         required
                         aria-required="true"
                         value={newProjectData.periodicite_coupon}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, periodicite_coupon: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({
+                            ...newProjectData,
+                            periodicite_coupon: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       >
-                        <option value="" disabled>Choisir…</option>
+                        <option value="" disabled>
+                          Choisir…
+                        </option>
                         <option value="mensuelle">Mensuelle</option>
                         <option value="trimestrielle">Trimestrielle</option>
                         <option value="semestrielle">Semestrielle</option>
@@ -832,7 +918,10 @@ export function Projects({ organization }: ProjectsProps) {
                   </div>
 
                   <div>
-                    <label htmlFor="emetteur" className="block text-sm font-medium text-slate-900 mb-2">
+                    <label
+                      htmlFor="emetteur"
+                      className="block text-sm font-medium text-slate-900 mb-2"
+                    >
                       Émetteur <span className="text-finixar-red">*</span>
                     </label>
                     <input
@@ -844,7 +933,9 @@ export function Projects({ organization }: ProjectsProps) {
                       aria-required="true"
                       autoComplete="nope"
                       value={newProjectData.emetteur}
-                      onChange={(e) => setNewProjectData({ ...newProjectData, emetteur: e.target.value })}
+                      onChange={e =>
+                        setNewProjectData({ ...newProjectData, emetteur: e.target.value })
+                      }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: GreenTech SAS"
                       data-form-type="other"
@@ -852,7 +943,10 @@ export function Projects({ organization }: ProjectsProps) {
                   </div>
 
                   <div>
-                    <label htmlFor="siren" className="block text-sm font-medium text-slate-900 mb-2">
+                    <label
+                      htmlFor="siren"
+                      className="block text-sm font-medium text-slate-900 mb-2"
+                    >
                       SIREN de l'émetteur <span className="text-finixar-red">*</span>
                     </label>
                     <input
@@ -866,11 +960,11 @@ export function Projects({ organization }: ProjectsProps) {
                       title="Le SIREN doit comporter exactement 9 chiffres."
                       minLength={9}
                       value={newProjectData.siren_emetteur}
-                      onChange={(e) => {
+                      onChange={e => {
                         const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
                         setNewProjectData({ ...newProjectData, siren_emetteur: digits });
                       }}
-                      onPaste={(e) => {
+                      onPaste={e => {
                         e.preventDefault();
                         const pastedText = e.clipboardData.getData('text');
                         const digits = pastedText.replace(/\D/g, '').slice(0, 9);
@@ -885,14 +979,15 @@ export function Projects({ organization }: ProjectsProps) {
                       inputMode="numeric"
                       data-form-type="other"
                     />
-                    {sirenError && (
-                      <p className="mt-1 text-sm text-finixar-red">{sirenError}</p>
-                    )}
+                    {sirenError && <p className="mt-1 text-sm text-finixar-red">{sirenError}</p>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="prenom" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="prenom"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Prénom du représentant <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -904,14 +999,22 @@ export function Projects({ organization }: ProjectsProps) {
                         aria-required="true"
                         autoComplete="nope"
                         value={newProjectData.prenom_representant}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, prenom_representant: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({
+                            ...newProjectData,
+                            prenom_representant: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Jean"
                         data-form-type="other"
                       />
                     </div>
                     <div>
-                      <label htmlFor="nom" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="nom"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Nom du représentant <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -923,7 +1026,9 @@ export function Projects({ organization }: ProjectsProps) {
                         aria-required="true"
                         autoComplete="nope"
                         value={newProjectData.nom_representant}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, nom_representant: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, nom_representant: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Dupont"
                         data-form-type="other"
@@ -932,7 +1037,10 @@ export function Projects({ organization }: ProjectsProps) {
                   </div>
 
                   <div>
-                    <label htmlFor="emailrep" className="block text-sm font-medium text-slate-900 mb-2">
+                    <label
+                      htmlFor="emailrep"
+                      className="block text-sm font-medium text-slate-900 mb-2"
+                    >
                       Email du représentant <span className="text-finixar-red">*</span>
                     </label>
                     <input
@@ -943,7 +1051,9 @@ export function Projects({ organization }: ProjectsProps) {
                       aria-required="true"
                       autoComplete="nope"
                       value={newProjectData.email_representant}
-                      onChange={(e) => setNewProjectData({ ...newProjectData, email_representant: e.target.value })}
+                      onChange={e =>
+                        setNewProjectData({ ...newProjectData, email_representant: e.target.value })
+                      }
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                       placeholder="Ex: jean.dupont@example.com"
                       data-form-type="other"
@@ -951,10 +1061,15 @@ export function Projects({ organization }: ProjectsProps) {
                   </div>
 
                   <div className="border-t border-slate-200 pt-4 mt-4">
-                    <h4 className="text-sm font-semibold text-slate-900 mb-3">Représentant de la masse</h4>
+                    <h4 className="text-sm font-semibold text-slate-900 mb-3">
+                      Représentant de la masse
+                    </h4>
 
                     <div>
-                      <label htmlFor="repmasse" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="repmasse"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Nom du représentant de la masse <span className="text-finixar-red">*</span>
                       </label>
                       <input
@@ -966,7 +1081,12 @@ export function Projects({ organization }: ProjectsProps) {
                         aria-required="true"
                         autoComplete="nope"
                         value={newProjectData.representant_masse}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, representant_masse: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({
+                            ...newProjectData,
+                            representant_masse: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: Cabinet Lefevre"
                         data-form-type="other"
@@ -974,8 +1094,12 @@ export function Projects({ organization }: ProjectsProps) {
                     </div>
 
                     <div className="mt-4">
-                      <label htmlFor="emailmasse" className="block text-sm font-medium text-slate-900 mb-2">
-                        Email du représentant de la masse <span className="text-finixar-red">*</span>
+                      <label
+                        htmlFor="emailmasse"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
+                        Email du représentant de la masse{' '}
+                        <span className="text-finixar-red">*</span>
                       </label>
                       <input
                         id="emailmasse"
@@ -985,7 +1109,9 @@ export function Projects({ organization }: ProjectsProps) {
                         aria-required="true"
                         autoComplete="nope"
                         value={newProjectData.email_rep_masse}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })}
+                        onChange={e =>
+                          setNewProjectData({ ...newProjectData, email_rep_masse: e.target.value })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: contact@cabinet-lefevre.fr"
                         data-form-type="other"
@@ -993,7 +1119,10 @@ export function Projects({ organization }: ProjectsProps) {
                     </div>
 
                     <div className="mt-4">
-                      <label htmlFor="telmasse" className="block text-sm font-medium text-slate-900 mb-2">
+                      <label
+                        htmlFor="telmasse"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
                         Téléphone du représentant de la masse
                       </label>
                       <input
@@ -1004,7 +1133,12 @@ export function Projects({ organization }: ProjectsProps) {
                         minLength={10}
                         autoComplete="nope"
                         value={newProjectData.telephone_rep_masse}
-                        onChange={(e) => setNewProjectData({ ...newProjectData, telephone_rep_masse: e.target.value.replace(/\D/g, '') })}
+                        onChange={e =>
+                          setNewProjectData({
+                            ...newProjectData,
+                            telephone_rep_masse: e.target.value.replace(/\D/g, ''),
+                          })
+                        }
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 0123456789"
                         maxLength={10}
@@ -1017,7 +1151,10 @@ export function Projects({ organization }: ProjectsProps) {
                 <div className="flex gap-3 mt-6">
                   <button
                     type="button"
-                    onClick={() => { resetNewProjectForm(); setShowCreateModal(false); }}
+                    onClick={() => {
+                      resetNewProjectForm();
+                      setShowCreateModal(false);
+                    }}
                     className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
                     disabled={creatingProject}
                   >
@@ -1052,7 +1189,7 @@ export function Projects({ organization }: ProjectsProps) {
             ? `Êtes-vous sûr de vouloir supprimer le projet "${projectToDelete.name}" ?\n\nCette action supprimera également toutes les tranches, souscriptions et coupons associés.\n\n⚠️ Cette action est irréversible.`
             : ''
         }
-        confirmText={deletingProject ? "Suppression..." : "Supprimer définitivement"}
+        confirmText={deletingProject ? 'Suppression...' : 'Supprimer définitivement'}
         cancelText="Annuler"
         isLoading={deletingProject}
       />

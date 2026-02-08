@@ -71,8 +71,8 @@ export function SimplePaymentModal({
         throw new Error('Échéance introuvable');
       }
 
-      const orgId = (echeanceData.souscription as any)?.org_id;
-      const trancheId = (echeanceData.souscription as any)?.tranche_id;
+      const orgId = (echeanceData.souscription as Record<string, unknown> | null)?.org_id;
+      const trancheId = (echeanceData.souscription as Record<string, unknown> | null)?.tranche_id;
 
       if (!orgId) {
         throw new Error('Organisation introuvable');
@@ -108,7 +108,7 @@ export function SimplePaymentModal({
         .eq('id', echeanceId);
 
       if (updateError) {
-        throw new Error('Erreur lors de la mise à jour de l\'échéance');
+        throw new Error("Erreur lors de la mise à jour de l'échéance");
       }
 
       // Upload proof if provided
@@ -119,9 +119,7 @@ export function SimplePaymentModal({
           .upload(fileName, proofFile);
 
         if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from('payment-proofs')
-            .getPublicUrl(fileName);
+          const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
 
           if (urlData?.publicUrl) {
             await supabase.from('payment_proofs').insert({
@@ -148,10 +146,7 @@ export function SimplePaymentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -191,9 +186,7 @@ export function SimplePaymentModal({
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-slate-900">{investisseurNom}</p>
-                <p className="text-sm text-slate-500">
-                  Échéance du {formatDate(dateEcheance)}
-                </p>
+                <p className="text-sm text-slate-500">Échéance du {formatDate(dateEcheance)}</p>
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-slate-200">
@@ -212,7 +205,7 @@ export function SimplePaymentModal({
             <input
               type="date"
               value={datePaiement}
-              onChange={(e) => setDatePaiement(e.target.value)}
+              onChange={e => setDatePaiement(e.target.value)}
               className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>

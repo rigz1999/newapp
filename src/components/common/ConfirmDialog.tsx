@@ -28,7 +28,9 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleConfirm = async () => {
     setIsProcessing(true);
@@ -77,13 +79,11 @@ export function ConfirmDialog({
     >
       <div
         className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           <div className="flex items-start gap-4">
-            <div className={`flex-shrink-0 ${styles.iconBg} p-3 rounded-full`}>
-              {styles.icon}
-            </div>
+            <div className={`flex-shrink-0 ${styles.iconBg} p-3 rounded-full`}>{styles.icon}</div>
             <div className="flex-1">
               <h3 className="text-lg font-bold text-slate-900 mb-2">{title}</h3>
               <p className="text-sm text-slate-600 whitespace-pre-line">{message}</p>

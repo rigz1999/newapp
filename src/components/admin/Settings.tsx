@@ -7,7 +7,20 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import {
-  User, Lock, Mail, Save, RefreshCw, CheckCircle, X, AlertCircle, Bell, Send, Check, Eye, EyeOff, ExternalLink
+  User,
+  Lock,
+  Mail,
+  Save,
+  RefreshCw,
+  CheckCircle,
+  X,
+  AlertCircle,
+  Bell,
+  Send,
+  Check,
+  Eye,
+  EyeOff,
+  ExternalLink,
 } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { CardSkeleton } from '../common/Skeleton';
@@ -40,7 +53,10 @@ export default function Settings() {
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
 
   // Email connection settings
-  const [emailConnection, setEmailConnection] = useState<any>(null);
+  const [emailConnection, setEmailConnection] = useState<{
+    email_address: string;
+    connected_at: string;
+  } | null>(null);
   const [connectingEmail, setConnectingEmail] = useState(false);
 
   // Success/Error states
@@ -50,15 +66,13 @@ export default function Settings() {
   const [showConfirmDisconnect, setShowConfirmDisconnect] = useState(false);
 
   // Password strength checker
-  const checkPasswordRequirements = (password: string) => {
-    return {
-      hasLowercase: /[a-z]/.test(password),
-      hasUppercase: /[A-Z]/.test(password),
-      hasNumber: /[0-9]/.test(password),
-      hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password),
-      hasMinLength: password.length >= 12
-    };
-  };
+  const checkPasswordRequirements = (password: string) => ({
+    hasLowercase: /[a-z]/.test(password),
+    hasUppercase: /[A-Z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecial: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password),
+    hasMinLength: password.length >= 12,
+  });
 
   const passwordRequirements = checkPasswordRequirements(newPassword);
   const isPasswordValid = Object.values(passwordRequirements).every(Boolean);
@@ -89,7 +103,9 @@ export default function Settings() {
   }, [errorMessage]);
 
   const fetchUserProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     setLoading(true);
 
@@ -141,7 +157,9 @@ export default function Settings() {
   };
 
   const handleUpdateProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     if (!firstName.trim() || !lastName.trim()) {
       setErrorMessage('Le prénom et le nom sont obligatoires');
@@ -157,7 +175,7 @@ export default function Settings() {
       .from('profiles')
       .update({
         full_name: fullName,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       } as never)
       .eq('id', user.id);
 
@@ -192,7 +210,7 @@ export default function Settings() {
     }
 
     if (newPassword === currentPassword) {
-      setErrorMessage('Le nouveau mot de passe doit être différent de l\'ancien');
+      setErrorMessage("Le nouveau mot de passe doit être différent de l'ancien");
       return;
     }
 
@@ -203,7 +221,9 @@ export default function Settings() {
       logger.debug('Starting password change process');
 
       // Get the current session to pass the auth token
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       logger.debug('Session check', { hasSession: !!session, userId: session?.user?.id });
 
@@ -234,9 +254,8 @@ export default function Settings() {
         logger.error(new Error('Function error'), { error: functionError });
 
         // Fallback error handling
-        const errorMsg = data?.error
-          || functionError.message
-          || 'Erreur lors du changement de mot de passe.';
+        const errorMsg =
+          data?.error || functionError.message || 'Erreur lors du changement de mot de passe.';
         setErrorMessage(errorMsg);
         return;
       }
@@ -261,12 +280,14 @@ export default function Settings() {
     } catch (err) {
       logger.error(err instanceof Error ? err : new Error(String(err)));
       setSaving(false);
-      setErrorMessage('Une erreur s\'est produite. Veuillez réessayer ou contacter le support.');
+      setErrorMessage("Une erreur s'est produite. Veuillez réessayer ou contacter le support.");
     }
   };
 
   const handleUpdateReminderSettings = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     // Validate that at least one reminder period is selected if reminders are enabled
     if (remindersEnabled && !remind7Days && !remind14Days && !remind30Days) {
@@ -279,18 +300,19 @@ export default function Settings() {
 
     try {
       // Upsert reminder settings
-      const { error } = await supabase
-        .from('user_reminder_settings')
-        .upsert({
+      const { error } = await supabase.from('user_reminder_settings').upsert(
+        {
           user_id: user.id,
           enabled: remindersEnabled,
           remind_7_days: remind7Days,
           remind_14_days: remind14Days,
           remind_30_days: remind30Days,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id',
+        }
+      );
 
       setSaving(false);
 
@@ -307,7 +329,9 @@ export default function Settings() {
   };
 
   const handleSendTestEmail = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     setSendingTestEmail(true);
     setErrorMessage('');
@@ -315,7 +339,7 @@ export default function Settings() {
     try {
       // Call the Edge Function directly for test email
       const { data, error } = await supabase.functions.invoke('send-coupon-reminders', {
-        body: { testMode: true, userId: user.id }
+        body: { testMode: true, userId: user.id },
       });
 
       setSendingTestEmail(false);
@@ -335,7 +359,9 @@ export default function Settings() {
   };
 
   const handleConnectEmail = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     setConnectingEmail(true);
     setErrorMessage('');
@@ -348,9 +374,12 @@ export default function Settings() {
 
       const tenantId = import.meta.env.VITE_MICROSOFT_TENANT_ID || 'common';
       const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
-      const scope = encodeURIComponent('https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/User.Read offline_access');
+      const scope = encodeURIComponent(
+        'https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/User.Read offline_access'
+      );
 
-      const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
+      const authUrl =
+        `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
         `client_id=${clientId}` +
         `&response_type=code` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
@@ -374,7 +403,9 @@ export default function Settings() {
   };
 
   const handleDisconnectEmail = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     setShowConfirmDisconnect(false);
     setSaving(true);
@@ -433,13 +464,19 @@ export default function Settings() {
 
       {/* Error Message */}
       {errorMessage && (
-        <div ref={errorMessageRef} className="mb-6 bg-red-50 border-2 border-red-200 rounded-lg p-4 flex items-start gap-3">
+        <div
+          ref={errorMessageRef}
+          className="mb-6 bg-red-50 border-2 border-red-200 rounded-lg p-4 flex items-start gap-3"
+        >
           <AlertCircle className="w-5 h-5 text-finixar-red flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-red-900 font-medium">Erreur</p>
             <p className="text-red-700 text-sm">{errorMessage}</p>
           </div>
-          <button onClick={() => setErrorMessage('')} className="text-finixar-red hover:text-red-800">
+          <button
+            onClick={() => setErrorMessage('')}
+            className="text-finixar-red hover:text-red-800"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -458,9 +495,7 @@ export default function Settings() {
           <div className="p-6 space-y-6">
             {/* Email (Read-only) */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Adresse email
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Adresse email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
@@ -475,13 +510,11 @@ export default function Settings() {
 
             {/* First Name */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Prénom *
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Prénom *</label>
               <input
                 type="text"
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                onChange={e => setFirstName(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                 placeholder="Jean"
               />
@@ -489,13 +522,11 @@ export default function Settings() {
 
             {/* Last Name */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Nom *
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Nom *</label>
               <input
                 type="text"
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={e => setLastName(e.target.value)}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                 placeholder="Dupont"
               />
@@ -542,9 +573,9 @@ export default function Settings() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type={showCurrentPassword ? "text" : "password"}
+                  type={showCurrentPassword ? 'text' : 'password'}
                   value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  onChange={e => setCurrentPassword(e.target.value)}
                   className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                   placeholder="••••••••"
                 />
@@ -571,9 +602,9 @@ export default function Settings() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type={showNewPassword ? "text" : "password"}
+                  type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChange={e => setNewPassword(e.target.value)}
                   className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                   placeholder="••••••••"
                 />
@@ -583,18 +614,16 @@ export default function Settings() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                   tabIndex={-1}
                 >
-                  {showNewPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
 
               {/* Password Requirements Visual Indicators */}
               {newPassword && (
                 <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
-                  <p className="text-xs font-semibold text-slate-700 mb-2">Critères de sécurité :</p>
+                  <p className="text-xs font-semibold text-slate-700 mb-2">
+                    Critères de sécurité :
+                  </p>
 
                   <PasswordRequirement
                     met={passwordRequirements.hasMinLength}
@@ -637,9 +666,9 @@ export default function Settings() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type={showConfirmPassword ? "text" : "password"}
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={e => setConfirmPassword(e.target.value)}
                   className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                   placeholder="••••••••"
                 />
@@ -662,7 +691,11 @@ export default function Settings() {
                 <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
                   <PasswordRequirement
                     met={newPassword === confirmPassword}
-                    text={newPassword === confirmPassword ? "Les mots de passe correspondent" : "Les mots de passe ne correspondent pas"}
+                    text={
+                      newPassword === confirmPassword
+                        ? 'Les mots de passe correspondent'
+                        : 'Les mots de passe ne correspondent pas'
+                    }
                   />
                 </div>
               )}
@@ -672,7 +705,11 @@ export default function Settings() {
             <div className="pt-4">
               <button
                 onClick={handleChangePassword}
-                disabled={saving || (newPassword && !isPasswordValid) || (confirmPassword && newPassword !== confirmPassword)}
+                disabled={
+                  saving ||
+                  (newPassword && !isPasswordValid) ||
+                  (confirmPassword && newPassword !== confirmPassword)
+                }
                 className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 {saving ? (
@@ -693,272 +730,300 @@ export default function Settings() {
 
         {/* Email Reminder Settings Card - Hidden for emetteur role */}
         {userRole !== 'emetteur' && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-          <div className="p-6 border-b border-slate-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bell className="w-5 h-5 text-slate-700" />
-                <h2 className="text-xl font-bold text-slate-900">Rappels de paiements</h2>
-              </div>
-              {/* Master toggle */}
-              <button
-                onClick={() => setRemindersEnabled(!remindersEnabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  remindersEnabled ? 'bg-finixar-teal' : 'bg-slate-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    remindersEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-            <p className="text-sm text-slate-600 mt-2">
-              Recevez des rappels par email pour les coupons à échéance prochaine
-            </p>
-          </div>
-
-          <div className="p-6 space-y-6">
-            {/* Reminder periods */}
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-slate-700 mb-3">
-                Périodes de rappel
-              </label>
-
-              {/* 7 days */}
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={remind7Days}
-                  onChange={(e) => setRemind7Days(e.target.checked)}
-                  disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <div className="flex-1">
-                  <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
-                    7 jours avant l'échéance
-                  </span>
-                  <p className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
-                    Rappel une semaine avant la date de paiement
-                  </p>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+            <div className="p-6 border-b border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-slate-700" />
+                  <h2 className="text-xl font-bold text-slate-900">Rappels de paiements</h2>
                 </div>
-              </label>
-
-              {/* 14 days */}
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={remind14Days}
-                  onChange={(e) => setRemind14Days(e.target.checked)}
-                  disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <div className="flex-1">
-                  <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
-                    14 jours avant l'échéance
-                  </span>
-                  <p className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
-                    Rappel deux semaines avant la date de paiement
-                  </p>
-                </div>
-              </label>
-
-              {/* 30 days */}
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={remind30Days}
-                  onChange={(e) => setRemind30Days(e.target.checked)}
-                  disabled={!remindersEnabled}
-                  className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <div className="flex-1">
-                  <span className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}>
-                    30 jours avant l'échéance
-                  </span>
-                  <p className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}>
-                    Rappel un mois avant la date de paiement
-                  </p>
-                </div>
-              </label>
-            </div>
-
-            {/* Info box */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex gap-3">
-                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-900">
-                  <p className="font-medium mb-1">Comment ça marche ?</p>
-                  <p className="text-blue-800">
-                    Les rappels sont envoyés automatiquement chaque jour à 7h00. Vous recevrez un email
-                    listant tous les coupons correspondant aux périodes que vous avez sélectionnées.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={handleUpdateReminderSettings}
-                disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {saving ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Enregistrement...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Enregistrer les préférences
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={handleSendTestEmail}
-                disabled={sendingTestEmail || !remindersEnabled}
-                className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {sendingTestEmail ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Envoi...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Email test
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-        )}
-
-        {/* Email Connection Card - Hidden for emetteur role */}
-        {userRole !== 'emetteur' && (
-        <div id="email-connection" className="bg-white rounded-xl shadow-sm border border-slate-200 scroll-mt-4">
-          <div className="p-6 border-b border-slate-200">
-            <div className="flex items-center gap-2">
-              <Mail className="w-5 h-5 text-slate-700" />
-              <h2 className="text-xl font-bold text-slate-900">Connexion E-mail</h2>
-            </div>
-            <p className="text-sm text-slate-600 mt-2">
-              Connectez votre compte e-mail pour envoyer des rappels de paiement directement depuis votre boîte de réception
-            </p>
-          </div>
-
-          <div className="p-6 space-y-6">
-            {emailConnection ? (
-              /* Connected State */
-              <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-green-900 mb-1">Outlook connecté</p>
-                      <div className="text-sm text-green-800 space-y-1">
-                        <p><strong>Provider:</strong> Microsoft Outlook</p>
-                        <p><strong>Adresse:</strong> {emailConnection.email_address}</p>
-                        <p><strong>Connecté le:</strong> {new Date(emailConnection.connected_at).toLocaleDateString('fr-FR')}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex gap-3">
-                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-blue-900">
-                      <p className="font-medium mb-1">Comment utiliser ?</p>
-                      <p className="text-blue-800">
-                        Dans la page Échéancier, cliquez sur le bouton "Envoyer rappel" à côté d'un paiement impayé.
-                        Un brouillon d'e-mail sera automatiquement créé dans votre Outlook avec toutes les informations pré-remplies.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
+                {/* Master toggle */}
                 <button
-                  onClick={confirmDisconnectEmail}
+                  onClick={() => setRemindersEnabled(!remindersEnabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    remindersEnabled ? 'bg-finixar-teal' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      remindersEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              <p className="text-sm text-slate-600 mt-2">
+                Recevez des rappels par email pour les coupons à échéance prochaine
+              </p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Reminder periods */}
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-slate-700 mb-3">
+                  Périodes de rappel
+                </label>
+
+                {/* 7 days */}
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={remind7Days}
+                    onChange={e => setRemind7Days(e.target.checked)}
+                    disabled={!remindersEnabled}
+                    className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <div className="flex-1">
+                    <span
+                      className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}
+                    >
+                      7 jours avant l'échéance
+                    </span>
+                    <p
+                      className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}
+                    >
+                      Rappel une semaine avant la date de paiement
+                    </p>
+                  </div>
+                </label>
+
+                {/* 14 days */}
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={remind14Days}
+                    onChange={e => setRemind14Days(e.target.checked)}
+                    disabled={!remindersEnabled}
+                    className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <div className="flex-1">
+                    <span
+                      className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}
+                    >
+                      14 jours avant l'échéance
+                    </span>
+                    <p
+                      className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}
+                    >
+                      Rappel deux semaines avant la date de paiement
+                    </p>
+                  </div>
+                </label>
+
+                {/* 30 days */}
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={remind30Days}
+                    onChange={e => setRemind30Days(e.target.checked)}
+                    disabled={!remindersEnabled}
+                    className="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-2 focus:ring-finixar-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <div className="flex-1">
+                    <span
+                      className={`text-sm font-medium ${remindersEnabled ? 'text-slate-900' : 'text-slate-400'}`}
+                    >
+                      30 jours avant l'échéance
+                    </span>
+                    <p
+                      className={`text-xs ${remindersEnabled ? 'text-slate-600' : 'text-slate-400'}`}
+                    >
+                      Rappel un mois avant la date de paiement
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              {/* Info box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-900">
+                    <p className="font-medium mb-1">Comment ça marche ?</p>
+                    <p className="text-blue-800">
+                      Les rappels sont envoyés automatiquement chaque jour à 7h00. Vous recevrez un
+                      email listant tous les coupons correspondant aux périodes que vous avez
+                      sélectionnées.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleUpdateReminderSettings}
                   disabled={saving}
-                  className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium border border-red-200"
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
                   {saving ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Déconnexion...
+                      Enregistrement...
                     </>
                   ) : (
                     <>
-                      <X className="w-4 h-4" />
-                      Déconnecter mon e-mail
+                      <Save className="w-4 h-4" />
+                      Enregistrer les préférences
                     </>
                   )}
                 </button>
-              </div>
-            ) : (
-              /* Not Connected State */
-              <div className="space-y-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Mail className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-blue-900 mb-1">Connectez votre compte Microsoft Outlook</p>
-                      <p className="text-sm text-blue-800">
-                        Utilisez votre compte Outlook/Microsoft 365 pour envoyer automatiquement des rappels de paiement par e-mail
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                  <div className="space-y-3 text-sm text-slate-700">
-                    <div className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                      <p>Connexion sécurisée via OAuth 2.0</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                      <p>Vos identifiants ne sont jamais stockés</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                      <p>Permission uniquement pour créer des brouillons</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                      <p>Révocable à tout moment</p>
-                    </div>
-                  </div>
-                </div>
 
                 <button
-                  onClick={handleConnectEmail}
-                  disabled={connectingEmail}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  onClick={handleSendTestEmail}
+                  disabled={sendingTestEmail || !remindersEnabled}
+                  className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 >
-                  {connectingEmail ? (
+                  {sendingTestEmail ? (
                     <>
-                      <RefreshCw className="w-5 h-5 animate-spin" />
-                      Connexion en cours...
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Envoi...
                     </>
                   ) : (
                     <>
-                      <ExternalLink className="w-5 h-5" />
-                      Connecter mon Outlook
+                      <Send className="w-4 h-4" />
+                      Email test
                     </>
                   )}
                 </button>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Email Connection Card - Hidden for emetteur role */}
+        {userRole !== 'emetteur' && (
+          <div
+            id="email-connection"
+            className="bg-white rounded-xl shadow-sm border border-slate-200 scroll-mt-4"
+          >
+            <div className="p-6 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-slate-700" />
+                <h2 className="text-xl font-bold text-slate-900">Connexion E-mail</h2>
+              </div>
+              <p className="text-sm text-slate-600 mt-2">
+                Connectez votre compte e-mail pour envoyer des rappels de paiement directement
+                depuis votre boîte de réception
+              </p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {emailConnection ? (
+                /* Connected State */
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-green-900 mb-1">Outlook connecté</p>
+                        <div className="text-sm text-green-800 space-y-1">
+                          <p>
+                            <strong>Provider:</strong> Microsoft Outlook
+                          </p>
+                          <p>
+                            <strong>Adresse:</strong> {emailConnection.email_address}
+                          </p>
+                          <p>
+                            <strong>Connecté le:</strong>{' '}
+                            {new Date(emailConnection.connected_at).toLocaleDateString('fr-FR')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex gap-3">
+                      <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-blue-900">
+                        <p className="font-medium mb-1">Comment utiliser ?</p>
+                        <p className="text-blue-800">
+                          Dans la page Échéancier, cliquez sur le bouton "Envoyer rappel" à côté
+                          d'un paiement impayé. Un brouillon d'e-mail sera automatiquement créé dans
+                          votre Outlook avec toutes les informations pré-remplies.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={confirmDisconnectEmail}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium border border-red-200"
+                  >
+                    {saving ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Déconnexion...
+                      </>
+                    ) : (
+                      <>
+                        <X className="w-4 h-4" />
+                        Déconnecter mon e-mail
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                /* Not Connected State */
+                <div className="space-y-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Mail className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-blue-900 mb-1">
+                          Connectez votre compte Microsoft Outlook
+                        </p>
+                        <p className="text-sm text-blue-800">
+                          Utilisez votre compte Outlook/Microsoft 365 pour envoyer automatiquement
+                          des rappels de paiement par e-mail
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                    <div className="space-y-3 text-sm text-slate-700">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <p>Connexion sécurisée via OAuth 2.0</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <p>Vos identifiants ne sont jamais stockés</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <p>Permission uniquement pour créer des brouillons</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <p>Révocable à tout moment</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleConnectEmail}
+                    disabled={connectingEmail}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    {connectingEmail ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Connexion en cours...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="w-5 h-5" />
+                        Connecter mon Outlook
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
@@ -987,9 +1052,7 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
     <div className="flex items-center gap-2">
       <div
         className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200 ${
-          met
-            ? 'bg-green-500 text-white'
-            : 'bg-slate-300 text-slate-400'
+          met ? 'bg-green-500 text-white' : 'bg-slate-300 text-slate-400'
         }`}
       >
         {met ? (
@@ -1013,7 +1076,7 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
 function SuccessModal({
   isOpen,
   onClose,
-  message
+  message,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -1021,7 +1084,9 @@ function SuccessModal({
 }) {
   // Handle ESC key
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -1042,11 +1107,19 @@ function SuccessModal({
     }
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="text-center">
           {/* Success Icon */}
           <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30">
@@ -1054,14 +1127,10 @@ function SuccessModal({
           </div>
 
           {/* Title */}
-          <h3 className="text-2xl font-bold text-slate-900 mb-3">
-            Succès !
-          </h3>
+          <h3 className="text-2xl font-bold text-slate-900 mb-3">Succès !</h3>
 
           {/* Message */}
-          <p className="text-slate-600">
-            {message}
-          </p>
+          <p className="text-slate-600">{message}</p>
         </div>
       </div>
     </div>
@@ -1074,7 +1143,7 @@ function ConfirmModal({
   onClose,
   onConfirm,
   title,
-  message
+  message,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -1084,7 +1153,9 @@ function ConfirmModal({
 }) {
   // Handle ESC key
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -1095,11 +1166,19 @@ function ConfirmModal({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="text-center">
           {/* Warning Icon */}
           <div className="w-20 h-20 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-500/30">
@@ -1107,14 +1186,10 @@ function ConfirmModal({
           </div>
 
           {/* Title */}
-          <h3 className="text-2xl font-bold text-slate-900 mb-3">
-            {title}
-          </h3>
+          <h3 className="text-2xl font-bold text-slate-900 mb-3">{title}</h3>
 
           {/* Message */}
-          <p className="text-slate-600 mb-8">
-            {message}
-          </p>
+          <p className="text-slate-600 mb-8">{message}</p>
 
           {/* Action Buttons */}
           <div className="flex gap-3 justify-center">

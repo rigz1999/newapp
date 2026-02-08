@@ -40,11 +40,13 @@ export function ConfirmModal({
   confirmText = 'Confirmer',
   cancelText = 'Annuler',
   type = 'danger',
-  isLoading = false
+  isLoading = false,
 }: ConfirmModalProps) {
   // Handle ESC key
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isLoading) {
@@ -55,7 +57,9 @@ export function ConfirmModal({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, onClose, isLoading]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const getTypeStyles = () => {
     switch (type) {
@@ -63,25 +67,25 @@ export function ConfirmModal({
         return {
           icon: <AlertCircle className="w-12 h-12 text-finixar-red" />,
           bgColor: 'bg-red-100',
-          buttonColor: 'bg-finixar-red hover:bg-red-700'
+          buttonColor: 'bg-finixar-red hover:bg-red-700',
         };
       case 'warning':
         return {
           icon: <AlertTriangle className="w-12 h-12 text-amber-600" />,
           bgColor: 'bg-amber-100',
-          buttonColor: 'bg-amber-600 hover:bg-amber-700'
+          buttonColor: 'bg-amber-600 hover:bg-amber-700',
         };
       case 'info':
         return {
           icon: <Info className="w-12 h-12 text-blue-600" />,
           bgColor: 'bg-blue-100',
-          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover'
+          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover',
         };
       default:
         return {
           icon: <AlertCircle className="w-12 h-12 text-finixar-red" />,
           bgColor: 'bg-red-100',
-          buttonColor: 'bg-finixar-red hover:bg-red-700'
+          buttonColor: 'bg-finixar-red hover:bg-red-700',
         };
     }
   };
@@ -95,23 +99,21 @@ export function ConfirmModal({
     >
       <div
         className="bg-white rounded-xl shadow-2xl max-w-md w-full"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Icon */}
-          <div className={`w-16 h-16 ${styles.bgColor} rounded-full flex items-center justify-center mx-auto mb-4`}>
+          <div
+            className={`w-16 h-16 ${styles.bgColor} rounded-full flex items-center justify-center mx-auto mb-4`}
+          >
             {styles.icon}
           </div>
 
           {/* Title */}
-          <h3 className="text-xl font-bold text-slate-900 text-center mb-2">
-            {title}
-          </h3>
+          <h3 className="text-xl font-bold text-slate-900 text-center mb-2">{title}</h3>
 
           {/* Message */}
-          <p className="text-slate-600 text-center mb-6">
-            {message}
-          </p>
+          <p className="text-slate-600 text-center mb-6">{message}</p>
 
           {/* Buttons */}
           <div className="flex gap-3">
@@ -150,11 +152,13 @@ export function AlertModal({
   type = 'info',
   buttonText = 'OK',
   autoDismiss = false,
-  autoDismissDelay = 3000
+  autoDismissDelay = 3000,
 }: AlertModalProps) {
   // Handle ESC key
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -175,7 +179,9 @@ export function AlertModal({
     }
   }, [isOpen, autoDismiss, autoDismissDelay, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const getTypeStyles = () => {
     switch (type) {
@@ -183,31 +189,31 @@ export function AlertModal({
         return {
           icon: <CheckCircle className="w-12 h-12 text-finixar-green" />,
           bgColor: 'bg-green-100',
-          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover'
+          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover',
         };
       case 'error':
         return {
           icon: <AlertCircle className="w-12 h-12 text-finixar-red" />,
           bgColor: 'bg-red-100',
-          buttonColor: 'bg-finixar-red hover:bg-red-700'
+          buttonColor: 'bg-finixar-red hover:bg-red-700',
         };
       case 'warning':
         return {
           icon: <AlertTriangle className="w-12 h-12 text-amber-600" />,
           bgColor: 'bg-amber-100',
-          buttonColor: 'bg-amber-600 hover:bg-amber-700'
+          buttonColor: 'bg-amber-600 hover:bg-amber-700',
         };
       case 'info':
         return {
           icon: <Info className="w-12 h-12 text-blue-600" />,
           bgColor: 'bg-blue-100',
-          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover'
+          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover',
         };
       default:
         return {
           icon: <Info className="w-12 h-12 text-blue-600" />,
           bgColor: 'bg-blue-100',
-          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover'
+          buttonColor: 'bg-finixar-teal hover:bg-finixar-teal-hover',
         };
     }
   };
@@ -221,23 +227,21 @@ export function AlertModal({
     >
       <div
         className="bg-white rounded-xl shadow-2xl max-w-md w-full"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Icon */}
-          <div className={`w-16 h-16 ${styles.bgColor} rounded-full flex items-center justify-center mx-auto mb-4`}>
+          <div
+            className={`w-16 h-16 ${styles.bgColor} rounded-full flex items-center justify-center mx-auto mb-4`}
+          >
             {styles.icon}
           </div>
 
           {/* Title */}
-          <h3 className="text-xl font-bold text-slate-900 text-center mb-2">
-            {title}
-          </h3>
+          <h3 className="text-xl font-bold text-slate-900 text-center mb-2">{title}</h3>
 
           {/* Message */}
-          <p className="text-slate-600 text-center mb-6">
-            {message}
-          </p>
+          <p className="text-slate-600 text-center mb-6">{message}</p>
 
           {/* Button */}
           <button

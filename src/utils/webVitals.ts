@@ -14,6 +14,7 @@ function sendToAnalytics(metric: Metric): void {
 
   // Log to console in development
   if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
     console.log(`[Web Vitals] ${name}:`, {
       value: Math.round(value),
       rating,

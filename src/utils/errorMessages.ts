@@ -8,13 +8,14 @@
  * @param error - Error object from Supabase or other sources
  * @returns User-friendly error message in French
  */
-export function formatErrorMessage(error: any): string {
+export function formatErrorMessage(error: unknown): string {
   if (!error) {
-    return 'Une erreur inattendue s\'est produite';
+    return "Une erreur inattendue s'est produite";
   }
 
-  const message = error.message || error.error_description || String(error);
-  const code = error.code || error.status;
+  const err = error as Record<string, unknown>;
+  const message = String(err.message || err.error_description || error);
+  const code = err.code || err.status;
 
   // Authentication errors
   if (message.includes('Invalid login credentials') || message.includes('invalid_credentials')) {
@@ -60,17 +61,24 @@ export function formatErrorMessage(error: any): string {
     return 'Tous les champs obligatoires doivent être remplis';
   }
 
-  if (message.includes('Row-level security policy violation') || message.includes('new row violates row-level security policy')) {
-    return 'Vous n\'avez pas les permissions nécessaires pour effectuer cette action';
+  if (
+    message.includes('Row-level security policy violation') ||
+    message.includes('new row violates row-level security policy')
+  ) {
+    return "Vous n'avez pas les permissions nécessaires pour effectuer cette action";
   }
 
   if (message.includes('permission denied')) {
-    return 'Accès refusé. Vous n\'avez pas les droits nécessaires';
+    return "Accès refusé. Vous n'avez pas les droits nécessaires";
   }
 
   // Edge Function errors
-  if (message.includes('not found') || message.includes('FunctionsRelayError') || message.includes('Function not found')) {
-    return 'Service indisponible. La fonction demandée n\'est pas déployée. Veuillez contacter l\'administrateur';
+  if (
+    message.includes('not found') ||
+    message.includes('FunctionsRelayError') ||
+    message.includes('Function not found')
+  ) {
+    return "Service indisponible. La fonction demandée n'est pas déployée. Veuillez contacter l'administrateur";
   }
 
   if (message.includes('FunctionsHttpError')) {
@@ -123,7 +131,7 @@ export function formatErrorMessage(error: any): string {
   }
 
   // Server errors
-  if (code >= 500 || message.includes('Internal server error')) {
+  if (Number(code) >= 500 || message.includes('Internal server error')) {
     return 'Erreur du serveur. Veuillez réessayer plus tard';
   }
 
@@ -144,7 +152,7 @@ export function formatErrorMessage(error: any): string {
     cleanMessage.includes('supabase_') ||
     cleanMessage.length > 150
   ) {
-    return 'Une erreur s\'est produite. Veuillez réessayer ou contacter le support';
+    return "Une erreur s'est produite. Veuillez réessayer ou contacter le support";
   }
 
   return cleanMessage;
@@ -166,16 +174,16 @@ export const errorMessages = {
   updateFailed: 'Impossible de mettre à jour',
 
   // Invitations
-  invitationSendFailed: 'Impossible d\'envoyer l\'invitation',
+  invitationSendFailed: "Impossible d'envoyer l'invitation",
   invitationInvalid: 'Invitation invalide ou expirée',
-  invitationAcceptFailed: 'Impossible d\'accepter l\'invitation',
+  invitationAcceptFailed: "Impossible d'accepter l'invitation",
 
   // File operations
   uploadFailed: 'Échec du téléversement du fichier',
   downloadFailed: 'Impossible de télécharger le fichier',
 
   // Generic
-  genericError: 'Une erreur s\'est produite',
+  genericError: "Une erreur s'est produite",
   networkError: 'Erreur de connexion',
   permissionDenied: 'Accès refusé',
 };

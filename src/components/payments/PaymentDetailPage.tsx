@@ -2,20 +2,16 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
-  Calendar,
-  Euro,
-  Building2,
   User,
   FileText,
   CheckCircle2,
   Clock,
   Upload,
   XCircle,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { formatCurrency, formatDate } from '../../utils/formatters';
-import { slugify } from '../../utils/slugify';
 import { ViewProofsModal } from '../investors/ViewProofsModal';
 import { PaymentProofUpload } from './PaymentProofUpload';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -58,7 +54,7 @@ export function PaymentDetailPage() {
   const [payment, setPayment] = useState<PaymentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [proofs, setProofs] = useState<any[]>([]);
+  const [proofs, setProofs] = useState<Record<string, unknown>[]>([]);
   const [showProofsModal, setShowProofsModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -76,7 +72,8 @@ export function PaymentDetailPage() {
       setLoading(true);
       const { data, error: fetchError } = await supabase
         .from('paiements')
-        .select(`
+        .select(
+          `
           *,
           tranche:tranches(
             tranche_name,
@@ -85,11 +82,14 @@ export function PaymentDetailPage() {
           ),
           investisseur:investisseurs(id, nom_raison_sociale),
           souscription:souscriptions(montant_investi, coupon_brut, coupon_net)
-        `)
+        `
+        )
         .eq('id', paymentId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        throw fetchError;
+      }
       setPayment(data);
     } catch (err) {
       console.error('Error fetching payment:', err);
@@ -116,7 +116,9 @@ export function PaymentDetailPage() {
   };
 
   const handleDeletePayment = async () => {
-    if (!payment) return;
+    if (!payment) {
+      return;
+    }
 
     setDeleting(true);
     try {
@@ -140,12 +142,11 @@ export function PaymentDetailPage() {
       }
 
       // Delete payment (proofs will cascade)
-      const { error: deleteError } = await supabase
-        .from('paiements')
-        .delete()
-        .eq('id', payment.id);
+      const { error: deleteError } = await supabase.from('paiements').delete().eq('id', payment.id);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        throw deleteError;
+      }
 
       // Invalidate cache
       triggerCacheInvalidation();
@@ -187,7 +188,8 @@ export function PaymentDetailPage() {
     );
   }
 
-  const isPaid = payment.statut?.toLowerCase() === 'payé' || payment.statut?.toLowerCase() === 'paid';
+  const isPaid =
+    payment.statut?.toLowerCase() === 'payé' || payment.statut?.toLowerCase() === 'paid';
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -234,9 +236,7 @@ export function PaymentDetailPage() {
                 </div>
                 <span
                   className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
-                    isPaid
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-700'
+                    isPaid ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                   }`}
                 >
                   {isPaid ? (
@@ -301,7 +301,9 @@ export function PaymentDetailPage() {
                     <User className="w-5 h-5 text-slate-600" />
                   </div>
                   <button
-                    onClick={() => navigate(`/investisseurs?search=${payment.investisseur?.nom_raison_sociale}`)}
+                    onClick={() =>
+                      navigate(`/investisseurs?search=${payment.investisseur?.nom_raison_sociale}`)
+                    }
                     className="text-base font-medium text-finixar-brand-blue hover:underline"
                   >
                     {payment.investisseur.nom_raison_sociale}
@@ -406,17 +408,19 @@ export function PaymentDetailPage() {
                     </div>
                   </div>
                 )}
-                {payment.created_at && payment.updated_at && payment.created_at !== payment.updated_at && (
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-2 h-2 bg-slate-300 rounded-full mt-2"></div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">Dernière modification</p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {formatDate(payment.updated_at)}
-                      </p>
+                {payment.created_at &&
+                  payment.updated_at &&
+                  payment.created_at !== payment.updated_at && (
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-2 h-2 bg-slate-300 rounded-full mt-2"></div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Dernière modification</p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {formatDate(payment.updated_at)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </div>
           </div>

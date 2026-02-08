@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/react';
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
 const ENVIRONMENT = import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE;
 
-export function initSentry() {
+export function initSentry(): void {
   // Only initialize Sentry if DSN is provided
   if (!SENTRY_DSN) {
     // Silently skip Sentry initialization if not configured

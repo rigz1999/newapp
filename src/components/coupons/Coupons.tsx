@@ -18,7 +18,7 @@ import {
   ChevronUp,
   Layers,
   Upload,
-  Receipt
+  Receipt,
 } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
 import { QuickPaymentModal } from './QuickPaymentModal';
@@ -34,7 +34,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { toast } from '../../utils/toast';
 
 // Tax rate for physical investors (30% withholding tax)
-const TAX_RATE_PHYSICAL = 0.30;
+const TAX_RATE_PHYSICAL = 0.3;
 
 interface Coupon {
   id: string;
@@ -60,22 +60,20 @@ interface Coupon {
   montant_net: number;
 }
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('fr-FR', {
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
-};
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('fr-FR', {
+const formatDate = (dateString: string) =>
+  new Date(dateString).toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
-};
 
 // Centralized status calculation
 const getCouponStatus = (coupon: Coupon, now: Date = new Date()) => {
@@ -111,7 +109,7 @@ export function Coupons() {
   const [showRemindersModal, setShowRemindersModal] = useState(false);
 
   // Payment wizard preselection
-  const [wizardPreselect, setWizardPreselect] = useState<{
+  const [_wizardPreselect, setWizardPreselect] = useState<{
     projectId?: string;
     trancheId?: string;
     echeanceDate?: string;
@@ -139,9 +137,15 @@ export function Coupons() {
       // Apply filters immediately (filter state can be set before data loads)
       advancedFilters.clearAllFilters();
 
-      if (status) advancedFilters.addMultiSelectFilter('statut', status);
-      if (tranche) advancedFilters.addMultiSelectFilter('tranche', tranche);
-      if (date) advancedFilters.setDateRange(date, date);
+      if (status) {
+        advancedFilters.addMultiSelectFilter('statut', status);
+      }
+      if (tranche) {
+        advancedFilters.addMultiSelectFilter('tranche', tranche);
+      }
+      if (date) {
+        advancedFilters.setDateRange(date, date);
+      }
 
       setShowAdvancedFilters(true);
 
@@ -184,8 +188,12 @@ export function Coupons() {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showDetailsModal) setShowDetailsModal(false);
-        if (showPaymentWizard) setShowPaymentWizard(false);
+        if (showDetailsModal) {
+          setShowDetailsModal(false);
+        }
+        if (showPaymentWizard) {
+          setShowPaymentWizard(false);
+        }
       }
     };
     window.addEventListener('keydown', handleEsc);
@@ -197,7 +205,8 @@ export function Coupons() {
     try {
       const { data, error } = await supabase
         .from('coupons_echeances')
-        .select(`
+        .select(
+          `
           *,
           souscription:souscriptions!inner(
             id,
@@ -219,20 +228,24 @@ export function Coupons() {
               )
             )
           )
-        `)
+        `
+        )
         .order('date_echeance', { ascending: true })
         .limit(1000);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      const processedCoupons: Coupon[] = (data || []).map((c: any) => {
+      const processedCoupons: Coupon[] = (data || []).map((c: Record<string, unknown>) => {
         const investisseur = c.souscription.investisseur;
         const tranche = c.souscription.tranche;
         const projet = tranche.projet;
 
-        const montant_net = investisseur.type.toLowerCase() === 'physique'
-          ? c.montant_coupon * (1 - TAX_RATE_PHYSICAL)
-          : c.montant_coupon;
+        const montant_net =
+          investisseur.type.toLowerCase() === 'physique'
+            ? c.montant_coupon * (1 - TAX_RATE_PHYSICAL)
+            : c.montant_coupon;
 
         return {
           id: c.id,
@@ -269,7 +282,9 @@ export function Coupons() {
   };
 
   const fetchReminderSettings = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     try {
       const { data: reminderSettings, error } = await supabase
@@ -291,24 +306,36 @@ export function Coupons() {
   };
 
   // Extract unique values for filters
-  const uniqueProjets = useMemo(() =>
-    Array.from(new Set(coupons.map(c => c.projet_nom))).sort().map(p => ({ value: p, label: p })),
+  const uniqueProjets = useMemo(
+    () =>
+      Array.from(new Set(coupons.map(c => c.projet_nom)))
+        .sort()
+        .map(p => ({ value: p, label: p })),
     [coupons]
   );
 
-  const uniqueTranches = useMemo(() =>
-    Array.from(new Set(coupons.map(c => c.tranche_nom))).sort().map(t => ({ value: t, label: t })),
+  const uniqueTranches = useMemo(
+    () =>
+      Array.from(new Set(coupons.map(c => c.tranche_nom)))
+        .sort()
+        .map(t => ({ value: t, label: t })),
     [coupons]
   );
 
-  const uniqueStatuts = useMemo(() => [
-    { value: 'en_attente', label: 'Prévu' },
-    { value: 'paye', label: 'Payé' },
-    { value: 'en_retard', label: 'En retard' },
-  ], []);
+  const uniqueStatuts = useMemo(
+    () => [
+      { value: 'en_attente', label: 'Prévu' },
+      { value: 'paye', label: 'Payé' },
+      { value: 'en_retard', label: 'En retard' },
+    ],
+    []
+  );
 
-  const uniqueCGPs = useMemo(() =>
-    Array.from(new Set(coupons.map(c => c.investisseur_cgp).filter(Boolean))).sort().map(cgp => ({ value: cgp!, label: cgp! })),
+  const uniqueCGPs = useMemo(
+    () =>
+      Array.from(new Set(coupons.map(c => c.investisseur_cgp).filter(Boolean)))
+        .sort()
+        .map(cgp => ({ value: cgp!, label: cgp! })),
     [coupons]
   );
 
@@ -320,11 +347,12 @@ export function Coupons() {
     // Search filter
     if (advancedFilters.filters.search) {
       const term = advancedFilters.filters.search.toLowerCase();
-      filtered = filtered.filter(c =>
-        c.investisseur_nom.toLowerCase().includes(term) ||
-        c.projet_nom.toLowerCase().includes(term) ||
-        c.tranche_nom.toLowerCase().includes(term) ||
-        c.investisseur_id_display.toLowerCase().includes(term)
+      filtered = filtered.filter(
+        c =>
+          c.investisseur_nom.toLowerCase().includes(term) ||
+          c.projet_nom.toLowerCase().includes(term) ||
+          c.tranche_nom.toLowerCase().includes(term) ||
+          c.investisseur_id_display.toLowerCase().includes(term)
       );
     }
 
@@ -374,18 +402,26 @@ export function Coupons() {
     // Multi-select CGP filter
     const cgpFilter = advancedFilters.filters.multiSelect.find(f => f.field === 'cgp');
     if (cgpFilter && cgpFilter.values.length > 0) {
-      filtered = filtered.filter(c => c.investisseur_cgp && cgpFilter.values.includes(c.investisseur_cgp));
+      filtered = filtered.filter(
+        c => c.investisseur_cgp && cgpFilter.values.includes(c.investisseur_cgp)
+      );
     }
 
     return filtered;
   }, [coupons, advancedFilters.filters]);
 
   // Count active filters
-  const activeFiltersCount = useMemo(() => [
-    advancedFilters.filters.search ? 1 : 0,
-    advancedFilters.filters.dateRange.startDate || advancedFilters.filters.dateRange.endDate ? 1 : 0,
-    ...advancedFilters.filters.multiSelect.map(f => f.values.length > 0 ? 1 : 0)
-  ].reduce((a, b) => a + b, 0), [advancedFilters.filters]);
+  const activeFiltersCount = useMemo(
+    () =>
+      [
+        advancedFilters.filters.search ? 1 : 0,
+        advancedFilters.filters.dateRange.startDate || advancedFilters.filters.dateRange.endDate
+          ? 1
+          : 0,
+        ...advancedFilters.filters.multiSelect.map(f => (f.values.length > 0 ? 1 : 0)),
+      ].reduce((a, b) => a + b, 0),
+    [advancedFilters.filters]
+  );
 
   // Stats calculated on ALL coupons (no filters applied)
   const stats = useMemo(() => {
@@ -422,7 +458,7 @@ export function Coupons() {
 
   const getStatusBadge = (coupon: Coupon) => {
     const daysUntil = getDaysUntil(coupon.date_echeance);
-    
+
     if (coupon.statut === 'paye') {
       return { text: 'Payé', className: 'bg-green-100 text-green-800' };
     }
@@ -440,14 +476,18 @@ export function Coupons() {
 
   const groupByDateAndTranche = (coupons: Coupon[]) => {
     const grouped: { [date: string]: { [trancheId: string]: Coupon[] } } = {};
-    
-    coupons.forEach((coupon) => {
+
+    coupons.forEach(coupon => {
       const date = coupon.date_echeance;
-      if (!grouped[date]) grouped[date] = {};
-      if (!grouped[date][coupon.tranche_id]) grouped[date][coupon.tranche_id] = [];
+      if (!grouped[date]) {
+        grouped[date] = {};
+      }
+      if (!grouped[date][coupon.tranche_id]) {
+        grouped[date][coupon.tranche_id] = [];
+      }
       grouped[date][coupon.tranche_id].push(coupon);
     });
-    
+
     return Object.entries(grouped)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([date, tranches]) => ({
@@ -484,13 +524,13 @@ export function Coupons() {
     try {
       const exportData = filteredCoupons.map(c => ({
         'Date Échéance': formatDate(c.date_echeance),
-        'Projet': c.projet_nom,
-        'Tranche': c.tranche_nom,
-        'Investisseur': c.investisseur_nom,
-        'CGP': c.investisseur_cgp || '',
+        Projet: c.projet_nom,
+        Tranche: c.tranche_nom,
+        Investisseur: c.investisseur_nom,
+        CGP: c.investisseur_cgp || '',
         'Montant Brut': c.montant_coupon,
         'Montant Net': c.montant_net,
-        'Statut': getCouponStatus(c),
+        Statut: getCouponStatus(c),
         'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
       }));
 
@@ -501,7 +541,7 @@ export function Coupons() {
       worksheet.columns = Object.keys(exportData[0] || {}).map(key => ({
         header: key,
         key: key,
-        width: 20
+        width: 20,
       }));
 
       // Add data rows
@@ -509,7 +549,9 @@ export function Coupons() {
 
       // Generate file
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -520,7 +562,7 @@ export function Coupons() {
       toast.success(`${filteredCoupons.length} coupons exportés avec succès`);
     } catch (error) {
       console.error('Error exporting Excel:', error);
-      toast.error('Erreur lors de l\'export Excel');
+      toast.error("Erreur lors de l'export Excel");
     } finally {
       setExportingExcel(false);
     }
@@ -528,7 +570,10 @@ export function Coupons() {
 
   // Memoized computed values
   const groupedData = useMemo(() => groupByDateAndTranche(filteredCoupons), [filteredCoupons]);
-  const totalAmount = useMemo(() => filteredCoupons.reduce((sum, c) => sum + c.montant_net, 0), [filteredCoupons]);
+  const totalAmount = useMemo(
+    () => filteredCoupons.reduce((sum, c) => sum + c.montant_net, 0),
+    [filteredCoupons]
+  );
 
   if (loading) {
     return (
@@ -554,7 +599,8 @@ export function Coupons() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Tous les coupons</h1>
             <p className="text-slate-600">
-              {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total: <span className="font-bold text-finixar-green">{formatCurrency(totalAmount)}</span>
+              {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total:{' '}
+              <span className="font-bold text-finixar-green">{formatCurrency(totalAmount)}</span>
             </p>
           </div>
         </div>
@@ -597,7 +643,9 @@ export function Coupons() {
               Prévu
             </span>
           </div>
-          <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enAttente.total)}</h3>
+          <h3 className="text-2xl font-bold text-slate-900">
+            {formatCurrency(stats.enAttente.total)}
+          </h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enAttente.count} coupons</p>
           {stats.enAttente.count > 0 && (
             <p className="text-xs text-finixar-amber hover:text-amber-700 font-medium mt-2">
@@ -641,7 +689,9 @@ export function Coupons() {
               En Retard
             </span>
           </div>
-          <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(stats.enRetard.total)}</h3>
+          <h3 className="text-2xl font-bold text-slate-900">
+            {formatCurrency(stats.enRetard.total)}
+          </h3>
           <p className="text-sm text-slate-600 mt-1">{stats.enRetard.count} coupons</p>
           {stats.enRetard.count > 0 && (
             <p className="text-xs text-finixar-red hover:text-red-700 font-medium mt-2">
@@ -671,7 +721,7 @@ export function Coupons() {
               type="text"
               placeholder="Rechercher par investisseur, projet, tranche..."
               value={advancedFilters.filters.search}
-              onChange={(e) => advancedFilters.setSearch(e.target.value)}
+              onChange={e => advancedFilters.setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             />
           </div>
@@ -691,7 +741,11 @@ export function Coupons() {
                 {activeFiltersCount}
               </span>
             )}
-            {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showAdvancedFilters ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
           </button>
         </div>
 
@@ -701,9 +755,9 @@ export function Coupons() {
             {/* Filter Presets */}
             <FilterPresets
               presets={advancedFilters.presets}
-              onSave={(name) => advancedFilters.savePreset(name)}
-              onLoad={(id) => advancedFilters.loadPreset(id)}
-              onDelete={(id) => advancedFilters.deletePreset(id)}
+              onSave={name => advancedFilters.savePreset(name)}
+              onLoad={id => advancedFilters.loadPreset(id)}
+              onDelete={id => advancedFilters.deletePreset(id)}
             />
 
             {/* Date Range Filter */}
@@ -711,10 +765,10 @@ export function Coupons() {
               label="Période d'échéance"
               startDate={advancedFilters.filters.dateRange.startDate}
               endDate={advancedFilters.filters.dateRange.endDate}
-              onStartDateChange={(date) =>
+              onStartDateChange={date =>
                 advancedFilters.setDateRange(date, advancedFilters.filters.dateRange.endDate)
               }
-              onEndDateChange={(date) =>
+              onEndDateChange={date =>
                 advancedFilters.setDateRange(advancedFilters.filters.dateRange.startDate, date)
               }
             />
@@ -727,8 +781,8 @@ export function Coupons() {
                 selectedValues={
                   advancedFilters.filters.multiSelect.find(f => f.field === 'statut')?.values || []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('statut', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('statut', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('statut', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('statut', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('statut')}
                 placeholder="Sélectionner des statuts..."
               />
@@ -739,8 +793,8 @@ export function Coupons() {
                 selectedValues={
                   advancedFilters.filters.multiSelect.find(f => f.field === 'projet')?.values || []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('projet', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('projet', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('projet', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('projet', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('projet')}
                 placeholder="Sélectionner des projets..."
               />
@@ -751,8 +805,8 @@ export function Coupons() {
                 selectedValues={
                   advancedFilters.filters.multiSelect.find(f => f.field === 'tranche')?.values || []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('tranche', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('tranche', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('tranche', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('tranche', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('tranche')}
                 placeholder="Sélectionner des tranches..."
               />
@@ -763,8 +817,8 @@ export function Coupons() {
                 selectedValues={
                   advancedFilters.filters.multiSelect.find(f => f.field === 'cgp')?.values || []
                 }
-                onAdd={(value) => advancedFilters.addMultiSelectFilter('cgp', value)}
-                onRemove={(value) => advancedFilters.removeMultiSelectFilter('cgp', value)}
+                onAdd={value => advancedFilters.addMultiSelectFilter('cgp', value)}
+                onRemove={value => advancedFilters.removeMultiSelectFilter('cgp', value)}
                 onClear={() => advancedFilters.clearMultiSelectFilter('cgp')}
                 placeholder="Sélectionner des CGP..."
               />
@@ -803,32 +857,39 @@ export function Coupons() {
             const dateTotal = tranches.reduce((sum, t) => sum + t.total, 0);
 
             return (
-              <div key={date} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+              <div
+                key={date}
+                className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+              >
                 {/* Date Header */}
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">{formatDate(date)}</h3>
                     <p className="text-sm text-slate-600">
-                      {daysUntil < 0 
-                        ? `En retard de ${Math.abs(daysUntil)} jour${Math.abs(daysUntil) > 1 ? 's' : ''}` 
-                        : daysUntil === 0 
-                          ? 'Aujourd\'hui' 
+                      {daysUntil < 0
+                        ? `En retard de ${Math.abs(daysUntil)} jour${Math.abs(daysUntil) > 1 ? 's' : ''}`
+                        : daysUntil === 0
+                          ? "Aujourd'hui"
                           : `Dans ${daysUntil} jour${daysUntil > 1 ? 's' : ''}`}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-slate-600">Total du jour</p>
-                    <p className="text-lg font-bold text-finixar-green">{formatCurrency(dateTotal)}</p>
-                    <p className="text-xs text-slate-500">{tranches.length} tranche{tranches.length > 1 ? 's' : ''}</p>
+                    <p className="text-lg font-bold text-finixar-green">
+                      {formatCurrency(dateTotal)}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {tranches.length} tranche{tranches.length > 1 ? 's' : ''}
+                    </p>
                   </div>
                 </div>
 
                 {/* Tranches */}
                 <div className="divide-y divide-slate-200">
-                  {tranches.map((tranche) => {
+                  {tranches.map(tranche => {
                     const trancheKey = `${date}-${tranche.trancheId}`;
                     const isExpanded = expandedTranches.has(trancheKey);
-                    
+
                     return (
                       <div key={tranche.trancheId}>
                         {/* Tranche Header */}
@@ -846,7 +907,9 @@ export function Coupons() {
                               <Layers className="w-5 h-5 text-blue-600" />
                             </div>
                             <div className="text-left">
-                              <p className="text-sm font-bold text-slate-900">{tranche.projetName}</p>
+                              <p className="text-sm font-bold text-slate-900">
+                                {tranche.projetName}
+                              </p>
                               <p className="text-xs text-slate-600">{tranche.trancheName}</p>
                             </div>
                             {tranche.hasUnpaid && (
@@ -857,12 +920,17 @@ export function Coupons() {
                           </button>
                           <div className="flex items-center gap-3">
                             <div className="text-right">
-                              <p className="text-sm font-bold text-finixar-green">{formatCurrency(tranche.total)}</p>
-                              <p className="text-xs text-slate-500">{tranche.coupons.length} investisseur{tranche.coupons.length > 1 ? 's' : ''}</p>
+                              <p className="text-sm font-bold text-finixar-green">
+                                {formatCurrency(tranche.total)}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {tranche.coupons.length} investisseur
+                                {tranche.coupons.length > 1 ? 's' : ''}
+                              </p>
                             </div>
                             {tranche.hasUnpaid && (
                               <button
-                                onClick={(e) => {
+                                onClick={e => {
                                   e.stopPropagation();
                                   setWizardPreselect({
                                     projectId: tranche.projetId,
@@ -886,18 +954,23 @@ export function Coupons() {
                         {isExpanded && (
                           <div className="bg-slate-50 border-t border-slate-200">
                             <div className="divide-y divide-slate-100">
-                              {tranche.coupons.map((coupon) => {
+                              {tranche.coupons.map(coupon => {
                                 const badge = getStatusBadge(coupon);
-                                
+
                                 return (
-                                  <div key={coupon.id} className="px-6 py-4 pl-20 hover:bg-slate-100 transition-colors">
+                                  <div
+                                    key={coupon.id}
+                                    className="px-6 py-4 pl-20 hover:bg-slate-100 transition-colors"
+                                  >
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-3 flex-1">
-                                        <div className={`p-2 rounded-lg ${
-                                          coupon.investisseur_type === 'Morale' 
-                                            ? 'bg-purple-100' 
-                                            : 'bg-blue-100'
-                                        }`}>
+                                        <div
+                                          className={`p-2 rounded-lg ${
+                                            coupon.investisseur_type === 'Morale'
+                                              ? 'bg-purple-100'
+                                              : 'bg-blue-100'
+                                          }`}
+                                        >
                                           {coupon.investisseur_type === 'Morale' ? (
                                             <Building2 className="w-4 h-4 text-purple-600" />
                                           ) : (
@@ -909,18 +982,22 @@ export function Coupons() {
                                             {coupon.investisseur_nom}
                                           </p>
                                           {(coupon.investisseur_cgp || !coupon.has_rib) && (
-                                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                                            {coupon.investisseur_cgp && (
-                                              <span className="text-amber-700">CGP: {coupon.investisseur_cgp}</span>
-                                            )}
-                                            {!coupon.has_rib && (
-                                              <>
-                                                {coupon.investisseur_cgp && <span>•</span>}
-                                                <span className="text-finixar-red">⚠️ RIB manquant</span>
-                                              </>
-                                            )}
-                                          </div>
-                                        )}
+                                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                              {coupon.investisseur_cgp && (
+                                                <span className="text-amber-700">
+                                                  CGP: {coupon.investisseur_cgp}
+                                                </span>
+                                              )}
+                                              {!coupon.has_rib && (
+                                                <>
+                                                  {coupon.investisseur_cgp && <span>•</span>}
+                                                  <span className="text-finixar-red">
+                                                    ⚠️ RIB manquant
+                                                  </span>
+                                                </>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
 
@@ -933,7 +1010,9 @@ export function Coupons() {
                                             Brut: {formatCurrency(coupon.montant_coupon)}
                                           </p>
                                         </div>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${badge.className} whitespace-nowrap`}>
+                                        <span
+                                          className={`px-3 py-1 rounded-full text-xs font-medium ${badge.className} whitespace-nowrap`}
+                                        >
                                           {badge.text}
                                         </span>
                                         <button
@@ -972,7 +1051,7 @@ export function Coupons() {
         >
           <div
             className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-xl font-bold text-slate-900">Détail du Coupon</h3>
@@ -988,8 +1067,12 @@ export function Coupons() {
               <div className="bg-slate-50 rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-slate-900 mb-3">Investisseur</h4>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-900">{selectedCoupon.investisseur_nom}</p>
-                  <p className="text-xs text-slate-600">Email: {selectedCoupon.investisseur_email}</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {selectedCoupon.investisseur_nom}
+                  </p>
+                  <p className="text-xs text-slate-600">
+                    Email: {selectedCoupon.investisseur_email}
+                  </p>
                   {selectedCoupon.investisseur_cgp && (
                     <p className="text-xs text-slate-600">CGP: {selectedCoupon.investisseur_cgp}</p>
                   )}
@@ -1004,27 +1087,39 @@ export function Coupons() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-slate-600">Projet</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedCoupon.projet_nom}</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {selectedCoupon.projet_nom}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600">Tranche</p>
-                    <p className="text-sm font-medium text-slate-900">{selectedCoupon.tranche_nom}</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {selectedCoupon.tranche_nom}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600">Date Échéance</p>
-                    <p className="text-sm font-medium text-slate-900">{formatDate(selectedCoupon.date_echeance)}</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {formatDate(selectedCoupon.date_echeance)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600">Montant Brut</p>
-                    <p className="text-sm font-medium text-slate-900">{formatCurrency(selectedCoupon.montant_coupon)}</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {formatCurrency(selectedCoupon.montant_coupon)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600">Montant Net</p>
-                    <p className="text-sm font-medium text-finixar-green">{formatCurrency(selectedCoupon.montant_net)}</p>
+                    <p className="text-sm font-medium text-finixar-green">
+                      {formatCurrency(selectedCoupon.montant_net)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600">Statut</p>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(selectedCoupon).className}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(selectedCoupon).className}`}
+                    >
                       {getStatusBadge(selectedCoupon).text}
                     </span>
                   </div>
@@ -1032,11 +1127,15 @@ export function Coupons() {
                     <>
                       <div>
                         <p className="text-xs text-slate-600">Date de Paiement</p>
-                        <p className="text-sm font-medium text-slate-900">{formatDate(selectedCoupon.date_paiement)}</p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {formatDate(selectedCoupon.date_paiement)}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-600">Montant Payé</p>
-                        <p className="text-sm font-medium text-finixar-green">{formatCurrency(selectedCoupon.montant_paye || 0)}</p>
+                        <p className="text-sm font-medium text-finixar-green">
+                          {formatCurrency(selectedCoupon.montant_paye || 0)}
+                        </p>
                       </div>
                     </>
                   )}
@@ -1055,7 +1154,7 @@ export function Coupons() {
             totalPages={Math.ceil(groupedData.length / itemsPerPage)}
             totalItems={groupedData.length}
             itemsPerPage={itemsPerPage}
-            onPageChange={(page) => setCurrentPage(page)}
+            onPageChange={page => setCurrentPage(page)}
             itemName="groupes de dates"
           />
         </div>
