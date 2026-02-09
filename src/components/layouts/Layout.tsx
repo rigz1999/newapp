@@ -17,7 +17,7 @@ import {
   LucideIcon,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { GlobalSearch } from '../dashboard/GlobalSearch';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
@@ -43,34 +43,6 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved === 'true';
   });
-
-  // Dynamic zoom: scale content when the main area is too narrow
-  const mainRef = useRef<HTMLElement>(null);
-  const [contentZoom, setContentZoom] = useState(1);
-
-  const updateZoom = useCallback((width: number) => {
-    const idealWidth = 1200;
-    if (width < idealWidth) {
-      setContentZoom(Math.max(width / idealWidth, 0.65));
-    } else {
-      setContentZoom(1);
-    }
-  }, []);
-
-  useEffect(() => {
-    const el = mainRef.current;
-    if (!el) return;
-
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) {
-        updateZoom(entry.contentRect.width);
-      }
-    });
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [updateZoom]);
 
   // Check if user is super admin (fallback to organization role)
   const isSuperAdminUser = isSuperAdmin || organization.role === 'super_admin';
@@ -416,15 +388,13 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
         </div>
       </aside>
 
-      <main ref={mainRef} className="flex-1 overflow-y-auto relative">
+      <main className="flex-1 overflow-y-auto relative">
         {isLoading && (
           <div className="absolute inset-0 bg-finixar-background z-50">
             <DashboardSkeleton />
           </div>
         )}
-        <div style={contentZoom < 1 ? { zoom: contentZoom } : undefined}>
-          <Outlet />
-        </div>
+        <Outlet />
       </main>
 
       {/* Global Search Modal */}
