@@ -577,7 +577,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
               </div>
 
               {/* Date range */}
-              <DateRangePicker
+              <DateRangePicker className="min-w-0"
                 startDate={startDate}
                 endDate={endDate}
                 onStartDateChange={setStartDate}
