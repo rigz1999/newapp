@@ -25,6 +25,7 @@ import {
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { CardSkeleton } from '../common/Skeleton';
 import { logger } from '../../utils/logger';
+import { MFASettings } from '../settings/MFASettings';
 
 export default function Settings() {
   const { user, userRole } = useAuth();
@@ -729,6 +730,9 @@ export default function Settings() {
             </div>
           </div>
         </div>
+
+        {/* MFA Security Settings */}
+        <MFASettings />
 
         {/* Email Reminder Settings Card - Hidden for emetteur role */}
         {userRole !== 'emetteur' && (
