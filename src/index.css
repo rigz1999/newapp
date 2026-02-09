@@ -4,11 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  html {
-    background-color: #f9fafb;
-  }
+/* Scale the entire app on smaller screens, like browser zoom at 80% */
+@media (max-width: 1599px) {
+  html { zoom: 0.85; }
+}
 
+@media (max-width: 1199px) {
+  html { zoom: 0.75; }
+}
+
+@media (max-width: 899px) {
+  html { zoom: 0.65; }
+}
+
+@layer base {
   html,
   body,
   #root {
@@ -23,19 +32,6 @@
   *:focus-visible {
     @apply outline-none ring-2 ring-blue-600 ring-offset-2 rounded;
   }
-}
-
-/* Scale the entire app on smaller screens, like browser zoom at 80% */
-@media (max-width: 1599px) {
-  #root { zoom: 0.85; }
-}
-
-@media (max-width: 1199px) {
-  #root { zoom: 0.75; }
-}
-
-@media (max-width: 899px) {
-  #root { zoom: 0.65; }
 }
 
 @layer utilities {
