@@ -10,11 +10,11 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
-  User,
   Plus,
   Edit2,
   Trash2,
   RefreshCw,
+  ArrowRight,
 } from 'lucide-react';
 import { Pagination, paginate } from '../common/Pagination';
 import { TableSkeleton } from '../common/Skeleton';
@@ -83,6 +83,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
   const [showFilters, setShowFilters] = useState(false);
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   // Filters
   const [filterAction, setFilterAction] = useState<string>('');
@@ -112,7 +113,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const orgId = isSuperAdmin ? undefined : (orgData?.id || organization.id);
+      const orgId = isSuperAdmin ? undefined : orgData?.id || organization.id;
 
       let query = supabase
         .from('audit_logs')
@@ -207,16 +208,193 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMin < 1) return "à l'instant";
-    if (diffMin < 60) return `il y a ${diffMin}min`;
-    if (diffHours < 24) return `il y a ${diffHours}h`;
-    if (diffDays < 7) return `il y a ${diffDays}j`;
+    if (diffMin < 1) {
+      return "à l'instant";
+    }
+    if (diffMin < 60) {
+      return `il y a ${diffMin}min`;
+    }
+    if (diffHours < 24) {
+      return `il y a ${diffHours}h`;
+    }
+    if (diffDays < 7) {
+      return `il y a ${diffDays}j`;
+    }
     return formatDateTime(dateStr);
+  };
+
+  const METADATA_LABELS: Record<string, string> = {
+    projet: 'Projet',
+    tranche: 'Tranche',
+    investisseur: 'Investisseur',
+    montant: 'Montant',
+    montant_investi: 'Montant investi',
+    nombre_obligations: "Nombre d'obligations",
+    email: 'Email',
+    role: 'Rôle',
+    oldRole: 'Ancien rôle',
+    newRole: 'Nouveau rôle',
+    nom_raison_sociale: 'Nom / Raison sociale',
+    name: 'Nom',
+    date_echeance: "Date d'échéance",
+    date_emission: "Date d'émission",
+    count: 'Nombre',
+    total: 'Total',
+    totalAmount: 'Montant total',
+    tranche_name: 'Tranche',
+    hasFinancialChanges: 'Paramètres financiers modifiés',
+    updatedFields: 'Champs modifiés',
+    id_paiement: 'Réf. paiement',
+  };
+
+  const FIELD_LABELS: Record<string, string> = {
+    projet: 'Nom du projet',
+    emetteur: 'Émetteur',
+    montant_nominal: 'Montant nominal',
+    taux_interet: "Taux d'intérêt",
+    periodicite: 'Périodicité',
+    date_emission: "Date d'émission",
+    date_echeance_finale: "Date d'échéance finale",
+    valeur_nominale_unitaire: 'Valeur nominale unitaire',
+    type_taux: 'Type de taux',
+    base_calcul: 'Base de calcul',
+    statut: 'Statut',
+    tranche_name: 'Nom de la tranche',
+    montant_investi: 'Montant investi',
+    nombre_obligations: "Nombre d'obligations",
+    nom_raison_sociale: 'Nom / Raison sociale',
+    role: 'Rôle',
+    name: 'Nom',
+    montant: 'Montant',
+  };
+
+  const formatMetadataValue = (key: string, value: unknown): string => {
+    if (value === null || value === undefined) {
+      return '-';
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'Oui' : 'Non';
+    }
+    if (typeof value === 'number') {
+      if (key.includes('montant') || key.includes('total') || key === 'total') {
+        return new Intl.NumberFormat('fr-FR', {
+          style: 'currency',
+          currency: 'EUR',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        }).format(value);
+      }
+      if (key.includes('taux')) {
+        return `${value}%`;
+      }
+      return value.toLocaleString('fr-FR');
+    }
+    if (Array.isArray(value)) {
+      return value.map(v => FIELD_LABELS[v as string] || v).join(', ');
+    }
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('fr-FR');
+      }
+    }
+    return String(value);
+  };
+
+  const renderMetadataDetails = (log: AuditLog) => {
+    const meta = log.metadata;
+    if (!meta || Object.keys(meta).length === 0) {
+      return null;
+    }
+
+    const changes = meta.changes as Record<string, { old: unknown; new: unknown }> | undefined;
+    const details = meta.details as Record<string, unknown>[] | undefined;
+
+    // Skip internal keys
+    const skipKeys = new Set(['changes', 'details']);
+
+    return (
+      <div className="mt-3 bg-slate-50 rounded-lg p-4 text-sm border border-slate-200">
+        {/* Show old→new changes if present */}
+        {changes && Object.keys(changes).length > 0 && (
+          <div className="mb-3">
+            <p className="font-semibold text-slate-700 mb-2">Modifications :</p>
+            <div className="space-y-1.5">
+              {Object.entries(changes).map(([field, vals]) => (
+                <div key={field} className="flex items-center gap-2 text-slate-600">
+                  <span className="font-medium text-slate-700">{FIELD_LABELS[field] || field}</span>
+                  <span className="bg-red-50 text-red-700 px-1.5 py-0.5 rounded text-xs line-through">
+                    {formatMetadataValue(field, vals.old)}
+                  </span>
+                  <ArrowRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                  <span className="bg-green-50 text-green-700 px-1.5 py-0.5 rounded text-xs font-medium">
+                    {formatMetadataValue(field, vals.new)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Show bulk details if present */}
+        {Array.isArray(details) && details.length > 0 && (
+          <div className="mb-3">
+            <p className="font-semibold text-slate-700 mb-2">Détails :</p>
+            <div className="space-y-1">
+              {details.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-3 text-slate-600 bg-white rounded px-3 py-1.5 border border-slate-100"
+                >
+                  {Object.entries(item)
+                    .filter(([, v]) => v !== null && v !== undefined)
+                    .map(([k, v]) => (
+                      <span key={k}>
+                        <span className="text-slate-400 text-xs">
+                          {FIELD_LABELS[k] || METADATA_LABELS[k] || k}:{' '}
+                        </span>
+                        <span className="font-medium">{formatMetadataValue(k, v)}</span>
+                      </span>
+                    ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Show other metadata fields */}
+        {Object.entries(meta).filter(
+          ([k, v]) => !skipKeys.has(k) && v !== null && v !== undefined && typeof v !== 'object'
+        ).length > 0 && (
+          <div>
+            {(!changes || Object.keys(changes).length === 0) && (
+              <p className="font-semibold text-slate-700 mb-2">Détails :</p>
+            )}
+            {changes && Object.keys(changes).length > 0 && (
+              <p className="font-semibold text-slate-700 mb-2 mt-1">Contexte :</p>
+            )}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5">
+              {Object.entries(meta)
+                .filter(
+                  ([k, v]) =>
+                    !skipKeys.has(k) && v !== null && v !== undefined && typeof v !== 'object'
+                )
+                .map(([key, value]) => (
+                  <div key={key} className="text-slate-600">
+                    <span className="text-slate-400">{METADATA_LABELS[key] || key}: </span>
+                    <span className="font-medium">{formatMetadataValue(key, value)}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const exportToExcel = async () => {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Journal d\'audit');
+    const worksheet = workbook.addWorksheet("Journal d'audit");
 
     worksheet.columns = [
       { header: 'Date', key: 'date', width: 20 },
@@ -264,11 +442,10 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
             <History className="w-8 h-8 text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-              Journal d'audit
-            </h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Journal d'audit</h1>
             <p className="text-slate-600">
-              {filteredLogs.length} action{filteredLogs.length > 1 ? 's' : ''} enregistrée{filteredLogs.length > 1 ? 's' : ''}
+              {filteredLogs.length} action{filteredLogs.length > 1 ? 's' : ''} enregistrée
+              {filteredLogs.length > 1 ? 's' : ''}
             </p>
           </div>
         </div>
@@ -327,7 +504,9 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
                 >
                   <option value="">Toutes les actions</option>
                   {Object.entries(ACTION_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -342,7 +521,9 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
                 >
                   <option value="">Tous les types</option>
                   {Object.entries(ENTITY_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -357,7 +538,9 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
                 >
                   <option value="">Tous les utilisateurs</option>
                   {uniqueUsers.map(u => (
-                    <option key={u.value} value={u.value}>{u.label}</option>
+                    <option key={u.value} value={u.value}>
+                      {u.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -404,35 +587,65 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
             <div className="divide-y divide-slate-100">
               {paginate(filteredLogs, currentPage, itemsPerPage).map(log => {
                 const ActionIcon = ACTION_ICONS[log.action] || RefreshCw;
+                const isExpanded = expandedLogId === log.id;
+                const hasMetadata = log.metadata && Object.keys(log.metadata).length > 0;
                 return (
-                  <div key={log.id} className="py-4 flex items-start gap-4 hover:bg-slate-50 -mx-2 px-2 rounded-lg transition-colors">
-                    {/* Action icon */}
-                    <div className={`flex-shrink-0 p-2 rounded-lg ${ACTION_COLORS[log.action] || 'bg-slate-100 text-slate-600'}`}>
-                      <ActionIcon className="w-4 h-4" />
-                    </div>
+                  <div
+                    key={log.id}
+                    className={`py-4 -mx-2 px-2 rounded-lg transition-colors ${hasMetadata ? 'cursor-pointer hover:bg-slate-50' : ''} ${isExpanded ? 'bg-slate-50' : ''}`}
+                    onClick={() => hasMetadata && setExpandedLogId(isExpanded ? null : log.id)}
+                  >
+                    <div className="flex items-start gap-4">
+                      {/* Action icon */}
+                      <div
+                        className={`flex-shrink-0 p-2 rounded-lg ${ACTION_COLORS[log.action] || 'bg-slate-100 text-slate-600'}`}
+                      >
+                        <ActionIcon className="w-4 h-4" />
+                      </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-sm text-slate-900">
-                            <span className="font-semibold">{log.user_name || log.user_email || 'Système'}</span>
-                            {' '}
-                            <span className="text-slate-600">{log.description}</span>
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${ACTION_COLORS[log.action] || 'bg-slate-100 text-slate-600'}`}>
-                              {ACTION_LABELS[log.action] || log.action}
-                            </span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
-                              {ENTITY_LABELS[log.entity_type] || log.entity_type}
-                            </span>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-sm text-slate-900">
+                              <span className="font-semibold">
+                                {log.user_name || log.user_email || 'Système'}
+                              </span>{' '}
+                              <span className="text-slate-600">{log.description}</span>
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${ACTION_COLORS[log.action] || 'bg-slate-100 text-slate-600'}`}
+                              >
+                                {ACTION_LABELS[log.action] || log.action}
+                              </span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">
+                                {ENTITY_LABELS[log.entity_type] || log.entity_type}
+                              </span>
+                              {hasMetadata && (
+                                <span className="text-xs text-slate-400 flex items-center gap-1">
+                                  {isExpanded ? (
+                                    <ChevronUp className="w-3 h-3" />
+                                  ) : (
+                                    <ChevronDown className="w-3 h-3" />
+                                  )}
+                                  {isExpanded ? 'Masquer' : 'Détails'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0 text-right">
+                            <p className="text-xs text-slate-500">
+                              {formatRelativeTime(log.created_at)}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {formatDateTime(log.created_at)}
+                            </p>
                           </div>
                         </div>
-                        <div className="flex-shrink-0 text-right">
-                          <p className="text-xs text-slate-500">{formatRelativeTime(log.created_at)}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{formatDateTime(log.created_at)}</p>
-                        </div>
+
+                        {/* Expanded details */}
+                        {isExpanded && renderMetadataDetails(log)}
                       </div>
                     </div>
                   </div>

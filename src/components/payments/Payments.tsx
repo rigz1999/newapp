@@ -489,6 +489,7 @@ export function Payments({ organization }: PaymentsProps) {
           montant: paymentToDelete.montant,
           investisseur: paymentToDelete.investisseur?.nom_raison_sociale,
           projet: paymentToDelete.tranche?.projet?.projet,
+          tranche: paymentToDelete.tranche?.tranche_name,
         },
       });
 

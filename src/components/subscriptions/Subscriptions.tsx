@@ -298,17 +298,46 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         throw error;
       }
 
+      // Build old→new changes for audit detail view
+      const changes: Record<string, { old: unknown; new: unknown }> = {};
+      if (editingSubscription.montant_investi !== editFormData.montant_investi) {
+        changes.montant_investi = {
+          old: editingSubscription.montant_investi,
+          new: editFormData.montant_investi,
+        };
+      }
+      if (editingSubscription.nombre_obligations !== editFormData.nombre_obligations) {
+        changes.nombre_obligations = {
+          old: editingSubscription.nombre_obligations,
+          new: editFormData.nombre_obligations,
+        };
+      }
+      if (editingSubscription.date_souscription !== editFormData.date_souscription) {
+        changes.date_souscription = {
+          old: editingSubscription.date_souscription,
+          new: editFormData.date_souscription,
+        };
+      }
+      if (
+        (editingSubscription.prochaine_date_coupon || null) !==
+        (editFormData.prochaine_date_coupon || null)
+      ) {
+        changes.prochaine_date_coupon = {
+          old: editingSubscription.prochaine_date_coupon,
+          new: editFormData.prochaine_date_coupon || null,
+        };
+      }
+
       logAuditEvent({
         action: 'updated',
         entityType: 'souscription',
         entityId: editingSubscription.id,
         description: `a modifié une souscription de ${auditFormatCurrency(editFormData.montant_investi)} — ${editingSubscription.investisseurs.nom_raison_sociale || 'investisseur inconnu'}, projet "${editingSubscription.tranches.projets.projet}", tranche "${editingSubscription.tranches.tranche_name}"`,
         metadata: {
-          montant_investi: editFormData.montant_investi,
-          nombre_obligations: editFormData.nombre_obligations,
           investisseur: editingSubscription.investisseurs.nom_raison_sociale,
           projet: editingSubscription.tranches.projets.projet,
           tranche: editingSubscription.tranches.tranche_name,
+          changes,
         },
       });
 
@@ -373,6 +402,8 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           projet: deletingSubscription.tranches.projets.projet,
           tranche: deletingSubscription.tranches.tranche_name,
           montant: deletingSubscription.montant_investi,
+          nombre_obligations: deletingSubscription.nombre_obligations,
+          date_souscription: deletingSubscription.date_souscription,
         },
       });
 

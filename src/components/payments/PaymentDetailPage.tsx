@@ -169,6 +169,7 @@ export function PaymentDetailPage() {
           montant: payment.montant,
           investisseur: payment.investisseur?.nom_raison_sociale,
           projet: payment.tranche?.projet?.projet,
+          tranche: payment.tranche?.tranche_name,
         },
       });
 
