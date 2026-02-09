@@ -39,9 +39,8 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
 
   // Sidebar collapse state with localStorage persistence
   const [isCollapsed, setIsCollapsed] = useState(() => {
-    // Check if mobile on initial load
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) {
+    // Auto-collapse on small screens (laptops < 1400px and mobile)
+    if (window.innerWidth < 1400) {
       return true;
     }
 
@@ -78,11 +77,10 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
     },
   ]);
 
-  // Handle responsive behavior - auto-collapse on mobile
+  // Handle responsive behavior - auto-collapse on small screens
   useEffect(() => {
     const handleResize = (): void => {
-      const isMobile = window.innerWidth < 768;
-      if (isMobile && !isCollapsed) {
+      if (window.innerWidth < 1400 && !isCollapsed) {
         setIsCollapsed(true);
       }
     };

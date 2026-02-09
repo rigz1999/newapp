@@ -58,7 +58,7 @@ export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
   const formattedMonth = currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
       <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
