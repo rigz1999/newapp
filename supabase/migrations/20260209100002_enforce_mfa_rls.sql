@@ -4,8 +4,8 @@
 -- to access financial data tables
 -- ============================================
 
--- Payments: require aal2 if user has MFA factors
-CREATE POLICY "require_mfa_for_payments" ON payments
+-- Paiements: require aal2 if user has MFA factors
+CREATE POLICY "require_mfa_for_paiements" ON paiements
   AS RESTRICTIVE FOR ALL TO authenticated
   USING (
     -- Allow if user has aal2, OR if user has no verified factors yet
