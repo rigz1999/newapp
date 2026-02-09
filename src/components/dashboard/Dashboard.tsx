@@ -778,7 +778,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
   }, [selectedYear, startMonth, endMonth, chartSubscriptionsAll]);
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 lg:px-6 xl:px-8 py-8">
       <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Tableau de bord</h1>

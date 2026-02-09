@@ -16,7 +16,7 @@ export function DashboardQuickActions({
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8 mt-8">
       <h2 className="text-xl font-bold text-slate-900 mb-4">Actions rapides</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <button
           onClick={onNewProject}
           className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-lg transition-all group border border-blue-200"
