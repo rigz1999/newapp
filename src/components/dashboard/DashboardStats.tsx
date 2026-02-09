@@ -58,15 +58,15 @@ export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
   const formattedMonth = currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1);
 
   return (
-    <div className="flex flex-wrap gap-6 mb-8">
-      <div className="flex-1 basis-52 min-w-0 bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-6 mb-8">
+      <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <span className="text-slate-600 text-sm font-medium block mb-1 truncate">
+          <div className="min-w-0 flex-1">
+            <span className="text-slate-600 text-sm font-medium block mb-1">
               Montant total collecté
             </span>
             <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
-            <p className="text-2xl font-bold text-slate-900 mb-3 truncate">
+            <p className="text-2xl font-bold text-slate-900 mb-3 whitespace-nowrap">
               {formatCurrency(stats.totalInvested)}
             </p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
@@ -80,12 +80,12 @@ export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
         </div>
       </div>
 
-      <div className="flex-1 basis-52 min-w-0 bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
+      <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <span className="text-slate-600 text-sm font-medium block mb-1 truncate">Coupons versés</span>
+          <div className="min-w-0 flex-1">
+            <span className="text-slate-600 text-sm font-medium block mb-1">Coupons versés</span>
             <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
-            <p className="text-2xl font-bold text-slate-900 mb-3 truncate">
+            <p className="text-2xl font-bold text-slate-900 mb-3 whitespace-nowrap">
               {formatCurrency(stats.couponsPaidThisMonth)}
             </p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
@@ -99,10 +99,10 @@ export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
         </div>
       </div>
 
-      <div className="flex-1 basis-52 min-w-0 bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
+      <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <span className="text-slate-600 text-sm font-medium block mb-1 truncate">Projets actifs</span>
+          <div className="min-w-0 flex-1">
+            <span className="text-slate-600 text-sm font-medium block mb-1">Projets actifs</span>
             <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
             <p className="text-2xl font-bold text-slate-900 mb-3">{stats.activeProjects}</p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
@@ -116,10 +116,10 @@ export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
         </div>
       </div>
 
-      <div className="flex-1 basis-52 min-w-0 bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
+      <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <span className="text-slate-600 text-sm font-medium block mb-1 truncate">Coupons à venir</span>
+          <div className="min-w-0 flex-1">
+            <span className="text-slate-600 text-sm font-medium block mb-1">Coupons à venir</span>
             <span className="text-xs text-slate-400 block mb-3">90 prochains jours</span>
             <p className="text-2xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
           </div>
