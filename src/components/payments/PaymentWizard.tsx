@@ -903,7 +903,7 @@ export function PaymentWizard({
       logAuditEvent({
         action: 'created',
         entityType: 'paiement',
-        description: `a créé ${selectedMatchesList.filter(m => m.matchedSubscription).length} paiement(s) pour un total de ${auditFormatCurrency(totalAmount)}`,
+        description: `a créé ${selectedMatchesList.filter(m => m.matchedSubscription).length} paiement(s) pour un total de ${auditFormatCurrency(totalAmount)} — projet "${displayProjectName || 'inconnu'}", tranche "${displayTrancheName || 'inconnue'}"`,
         orgId: projet.org_id,
         metadata: {
           count: selectedMatchesList.filter(m => m.matchedSubscription).length,
@@ -1053,7 +1053,7 @@ export function PaymentWizard({
       logAuditEvent({
         action: 'created',
         entityType: 'paiement',
-        description: `a créé ${validMatchesList.length} paiement(s) pour un total de ${auditFormatCurrency(bulkTotalAmount)}`,
+        description: `a créé ${validMatchesList.length} paiement(s) pour un total de ${auditFormatCurrency(bulkTotalAmount)} — projet "${displayProjectName || 'inconnu'}", tranche "${displayTrancheName || 'inconnue'}"`,
         orgId: projet.org_id,
         metadata: { count: validMatchesList.length, totalAmount: bulkTotalAmount },
       });

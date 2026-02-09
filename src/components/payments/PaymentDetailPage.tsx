@@ -163,7 +163,7 @@ export function PaymentDetailPage() {
         action: 'deleted',
         entityType: 'paiement',
         entityId: payment.id,
-        description: `a supprimé le paiement ${payment.id_paiement} de ${auditFormatCurrency(payment.montant)}`,
+        description: `a supprimé un paiement de ${auditFormatCurrency(payment.montant)} — ${payment.investisseur?.nom_raison_sociale || 'investisseur inconnu'}, projet "${payment.tranche?.projet?.projet || 'inconnu'}", tranche "${payment.tranche?.tranche_name || 'inconnue'}"`,
         metadata: {
           id_paiement: payment.id_paiement,
           montant: payment.montant,

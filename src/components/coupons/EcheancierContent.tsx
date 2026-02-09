@@ -501,8 +501,12 @@ export function EcheancierContent({
         action: 'status_changed',
         entityType: 'coupon_echeance',
         entityId: echeance.id,
-        description: `a marqué l'échéance du ${auditFormatDate(echeance.date_echeance)} comme non payée`,
-        metadata: { date_echeance: echeance.date_echeance },
+        description: `a marqué l'échéance du ${auditFormatDate(echeance.date_echeance)} comme non payée — ${echeance.souscription.investisseur.nom_raison_sociale}, tranche "${echeance.souscription.tranche.tranche_name}"`,
+        metadata: {
+          date_echeance: echeance.date_echeance,
+          investisseur: echeance.souscription.investisseur.nom_raison_sociale,
+          tranche: echeance.souscription.tranche.tranche_name,
+        },
       });
 
       setAlertModalConfig({

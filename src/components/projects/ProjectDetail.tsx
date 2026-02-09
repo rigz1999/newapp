@@ -448,8 +448,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         action: 'deleted',
         entityType: 'tranche',
         entityId: deleteConfirm.tranche.id,
-        description: `a supprimé la tranche "${deleteConfirm.tranche.tranche_name}"`,
-        metadata: { tranche_name: deleteConfirm.tranche.tranche_name },
+        description: `a supprimé la tranche "${deleteConfirm.tranche.tranche_name}" — projet "${project?.projet || 'inconnu'}"`,
+        metadata: { tranche_name: deleteConfirm.tranche.tranche_name, projet: project?.projet },
       });
 
       toast.success('Tranche supprimée avec succès');
@@ -808,8 +808,13 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             action: 'deleted',
             entityType: 'souscription',
             entityId: sub.id,
-            description: `a supprimé la souscription de ${sub.investisseur?.nom_raison_sociale || 'un investisseur'} (${auditFormatCurrency(sub.montant_investi)})`,
-            metadata: { investisseur: sub.investisseur?.nom_raison_sociale, montant: sub.montant_investi },
+            description: `a supprimé la souscription de ${sub.investisseur?.nom_raison_sociale || 'un investisseur'} de ${auditFormatCurrency(sub.montant_investi)} — projet "${project?.projet || 'inconnu'}", tranche "${sub.tranche?.tranche_name || 'inconnue'}"`,
+            metadata: {
+              investisseur: sub.investisseur?.nom_raison_sociale,
+              montant: sub.montant_investi,
+              projet: project?.projet,
+              tranche: sub.tranche?.tranche_name,
+            },
           });
 
           setAlertState({
