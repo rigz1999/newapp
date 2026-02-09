@@ -2326,11 +2326,29 @@ function Investors({ organization: _organization }: InvestorsProps) {
               ) : ribViewUrl ? (
                 <div className="flex items-center justify-center">
                   {currentRibInvestor.rib_file_path?.toLowerCase().endsWith('.pdf') ? (
-                    <iframe
-                      src={ribViewUrl}
-                      className="w-full h-[600px] border rounded-lg"
-                      title="RIB PDF"
-                    />
+                    <div className="w-full flex flex-col items-center gap-6 py-8">
+                      <div className="w-20 h-20 bg-red-50 rounded-2xl flex items-center justify-center">
+                        <FileText className="w-10 h-10 text-red-500" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-semibold text-slate-900">
+                          {currentRibInvestor.rib_file_path.split('/').pop()?.replace(/^[^_]+_\d+\./, '') || 'RIB.pdf'}
+                        </p>
+                        <p className="text-sm text-slate-500 mt-1">Document PDF</p>
+                        {currentRibInvestor.rib_uploaded_at && (
+                          <p className="text-xs text-slate-400 mt-1">
+                            Uploadé le {new Date(currentRibInvestor.rib_uploaded_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => window.open(ribViewUrl, '_blank')}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      >
+                        <Eye className="w-5 h-5" />
+                        Ouvrir le PDF
+                      </button>
+                    </div>
                   ) : (
                     <img
                       src={ribViewUrl}
