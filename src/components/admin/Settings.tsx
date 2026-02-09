@@ -26,6 +26,7 @@ import { formatErrorMessage } from '../../utils/errorMessages';
 import { CardSkeleton } from '../common/Skeleton';
 import { logger } from '../../utils/logger';
 import { MFASettings } from '../settings/MFASettings';
+import { DataPrivacySettings } from '../settings/DataPrivacySettings';
 
 export default function Settings() {
   const { user, userRole } = useAuth();
@@ -895,6 +896,9 @@ export default function Settings() {
             </div>
           </div>
         )}
+
+        {/* Data Privacy Settings (RGPD) */}
+        <DataPrivacySettings />
 
         {/* Email Connection Card - Hidden for emetteur role */}
         {userRole !== 'emetteur' && (

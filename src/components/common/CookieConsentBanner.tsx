@@ -17,6 +17,13 @@ export function CookieConsentBanner() {
     if (!hasConsentBeenGiven()) {
       setVisible(true);
     }
+
+    const handleOpenSettings = () => {
+      setVisible(true);
+      setShowDetails(true);
+    };
+    window.addEventListener('open-cookie-settings', handleOpenSettings);
+    return () => window.removeEventListener('open-cookie-settings', handleOpenSettings);
   }, []);
 
   const handleAcceptAll = () => {
