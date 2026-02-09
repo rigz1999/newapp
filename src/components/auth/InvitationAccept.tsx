@@ -512,7 +512,7 @@ export function InvitationAccept() {
                   rel="noopener noreferrer"
                   className="text-slate-900 underline hover:no-underline font-medium"
                 >
-                  politique de confidentialit&eacute;
+                  politique de confidentialité
                 </a>{' '}
                 et les{' '}
                 <a
@@ -521,7 +521,7 @@ export function InvitationAccept() {
                   rel="noopener noreferrer"
                   className="text-slate-900 underline hover:no-underline font-medium"
                 >
-                  mentions l&eacute;gales
+                  mentions légales
                 </a>
                 . *
               </label>

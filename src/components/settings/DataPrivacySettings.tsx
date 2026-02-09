@@ -100,11 +100,10 @@ export function DataPrivacySettings() {
       <div className="p-6 border-b border-slate-200">
         <div className="flex items-center gap-2">
           <Database className="w-5 h-5 text-slate-700" />
-          <h2 className="text-xl font-bold text-slate-900">Mes donn&eacute;es (RGPD)</h2>
+          <h2 className="text-xl font-bold text-slate-900">Mes données (RGPD)</h2>
         </div>
         <p className="text-sm text-slate-600 mt-1">
-          Conform&eacute;ment au RGPD, vous pouvez exporter ou supprimer vos donn&eacute;es
-          personnelles.
+          Conformément au RGPD, vous pouvez exporter ou supprimer vos données personnelles.
         </p>
       </div>
 
@@ -112,12 +111,10 @@ export function DataPrivacySettings() {
         {/* Data Export */}
         <div className="flex items-start gap-4">
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-slate-900 mb-1">
-              Exporter mes donn&eacute;es
-            </h3>
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">Exporter mes données</h3>
             <p className="text-xs text-slate-600">
-              T&eacute;l&eacute;chargez une copie de toutes vos donn&eacute;es personnelles au
-              format JSON (droit &agrave; la portabilit&eacute; &mdash; Article 20).
+              Téléchargez une copie de toutes vos données personnelles au format JSON (droit à la
+              portabilité — Article 20).
             </p>
           </div>
           <button
@@ -133,7 +130,7 @@ export function DataPrivacySettings() {
             ) : exportSuccess ? (
               <>
                 <CheckCircle className="w-4 h-4 text-green-600" />
-                Export&eacute;
+                Exporté
               </>
             ) : (
               <>
@@ -151,10 +148,9 @@ export function DataPrivacySettings() {
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-red-900 mb-1">Supprimer mon compte</h3>
             <p className="text-xs text-slate-600">
-              Suppression d&eacute;finitive de votre compte et de vos donn&eacute;es personnelles
-              (droit &agrave; l'effacement &mdash; Article 17). Les donn&eacute;es
-              financi&egrave;res soumises &agrave; obligation l&eacute;gale de conservation (10 ans)
-              seront anonymis&eacute;es.
+              Suppression définitive de votre compte et de vos données personnelles (droit à
+              l'effacement — Article 17). Les données financières soumises à obligation légale de
+              conservation (10 ans) seront anonymisées.
             </p>
           </div>
           <button
@@ -193,9 +189,9 @@ export function DataPrivacySettings() {
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">Supprimer votre compte ?</h3>
               <p className="text-sm text-slate-600">
-                Cette action est <strong>irr&eacute;versible</strong>. Toutes vos donn&eacute;es
-                personnelles seront supprim&eacute;es. Les donn&eacute;es financi&egrave;res seront
-                anonymis&eacute;es conform&eacute;ment aux obligations l&eacute;gales.
+                Cette action est <strong>irréversible</strong>. Toutes vos données personnelles
+                seront supprimées. Les données financières seront anonymisées conformément aux
+                obligations légales.
               </p>
             </div>
 
@@ -244,7 +240,7 @@ export function DataPrivacySettings() {
                   ) : (
                     <>
                       <X className="w-4 h-4" />
-                      Supprimer d&eacute;finitivement
+                      Supprimer définitivement
                     </>
                   )}
                 </button>

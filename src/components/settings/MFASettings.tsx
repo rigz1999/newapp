@@ -149,9 +149,9 @@ export function MFASettings() {
             <>
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-green-900">2FA activ&eacute;</p>
+                <p className="text-sm font-semibold text-green-900">2FA activé</p>
                 <p className="text-xs text-green-800">
-                  Votre compte est prot&eacute;g&eacute; par la double authentification TOTP.
+                  Votre compte est protégé par la double authentification TOTP.
                 </p>
               </div>
             </>
@@ -159,10 +159,9 @@ export function MFASettings() {
             <>
               <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-amber-900">2FA non activ&eacute;</p>
+                <p className="text-sm font-semibold text-amber-900">2FA non activé</p>
                 <p className="text-xs text-amber-800">
-                  La double authentification sera configur&eacute;e lors de votre prochaine
-                  connexion.
+                  La double authentification sera configurée lors de votre prochaine connexion.
                 </p>
               </div>
             </>
@@ -175,9 +174,7 @@ export function MFASettings() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Key className="w-4 h-4 text-slate-600" />
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Codes de r&eacute;cup&eacute;ration
-                </h3>
+                <h3 className="text-sm font-semibold text-slate-900">Codes de récupération</h3>
               </div>
               {remainingCodes !== null && (
                 <span
@@ -195,9 +192,9 @@ export function MFASettings() {
             </div>
 
             <p className="text-xs text-slate-600">
-              Les codes de r&eacute;cup&eacute;ration vous permettent d'acc&eacute;der &agrave;
-              votre compte si vous perdez votre application d'authentification. Chaque code ne peut
-              &ecirc;tre utilis&eacute; qu'une seule fois.
+              Les codes de récupération vous permettent d'accéder à votre compte si vous perdez
+              votre application d'authentification. Chaque code ne peut être utilisé qu'une seule
+              fois.
             </p>
 
             {/* Show generated codes */}
@@ -224,7 +221,7 @@ export function MFASettings() {
                     {codesCopied ? (
                       <>
                         <CheckCircle className="w-4 h-4 text-green-600" />
-                        Copi&eacute;
+                        Copié
                       </>
                     ) : (
                       <>
@@ -238,7 +235,7 @@ export function MFASettings() {
                     className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
                   >
                     <Download className="w-4 h-4" />
-                    T&eacute;l&eacute;charger
+                    Télécharger
                   </button>
                 </div>
 
@@ -246,8 +243,8 @@ export function MFASettings() {
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-amber-800">
-                      Sauvegardez ces codes maintenant. Ils ne seront plus affich&eacute;s
-                      apr&egrave;s avoir quitt&eacute; cette page.
+                      Sauvegardez ces codes maintenant. Ils ne seront plus affichés après avoir
+                      quitté cette page.
                     </p>
                   </div>
                 </div>
@@ -260,7 +257,7 @@ export function MFASettings() {
                     className="w-4 h-4 text-slate-900 border-slate-300 rounded"
                   />
                   <span className="text-sm text-slate-700">
-                    J'ai sauvegard&eacute; mes codes en lieu s&ucirc;r
+                    J'ai sauvegardé mes codes en lieu sûr
                   </span>
                 </label>
 
@@ -291,14 +288,14 @@ export function MFASettings() {
                 {generatingCodes ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    G&eacute;n&eacute;ration...
+                    Génération...
                   </>
                 ) : (
                   <>
                     <Key className="w-4 h-4" />
                     {remainingCodes !== null && remainingCodes > 0
-                      ? 'R&eacute;g&eacute;n&eacute;rer les codes'
-                      : 'G&eacute;n&eacute;rer des codes de r&eacute;cup&eacute;ration'}
+                      ? 'Régénérer les codes'
+                      : 'Générer des codes de récupération'}
                   </>
                 )}
               </button>
