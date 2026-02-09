@@ -153,10 +153,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
   const [uploadError, setUploadError] = useState('');
 
   // RIB View Modal states
-  const [showRibViewModal, setShowRibViewModal] = useState(false);
-  const [ribViewUrl, setRibViewUrl] = useState<string | null>(null);
-  const [ribViewLoading, setRibViewLoading] = useState(false);
-  const [currentRibInvestor, setCurrentRibInvestor] = useState<InvestorWithStats | null>(null);
+  const [downloadingRib, setDownloadingRib] = useState<string | null>(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -437,14 +434,12 @@ function Investors({ organization: _organization }: InvestorsProps) {
           setShowDeleteModal(false);
         } else if (showRibModal) {
           setShowRibModal(false);
-        } else if (showRibViewModal) {
-          setShowRibViewModal(false);
         }
       }
     };
     document.addEventListener('keydown', handleEsc, { capture: true });
     return () => document.removeEventListener('keydown', handleEsc, { capture: true });
-  }, [showDetailsModal, showEditModal, showDeleteModal, showRibModal, showRibViewModal]);
+  }, [showDetailsModal, showEditModal, showDeleteModal, showRibModal]);
 
   const fetchInvestors = async () => {
     setLoading(true);
@@ -830,74 +825,36 @@ function Investors({ organization: _organization }: InvestorsProps) {
     }
   };
 
-  const handleViewRib = async (investor: InvestorWithStats) => {
-    if (!investor.rib_file_path) {
-      return;
-    }
+  const handleDownloadRib = async (investor: InvestorWithStats) => {
+    if (!investor.rib_file_path) return;
 
-    setCurrentRibInvestor(investor);
-    setShowRibViewModal(true);
-    setRibViewLoading(true);
-
+    setDownloadingRib(investor.id);
     try {
-      const isPdf = investor.rib_file_path.toLowerCase().endsWith('.pdf');
+      const { data, error } = await supabase.storage
+        .from('ribs')
+        .download(investor.rib_file_path);
 
-      if (isPdf) {
-        // For PDFs: use a signed URL so the browser can render it in an iframe
-        const { data, error } = await supabase.storage
-          .from('ribs')
-          .createSignedUrl(investor.rib_file_path, 3600);
+      if (error) throw error;
 
-        if (error || !data?.signedUrl) {
-          throw error || new Error('Failed to create signed URL');
-        }
-
-        setRibViewUrl(data.signedUrl);
-      } else {
-        // For images: use blob URL
-        const { data, error } = await supabase.storage
-          .from('ribs')
-          .download(investor.rib_file_path);
-
-        if (error) {
-          throw error;
-        }
-
-        setRibViewUrl(window.URL.createObjectURL(data));
-      }
+      const ext = investor.rib_file_path.split('.').pop() || 'pdf';
+      const blobUrl = window.URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `RIB_${investor.nom_raison_sociale}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
     } catch {
       setAlertModalConfig({
         title: 'Erreur',
-        message: 'Erreur lors du chargement du RIB',
+        message: 'Erreur lors du téléchargement du RIB',
         type: 'error',
       });
       setShowAlertModal(true);
-      setShowRibViewModal(false);
     } finally {
-      setRibViewLoading(false);
+      setDownloadingRib(null);
     }
-  };
-
-  const handleCloseRibView = () => {
-    if (ribViewUrl) {
-      window.URL.revokeObjectURL(ribViewUrl);
-    }
-    setRibViewUrl(null);
-    setShowRibViewModal(false);
-    setCurrentRibInvestor(null);
-  };
-
-  const handleDownloadFromView = () => {
-    if (!currentRibInvestor || !ribViewUrl) {
-      return;
-    }
-
-    const a = document.createElement('a');
-    a.href = ribViewUrl;
-    a.download = `RIB_${currentRibInvestor.nom_raison_sociale}.${currentRibInvestor.rib_file_path?.split('.').pop()}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
   };
 
   const handleDeleteRib = (investor: InvestorWithStats) => {
@@ -1344,13 +1301,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         {hasRib ? (
                           <>
                             <button
-                              onClick={() => handleViewRib(investor)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
-                              title="Voir le RIB"
-                              aria-label={`Voir le RIB de ${investor.nom_raison_sociale}`}
+                              onClick={() => handleDownloadRib(investor)}
+                              disabled={downloadingRib === investor.id}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Télécharger le RIB"
+                              aria-label={`Télécharger le RIB de ${investor.nom_raison_sociale}`}
                             >
-                              <Eye className="w-3.5 h-3.5" aria-hidden="true" />
-                              Voir
+                              <Download className={`w-3.5 h-3.5 ${downloadingRib === investor.id ? 'animate-pulse' : ''}`} aria-hidden="true" />
+                              {downloadingRib === investor.id ? '...' : 'Télécharger'}
                             </button>
                             <button
                               onClick={() => handleDeleteRib(investor)}
@@ -2296,83 +2254,6 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     Uploader le RIB
                   </>
                 )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* RIB View Modal */}
-      {showRibViewModal && currentRibInvestor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">
-                RIB - {currentRibInvestor.nom_raison_sociale}
-              </h3>
-              <button onClick={handleCloseRibView} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-auto p-6">
-              {ribViewLoading ? (
-                <div className="flex items-center justify-center h-96">
-                  <div className="flex flex-col items-center gap-4">
-                    <RefreshCw className="w-12 h-12 text-blue-600 animate-spin" />
-                    <p className="text-sm text-slate-600">Chargement du RIB...</p>
-                  </div>
-                </div>
-              ) : ribViewUrl ? (
-                <div className="flex items-center justify-center">
-                  {currentRibInvestor.rib_file_path?.toLowerCase().endsWith('.pdf') ? (
-                    <div className="w-full flex flex-col items-center gap-6 py-8">
-                      <div className="w-20 h-20 bg-red-50 rounded-2xl flex items-center justify-center">
-                        <FileText className="w-10 h-10 text-red-500" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-semibold text-slate-900">
-                          {currentRibInvestor.rib_file_path.split('/').pop()?.replace(/^[^_]+_\d+\./, '') || 'RIB.pdf'}
-                        </p>
-                        <p className="text-sm text-slate-500 mt-1">Document PDF</p>
-                        {currentRibInvestor.rib_uploaded_at && (
-                          <p className="text-xs text-slate-400 mt-1">
-                            Uploadé le {new Date(currentRibInvestor.rib_uploaded_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => window.open(ribViewUrl, '_blank')}
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                      >
-                        <Eye className="w-5 h-5" />
-                        Ouvrir le PDF
-                      </button>
-                    </div>
-                  ) : (
-                    <img
-                      src={ribViewUrl}
-                      alt="RIB"
-                      className="max-w-full h-auto rounded-lg shadow-lg"
-                    />
-                  )}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="border-t border-slate-200 px-6 py-4 bg-slate-50 flex justify-end gap-3">
-              <button
-                onClick={handleCloseRibView}
-                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
-              >
-                Fermer
-              </button>
-              <button
-                onClick={handleDownloadFromView}
-                className="px-4 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-colors flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Télécharger
               </button>
             </div>
           </div>
