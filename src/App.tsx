@@ -6,6 +6,8 @@ import { Login } from './components/auth/Login';
 import { Layout } from './components/layouts/Layout';
 import { InvitationAccept } from './components/auth/InvitationAccept';
 import { ResetPassword } from './components/auth/ResetPassword';
+import { MFAEnroll } from './components/auth/MFAEnroll';
+import { MFAChallenge } from './components/auth/MFAChallenge';
 import { EmailOAuthCallback } from './components/auth/EmailOAuthCallback';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
@@ -58,7 +60,15 @@ const AuditLogPage = lazy(() => import('./components/audit/AuditLogPage'));
 const DEFAULT_ORG = { id: 'admin', name: 'Admin', role: 'admin' } as const;
 
 function App(): JSX.Element {
-  const { user, loading: authLoading, isAdmin, isOrgAdmin, userRole } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    isAdmin,
+    isOrgAdmin,
+    userRole,
+    mfaStatus,
+    refreshMFA,
+  } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
   const isEmetteur = userRole === 'emetteur';
 
@@ -170,14 +180,21 @@ function App(): JSX.Element {
               }
             />
 
-            {/* Protected Routes - Authentication required */}
+            {/* Protected Routes - Authentication + MFA required */}
             <Route
               path="/*"
               element={
                 authLoading ? (
                   <Layout organization={DEFAULT_ORG} isLoading={true} />
                 ) : user ? (
-                  isAdmin || organization || orgLoading ? (
+                  // MFA enforcement: mandatory for all roles
+                  mfaStatus === 'loading' ? (
+                    <Layout organization={DEFAULT_ORG} isLoading={true} />
+                  ) : mfaStatus === 'needs_verification' ? (
+                    <MFAChallenge onVerified={() => refreshMFA()} />
+                  ) : mfaStatus === 'no_factors' ? (
+                    <MFAEnroll onComplete={() => refreshMFA()} />
+                  ) : isAdmin || organization || orgLoading ? (
                     <Layout organization={organization || DEFAULT_ORG} isLoading={orgLoading} />
                   ) : (
                     <Navigate to="/login" replace />

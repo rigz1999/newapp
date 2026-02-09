@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import { logger } from '../utils/logger';
 
+export type MFAStatus = 'loading' | 'no_factors' | 'needs_verification' | 'verified';
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -10,6 +12,30 @@ export function useAuth() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [mfaStatus, setMfaStatus] = useState<MFAStatus>('loading');
+
+  const checkMFAStatus = async () => {
+    try {
+      const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (error) {
+        setMfaStatus('no_factors');
+        return;
+      }
+
+      if (data.nextLevel === 'aal2' && data.currentLevel === 'aal1') {
+        // User has enrolled factors but hasn't verified this session
+        setMfaStatus('needs_verification');
+      } else if (data.currentLevel === 'aal2') {
+        // Fully verified
+        setMfaStatus('verified');
+      } else {
+        // No factors enrolled
+        setMfaStatus('no_factors');
+      }
+    } catch {
+      setMfaStatus('no_factors');
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -17,7 +43,9 @@ export function useAuth() {
 
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        checkMFAStatus();
       } else {
+        setMfaStatus('loading');
         setLoading(false);
       }
     });
@@ -36,6 +64,7 @@ export function useAuth() {
         setIsSuperAdmin(false);
         setIsOrgAdmin(false);
         setUserRole(null);
+        setMfaStatus('loading');
         setLoading(false);
         return;
       }
@@ -43,6 +72,7 @@ export function useAuth() {
       if (session?.user) {
         setUser(session.user);
         checkAdminStatus(session.user.id);
+        checkMFAStatus();
       }
     });
 
@@ -84,5 +114,14 @@ export function useAuth() {
     }
   };
 
-  return { user, loading, isAdmin, isSuperAdmin, isOrgAdmin, userRole };
+  return {
+    user,
+    loading,
+    isAdmin,
+    isSuperAdmin,
+    isOrgAdmin,
+    userRole,
+    mfaStatus,
+    refreshMFA: checkMFAStatus,
+  };
 }
