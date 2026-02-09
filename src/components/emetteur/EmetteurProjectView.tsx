@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Spinner } from '../common/Spinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 import { ProjectDetail } from '../projects/ProjectDetail';
+import { isValidShortId } from '../../utils/shortId';
 
 export default function EmetteurProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -24,10 +25,26 @@ export default function EmetteurProjectView() {
       setLoading(true);
       setError(null);
 
+      // Resolve short_id to UUID if needed
+      let resolvedId = projectId!;
+      if (isValidShortId(projectId!, 'projet')) {
+        const { data: projectByShortId } = await supabase
+          .from('projets')
+          .select('id')
+          .eq('short_id', projectId!)
+          .single();
+
+        if (!projectByShortId) {
+          setError('Projet non trouve');
+          return;
+        }
+        resolvedId = projectByShortId.id;
+      }
+
       const { data: accessCheck } = await supabase
         .from('emetteur_projects')
         .select('id')
-        .eq('projet_id', projectId!)
+        .eq('projet_id', resolvedId)
         .eq('user_id', user!.id)
         .maybeSingle();
 
@@ -39,7 +56,7 @@ export default function EmetteurProjectView() {
       const { data: projectData } = await supabase
         .from('projets')
         .select('org_id, organizations:org_id(id, name)')
-        .eq('id', projectId!)
+        .eq('id', resolvedId)
         .maybeSingle();
 
       if (!projectData) {
