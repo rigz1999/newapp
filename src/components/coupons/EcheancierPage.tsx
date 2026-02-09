@@ -463,7 +463,7 @@ export function EcheancierPage() {
         action: 'status_changed',
         entityType: 'coupon_echeance',
         entityId: echeance.id,
-        description: `a marqué l'échéance du ${auditFormatDate(echeance.date_echeance)} comme non payée — ${echeance.souscription.investisseur.nom_raison_sociale}, projet "${projectName}", tranche "${echeance.souscription.tranche.tranche_name}"`,
+        description: `a marqué l'échéance du ${auditFormatDate(echeance.date_echeance)} comme non payée — ${echeance.souscription.investisseur.nom_raison_sociale}, projet "${projectName || 'inconnu'}", tranche "${echeance.souscription.tranche.tranche_name}"`,
         metadata: {
           date_echeance: echeance.date_echeance,
           investisseur: echeance.souscription.investisseur.nom_raison_sociale,

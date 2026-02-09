@@ -195,8 +195,8 @@ export default function Members() {
         action: 'deleted',
         entityType: 'membre',
         entityId: selectedMember.user_id,
-        description: `a supprimé le membre "${selectedMember.email}"`,
-        metadata: { email: selectedMember.email, role: selectedMember.role },
+        description: `a supprimé le membre "${selectedMember.profiles?.email || 'inconnu'}" (rôle: ${selectedMember.role})`,
+        metadata: { email: selectedMember.profiles?.email, role: selectedMember.role },
       });
 
       setShowRemoveModal(false);
@@ -252,8 +252,8 @@ export default function Members() {
         action: 'updated',
         entityType: 'membre',
         entityId: selectedMember.user_id,
-        description: `a changé le rôle de "${selectedMember.email}" en "${newRole}"`,
-        metadata: { email: selectedMember.email, oldRole: selectedMember.role, newRole },
+        description: `a changé le rôle de "${selectedMember.profiles?.email || 'inconnu'}" de "${selectedMember.role}" en "${newRole}"`,
+        metadata: { email: selectedMember.profiles?.email, oldRole: selectedMember.role, newRole },
       });
       setShowRoleModal(false);
       setSelectedMember(null);
