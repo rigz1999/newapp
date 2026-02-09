@@ -30,20 +30,20 @@ export function DateRangePicker({
           {label}
         </label>
       )}
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-center min-w-0">
         <input
           type="date"
           value={startDate || ''}
           onChange={e => onStartDateChange(e.target.value || null)}
-          className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
+          className="flex-1 min-w-0 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
           placeholder="Date début"
         />
-        <span className="text-slate-500">→</span>
+        <span className="text-slate-500 shrink-0">→</span>
         <input
           type="date"
           value={endDate || ''}
           onChange={e => onEndDateChange(e.target.value || null)}
-          className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
+          className="flex-1 min-w-0 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
           placeholder="Date fin"
         />
         {(startDate || endDate) && (
@@ -52,7 +52,7 @@ export function DateRangePicker({
               onStartDateChange(null);
               onEndDateChange(null);
             }}
-            className="text-sm text-finixar-red hover:text-red-700 px-2 py-1 hover:bg-red-50 rounded transition-colors"
+            className="shrink-0 text-sm text-finixar-red hover:text-red-700 px-2 py-1 hover:bg-red-50 rounded transition-colors"
           >
             Effacer
           </button>
