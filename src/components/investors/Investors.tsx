@@ -848,7 +848,12 @@ function Investors({ organization: _organization }: InvestorsProps) {
         throw error;
       }
 
-      const url = window.URL.createObjectURL(data);
+      // Ensure correct MIME type for blob URL (needed for PDF iframe rendering)
+      const isPdf = investor.rib_file_path.toLowerCase().endsWith('.pdf');
+      const blob = isPdf && data.type !== 'application/pdf'
+        ? new Blob([data], { type: 'application/pdf' })
+        : data;
+      const url = window.URL.createObjectURL(blob);
       setRibViewUrl(url);
     } catch {
       setAlertModalConfig({
