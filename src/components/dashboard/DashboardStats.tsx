@@ -58,73 +58,73 @@ export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
   const formattedMonth = currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-1">
+    <div className="flex flex-wrap gap-6 mb-8">
+      <div className="flex-1 basis-52 min-w-0 bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-slate-600 text-sm font-medium block mb-1 truncate">
               Montant total collecté
             </span>
             <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
-            <p className="text-3xl font-bold text-slate-900 mb-3">
+            <p className="text-2xl font-bold text-slate-900 mb-3 truncate">
               {formatCurrency(stats.totalInvested)}
             </p>
-            <div className="flex items-center gap-3 text-xs">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
               <GrowthBadge percentage={stats.totalInvestedMoM} label="MoM" />
               <GrowthBadge percentage={stats.totalInvestedYoY} label="YoY" />
             </div>
           </div>
-          <div className="bg-blue-100 p-3 rounded-xl">
-            <TrendingUp className="w-6 h-6 text-finixar-brand-blue" />
+          <div className="bg-blue-100 p-2.5 rounded-xl flex-shrink-0">
+            <TrendingUp className="w-5 h-5 text-finixar-brand-blue" />
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-1">Coupons versés</span>
+      <div className="flex-1 basis-52 min-w-0 bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-slate-600 text-sm font-medium block mb-1 truncate">Coupons versés</span>
             <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
-            <p className="text-3xl font-bold text-slate-900 mb-3">
+            <p className="text-2xl font-bold text-slate-900 mb-3 truncate">
               {formatCurrency(stats.couponsPaidThisMonth)}
             </p>
-            <div className="flex items-center gap-3 text-xs">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
               <GrowthBadge percentage={stats.couponsPaidMoM} label="MoM" />
               <GrowthBadge percentage={stats.couponsPaidYoY} label="YoY" />
             </div>
           </div>
-          <div className="bg-emerald-100 p-3 rounded-xl">
-            <CheckCircle2 className="w-6 h-6 text-finixar-action-create" />
+          <div className="bg-emerald-100 p-2.5 rounded-xl flex-shrink-0">
+            <CheckCircle2 className="w-5 h-5 text-finixar-action-create" />
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-1">Projets actifs</span>
+      <div className="flex-1 basis-52 min-w-0 bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-slate-600 text-sm font-medium block mb-1 truncate">Projets actifs</span>
             <span className="text-xs text-slate-400 block mb-3">{formattedMonth}</span>
-            <p className="text-3xl font-bold text-slate-900 mb-3">{stats.activeProjects}</p>
-            <div className="flex items-center gap-3 text-xs">
+            <p className="text-2xl font-bold text-slate-900 mb-3">{stats.activeProjects}</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
               <GrowthBadge percentage={stats.activeProjectsMoM} label="MoM" />
               <GrowthBadge percentage={stats.activeProjectsYoY} label="YoY" />
             </div>
           </div>
-          <div className="bg-purple-100 p-3 rounded-xl">
-            <Folder className="w-6 h-6 text-purple-600" />
+          <div className="bg-purple-100 p-2.5 rounded-xl flex-shrink-0">
+            <Folder className="w-5 h-5 text-purple-600" />
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-6 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <span className="text-slate-600 text-sm font-medium block mb-1">Coupons à venir</span>
+      <div className="flex-1 basis-52 min-w-0 bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-slate-600 text-sm font-medium block mb-1 truncate">Coupons à venir</span>
             <span className="text-xs text-slate-400 block mb-3">90 prochains jours</span>
-            <p className="text-3xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
+            <p className="text-2xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
           </div>
-          <div className="bg-amber-100 p-3 rounded-xl">
-            <Clock className="w-6 h-6 text-amber-600" />
+          <div className="bg-amber-100 p-2.5 rounded-xl flex-shrink-0">
+            <Clock className="w-5 h-5 text-amber-600" />
           </div>
         </div>
       </div>
