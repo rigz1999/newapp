@@ -122,16 +122,12 @@ export function SimplePaymentModal({
           .upload(fileName, proofFile);
 
         if (!uploadError) {
-          const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
-
-          if (urlData?.publicUrl) {
-            await supabase.from('payment_proofs').insert({
-              paiement_id: paiement.id,
-              file_url: urlData.publicUrl,
-              file_name: proofFile.name,
-              uploaded_at: new Date().toISOString(),
-            });
-          }
+          await supabase.from('payment_proofs').insert({
+            paiement_id: paiement.id,
+            file_url: fileName,
+            file_name: proofFile.name,
+            uploaded_at: new Date().toISOString(),
+          });
         }
       }
 

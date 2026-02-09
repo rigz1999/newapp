@@ -434,9 +434,7 @@ export function QuickPaymentModal({
           continue;
         }
 
-        const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
-
-        newFileUrls.set(file.name, urlData.publicUrl);
+        newFileUrls.set(file.name, fileName);
       }
 
       setUploadedFiles(prev => [...prev, ...files]);

@@ -599,9 +599,19 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
       },
     ];
 
+    // Map singular filter keys to plural group keys
+    const filterToGroupKey: Record<string, string> = {
+      project: 'projects',
+      investor: 'investors',
+      tranche: 'tranches',
+      subscription: 'subscriptions',
+      payment: 'payments',
+      coupon: 'coupons',
+    };
+
     return groups
       .filter(group =>
-        activeFilter === 'all' ? group.results.length > 0 : group.key === activeFilter
+        activeFilter === 'all' ? group.results.length > 0 : group.key === filterToGroupKey[activeFilter]
       )
       .map(group => (
         <div key={group.key} className="mb-4">
@@ -766,7 +776,7 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
                 <ul className="text-left space-y-1">
                   <li>• Vérifiez l'orthographe</li>
                   <li>• Essayez des termes plus généraux</li>
-                  <li>• Recherchez par ID investisseur ou projet</li>
+                  <li>• Recherchez par nom d'investisseur ou de projet</li>
                   <li>• Utilisez les filtres ci-dessus</li>
                 </ul>
               </div>

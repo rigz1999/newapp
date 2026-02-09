@@ -311,7 +311,7 @@ export function QuickPaymentModal({ onClose, onSuccess }: QuickPaymentModalProps
                           {subscription.investisseur?.nom_raison_sociale ||
                             'Investisseur non spécifié'}
                         </p>
-                        <p className="text-xs text-slate-500">{subscription.id_souscription}</p>
+                        <p className="text-xs text-slate-500">{subscription.investisseur?.type || ''}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-slate-900">

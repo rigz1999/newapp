@@ -18,6 +18,7 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { logAuditEvent, auditFormatCurrency } from '../../utils/auditLogger';
 import { ActivityTimeline } from '../audit/ActivityTimeline';
+import { extractStoragePath } from '../../utils/fileProxy';
 
 interface PaymentDetail {
   id: string;
@@ -143,9 +144,8 @@ export function PaymentDetailPage() {
       if (proofsData && proofsData.length > 0) {
         for (const proof of proofsData) {
           if (proof.file_url) {
-            const urlParts = proof.file_url.split('/payment-proofs/');
-            if (urlParts.length > 1) {
-              const filePath = urlParts[1].split('?')[0];
+            const filePath = extractStoragePath(proof.file_url);
+            if (filePath) {
               await supabase.storage.from('payment-proofs').remove([filePath]);
             }
           }
@@ -232,7 +232,6 @@ export function PaymentDetailPage() {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">Détail du paiement</h1>
-                <p className="text-sm text-slate-600 mt-0.5">{payment.id_paiement}</p>
               </div>
             </div>
             <button

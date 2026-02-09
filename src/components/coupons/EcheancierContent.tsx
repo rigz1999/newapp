@@ -17,6 +17,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { extractStoragePath } from '../../utils/fileProxy';
 import { useNavigate } from 'react-router-dom';
 import * as ExcelJS from 'exceljs';
 import { PaymentWizard } from '../payments/PaymentWizard';
@@ -434,11 +435,10 @@ export function EcheancierContent({
 
             // Only delete file if no other payments reference it
             if (!otherProofs || otherProofs.length === 0) {
-              // Extract file path from URL
-              const url = new URL(proof.file_url);
-              const pathParts = url.pathname.split('/');
-              const fileName = pathParts[pathParts.length - 1];
-              filesToDelete.push(fileName);
+              const filePath = extractStoragePath(proof.file_url);
+              if (filePath) {
+                filesToDelete.push(filePath);
+              }
             }
           }
 

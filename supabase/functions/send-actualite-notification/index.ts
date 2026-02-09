@@ -40,6 +40,7 @@ Deno.serve(async (req: Request) => {
       .select(
         `
         id,
+        user_id,
         comment_text,
         attachments,
         created_at,
@@ -63,23 +64,32 @@ Deno.serve(async (req: Request) => {
       throw new Error('Project not found');
     }
 
+    // Fetch org admins and members only (exclude emetteurs)
     const { data: memberships, error: membershipsError } = await supabaseAdmin
       .from('memberships')
       .select(
         `
         user_id,
+        role,
         profiles!memberships_user_id_fkey(email, full_name)
       `
       )
-      .eq('org_id', orgId);
+      .eq('org_id', orgId)
+      .in('role', ['admin', 'member']);
 
     if (membershipsError || !memberships) {
       throw new Error('Failed to fetch organization members');
     }
 
-    const recipients = memberships
-      .filter(m => m.user_id !== actualite.user.id)
-      .map(m => m.profiles.email);
+    // Collect recipient emails, excluding the author
+    const allUserEmails = new Map<string, string>();
+    for (const m of memberships) {
+      if (m.user_id !== actualite.user_id && m.profiles?.email) {
+        allUserEmails.set(m.user_id, m.profiles.email);
+      }
+    }
+
+    const recipients = Array.from(allUserEmails.values());
 
     if (recipients.length === 0) {
       return new Response(

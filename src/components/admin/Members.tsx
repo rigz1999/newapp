@@ -237,7 +237,7 @@ export default function Members() {
 
     const { error } = await supabase
       .from('memberships')
-      .update({ role: newRole as 'member' | 'admin' } as never)
+      .update({ role: newRole as 'member' | 'admin' | 'emetteur' } as never)
       .eq('id', selectedMember.id);
 
     if (error) {
@@ -351,7 +351,7 @@ export default function Members() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           <div className="bg-white rounded-lg p-4 border border-slate-200">
             <p className="text-sm text-slate-600 mb-1">Total Membres</p>
             <p className="text-2xl font-bold text-slate-900">{members.length}</p>
@@ -366,6 +366,12 @@ export default function Members() {
             <p className="text-sm text-slate-600 mb-1">Membres</p>
             <p className="text-2xl font-bold text-finixar-green">
               {members.filter(m => m.role === 'member').length}
+            </p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-slate-200">
+            <p className="text-sm text-slate-600 mb-1">Emetteurs</p>
+            <p className="text-2xl font-bold text-purple-600">
+              {members.filter(m => m.role === 'emetteur').length}
             </p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-slate-200">
@@ -408,10 +414,12 @@ export default function Members() {
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
                       inv.role === 'admin'
                         ? 'bg-blue-100 text-blue-800'
-                        : 'bg-green-100 text-green-800'
+                        : inv.role === 'emetteur'
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-green-100 text-green-800'
                     }`}
                   >
-                    {inv.role === 'admin' ? 'Administrateur' : 'Membre'}
+                    {inv.role === 'admin' ? 'Administrateur' : inv.role === 'emetteur' ? 'Emetteur' : 'Membre'}
                   </span>
                   <button
                     onClick={() => handleCancelInvitation(inv.id)}
@@ -454,7 +462,9 @@ export default function Members() {
                       className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold ${
                         member.role === 'admin'
                           ? 'bg-gradient-to-br from-blue-500 to-purple-600'
-                          : 'bg-gradient-to-br from-green-500 to-teal-600'
+                          : member.role === 'emetteur'
+                            ? 'bg-gradient-to-br from-purple-500 to-indigo-600'
+                            : 'bg-gradient-to-br from-green-500 to-teal-600'
                       }`}
                     >
                       {member.profiles?.full_name?.charAt(0) ||
@@ -480,10 +490,12 @@ export default function Members() {
                       className={`px-3 py-1.5 rounded-full text-sm font-medium ${
                         member.role === 'admin'
                           ? 'bg-blue-100 text-blue-800'
-                          : 'bg-green-100 text-green-800'
+                          : member.role === 'emetteur'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-green-100 text-green-800'
                       }`}
                     >
-                      {member.role === 'admin' ? 'Administrateur' : 'Membre'}
+                      {member.role === 'admin' ? 'Administrateur' : member.role === 'emetteur' ? 'Emetteur' : 'Membre'}
                     </span>
                     <button
                       onClick={() => openRoleModal(member)}
@@ -579,7 +591,7 @@ function InviteMemberModal({
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [role, setRole] = useState<'member' | 'admin'>('member');
+  const [role, setRole] = useState<'member' | 'admin' | 'emetteur'>('member');
   const [sending, setSending] = useState(false);
 
   // Alert modal state
@@ -662,6 +674,14 @@ function InviteMemberModal({
         throw new Error(result.error || "Erreur lors de l'envoi de l'invitation");
       }
 
+      // Audit log for invitation
+      logAuditEvent({
+        action: 'created',
+        entityType: 'invitation',
+        description: `a invité "${email}" en tant que "${role === 'admin' ? 'Administrateur' : role === 'emetteur' ? 'Émetteur' : 'Membre'}" dans l'organisation "${organization.name}"`,
+        metadata: { email, role, firstName, lastName, orgName: organization.name },
+      });
+
       // Success - trigger success modal
       const invitedEmail = email;
       setEmail('');
@@ -736,16 +756,19 @@ function InviteMemberModal({
               <label className="block text-sm font-medium text-slate-700 mb-2">Rôle *</label>
               <select
                 value={role}
-                onChange={e => setRole(e.target.value as 'member' | 'admin')}
+                onChange={e => setRole(e.target.value as 'member' | 'admin' | 'emetteur')}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
               >
                 <option value="member">Membre</option>
+                <option value="emetteur">Emetteur</option>
                 <option value="admin">Administrateur</option>
               </select>
               <p className="text-xs text-slate-500 mt-2">
                 {role === 'admin'
                   ? 'Peut gérer les membres et accéder à toutes les données'
-                  : "Peut accéder et modifier les données de l'organisation"}
+                  : role === 'emetteur'
+                    ? 'Peut consulter les projets assignés et publier des actualités'
+                    : "Peut accéder et modifier les données de l'organisation"}
               </p>
             </div>
           </div>
@@ -947,12 +970,15 @@ function ChangeRoleModal({
               className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             >
               <option value="member">Membre</option>
+              <option value="emetteur">Emetteur</option>
               <option value="admin">Administrateur</option>
             </select>
             <p className="text-xs text-slate-500 mt-2">
               {newRole === 'admin'
                 ? 'Peut gérer les membres et accéder à toutes les données'
-                : "Peut accéder et modifier les données de l'organisation"}
+                : newRole === 'emetteur'
+                  ? 'Peut consulter les projets assignés et publier des actualités'
+                  : "Peut accéder et modifier les données de l'organisation"}
             </p>
           </div>
 

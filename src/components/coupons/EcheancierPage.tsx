@@ -305,13 +305,10 @@ export function EcheancierPage() {
         throw uploadError;
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
-
-      // Create payment_proof record
+      // Create payment_proof record with relative path
       const { error: proofError } = await supabase.from('payment_proofs').insert({
         paiement_id: echeanceData.paiement_id,
-        file_url: urlData.publicUrl,
+        file_url: fileName,
         file_name: file.name,
         file_size: file.size,
         validated_at: new Date().toISOString(),
@@ -323,7 +320,7 @@ export function EcheancierPage() {
 
       // Update local state
       const newProofUrls = new Map(echeanceProofUrls);
-      newProofUrls.set(echeanceId, urlData.publicUrl);
+      newProofUrls.set(echeanceId, fileName);
       setEcheanceProofUrls(newProofUrls);
 
       setAlertModalConfig({

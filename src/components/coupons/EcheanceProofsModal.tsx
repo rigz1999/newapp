@@ -2,19 +2,20 @@ import { useState, useEffect } from 'react';
 import {
   X,
   Upload,
-  Download,
   Eye,
   Trash2,
   AlertTriangle,
-  ZoomIn,
   Plus,
   Users,
   User,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
+import { logAuditEvent } from '../../utils/auditLogger';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { sanitizeFileName } from '../../utils/sanitizer';
+import { ProxiedImage } from '../common/ProxiedImage';
+import { openFileInNewTab } from '../../utils/fileProxy';
 
 interface EcheanceProofsModalProps {
   echeanceDate: string;
@@ -201,13 +202,11 @@ export function EcheanceProofsModal({
           throw uploadError;
         }
 
-        const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
-
-        // Create proof records for all target payments
+        // Create proof records for all target payments with relative path
         for (const paymentId of targetPaymentIds) {
           await supabase.from('payment_proofs').insert({
             paiement_id: paymentId,
-            file_url: urlData.publicUrl,
+            file_url: fileName,
             file_name: file.name,
             file_size: file.size,
           });
@@ -217,6 +216,12 @@ export function EcheanceProofsModal({
       toast.success(
         `${files.length} justificatif${files.length > 1 ? 's' : ''} ajouté${files.length > 1 ? 's' : ''}`
       );
+      logAuditEvent({
+        action: 'created',
+        entityType: 'payment_proof',
+        description: `a ajouté ${files.length} justificatif(s) de paiement pour l'échéance du ${formatDate(echeanceDate)} — ${projetName}, ${trancheName}`,
+        metadata: { echeanceDate, projetName, trancheName, fileCount: files.length, uploadMode },
+      });
       setFiles([]);
       setShowUploadSection(false);
       fetchProofs();
@@ -239,6 +244,12 @@ export function EcheanceProofsModal({
       }
 
       toast.success('Justificatif supprimé');
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'payment_proof',
+        description: `a supprimé le justificatif "${proof.file_name}" — ${proof.investisseur_nom}`,
+        metadata: { fileName: proof.file_name, investisseur: proof.investisseur_nom },
+      });
       setConfirmDelete(null);
       fetchProofs();
       onSuccess();
@@ -248,13 +259,6 @@ export function EcheanceProofsModal({
     } finally {
       setDeleting(false);
     }
-  };
-
-  const downloadFile = (url: string, filename: string) => {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
   };
 
   const totalAmount = paidEcheances.reduce((sum, e) => sum + e.montant_coupon, 0);
@@ -487,13 +491,10 @@ export function EcheanceProofsModal({
                         className="w-16 h-16 rounded-lg overflow-hidden bg-white border border-slate-200 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={() => setSelectedProofForPreview(proof)}
                       >
-                        <img
+                        <ProxiedImage
                           src={proof.file_url}
                           alt={proof.file_name}
                           className="w-full h-full object-cover"
-                          onError={e => {
-                            e.currentTarget.style.display = 'none';
-                          }}
                         />
                       </div>
                     )}
@@ -510,25 +511,11 @@ export function EcheanceProofsModal({
                     {/* Actions */}
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => setSelectedProofForPreview(proof)}
-                        className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Aperçu"
-                      >
-                        <ZoomIn className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => window.open(proof.file_url, '_blank')}
+                        onClick={() => openFileInNewTab(proof.file_url)}
                         className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Ouvrir"
                       >
                         <Eye className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => downloadFile(proof.file_url, proof.file_name)}
-                        className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                        title="Télécharger"
-                      >
-                        <Download className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => setConfirmDelete(proof)}
@@ -591,18 +578,6 @@ export function EcheanceProofsModal({
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    downloadFile(
-                      selectedProofForPreview.file_url,
-                      selectedProofForPreview.file_name
-                    );
-                  }}
-                  className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg"
-                >
-                  <Download className="w-5 h-5" />
-                </button>
-                <button
                   onClick={() => setSelectedProofForPreview(null)}
                   className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg"
                 >
@@ -614,7 +589,7 @@ export function EcheanceProofsModal({
               className="flex-1 flex items-center justify-center"
               onClick={e => e.stopPropagation()}
             >
-              <img
+              <ProxiedImage
                 src={selectedProofForPreview.file_url}
                 alt={selectedProofForPreview.file_name}
                 className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"

@@ -874,13 +874,9 @@ export function PaymentWizard({
             throw uploadError;
           }
 
-          const { data: urlData } = supabase.storage
-            .from('payment-proofs')
-            .getPublicUrl(permanentFileName);
-
           const { error: proofError } = await supabase.from('payment_proofs').insert({
             paiement_id: paymentData.id,
-            file_url: urlData.publicUrl,
+            file_url: permanentFileName,
             file_name: files[0].name,
             file_size: files[0].size,
             extracted_data: match.paiement,
@@ -1026,13 +1022,9 @@ export function PaymentWizard({
             throw uploadError;
           }
 
-          const { data: urlData } = supabase.storage
-            .from('payment-proofs')
-            .getPublicUrl(permanentFileName);
-
           const { error: proofError } = await supabase.from('payment_proofs').insert({
             paiement_id: paymentData.id,
-            file_url: urlData.publicUrl,
+            file_url: permanentFileName,
             file_name: files[0].name,
             file_size: files[0].size,
             extracted_data: match.paiement,

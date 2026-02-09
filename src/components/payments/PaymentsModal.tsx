@@ -118,7 +118,7 @@ export function PaymentsModal({
                     />
                     <div>
                       <p className="text-sm font-medium text-slate-900">
-                        {payment.type || 'Paiement'} - {payment.id_paiement}
+                        {payment.type || 'Paiement'}
                       </p>
                       <p className="text-xs text-slate-600">{formatDate(payment.date_paiement)}</p>
                     </div>

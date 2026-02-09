@@ -27,6 +27,7 @@ import {
 import * as ExcelJS from 'exceljs';
 import { toast } from '../../utils/toast';
 import { supabase } from '../../lib/supabase';
+import { extractStoragePath } from '../../utils/fileProxy';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { logAuditEvent, auditFormatDate } from '../../utils/auditLogger';
 
@@ -214,11 +215,10 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
             // Only delete file if no other payments reference it
             if (!otherProofs || otherProofs.length === 0) {
-              // Extract file path from URL
-              const url = new URL(proof.file_url);
-              const pathParts = url.pathname.split('/');
-              const fileName = pathParts[pathParts.length - 1];
-              filesToDelete.push(fileName);
+              const filePath = extractStoragePath(proof.file_url);
+              if (filePath) {
+                filesToDelete.push(filePath);
+              }
             }
           }
 

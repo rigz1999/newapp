@@ -600,9 +600,12 @@ function Investors({ organization: _organization }: InvestorsProps) {
     const { error } = await supabase.from('investisseurs').delete().eq('id', selectedInvestor.id);
 
     if (error) {
+      const isPermissionError = error.code === '42501' || error.message?.includes('policy');
       setAlertModalConfig({
         title: 'Erreur',
-        message: 'Erreur lors de la suppression',
+        message: isPermissionError
+          ? 'Vous n\'avez pas les permissions nécessaires pour supprimer cet investisseur. Seuls les administrateurs de l\'organisation peuvent effectuer cette action.'
+          : `Erreur lors de la suppression: ${error.message}`,
         type: 'error',
       });
       setShowAlertModal(true);
@@ -882,7 +885,6 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
   const handleExportExcel = async () => {
     const exportData = filteredInvestors.map(inv => ({
-      ID: inv.id_investisseur,
       'Nom / Raison Sociale': inv.nom_raison_sociale,
       Type: formatType(inv.type),
       CGP: inv.cgp || '',
@@ -1000,11 +1002,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
             <input
               id="investor-search"
               type="search"
-              placeholder="Rechercher par nom, ID, CGP, e-mail..."
+              placeholder="Rechercher par nom, CGP, e-mail..."
               value={advancedFilters.filters.search}
               onChange={e => advancedFilters.setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
-              aria-label="Rechercher des investisseurs par nom, ID, CGP ou e-mail"
+              aria-label="Rechercher des investisseurs par nom, CGP ou e-mail"
             />
           </div>
 
@@ -1359,7 +1361,6 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   <h3 className="text-2xl font-bold text-slate-900">
                     {selectedInvestor.nom_raison_sociale}
                   </h3>
-                  <p className="text-sm text-slate-600">{selectedInvestor.id_investisseur}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1642,69 +1643,44 @@ function Investors({ organization: _organization }: InvestorsProps) {
                   {/* Tax Regime Fields - Only for Personne Physique */}
                   {!isMorale(editFormData.type) && (
                     <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h5 className="font-semibold text-slate-900 mb-3">Régime Fiscal</h5>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <label
-                            htmlFor="edit-tax-regime"
-                            className="block text-sm font-medium text-slate-700 mb-2"
-                          >
-                            Régime fiscal
-                          </label>
-                          <select
-                            id="edit-tax-regime"
-                            value={editFormData.tax_regime || 'default'}
-                            onChange={e =>
-                              setEditFormData({
-                                ...editFormData,
-                                tax_regime: e.target.value,
-                                // Clear custom rate if switching away from custom
-                                ...(e.target.value !== 'custom' && { custom_tax_rate: null }),
-                              })
-                            }
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="default">Par défaut (PFU 30%)</option>
-                            <option value="pea">PEA (exonération)</option>
-                            <option value="assurance_vie">Assurance vie</option>
-                            <option value="custom">Taux personnalisé</option>
-                          </select>
-                          <p className="text-xs text-slate-600 mt-1">
-                            Définit le régime fiscal applicable aux coupons
+                          <h5 className="font-semibold text-slate-900">Prélèvement Forfaitaire Unique (PFU)</h5>
+                          <p className="text-sm text-slate-600 mt-1">
+                            Appliquer le prélèvement de 30% sur les coupons (flat tax)
                           </p>
                         </div>
-
-                        {/* Custom Tax Rate - Only show if custom regime selected */}
-                        {editFormData.tax_regime === 'custom' && (
-                          <div>
-                            <label
-                              htmlFor="edit-custom-tax-rate"
-                              className="block text-sm font-medium text-slate-700 mb-2"
-                            >
-                              Taux de Prélèvement (%)
-                            </label>
-                            <input
-                              id="edit-custom-tax-rate"
-                              type="number"
-                              min="0"
-                              max="100"
-                              step="0.1"
-                              value={editFormData.custom_tax_rate ?? ''}
-                              onChange={e =>
-                                setEditFormData({
-                                  ...editFormData,
-                                  custom_tax_rate: e.target.value
-                                    ? parseFloat(e.target.value)
-                                    : null,
-                                })
-                              }
-                              placeholder="Ex: 12.8"
-                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <p className="text-xs text-slate-600 mt-1">Taux entre 0 et 100%</p>
-                          </div>
-                        )}
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={editFormData.tax_regime !== 'exempt'}
+                          onClick={() =>
+                            setEditFormData({
+                              ...editFormData,
+                              tax_regime: editFormData.tax_regime === 'exempt' ? 'default' : 'exempt',
+                              custom_tax_rate: null,
+                            })
+                          }
+                          className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                            editFormData.tax_regime !== 'exempt'
+                              ? 'bg-blue-600'
+                              : 'bg-slate-300'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                              editFormData.tax_regime !== 'exempt'
+                                ? 'translate-x-6'
+                                : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
                       </div>
+                      <p className="text-xs text-slate-500 mt-2">
+                        {editFormData.tax_regime !== 'exempt'
+                          ? 'Montant net = Montant brut x 0.70 (30% de prélèvement)'
+                          : 'Montant net = Montant brut (aucun prélèvement)'}
+                      </p>
                     </div>
                   )}
                 </div>
