@@ -40,6 +40,13 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
 
   // Sidebar collapse state with localStorage persistence
   const [isCollapsed, setIsCollapsed] = useState(() => {
+    // Check if mobile on initial load
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      return true;
+    }
+
+    // Otherwise, check localStorage
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved === 'true';
   });
@@ -75,7 +82,8 @@ export function Layout({ organization, isLoading = false }: LayoutProps): JSX.El
   // Handle responsive behavior - auto-collapse on mobile
   useEffect(() => {
     const handleResize = (): void => {
-      if (window.innerWidth < 768 && !isCollapsed) {
+      const isMobile = window.innerWidth < 768;
+      if (isMobile && !isCollapsed) {
         setIsCollapsed(true);
       }
     };
