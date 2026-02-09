@@ -23,6 +23,8 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowLeft,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
 import { ConfirmModal, AlertModal } from '../common/Modals';
@@ -70,6 +72,8 @@ interface Investor {
   rib_status?: string | null;
   tax_regime?: string | null;
   custom_tax_rate?: number | null;
+  archived?: boolean;
+  archived_at?: string | null;
 }
 
 interface InvestorWithStats extends Investor {
@@ -124,6 +128,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
   const [sortField, setSortField] = useState<SortField>('nom_raison_sociale');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [ribSortDirection, setRibSortDirection] = useState<'none' | 'asc' | 'desc'>('none');
+  const [showArchived, setShowArchived] = useState(false);
 
   // Advanced filters
   const advancedFilters = useAdvancedFilters({
@@ -328,8 +333,15 @@ function Investors({ organization: _organization }: InvestorsProps) {
     });
 
   // Apply filters and sorting
+  const archivedCount = useMemo(() => investors.filter(inv => inv.archived).length, [investors]);
+
   const filteredInvestors = useMemo(() => {
     let filtered = [...investors];
+
+    // Archive filter — hide archived by default
+    if (!showArchived) {
+      filtered = filtered.filter(inv => !inv.archived);
+    }
 
     // Search filter
     if (advancedFilters.filters.search) {
@@ -396,7 +408,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
     }
 
     return filtered;
-  }, [investors, advancedFilters.filters, sortField, sortDirection, ribSortDirection]);
+  }, [investors, advancedFilters.filters, sortField, sortDirection, ribSortDirection, showArchived]);
 
   // Count active filters
   const activeFiltersCount = useMemo(
@@ -598,115 +610,59 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
     const investorName = selectedInvestor.nom_raison_sociale;
 
-    try {
-      // 1. Get all souscriptions for this investor
-      const { data: souscriptions } = await supabase
-        .from('souscriptions')
-        .select('id')
-        .eq('investisseur_id', selectedInvestor.id);
+    // Soft delete: archive instead of hard delete
+    const { error } = await supabase
+      .from('investisseurs')
+      .update({ archived: true, archived_at: new Date().toISOString() } as never)
+      .eq('id', selectedInvestor.id);
 
-      if (souscriptions && souscriptions.length > 0) {
-        const souscriptionIds = souscriptions.map(s => s.id);
-
-        // 2. Get all paiements linked to these souscriptions
-        const { data: paiements } = await supabase
-          .from('paiements')
-          .select('id')
-          .in('souscription_id', souscriptionIds);
-
-        if (paiements && paiements.length > 0) {
-          const paiementIds = paiements.map(p => p.id);
-
-          // 3. Delete payment_proofs for these paiements
-          await supabase
-            .from('payment_proofs')
-            .delete()
-            .in('paiement_id', paiementIds);
-
-          // 4. Unlink coupons_echeances from these paiements (nullify, don't delete)
-          await supabase
-            .from('coupons_echeances')
-            .update({ paiement_id: null, statut: 'en_attente', date_paiement: null, montant_paye: null })
-            .in('paiement_id', paiementIds);
-        }
-
-        // 5. Delete coupons_echeances linked to these souscriptions
-        await supabase
-          .from('coupons_echeances')
-          .delete()
-          .in('souscription_id', souscriptionIds);
-
-        // 6. Delete paiements linked via investisseur_id or souscription_id
-        await supabase
-          .from('paiements')
-          .delete()
-          .in('souscription_id', souscriptionIds);
-
-        // 7. Delete souscriptions
-        await supabase
-          .from('souscriptions')
-          .delete()
-          .eq('investisseur_id', selectedInvestor.id);
-      }
-
-      // 8. Also delete any paiements linked directly via investisseur_id
-      const { data: directPaiements } = await supabase
-        .from('paiements')
-        .select('id')
-        .eq('investisseur_id', selectedInvestor.id);
-
-      if (directPaiements && directPaiements.length > 0) {
-        const directPaiementIds = directPaiements.map(p => p.id);
-        await supabase
-          .from('payment_proofs')
-          .delete()
-          .in('paiement_id', directPaiementIds);
-        await supabase
-          .from('coupons_echeances')
-          .update({ paiement_id: null, statut: 'en_attente', date_paiement: null, montant_paye: null })
-          .in('paiement_id', directPaiementIds);
-        await supabase
-          .from('paiements')
-          .delete()
-          .eq('investisseur_id', selectedInvestor.id);
-      }
-
-      // 9. Delete RIB from storage if exists
-      if (selectedInvestor.rib_file_path) {
-        await supabase.storage
-          .from('ribs')
-          .remove([selectedInvestor.rib_file_path]);
-      }
-
-      // 10. Finally delete the investor
-      const { error } = await supabase.from('investisseurs').delete().eq('id', selectedInvestor.id);
-
-      if (error) {
-        throw error;
-      }
-
-      logAuditEvent({
-        action: 'deleted',
-        entityType: 'investisseur',
-        entityId: selectedInvestor.id,
-        description: `a supprimé l'investisseur "${investorName}" et ses données associées (${souscriptions?.length || 0} souscription(s))`,
-        metadata: { nom_raison_sociale: investorName, souscriptionsDeleted: souscriptions?.length || 0 },
-      });
-
-      setShowDeleteModal(false);
-      fetchInvestors();
-    } catch (err: unknown) {
-      const error = err as { code?: string; message?: string };
+    if (error) {
       const isPermissionError = error.code === '42501' || error.message?.includes('policy');
       setAlertModalConfig({
         title: 'Erreur',
         message: isPermissionError
-          ? 'Vous n\'avez pas les permissions nécessaires pour supprimer cet investisseur. Seuls les administrateurs de l\'organisation peuvent effectuer cette action.'
-          : `Erreur lors de la suppression: ${error.message}`,
+          ? 'Vous n\'avez pas les permissions nécessaires pour archiver cet investisseur.'
+          : `Erreur lors de l'archivage: ${error.message}`,
         type: 'error',
       });
       setShowAlertModal(true);
+      return;
     }
+
+    logAuditEvent({
+      action: 'updated',
+      entityType: 'investisseur',
+      entityId: selectedInvestor.id,
+      description: `a archivé l'investisseur "${investorName}"`,
+      metadata: { nom_raison_sociale: investorName },
+    });
+
+    toast.success(`${investorName} archivé avec succès`);
+    setShowDeleteModal(false);
+    fetchInvestors();
+  };
+
+  const handleRestoreInvestor = async (investor: InvestorWithStats) => {
+    const { error } = await supabase
+      .from('investisseurs')
+      .update({ archived: false, archived_at: null } as never)
+      .eq('id', investor.id);
+
+    if (error) {
+      toast.error(`Erreur lors de la restauration: ${error.message}`);
+      return;
+    }
+
+    logAuditEvent({
+      action: 'updated',
+      entityType: 'investisseur',
+      entityId: investor.id,
+      description: `a restauré l'investisseur "${investor.nom_raison_sociale}"`,
+      metadata: { nom_raison_sociale: investor.nom_raison_sociale },
+    });
+
+    toast.success(`${investor.nom_raison_sociale} restauré avec succès`);
+    fetchInvestors();
   };
 
   // Bulk delete functions
@@ -740,29 +696,32 @@ function Investors({ organization: _organization }: InvestorsProps) {
       return;
     }
 
-    const idsToDelete = Array.from(selectedInvestorIds);
+    const idsToArchive = Array.from(selectedInvestorIds);
 
-    const { error } = await supabase.from('investisseurs').delete().in('id', idsToDelete);
+    const { error } = await supabase
+      .from('investisseurs')
+      .update({ archived: true, archived_at: new Date().toISOString() } as never)
+      .in('id', idsToArchive);
 
     if (error) {
-      toast.error(`Erreur lors de la suppression: ${error.message}`);
+      toast.error(`Erreur lors de l'archivage: ${error.message}`);
       return;
     }
 
-    const deletedInvestors = investors.filter(i => selectedInvestorIds.has(i.id));
+    const archivedInvestors = investors.filter(i => selectedInvestorIds.has(i.id));
     logAuditEvent({
-      action: 'deleted',
+      action: 'updated',
       entityType: 'investisseur',
-      description: `a supprimé ${idsToDelete.length} investisseur(s) en masse`,
+      description: `a archivé ${idsToArchive.length} investisseur(s) en masse`,
       metadata: {
-        count: idsToDelete.length,
-        details: deletedInvestors.map(i => ({
+        count: idsToArchive.length,
+        details: archivedInvestors.map(i => ({
           nom_raison_sociale: i.nom_raison_sociale,
         })),
       },
     });
 
-    toast.success(`${idsToDelete.length} investisseur(s) supprimé(s) avec succès`);
+    toast.success(`${idsToArchive.length} investisseur(s) archivé(s) avec succès`);
     setShowBulkDeleteModal(false);
     setSelectedInvestorIds(new Set());
     fetchInvestors();
@@ -1056,10 +1015,23 @@ function Investors({ organization: _organization }: InvestorsProps) {
           {selectedInvestorIds.size > 0 && (
             <button
               onClick={handleBulkDeleteClick}
-              className="flex items-center gap-2 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
             >
-              <Trash2 className="w-4 h-4" />
-              Supprimer ({selectedInvestorIds.size})
+              <Archive className="w-4 h-4" />
+              Archiver ({selectedInvestorIds.size})
+            </button>
+          )}
+          {archivedCount > 0 && (
+            <button
+              onClick={() => setShowArchived(!showArchived)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                showArchived
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                  : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+              }`}
+            >
+              <Archive className="w-4 h-4" />
+              Archivés ({archivedCount})
             </button>
           )}
           <button
@@ -1297,7 +1269,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 const isInvestorMorale = isMorale(investor.type);
 
                 return (
-                  <tr key={investor.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={investor.id} className={`hover:bg-slate-50 transition-colors ${investor.archived ? 'opacity-60 bg-slate-50' : ''}`}>
                     <td className="px-4 py-4 text-center">
                       <input
                         type="checkbox"
@@ -1311,10 +1283,12 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`p-2 rounded-lg ${isInvestorMorale ? 'bg-purple-100' : 'bg-blue-100'}`}
+                          className={`p-2 rounded-lg ${investor.archived ? 'bg-slate-200' : isInvestorMorale ? 'bg-purple-100' : 'bg-blue-100'}`}
                           aria-hidden="true"
                         >
-                          {isInvestorMorale ? (
+                          {investor.archived ? (
+                            <Archive className="w-5 h-5 text-slate-400" />
+                          ) : isInvestorMorale ? (
                             <Building2 className="w-5 h-5 text-purple-600" />
                           ) : (
                             <User className="w-5 h-5 text-blue-600" />
@@ -1324,6 +1298,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           <p className="text-sm font-medium text-slate-900">
                             {investor.nom_raison_sociale}
                           </p>
+                          {investor.archived && (
+                            <span className="text-xs text-amber-600 font-medium">Archivé</span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -1384,22 +1361,36 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => handleViewDetails(investor)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Voir détails"
-                          aria-label={`Voir les détails de ${investor.nom_raison_sociale}`}
-                        >
-                          <Eye className="w-4 h-4" aria-hidden="true" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(investor)}
-                          className="p-2 text-finixar-red hover:bg-red-50 rounded-lg transition-colors"
-                          title="Supprimer"
-                          aria-label={`Supprimer ${investor.nom_raison_sociale}`}
-                        >
-                          <Trash2 className="w-4 h-4" aria-hidden="true" />
-                        </button>
+                        {investor.archived ? (
+                          <button
+                            onClick={() => handleRestoreInvestor(investor)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-amber-700 hover:bg-amber-50 rounded-lg transition-colors text-xs font-medium"
+                            title="Restaurer"
+                            aria-label={`Restaurer ${investor.nom_raison_sociale}`}
+                          >
+                            <ArchiveRestore className="w-4 h-4" aria-hidden="true" />
+                            Restaurer
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleViewDetails(investor)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Voir détails"
+                              aria-label={`Voir les détails de ${investor.nom_raison_sociale}`}
+                            >
+                              <Eye className="w-4 h-4" aria-hidden="true" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(investor)}
+                              className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                              title="Archiver"
+                              aria-label={`Archiver ${investor.nom_raison_sociale}`}
+                            >
+                              <Archive className="w-4 h-4" aria-hidden="true" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -2065,25 +2056,23 @@ function Investors({ organization: _organization }: InvestorsProps) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
             <div className="p-6">
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
-                <AlertTriangle className="w-6 h-6 text-finixar-red" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 mx-auto mb-4">
+                <Archive className="w-6 h-6 text-amber-600" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 text-center mb-2">
-                Supprimer l'investisseur
+                Archiver l'investisseur
               </h3>
               <p className="text-slate-600 text-center mb-4">
-                Êtes-vous sûr de vouloir supprimer{' '}
-                <strong>{selectedInvestor.nom_raison_sociale}</strong> ? Cette action est
-                irréversible.
+                <strong>{selectedInvestor.nom_raison_sociale}</strong> sera archivé et masqué de la
+                liste active. Ses souscriptions et paiements seront conservés. Vous pourrez le
+                restaurer à tout moment.
               </p>
               {selectedInvestor.nb_souscriptions > 0 && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-orange-800">
-                    <strong>Attention :</strong> Cet investisseur a{' '}
-                    {selectedInvestor.nb_souscriptions} souscription
-                    {selectedInvestor.nb_souscriptions > 1 ? 's' : ''}. La suppression entraînera
-                    également la suppression de toutes ses souscriptions, paiements et justificatifs
-                    associés.
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-800">
+                    Cet investisseur a {selectedInvestor.nb_souscriptions} souscription
+                    {selectedInvestor.nb_souscriptions > 1 ? 's' : ''} active
+                    {selectedInvestor.nb_souscriptions > 1 ? 's' : ''}. Elles seront conservées.
                   </p>
                 </div>
               )}
@@ -2097,9 +2086,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="px-4 py-2 bg-finixar-action-delete text-white rounded-lg hover:bg-finixar-action-delete-hover transition-colors"
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
               >
-                Supprimer
+                Archiver
               </button>
             </div>
           </div>
@@ -2381,9 +2370,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
         isOpen={showBulkDeleteModal}
         onClose={() => setShowBulkDeleteModal(false)}
         onConfirm={handleBulkDeleteConfirm}
-        title="Supprimer les investisseurs"
-        message={`Êtes-vous sûr de vouloir supprimer ${selectedInvestorIds.size} investisseur${selectedInvestorIds.size > 1 ? 's' : ''} ?\n\nCette action est irréversible et supprimera également toutes les souscriptions associées.`}
-        type="danger"
+        title="Archiver les investisseurs"
+        message={`Êtes-vous sûr de vouloir archiver ${selectedInvestorIds.size} investisseur${selectedInvestorIds.size > 1 ? 's' : ''} ?\n\nIls seront masqués de la liste active mais leurs données seront conservées. Vous pourrez les restaurer à tout moment.`}
+        type="warning"
       />
     </div>
   );

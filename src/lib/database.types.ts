@@ -365,6 +365,8 @@ export interface Database {
           rib_status: string | null;
           tax_regime: string | null;
           custom_tax_rate: number | null;
+          archived: boolean;
+          archived_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -388,6 +390,8 @@ export interface Database {
           rib_status?: string | null;
           tax_regime?: string | null;
           custom_tax_rate?: number | null;
+          archived?: boolean;
+          archived_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -411,6 +415,8 @@ export interface Database {
           rib_status?: string | null;
           tax_regime?: string | null;
           custom_tax_rate?: number | null;
+          archived?: boolean;
+          archived_at?: string | null;
           created_at?: string;
         };
         Relationships: [
