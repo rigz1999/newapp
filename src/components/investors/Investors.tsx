@@ -840,21 +840,31 @@ function Investors({ organization: _organization }: InvestorsProps) {
     setRibViewLoading(true);
 
     try {
-      const { data, error } = await supabase.storage
-        .from('ribs')
-        .download(investor.rib_file_path);
-
-      if (error) {
-        throw error;
-      }
-
-      // Ensure correct MIME type for blob URL (needed for PDF iframe rendering)
       const isPdf = investor.rib_file_path.toLowerCase().endsWith('.pdf');
-      const blob = isPdf && data.type !== 'application/pdf'
-        ? new Blob([data], { type: 'application/pdf' })
-        : data;
-      const url = window.URL.createObjectURL(blob);
-      setRibViewUrl(url);
+
+      if (isPdf) {
+        // For PDFs: use a signed URL so the browser can render it in an iframe
+        const { data, error } = await supabase.storage
+          .from('ribs')
+          .createSignedUrl(investor.rib_file_path, 3600);
+
+        if (error || !data?.signedUrl) {
+          throw error || new Error('Failed to create signed URL');
+        }
+
+        setRibViewUrl(data.signedUrl);
+      } else {
+        // For images: use blob URL
+        const { data, error } = await supabase.storage
+          .from('ribs')
+          .download(investor.rib_file_path);
+
+        if (error) {
+          throw error;
+        }
+
+        setRibViewUrl(window.URL.createObjectURL(data));
+      }
     } catch {
       setAlertModalConfig({
         title: 'Erreur',
@@ -2316,15 +2326,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
               ) : ribViewUrl ? (
                 <div className="flex items-center justify-center">
                   {currentRibInvestor.rib_file_path?.toLowerCase().endsWith('.pdf') ? (
-                    <object
-                      data={ribViewUrl}
-                      type="application/pdf"
+                    <iframe
+                      src={ribViewUrl}
                       className="w-full h-[600px] border rounded-lg"
-                    >
-                      <p className="text-center text-slate-500 py-8">
-                        Impossible d'afficher le PDF. <a href={ribViewUrl} download className="text-blue-600 underline">Télécharger</a>
-                      </p>
-                    </object>
+                      title="RIB PDF"
+                    />
                   ) : (
                     <img
                       src={ribViewUrl}
