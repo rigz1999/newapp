@@ -13,7 +13,11 @@ export type AuditEntityType =
   | 'invitation'
   | 'coupon_echeance'
   | 'organization'
-  | 'payment_proof';
+  | 'payment_proof'
+  | 'security'
+  | 'consent'
+  | 'data_export'
+  | 'account_deletion';
 
 export interface AuditLogParams {
   action: AuditAction;

@@ -1,14 +1,28 @@
 import * as Sentry from '@sentry/react';
+import { hasConsentFor } from '../utils/cookieConsent';
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
 const ENVIRONMENT = import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE;
 
+let sentryInitialized = false;
+
 export function initSentry(): void {
   // Only initialize Sentry if DSN is provided
   if (!SENTRY_DSN) {
-    // Silently skip Sentry initialization if not configured
     return;
   }
+
+  // RGPD: Only initialize if user has consented to error tracking
+  if (!hasConsentFor('error_tracking')) {
+    return;
+  }
+
+  // Prevent double initialization
+  if (sentryInitialized) {
+    return;
+  }
+
+  sentryInitialized = true;
 
   Sentry.init({
     dsn: SENTRY_DSN,
@@ -34,11 +48,18 @@ export function initSentry(): void {
     // Release tracking
     release: import.meta.env.VITE_APP_VERSION,
 
-    // Enhanced error context
+    // Enhanced error context + RGPD PII stripping
     beforeSend(event, hint) {
       // Don't send errors in development if no DSN
       if (ENVIRONMENT === 'development' && !SENTRY_DSN) {
         return null;
+      }
+
+      // RGPD: Strip PII before sending to Sentry
+      if (event.user) {
+        delete event.user.email;
+        delete event.user.ip_address;
+        delete event.user.username;
       }
 
       // Filter out non-critical errors

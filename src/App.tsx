@@ -6,13 +6,23 @@ import { Login } from './components/auth/Login';
 import { Layout } from './components/layouts/Layout';
 import { InvitationAccept } from './components/auth/InvitationAccept';
 import { ResetPassword } from './components/auth/ResetPassword';
+import { MFAEnroll } from './components/auth/MFAEnroll';
+import { MFAChallenge } from './components/auth/MFAChallenge';
 import { EmailOAuthCallback } from './components/auth/EmailOAuthCallback';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
+import { CookieConsentBanner } from './components/common/CookieConsentBanner';
 import { ThemeProvider } from './context/ThemeContext';
 import { DiagnosticPage } from './pages/DiagnosticPage';
 import { LandingPage } from './components/landing/LandingPage';
 import { DemoRequest } from './components/landing/DemoRequest';
+import { MentionsLegales } from './components/legal/MentionsLegales';
+
+const PolitiqueConfidentialite = lazy(() =>
+  import('./components/legal/PolitiqueConfidentialite').then(m => ({
+    default: m.PolitiqueConfidentialite,
+  }))
+);
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
@@ -50,7 +60,15 @@ const AuditLogPage = lazy(() => import('./components/audit/AuditLogPage'));
 const DEFAULT_ORG = { id: 'admin', name: 'Admin', role: 'admin' } as const;
 
 function App(): JSX.Element {
-  const { user, loading: authLoading, isAdmin, isOrgAdmin, userRole } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    isAdmin,
+    isOrgAdmin,
+    userRole,
+    mfaStatus,
+    refreshMFA,
+  } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
   const isEmetteur = userRole === 'emetteur';
 
@@ -65,10 +83,31 @@ function App(): JSX.Element {
     // Simple router for main domain
     const pathname = window.location.pathname;
     const isDemoPage = pathname === '/demo' || pathname === '/demo/';
+    const isMentionsLegales = pathname === '/mentions-legales' || pathname === '/mentions-legales/';
+    const isPolitiqueConfidentialite =
+      pathname === '/politique-de-confidentialite' || pathname === '/politique-de-confidentialite/';
+
+    let pageContent: React.ReactNode;
+    if (isDemoPage) {
+      pageContent = <DemoRequest />;
+    } else if (isMentionsLegales) {
+      pageContent = <MentionsLegales />;
+    } else if (isPolitiqueConfidentialite) {
+      pageContent = (
+        <Suspense fallback={<DashboardSkeleton />}>
+          <PolitiqueConfidentialite />
+        </Suspense>
+      );
+    } else {
+      pageContent = <LandingPage />;
+    }
 
     return (
       <ThemeProvider>
-        <ErrorBoundary>{isDemoPage ? <DemoRequest /> : <LandingPage />}</ErrorBoundary>
+        <ErrorBoundary>
+          {pageContent}
+          <CookieConsentBanner />
+        </ErrorBoundary>
       </ThemeProvider>
     );
   }
@@ -93,6 +132,15 @@ function App(): JSX.Element {
             />
             <Route path="/invitation/accept" element={<InvitationAccept />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/mentions-legales" element={<MentionsLegales />} />
+            <Route
+              path="/politique-de-confidentialite"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <PolitiqueConfidentialite />
+                </Suspense>
+              }
+            />
             <Route
               path="/diagnostic"
               element={
@@ -132,14 +180,21 @@ function App(): JSX.Element {
               }
             />
 
-            {/* Protected Routes - Authentication required */}
+            {/* Protected Routes - Authentication + MFA required */}
             <Route
               path="/*"
               element={
                 authLoading ? (
                   <Layout organization={DEFAULT_ORG} isLoading={true} />
                 ) : user ? (
-                  isAdmin || organization || orgLoading ? (
+                  // MFA enforcement: mandatory for all roles
+                  mfaStatus === 'loading' ? (
+                    <Layout organization={DEFAULT_ORG} isLoading={true} />
+                  ) : mfaStatus === 'needs_verification' ? (
+                    <MFAChallenge onVerified={() => refreshMFA()} />
+                  ) : mfaStatus === 'no_factors' ? (
+                    <MFAEnroll onComplete={() => refreshMFA()} />
+                  ) : isAdmin || organization || orgLoading ? (
                     <Layout organization={organization || DEFAULT_ORG} isLoading={orgLoading} />
                   ) : (
                     <Navigate to="/login" replace />
@@ -473,6 +528,7 @@ function App(): JSX.Element {
             </Route>
           </Routes>
         </BrowserRouter>
+        <CookieConsentBanner />
       </ErrorBoundary>
     </ThemeProvider>
   );

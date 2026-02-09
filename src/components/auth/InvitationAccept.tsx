@@ -60,6 +60,7 @@ export function InvitationAccept() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedPrivacyPolicy, setAcceptedPrivacyPolicy] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -147,6 +148,12 @@ export function InvitationAccept() {
     e.preventDefault();
 
     if (!invitation) {
+      return;
+    }
+
+    // RGPD: Validate privacy policy acceptance
+    if (!acceptedPrivacyPolicy) {
+      setError('Vous devez accepter la politique de confidentialité pour créer votre compte.');
       return;
     }
 
@@ -488,6 +495,38 @@ export function InvitationAccept() {
               )}
             </div>
 
+            {/* RGPD Consent Checkbox */}
+            <div className="flex items-start gap-3">
+              <input
+                id="privacy-policy"
+                type="checkbox"
+                checked={acceptedPrivacyPolicy}
+                onChange={e => setAcceptedPrivacyPolicy(e.target.checked)}
+                className="w-5 h-5 mt-0.5 text-slate-900 border-slate-300 rounded focus:ring-2 focus:ring-slate-500 flex-shrink-0"
+              />
+              <label htmlFor="privacy-policy" className="text-sm text-slate-600 leading-relaxed">
+                J'ai lu et j'accepte la{' '}
+                <a
+                  href="/politique-de-confidentialite"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-900 underline hover:no-underline font-medium"
+                >
+                  politique de confidentialit&eacute;
+                </a>{' '}
+                et les{' '}
+                <a
+                  href="/mentions-legales"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-900 underline hover:no-underline font-medium"
+                >
+                  mentions l&eacute;gales
+                </a>
+                . *
+              </label>
+            </div>
+
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
@@ -496,7 +535,7 @@ export function InvitationAccept() {
 
             <button
               type="submit"
-              disabled={creating}
+              disabled={creating || !acceptedPrivacyPolicy}
               className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {creating ? 'Création du compte...' : 'Créer mon compte'}

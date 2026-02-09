@@ -1119,7 +1119,7 @@ export function LandingPage(): JSX.Element {
               <ul className="space-y-3 text-sm">
                 <li>
                   <a
-                    href="mailto:contact@finixar.com?subject=Mentions légales"
+                    href="/mentions-legales"
                     className="text-slate-400 hover:text-white transition-colors"
                   >
                     Mentions légales
@@ -1127,7 +1127,7 @@ export function LandingPage(): JSX.Element {
                 </li>
                 <li>
                   <a
-                    href="mailto:contact@finixar.com?subject=Politique de confidentialité"
+                    href="/politique-de-confidentialite"
                     className="text-slate-400 hover:text-white transition-colors"
                   >
                     Politique de confidentialité (RGPD)
@@ -1170,10 +1170,17 @@ export function LandingPage(): JSX.Element {
           </div>
 
           {/* Bottom Bar */}
-          <div className="border-t border-slate-800 pt-8">
-            <p className="text-center text-slate-400 text-sm">
-              © 2026 Finixar. Tous droits réservés.
-            </p>
+          <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-slate-400 text-sm">© 2026 Finixar. Tous droits réservés.</p>
+            <button
+              onClick={() => {
+                const event = new CustomEvent('open-cookie-settings');
+                window.dispatchEvent(event);
+              }}
+              className="text-slate-400 hover:text-white text-sm transition-colors"
+            >
+              Paramètres des cookies
+            </button>
           </div>
         </div>
       </footer>
