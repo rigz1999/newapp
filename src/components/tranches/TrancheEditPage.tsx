@@ -67,6 +67,7 @@ export function TrancheEditPage(): JSX.Element {
   const [processing, setProcessing] = useState(false);
 
   // Inherited fields from project
+  const [projectName, setProjectName] = useState<string>('');
   const [tauxNominal, setTauxNominal] = useState<string>('');
   const [dureeMois, setDureeMois] = useState<string>('');
   const [periodiciteCoupons, setPeriodiciteCoupons] = useState<string>('');
@@ -143,11 +144,14 @@ export function TrancheEditPage(): JSX.Element {
     try {
       const { data: project } = await supabase
         .from('projets')
-        .select('taux_nominal, periodicite_coupons, duree_mois')
+        .select('projet, taux_nominal, periodicite_coupons, duree_mois')
         .eq('id', tranche.projet_id)
         .single();
 
       if (project) {
+        if (project.projet) {
+          setProjectName(project.projet);
+        }
         if (project.taux_nominal) {
           setTauxNominal(project.taux_nominal.toString());
         }
@@ -330,8 +334,9 @@ export function TrancheEditPage(): JSX.Element {
         action: 'updated',
         entityType: 'souscription',
         entityId: souscriptionId,
-        description: `a réassigné une souscription à un autre investisseur — tranche "${tranche?.tranche_name || 'inconnue'}"`,
+        description: `a réassigné une souscription à un autre investisseur — projet "${projectName || 'inconnu'}", tranche "${tranche?.tranche_name || 'inconnue'}"`,
         metadata: {
+          projet: projectName || undefined,
           tranche: tranche?.tranche_name,
           changes: {
             investisseur: {
@@ -399,9 +404,10 @@ export function TrancheEditPage(): JSX.Element {
         action: 'updated',
         entityType: 'souscription',
         entityId: souscription.id,
-        description: `a modifié une souscription de ${auditFormatCurrency(souscription.montant_investi)} — tranche "${tranche?.tranche_name || 'inconnue'}"`,
+        description: `a modifié une souscription de ${auditFormatCurrency(souscription.montant_investi)} — projet "${projectName || 'inconnu'}", tranche "${tranche?.tranche_name || 'inconnue'}"`,
         metadata: {
           investisseur: souscription.investisseur_nom,
+          projet: projectName || undefined,
           tranche: tranche?.tranche_name,
           changes,
         },
@@ -458,8 +464,8 @@ export function TrancheEditPage(): JSX.Element {
         action: 'updated',
         entityType: 'tranche',
         entityId: tranche.id,
-        description: `a modifié la tranche "${trancheName}"`,
-        metadata: { changes: trancheChanges },
+        description: `a modifié la tranche "${trancheName}" — projet "${projectName || 'inconnu'}"`,
+        metadata: { projet: projectName || undefined, changes: trancheChanges },
       });
 
       logger.info('Tranche mise à jour', { id: tranche.id });

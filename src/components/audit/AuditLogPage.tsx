@@ -317,9 +317,24 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
     return String(value);
   };
 
+  const hasVisibleMetadata = (meta: Record<string, unknown> | null | undefined): boolean => {
+    if (!meta || Object.keys(meta).length === 0) {
+      return false;
+    }
+    const changes = meta.changes as Record<string, unknown> | undefined;
+    const details = meta.details as unknown[] | undefined;
+    const skipKeys = new Set(['changes', 'details']);
+    const hasChanges = changes && Object.keys(changes).length > 0;
+    const hasDetails = Array.isArray(details) && details.length > 0;
+    const hasOtherFields = Object.entries(meta).some(
+      ([k, v]) => !skipKeys.has(k) && v !== null && v !== undefined && typeof v !== 'object'
+    );
+    return !!(hasChanges || hasDetails || hasOtherFields);
+  };
+
   const renderMetadataDetails = (log: AuditLog) => {
     const meta = log.metadata;
-    if (!meta || Object.keys(meta).length === 0) {
+    if (!hasVisibleMetadata(meta)) {
       return null;
     }
 
@@ -604,7 +619,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
               {paginate(filteredLogs, currentPage, itemsPerPage).map(log => {
                 const ActionIcon = ACTION_ICONS[log.action] || RefreshCw;
                 const isExpanded = expandedLogId === log.id;
-                const hasMetadata = log.metadata && Object.keys(log.metadata).length > 0;
+                const hasMetadata = hasVisibleMetadata(log.metadata);
                 return (
                   <div
                     key={log.id}
