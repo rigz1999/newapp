@@ -9,6 +9,7 @@ import { ResetPassword } from './components/auth/ResetPassword';
 import { EmailOAuthCallback } from './components/auth/EmailOAuthCallback';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardSkeleton } from './components/common/Skeleton';
+import { CookieConsentBanner } from './components/common/CookieConsentBanner';
 import { ThemeProvider } from './context/ThemeContext';
 import { DiagnosticPage } from './pages/DiagnosticPage';
 import { LandingPage } from './components/landing/LandingPage';
@@ -68,7 +69,10 @@ function App(): JSX.Element {
 
     return (
       <ThemeProvider>
-        <ErrorBoundary>{isDemoPage ? <DemoRequest /> : <LandingPage />}</ErrorBoundary>
+        <ErrorBoundary>
+          {isDemoPage ? <DemoRequest /> : <LandingPage />}
+          <CookieConsentBanner />
+        </ErrorBoundary>
       </ThemeProvider>
     );
   }
@@ -473,6 +477,7 @@ function App(): JSX.Element {
             </Route>
           </Routes>
         </BrowserRouter>
+        <CookieConsentBanner />
       </ErrorBoundary>
     </ThemeProvider>
   );
