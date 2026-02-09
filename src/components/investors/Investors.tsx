@@ -2316,11 +2316,15 @@ function Investors({ organization: _organization }: InvestorsProps) {
               ) : ribViewUrl ? (
                 <div className="flex items-center justify-center">
                   {currentRibInvestor.rib_file_path?.toLowerCase().endsWith('.pdf') ? (
-                    <iframe
-                      src={ribViewUrl}
+                    <object
+                      data={ribViewUrl}
+                      type="application/pdf"
                       className="w-full h-[600px] border rounded-lg"
-                      title="RIB PDF"
-                    />
+                    >
+                      <p className="text-center text-slate-500 py-8">
+                        Impossible d'afficher le PDF. <a href={ribViewUrl} download className="text-blue-600 underline">Télécharger</a>
+                      </p>
+                    </object>
                   ) : (
                     <img
                       src={ribViewUrl}
