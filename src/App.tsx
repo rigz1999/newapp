@@ -14,6 +14,13 @@ import { ThemeProvider } from './context/ThemeContext';
 import { DiagnosticPage } from './pages/DiagnosticPage';
 import { LandingPage } from './components/landing/LandingPage';
 import { DemoRequest } from './components/landing/DemoRequest';
+import { MentionsLegales } from './components/legal/MentionsLegales';
+
+const PolitiqueConfidentialite = lazy(() =>
+  import('./components/legal/PolitiqueConfidentialite').then(m => ({
+    default: m.PolitiqueConfidentialite,
+  }))
+);
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const Projects = lazy(() => import('./components/projects/Projects'));
@@ -66,11 +73,29 @@ function App(): JSX.Element {
     // Simple router for main domain
     const pathname = window.location.pathname;
     const isDemoPage = pathname === '/demo' || pathname === '/demo/';
+    const isMentionsLegales = pathname === '/mentions-legales' || pathname === '/mentions-legales/';
+    const isPolitiqueConfidentialite =
+      pathname === '/politique-de-confidentialite' || pathname === '/politique-de-confidentialite/';
+
+    let pageContent: React.ReactNode;
+    if (isDemoPage) {
+      pageContent = <DemoRequest />;
+    } else if (isMentionsLegales) {
+      pageContent = <MentionsLegales />;
+    } else if (isPolitiqueConfidentialite) {
+      pageContent = (
+        <Suspense fallback={<DashboardSkeleton />}>
+          <PolitiqueConfidentialite />
+        </Suspense>
+      );
+    } else {
+      pageContent = <LandingPage />;
+    }
 
     return (
       <ThemeProvider>
         <ErrorBoundary>
-          {isDemoPage ? <DemoRequest /> : <LandingPage />}
+          {pageContent}
           <CookieConsentBanner />
         </ErrorBoundary>
       </ThemeProvider>
@@ -97,6 +122,15 @@ function App(): JSX.Element {
             />
             <Route path="/invitation/accept" element={<InvitationAccept />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/mentions-legales" element={<MentionsLegales />} />
+            <Route
+              path="/politique-de-confidentialite"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <PolitiqueConfidentialite />
+                </Suspense>
+              }
+            />
             <Route
               path="/diagnostic"
               element={
