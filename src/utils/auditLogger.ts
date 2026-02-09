@@ -28,11 +28,28 @@ export interface AuditLogParams {
  * Logs an audit event to the audit_logs table.
  * Fire-and-forget: never blocks the main operation.
  * Automatically captures the current user from Supabase auth.
+ * Auto-resolves orgId from the user's membership if not provided.
  */
 export async function logAuditEvent(params: AuditLogParams): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return;
+    }
+
+    // Resolve orgId: use provided value, or auto-detect from user's membership
+    let orgId = params.orgId || null;
+    if (!orgId) {
+      const { data: membership } = await supabase
+        .from('memberships')
+        .select('org_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      orgId = membership?.org_id || null;
+    }
 
     // Get user profile for display name
     const { data: profile } = await supabase
@@ -41,8 +58,8 @@ export async function logAuditEvent(params: AuditLogParams): Promise<void> {
       .eq('id', user.id)
       .maybeSingle();
 
-    const { error } = await supabase.from('audit_logs').insert({
-      org_id: params.orgId || null,
+    const row = {
+      org_id: orgId,
       user_id: user.id,
       user_email: user.email || null,
       user_name: profile?.full_name || user.email || null,
@@ -51,13 +68,18 @@ export async function logAuditEvent(params: AuditLogParams): Promise<void> {
       entity_id: params.entityId || null,
       description: params.description,
       metadata: params.metadata || {},
-    });
+    };
+
+    const { error } = await supabase.from('audit_logs').insert(row);
 
     if (error) {
+      // Always log to console so audit failures are visible
+      console.error('[AuditLog] Failed to write audit log:', error.message, { error, row });
       logger.error(new Error('Failed to write audit log'), { error, params });
     }
   } catch (err) {
     // Never let audit logging break the main flow
+    console.error('[AuditLog] Exception in audit logger:', err);
     logger.error(err instanceof Error ? err : new Error('Audit log error'), {
       params,
     });
