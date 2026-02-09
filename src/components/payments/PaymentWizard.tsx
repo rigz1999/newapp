@@ -897,14 +897,18 @@ export function PaymentWizard({
         await supabase.storage.from('payment-proofs-temp').remove(tempFileNames);
       }
 
-      const selectedMatchesList = Array.from(selectedMatches).map(idx => matches[idx]);
-      const totalAmount = selectedMatchesList.filter(m => m.matchedSubscription).reduce((sum, m) => sum + m.paiement.montant, 0);
+      const totalAmount = selectedMatchesList
+        .filter(m => m.matchedSubscription)
+        .reduce((sum, m) => sum + m.paiement.montant, 0);
       logAuditEvent({
         action: 'created',
         entityType: 'paiement',
         description: `a créé ${selectedMatchesList.filter(m => m.matchedSubscription).length} paiement(s) pour un total de ${auditFormatCurrency(totalAmount)}`,
         orgId: projet.org_id,
-        metadata: { count: selectedMatchesList.filter(m => m.matchedSubscription).length, totalAmount },
+        metadata: {
+          count: selectedMatchesList.filter(m => m.matchedSubscription).length,
+          totalAmount,
+        },
       });
 
       setShowConfirmModal(false);
