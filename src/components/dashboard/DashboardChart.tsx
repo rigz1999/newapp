@@ -42,9 +42,9 @@ export const DashboardChart = memo(
 
     return (
       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-slate-900">Évolution des montants levés</h2>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-4">
             <select
               aria-label="Mode d'affichage"
               value={viewMode}
