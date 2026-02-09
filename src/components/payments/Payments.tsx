@@ -29,6 +29,7 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { logger } from '../../utils/logger';
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { logAuditEvent, auditFormatCurrency } from '../../utils/auditLogger';
+import { extractStoragePath } from '../../utils/fileProxy';
 import * as ExcelJS from 'exceljs';
 
 interface PaymentsProps {
@@ -451,9 +452,8 @@ export function Payments({ organization }: PaymentsProps) {
       if (proofs && proofs.length > 0) {
         for (const proof of proofs) {
           if (proof.file_url) {
-            const urlParts = proof.file_url.split('/payment-proofs/');
-            if (urlParts.length > 1) {
-              const filePath = urlParts[1].split('?')[0];
+            const filePath = extractStoragePath(proof.file_url);
+            if (filePath) {
               await supabase.storage.from('payment-proofs').remove([filePath]);
             }
           }

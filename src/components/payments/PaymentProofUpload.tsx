@@ -344,15 +344,10 @@ export function PaymentProofUpload({
           throw uploadError;
         }
 
-        // Get permanent URL
-        const { data: urlData } = supabase.storage
-          .from('payment-proofs')
-          .getPublicUrl(permanentFileName);
-
-        // Save proof to database
+        // Save proof to database with relative path (no Supabase URL exposed)
         const { error: dbError } = await supabase.from('payment_proofs').insert({
           paiement_id: (paymentData as Record<string, unknown>).id,
-          file_url: urlData.publicUrl,
+          file_url: permanentFileName,
           file_name: files[0].name,
           file_size: files[0].size,
           extracted_data: match.paiement,
@@ -374,15 +369,10 @@ export function PaymentProofUpload({
           throw uploadError;
         }
 
-        // Obtenir URL permanente
-        const { data: urlData } = supabase.storage
-          .from('payment-proofs')
-          .getPublicUrl(permanentFileName);
-
-        // Sauvegarder dans la base de données
+        // Sauvegarder dans la base de données avec chemin relatif
         const { error: dbError } = await supabase.from('payment_proofs').insert({
           paiement_id: payment!.id,
-          file_url: urlData.publicUrl,
+          file_url: permanentFileName,
           file_name: files[0].name,
           file_size: files[0].size,
           extracted_data: match.paiement,
@@ -612,13 +602,9 @@ export function PaymentProofUpload({
                         throw uploadError;
                       }
 
-                      const { data: urlData } = supabase.storage
-                        .from('payment-proofs')
-                        .getPublicUrl(fileName);
-
                       await supabase.from('payment_proofs').insert({
                         paiement_id: payment.id,
-                        file_url: urlData.publicUrl,
+                        file_url: fileName,
                         file_name: file.name,
                         file_size: file.size,
                       });

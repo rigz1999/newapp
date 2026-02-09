@@ -14,6 +14,8 @@ import { toast } from '../../utils/toast';
 import { logAuditEvent } from '../../utils/auditLogger';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { sanitizeFileName } from '../../utils/sanitizer';
+import { ProxiedImage } from '../common/ProxiedImage';
+import { openFileInNewTab } from '../../utils/fileProxy';
 
 interface EcheanceProofsModalProps {
   echeanceDate: string;
@@ -63,19 +65,6 @@ export function EcheanceProofsModal({
   const [confirmDelete, setConfirmDelete] = useState<ProofItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Helper to get a signed URL from a stored file URL
-  const getSignedUrl = async (fileUrl: string): Promise<string> => {
-    try {
-      const pathMatch = fileUrl.match(/payment-proofs\/(.+?)(?:\?|$)/);
-      if (!pathMatch) return fileUrl;
-      const filePath = decodeURIComponent(pathMatch[1]);
-      const { data } = await supabase.storage.from('payment-proofs').createSignedUrl(filePath, 3600);
-      return data?.signedUrl || fileUrl;
-    } catch {
-      return fileUrl;
-    }
-  };
-
   // Fetch all proofs for this echeance
   useEffect(() => {
     fetchProofs();
@@ -120,15 +109,7 @@ export function EcheanceProofsModal({
         };
       });
 
-      // Refresh signed URLs for all proofs
-      const proofsWithSignedUrls = await Promise.all(
-        enrichedProofs.map(async (proof) => ({
-          ...proof,
-          file_url: await getSignedUrl(proof.file_url),
-        }))
-      );
-
-      setProofs(proofsWithSignedUrls);
+      setProofs(enrichedProofs);
     } catch (err) {
       console.error('Error fetching proofs:', err);
     } finally {
@@ -221,13 +202,11 @@ export function EcheanceProofsModal({
           throw uploadError;
         }
 
-        const { data: urlData } = await supabase.storage.from('payment-proofs').createSignedUrl(fileName, 31536000);
-
-        // Create proof records for all target payments
+        // Create proof records for all target payments with relative path
         for (const paymentId of targetPaymentIds) {
           await supabase.from('payment_proofs').insert({
             paiement_id: paymentId,
-            file_url: urlData?.signedUrl || '',
+            file_url: fileName,
             file_name: file.name,
             file_size: file.size,
           });
@@ -512,13 +491,10 @@ export function EcheanceProofsModal({
                         className="w-16 h-16 rounded-lg overflow-hidden bg-white border border-slate-200 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={() => setSelectedProofForPreview(proof)}
                       >
-                        <img
+                        <ProxiedImage
                           src={proof.file_url}
                           alt={proof.file_name}
                           className="w-full h-full object-cover"
-                          onError={e => {
-                            e.currentTarget.style.display = 'none';
-                          }}
                         />
                       </div>
                     )}
@@ -535,7 +511,7 @@ export function EcheanceProofsModal({
                     {/* Actions */}
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => window.open(proof.file_url, '_blank')}
+                        onClick={() => openFileInNewTab(proof.file_url)}
                         className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Ouvrir"
                       >
@@ -613,7 +589,7 @@ export function EcheanceProofsModal({
               className="flex-1 flex items-center justify-center"
               onClick={e => e.stopPropagation()}
             >
-              <img
+              <ProxiedImage
                 src={selectedProofForPreview.file_url}
                 alt={selectedProofForPreview.file_name}
                 className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"

@@ -3,6 +3,8 @@ import { supabase } from '../../lib/supabase';
 import { useState, useEffect } from 'react';
 import { AlertModal } from '../common/Modals';
 import { logAuditEvent } from '../../utils/auditLogger';
+import { ProxiedImage } from '../common/ProxiedImage';
+import { openFileInNewTab, extractStoragePath } from '../../utils/fileProxy';
 
 interface PaymentInfo {
   id: string;
@@ -85,17 +87,14 @@ export function ViewProofsModal({
       }
 
       // Then try to delete from storage (but don't fail if storage deletion fails)
-      const pathMatch = fileUrl.match(/payment-proofs\/(.+)$/);
-      if (pathMatch) {
-        const filePath = pathMatch[1];
-
+      const filePath = extractStoragePath(fileUrl);
+      if (filePath) {
         const { error: storageError } = await supabase.storage
           .from('payment-proofs')
           .remove([filePath]);
 
         if (storageError) {
           console.warn('Storage deletion warning:', storageError);
-          // Don't throw, just log - file might already be deleted or path might be wrong
         }
       }
 
@@ -193,15 +192,11 @@ export function ViewProofsModal({
                       {/* Image Preview */}
                       {proof.file_url && (
                         <div className="relative bg-slate-50 flex items-center justify-center p-4">
-                          <img
+                          <ProxiedImage
                             src={proof.file_url}
                             alt={proof.file_name}
                             className="max-h-48 w-auto rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
                             onClick={() => setSelectedProofForPreview(proof)}
-                            onError={e => {
-                              // If image fails to load, hide it
-                              e.currentTarget.style.display = 'none';
-                            }}
                           />
                         </div>
                       )}
@@ -230,7 +225,7 @@ export function ViewProofsModal({
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => window.open(proof.file_url, '_blank')}
+                              onClick={() => openFileInNewTab(proof.file_url)}
                               className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Ouvrir dans un nouvel onglet"
                             >
@@ -357,7 +352,7 @@ export function ViewProofsModal({
                 <button
                   onClick={e => {
                     e.stopPropagation();
-                    window.open(selectedProofForPreview.file_url, '_blank');
+                    openFileInNewTab(selectedProofForPreview.file_url);
                   }}
                   className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg transition-colors"
                   title="Ouvrir dans un nouvel onglet"
@@ -379,7 +374,7 @@ export function ViewProofsModal({
               className="flex-1 flex items-center justify-center overflow-auto"
               onClick={e => e.stopPropagation()}
             >
-              <img
+              <ProxiedImage
                 src={selectedProofForPreview.file_url}
                 alt={selectedProofForPreview.file_name}
                 className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
