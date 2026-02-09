@@ -398,13 +398,29 @@ export function Payments({ organization }: PaymentsProps) {
         throw error;
       }
 
+      const deletedPayments = payments.filter(p => selectedPayments.has(p.id));
+      const bulkTotal = deletedPayments.reduce((sum, p) => sum + Number(p.montant), 0);
+      const bulkDetails = deletedPayments
+        .map(
+          p =>
+            `${p.investisseur?.nom_raison_sociale || 'inconnu'} (${auditFormatCurrency(p.montant)})`
+        )
+        .join(', ');
       logAuditEvent({
         action: 'deleted',
         entityType: 'paiement',
-        entityId: Array.from(selectedPayments).join(','),
-        description: `a supprimé ${selectedPayments.size} paiement(s) en masse`,
+        description: `a supprimé ${selectedPayments.size} paiement(s) pour un total de ${auditFormatCurrency(bulkTotal)} — ${bulkDetails}`,
         orgId: organization.id,
-        metadata: { count: selectedPayments.size },
+        metadata: {
+          count: selectedPayments.size,
+          total: bulkTotal,
+          details: deletedPayments.map(p => ({
+            investisseur: p.investisseur?.nom_raison_sociale,
+            montant: p.montant,
+            projet: p.tranche?.projet?.projet,
+            tranche: p.tranche?.tranche_name,
+          })),
+        },
       });
 
       // Refresh data

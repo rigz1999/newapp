@@ -101,6 +101,13 @@ export function auditFormatCurrency(amount: number): string {
 /**
  * Helper to format dates in French locale for audit descriptions.
  */
-export function auditFormatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('fr-FR');
+export function auditFormatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) {
+    return 'date inconnue';
+  }
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) {
+    return 'date inconnue';
+  }
+  return d.toLocaleDateString('fr-FR');
 }
