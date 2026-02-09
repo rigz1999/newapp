@@ -21,6 +21,19 @@
   }
 }
 
+/* Scale the entire app on smaller screens, like browser zoom at 80% */
+@media (max-width: 1599px) {
+  #root { zoom: 0.85; }
+}
+
+@media (max-width: 1199px) {
+  #root { zoom: 0.75; }
+}
+
+@media (max-width: 899px) {
+  #root { zoom: 0.65; }
+}
+
 @layer utilities {
   .sr-only {
     position: absolute;
