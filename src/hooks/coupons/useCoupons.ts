@@ -95,64 +95,69 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
   });
 
   // Fetch ALL data once (no filters applied server-side)
-  const fetchAllCoupons = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { data, error: queryError } = await supabase
-        .from('coupons_optimized')
-        .select('*')
-        .order(sortBy, { ascending: sortOrder === 'asc' })
-        .range(0, 9999); // Override Supabase default limit of 1000
-
-      if (queryError) {
-        throw queryError;
+  const fetchAllCoupons = useCallback(
+    async (showFullLoading = true) => {
+      if (showFullLoading) {
+        setLoading(true);
       }
+      setError(null);
 
-      setAllCoupons(data || []);
+      try {
+        const { data, error: queryError } = await supabase
+          .from('coupons_optimized')
+          .select('*')
+          .order(sortBy, { ascending: sortOrder === 'asc' })
+          .range(0, 9999); // Override Supabase default limit of 1000
 
-      // Calculate stats from all data (including nominal reimbursement for final payments)
-      const enAttenteData = (data || []).filter(c => c.statut_calculated === 'en_attente');
-      const payesData = (data || []).filter(c => c.statut_calculated === 'paye');
-      const enRetardData = (data || []).filter(c => c.statut_calculated === 'en_retard');
+        if (queryError) {
+          throw queryError;
+        }
 
-      const uniqueEnAttenteDates = new Set(enAttenteData.map(c => c.date_echeance));
-      const uniquePayesDates = new Set(payesData.map(c => c.date_echeance));
-      const uniqueEnRetardDates = new Set(enRetardData.map(c => c.date_echeance));
+        setAllCoupons(data || []);
 
-      // Helper to calculate total including nominal reimbursement for last echeance
-      const calculateTotal = (coupons: typeof data) =>
-        coupons.reduce((sum, c) => {
-          const nominal = c.is_last_echeance ? c.montant_investi || 0 : 0;
-          return sum + c.montant_net + nominal;
-        }, 0);
+        // Calculate stats from all data (including nominal reimbursement for final payments)
+        const enAttenteData = (data || []).filter(c => c.statut_calculated === 'en_attente');
+        const payesData = (data || []).filter(c => c.statut_calculated === 'paye');
+        const enRetardData = (data || []).filter(c => c.statut_calculated === 'en_retard');
 
-      setStats({
-        enAttente: {
-          count: uniqueEnAttenteDates.size,
-          total: calculateTotal(enAttenteData),
-        },
-        payes: {
-          count: uniquePayesDates.size,
-          total: payesData.reduce((sum, c) => {
+        const uniqueEnAttenteDates = new Set(enAttenteData.map(c => c.date_echeance));
+        const uniquePayesDates = new Set(payesData.map(c => c.date_echeance));
+        const uniqueEnRetardDates = new Set(enRetardData.map(c => c.date_echeance));
+
+        // Helper to calculate total including nominal reimbursement for last echeance
+        const calculateTotal = (coupons: typeof data) =>
+          coupons.reduce((sum, c) => {
             const nominal = c.is_last_echeance ? c.montant_investi || 0 : 0;
-            return sum + (c.montant_paye || c.montant_net + nominal);
-          }, 0),
-        },
-        enRetard: {
-          count: uniqueEnRetardDates.size,
-          total: calculateTotal(enRetardData),
-        },
-      });
-    } catch (err) {
-      console.error('Error fetching coupons:', err);
-      setError(err instanceof Error ? err.message : 'Erreur inconnue');
-      toast.error('Erreur lors du chargement des coupons');
-    } finally {
-      setLoading(false);
-    }
-  }, [sortBy, sortOrder]);
+            return sum + c.montant_net + nominal;
+          }, 0);
+
+        setStats({
+          enAttente: {
+            count: uniqueEnAttenteDates.size,
+            total: calculateTotal(enAttenteData),
+          },
+          payes: {
+            count: uniquePayesDates.size,
+            total: payesData.reduce((sum, c) => {
+              const nominal = c.is_last_echeance ? c.montant_investi || 0 : 0;
+              return sum + (c.montant_paye || c.montant_net + nominal);
+            }, 0),
+          },
+          enRetard: {
+            count: uniqueEnRetardDates.size,
+            total: calculateTotal(enRetardData),
+          },
+        });
+      } catch (err) {
+        console.error('Error fetching coupons:', err);
+        setError(err instanceof Error ? err.message : 'Erreur inconnue');
+        toast.error('Erreur lors du chargement des coupons');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [sortBy, sortOrder]
+  );
 
   // Apply filters CLIENT-SIDE (instant, no network request)
   const filteredCoupons = useMemo(() => {
@@ -228,7 +233,7 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
   }, [allCoupons]);
 
   const refresh = useCallback(async () => {
-    await fetchAllCoupons();
+    await fetchAllCoupons(false);
   }, [fetchAllCoupons]);
 
   // Reset page when filters change

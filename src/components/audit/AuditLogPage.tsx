@@ -232,12 +232,11 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
     nombre_obligations: "Nombre d'obligations",
     email: 'Email',
     role: 'Rôle',
-    oldRole: 'Ancien rôle',
-    newRole: 'Nouveau rôle',
     nom_raison_sociale: 'Nom / Raison sociale',
     name: 'Nom',
     date_echeance: "Date d'échéance",
     date_emission: "Date d'émission",
+    date_souscription: 'Date de souscription',
     count: 'Nombre',
     total: 'Total',
     totalAmount: 'Montant total',
@@ -248,24 +247,41 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
   };
 
   const FIELD_LABELS: Record<string, string> = {
+    // Projet
     projet: 'Nom du projet',
     emetteur: 'Émetteur',
+    siren_emetteur: 'SIREN',
     montant_nominal: 'Montant nominal',
-    taux_interet: "Taux d'intérêt",
+    taux_nominal: 'Taux nominal',
+    periodicite_coupons: 'Périodicité des coupons',
     periodicite: 'Périodicité',
+    duree_mois: 'Durée (mois)',
     date_emission: "Date d'émission",
     date_echeance_finale: "Date d'échéance finale",
     valeur_nominale_unitaire: 'Valeur nominale unitaire',
     type_taux: 'Type de taux',
+    base_interet: 'Base de calcul',
     base_calcul: 'Base de calcul',
+    type: 'Type de projet',
+    nom_representant: 'Nom du représentant',
+    prenom_representant: 'Prénom du représentant',
+    email_representant: 'E-mail du représentant',
+    representant_masse: 'Représentant de la masse',
+    email_rep_masse: 'E-mail du représentant de la masse',
     statut: 'Statut',
+    // Tranche / Souscription
     tranche_name: 'Nom de la tranche',
     montant_investi: 'Montant investi',
     nombre_obligations: "Nombre d'obligations",
+    date_souscription: 'Date de souscription',
+    prochaine_date_coupon: 'Prochain coupon',
+    investisseur: 'Investisseur',
+    // Membre / Org
     nom_raison_sociale: 'Nom / Raison sociale',
     role: 'Rôle',
     name: 'Nom',
     montant: 'Montant',
+    email: 'Email',
   };
 
   const formatMetadataValue = (key: string, value: unknown): string => {
