@@ -466,7 +466,7 @@ export function Payments({ organization }: PaymentsProps) {
         action: 'deleted',
         entityType: 'paiement',
         entityId: paymentToDelete.id,
-        description: `a supprimé le paiement ${paymentToDelete.id_paiement} de ${auditFormatCurrency(paymentToDelete.montant)}`,
+        description: `a supprimé un paiement de ${auditFormatCurrency(paymentToDelete.montant)}`,
         orgId: organization.id,
         metadata: {
           id_paiement: paymentToDelete.id_paiement,

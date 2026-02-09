@@ -163,7 +163,7 @@ export function PaymentDetailPage() {
         action: 'deleted',
         entityType: 'paiement',
         entityId: payment.id,
-        description: `a supprimé le paiement ${payment.id_paiement} de ${auditFormatCurrency(payment.montant)}`,
+        description: `a supprimé un paiement de ${auditFormatCurrency(payment.montant)}`,
         metadata: {
           id_paiement: payment.id_paiement,
           montant: payment.montant,
