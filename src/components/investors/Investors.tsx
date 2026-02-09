@@ -597,9 +597,106 @@ function Investors({ organization: _organization }: InvestorsProps) {
     }
 
     const investorName = selectedInvestor.nom_raison_sociale;
-    const { error } = await supabase.from('investisseurs').delete().eq('id', selectedInvestor.id);
 
-    if (error) {
+    try {
+      // 1. Get all souscriptions for this investor
+      const { data: souscriptions } = await supabase
+        .from('souscriptions')
+        .select('id')
+        .eq('investisseur_id', selectedInvestor.id);
+
+      if (souscriptions && souscriptions.length > 0) {
+        const souscriptionIds = souscriptions.map(s => s.id);
+
+        // 2. Get all paiements linked to these souscriptions
+        const { data: paiements } = await supabase
+          .from('paiements')
+          .select('id')
+          .in('souscription_id', souscriptionIds);
+
+        if (paiements && paiements.length > 0) {
+          const paiementIds = paiements.map(p => p.id);
+
+          // 3. Delete payment_proofs for these paiements
+          await supabase
+            .from('payment_proofs')
+            .delete()
+            .in('paiement_id', paiementIds);
+
+          // 4. Unlink coupons_echeances from these paiements (nullify, don't delete)
+          await supabase
+            .from('coupons_echeances')
+            .update({ paiement_id: null, statut: 'en_attente', date_paiement: null, montant_paye: null })
+            .in('paiement_id', paiementIds);
+        }
+
+        // 5. Delete coupons_echeances linked to these souscriptions
+        await supabase
+          .from('coupons_echeances')
+          .delete()
+          .in('souscription_id', souscriptionIds);
+
+        // 6. Delete paiements linked via investisseur_id or souscription_id
+        await supabase
+          .from('paiements')
+          .delete()
+          .in('souscription_id', souscriptionIds);
+
+        // 7. Delete souscriptions
+        await supabase
+          .from('souscriptions')
+          .delete()
+          .eq('investisseur_id', selectedInvestor.id);
+      }
+
+      // 8. Also delete any paiements linked directly via investisseur_id
+      const { data: directPaiements } = await supabase
+        .from('paiements')
+        .select('id')
+        .eq('investisseur_id', selectedInvestor.id);
+
+      if (directPaiements && directPaiements.length > 0) {
+        const directPaiementIds = directPaiements.map(p => p.id);
+        await supabase
+          .from('payment_proofs')
+          .delete()
+          .in('paiement_id', directPaiementIds);
+        await supabase
+          .from('coupons_echeances')
+          .update({ paiement_id: null, statut: 'en_attente', date_paiement: null, montant_paye: null })
+          .in('paiement_id', directPaiementIds);
+        await supabase
+          .from('paiements')
+          .delete()
+          .eq('investisseur_id', selectedInvestor.id);
+      }
+
+      // 9. Delete RIB from storage if exists
+      if (selectedInvestor.rib_file_path) {
+        await supabase.storage
+          .from('ribs')
+          .remove([selectedInvestor.rib_file_path]);
+      }
+
+      // 10. Finally delete the investor
+      const { error } = await supabase.from('investisseurs').delete().eq('id', selectedInvestor.id);
+
+      if (error) {
+        throw error;
+      }
+
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'investisseur',
+        entityId: selectedInvestor.id,
+        description: `a supprimé l'investisseur "${investorName}" et ses données associées (${souscriptions?.length || 0} souscription(s))`,
+        metadata: { nom_raison_sociale: investorName, souscriptionsDeleted: souscriptions?.length || 0 },
+      });
+
+      setShowDeleteModal(false);
+      fetchInvestors();
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
       const isPermissionError = error.code === '42501' || error.message?.includes('policy');
       setAlertModalConfig({
         title: 'Erreur',
@@ -609,19 +706,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
         type: 'error',
       });
       setShowAlertModal(true);
-      return;
     }
-
-    logAuditEvent({
-      action: 'deleted',
-      entityType: 'investisseur',
-      entityId: selectedInvestor.id,
-      description: `a supprimé l'investisseur "${investorName}"`,
-      metadata: { nom_raison_sociale: investorName },
-    });
-
-    setShowDeleteModal(false);
-    fetchInvestors();
   };
 
   // Bulk delete functions
@@ -742,7 +827,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
       const filePath = `ribs/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('ribs')
         .upload(filePath, ribFile);
 
       clearInterval(progressInterval);
@@ -797,7 +882,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
     try {
       const { data, error } = await supabase.storage
-        .from('documents')
+        .from('ribs')
         .download(investor.rib_file_path);
 
       if (error) {
@@ -853,7 +938,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
       onConfirm: async () => {
         try {
           const { error: storageError } = await supabase.storage
-            .from('documents')
+            .from('ribs')
             .remove([investor.rib_file_path!]);
 
           if (storageError) {
@@ -1994,9 +2079,11 @@ function Investors({ organization: _organization }: InvestorsProps) {
               {selectedInvestor.nb_souscriptions > 0 && (
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
                   <p className="text-sm text-orange-800">
-                    Attention : Cet investisseur a {selectedInvestor.nb_souscriptions} souscription
-                    {selectedInvestor.nb_souscriptions > 1 ? 's' : ''} active
-                    {selectedInvestor.nb_souscriptions > 1 ? 's' : ''}.
+                    <strong>Attention :</strong> Cet investisseur a{' '}
+                    {selectedInvestor.nb_souscriptions} souscription
+                    {selectedInvestor.nb_souscriptions > 1 ? 's' : ''}. La suppression entraînera
+                    également la suppression de toutes ses souscriptions, paiements et justificatifs
+                    associés.
                   </p>
                 </div>
               )}
