@@ -668,7 +668,7 @@ export function QuickPaymentModal({
       logAuditEvent({
         action: 'created',
         entityType: 'paiement',
-        description: `a enregistré ${selectedInvestorsList.length} paiement(s) coupon pour un total de ${auditFormatCurrency(totalPaid)} (échéance du ${auditFormatDate(selectedEcheanceData!.date_echeance)})`,
+        description: `a enregistré ${selectedInvestorsList.length} paiement(s) coupon pour un total de ${auditFormatCurrency(totalPaid)} — projet "${selectedEcheanceData!.projet_nom}", échéance du ${auditFormatDate(selectedEcheanceData!.date_echeance)}`,
         orgId: selectedEcheanceData!.org_id,
         metadata: {
           count: selectedInvestorsList.length,

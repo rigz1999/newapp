@@ -281,7 +281,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         action: 'status_changed',
         entityType: 'coupon_echeance',
         entityId: coupon.id,
-        description: `a marqué le coupon du ${auditFormatDate(coupon.date_echeance)} comme non payé (${coupon.investisseur_nom})`,
+        description: `a marqué le coupon du ${auditFormatDate(coupon.date_echeance)} comme non payé — ${coupon.investisseur_nom}, projet "${coupon.projet_nom}", tranche "${coupon.tranche_nom}"`,
         metadata: {
           date_echeance: coupon.date_echeance,
           investisseur: coupon.investisseur_nom,
@@ -432,7 +432,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         logAuditEvent({
           action: 'status_changed',
           entityType: 'coupon_echeance',
-          description: `a marqué ${successCount} coupon(s) de l'échéance du ${auditFormatDate(bulkUnmarkData.date)} comme non payés`,
+          description: `a marqué ${successCount} coupon(s) de l'échéance du ${auditFormatDate(bulkUnmarkData.date)} comme non payés — projet "${bulkUnmarkData.coupons[0]?.projet_nom || 'inconnu'}", tranche "${bulkUnmarkData.coupons[0]?.tranche_nom || 'inconnue'}"`,
           metadata: { count: successCount, date_echeance: bulkUnmarkData.date },
         });
       }

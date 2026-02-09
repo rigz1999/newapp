@@ -323,8 +323,8 @@ export function TrancheEditPage(): JSX.Element {
         action: 'updated',
         entityType: 'souscription',
         entityId: souscriptionId,
-        description: `a réassigné une souscription à un autre investisseur`,
-        metadata: { souscriptionId, newInvestorId },
+        description: `a réassigné une souscription à un autre investisseur — tranche "${tranche?.tranche_name || 'inconnue'}"`,
+        metadata: { souscriptionId, newInvestorId, tranche: tranche?.tranche_name },
       });
 
       logger.info('Souscription réassignée', { souscriptionId, newInvestorId });
@@ -365,8 +365,12 @@ export function TrancheEditPage(): JSX.Element {
         action: 'updated',
         entityType: 'souscription',
         entityId: souscription.id,
-        description: `a modifié une souscription (${auditFormatCurrency(souscription.montant_investi)})`,
-        metadata: { montant_investi: souscription.montant_investi, nombre_obligations: souscription.nombre_obligations },
+        description: `a modifié une souscription de ${auditFormatCurrency(souscription.montant_investi)} — tranche "${tranche?.tranche_name || 'inconnue'}"`,
+        metadata: {
+          montant_investi: souscription.montant_investi,
+          nombre_obligations: souscription.nombre_obligations,
+          tranche: tranche?.tranche_name,
+        },
       });
 
       logger.info('Souscription mise à jour', { id: souscription.id });

@@ -302,8 +302,14 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         action: 'updated',
         entityType: 'souscription',
         entityId: editingSubscription.id,
-        description: `a modifié une souscription (${auditFormatCurrency(editFormData.montant_investi)})`,
-        metadata: { montant_investi: editFormData.montant_investi, nombre_obligations: editFormData.nombre_obligations },
+        description: `a modifié une souscription de ${auditFormatCurrency(editFormData.montant_investi)} — ${editingSubscription.investisseurs.nom_raison_sociale || 'investisseur inconnu'}, projet "${editingSubscription.tranches.projets.projet}", tranche "${editingSubscription.tranches.tranche_name}"`,
+        metadata: {
+          montant_investi: editFormData.montant_investi,
+          nombre_obligations: editFormData.nombre_obligations,
+          investisseur: editingSubscription.investisseurs.nom_raison_sociale,
+          projet: editingSubscription.tranches.projets.projet,
+          tranche: editingSubscription.tranches.tranche_name,
+        },
       });
 
       // Refresh data
@@ -361,8 +367,13 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         action: 'deleted',
         entityType: 'souscription',
         entityId: deletingSubscription.id,
-        description: `a supprimé une souscription`,
-        metadata: { id: deletingSubscription.id },
+        description: `a supprimé une souscription — ${deletingSubscription.investisseurs.nom_raison_sociale || 'investisseur inconnu'}, projet "${deletingSubscription.tranches.projets.projet}", tranche "${deletingSubscription.tranches.tranche_name}" (${auditFormatCurrency(deletingSubscription.montant_investi)})`,
+        metadata: {
+          investisseur: deletingSubscription.investisseurs.nom_raison_sociale,
+          projet: deletingSubscription.tranches.projets.projet,
+          tranche: deletingSubscription.tranches.tranche_name,
+          montant: deletingSubscription.montant_investi,
+        },
       });
 
       // Refresh data
