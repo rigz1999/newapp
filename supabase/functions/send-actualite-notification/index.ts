@@ -40,6 +40,7 @@ Deno.serve(async (req: Request) => {
       .select(
         `
         id,
+        user_id,
         comment_text,
         attachments,
         created_at,
@@ -63,6 +64,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('Project not found');
     }
 
+    // Fetch all org members (admins + members + emetteurs)
     const { data: memberships, error: membershipsError } = await supabaseAdmin
       .from('memberships')
       .select(
@@ -77,9 +79,33 @@ Deno.serve(async (req: Request) => {
       throw new Error('Failed to fetch organization members');
     }
 
-    const recipients = memberships
-      .filter(m => m.user_id !== actualite.user.id)
-      .map(m => m.profiles.email);
+    // Also fetch emetteurs assigned to this specific project (they may not be in memberships)
+    const { data: emetteurAssignments } = await supabaseAdmin
+      .from('emetteur_projects')
+      .select(
+        `
+        user_id,
+        profiles:profiles!emetteur_projects_user_id_fkey(email, full_name)
+      `
+      )
+      .eq('projet_id', projectId);
+
+    // Combine and deduplicate recipients, excluding the author
+    const allUserEmails = new Map<string, string>();
+    for (const m of memberships) {
+      if (m.user_id !== actualite.user_id && m.profiles?.email) {
+        allUserEmails.set(m.user_id, m.profiles.email);
+      }
+    }
+    if (emetteurAssignments) {
+      for (const ep of emetteurAssignments) {
+        if (ep.user_id !== actualite.user_id && ep.profiles?.email) {
+          allUserEmails.set(ep.user_id, ep.profiles.email);
+        }
+      }
+    }
+
+    const recipients = Array.from(allUserEmails.values());
 
     if (recipients.length === 0) {
       return new Response(

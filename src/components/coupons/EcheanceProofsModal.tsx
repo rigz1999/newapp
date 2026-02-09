@@ -2,17 +2,16 @@ import { useState, useEffect } from 'react';
 import {
   X,
   Upload,
-  Download,
   Eye,
   Trash2,
   AlertTriangle,
-  ZoomIn,
   Plus,
   Users,
   User,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
+import { logAuditEvent } from '../../utils/auditLogger';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { sanitizeFileName } from '../../utils/sanitizer';
 
@@ -64,6 +63,19 @@ export function EcheanceProofsModal({
   const [confirmDelete, setConfirmDelete] = useState<ProofItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Helper to get a signed URL from a stored file URL
+  const getSignedUrl = async (fileUrl: string): Promise<string> => {
+    try {
+      const pathMatch = fileUrl.match(/payment-proofs\/(.+?)(?:\?|$)/);
+      if (!pathMatch) return fileUrl;
+      const filePath = decodeURIComponent(pathMatch[1]);
+      const { data } = await supabase.storage.from('payment-proofs').createSignedUrl(filePath, 3600);
+      return data?.signedUrl || fileUrl;
+    } catch {
+      return fileUrl;
+    }
+  };
+
   // Fetch all proofs for this echeance
   useEffect(() => {
     fetchProofs();
@@ -108,7 +120,15 @@ export function EcheanceProofsModal({
         };
       });
 
-      setProofs(enrichedProofs);
+      // Refresh signed URLs for all proofs
+      const proofsWithSignedUrls = await Promise.all(
+        enrichedProofs.map(async (proof) => ({
+          ...proof,
+          file_url: await getSignedUrl(proof.file_url),
+        }))
+      );
+
+      setProofs(proofsWithSignedUrls);
     } catch (err) {
       console.error('Error fetching proofs:', err);
     } finally {
@@ -201,13 +221,13 @@ export function EcheanceProofsModal({
           throw uploadError;
         }
 
-        const { data: urlData } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
+        const { data: urlData } = await supabase.storage.from('payment-proofs').createSignedUrl(fileName, 31536000);
 
         // Create proof records for all target payments
         for (const paymentId of targetPaymentIds) {
           await supabase.from('payment_proofs').insert({
             paiement_id: paymentId,
-            file_url: urlData.publicUrl,
+            file_url: urlData?.signedUrl || '',
             file_name: file.name,
             file_size: file.size,
           });
@@ -217,6 +237,12 @@ export function EcheanceProofsModal({
       toast.success(
         `${files.length} justificatif${files.length > 1 ? 's' : ''} ajouté${files.length > 1 ? 's' : ''}`
       );
+      logAuditEvent({
+        action: 'created',
+        entityType: 'payment_proof',
+        description: `a ajouté ${files.length} justificatif(s) de paiement pour l'échéance du ${formatDate(echeanceDate)} — ${projetName}, ${trancheName}`,
+        metadata: { echeanceDate, projetName, trancheName, fileCount: files.length, uploadMode },
+      });
       setFiles([]);
       setShowUploadSection(false);
       fetchProofs();
@@ -239,6 +265,12 @@ export function EcheanceProofsModal({
       }
 
       toast.success('Justificatif supprimé');
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'payment_proof',
+        description: `a supprimé le justificatif "${proof.file_name}" — ${proof.investisseur_nom}`,
+        metadata: { fileName: proof.file_name, investisseur: proof.investisseur_nom },
+      });
       setConfirmDelete(null);
       fetchProofs();
       onSuccess();
@@ -248,13 +280,6 @@ export function EcheanceProofsModal({
     } finally {
       setDeleting(false);
     }
-  };
-
-  const downloadFile = (url: string, filename: string) => {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
   };
 
   const totalAmount = paidEcheances.reduce((sum, e) => sum + e.montant_coupon, 0);
@@ -510,25 +535,11 @@ export function EcheanceProofsModal({
                     {/* Actions */}
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => setSelectedProofForPreview(proof)}
-                        className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Aperçu"
-                      >
-                        <ZoomIn className="w-5 h-5" />
-                      </button>
-                      <button
                         onClick={() => window.open(proof.file_url, '_blank')}
                         className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Ouvrir"
                       >
                         <Eye className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => downloadFile(proof.file_url, proof.file_name)}
-                        className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                        title="Télécharger"
-                      >
-                        <Download className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => setConfirmDelete(proof)}
@@ -590,18 +601,6 @@ export function EcheanceProofsModal({
                 <p className="text-sm text-slate-300">{selectedProofForPreview.investisseur_nom}</p>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    downloadFile(
-                      selectedProofForPreview.file_url,
-                      selectedProofForPreview.file_name
-                    );
-                  }}
-                  className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg"
-                >
-                  <Download className="w-5 h-5" />
-                </button>
                 <button
                   onClick={() => setSelectedProofForPreview(null)}
                   className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg"

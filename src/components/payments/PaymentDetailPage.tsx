@@ -232,7 +232,6 @@ export function PaymentDetailPage() {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">Détail du paiement</h1>
-                <p className="text-sm text-slate-600 mt-0.5">{payment.id_paiement}</p>
               </div>
             </div>
             <button

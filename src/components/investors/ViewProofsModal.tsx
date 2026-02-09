@@ -1,7 +1,8 @@
-import { X, Download, Eye, Trash2, AlertTriangle, ZoomIn } from 'lucide-react';
+import { X, Eye, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useState, useEffect } from 'react';
 import { AlertModal } from '../common/Modals';
+import { logAuditEvent } from '../../utils/auditLogger';
 
 interface PaymentInfo {
   id: string;
@@ -64,21 +65,6 @@ export function ViewProofsModal({
     return () => document.removeEventListener('keydown', handleEsc, { capture: true });
   }, [onClose, confirmDelete, selectedProofForPreview]);
 
-  const downloadFile = (url: string, filename: string) => {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-  };
-
-  const downloadAllAsZip = async () => {
-    proofs.forEach(proof => {
-      setTimeout(() => {
-        downloadFile(proof.file_url, proof.file_name);
-      }, 100);
-    });
-  };
-
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -132,6 +118,13 @@ export function ViewProofsModal({
           })
           .eq('paiement_id', payment.id);
       }
+
+      logAuditEvent({
+        action: 'deleted',
+        entityType: 'payment_proof',
+        description: `a supprimé le justificatif "${confirmDelete.fileName}" — ${payment.investisseur?.nom_raison_sociale || 'inconnu'}`,
+        metadata: { fileName: confirmDelete.fileName, investisseur: payment.investisseur?.nom_raison_sociale },
+      });
 
       setAlertModalConfig({
         title: 'Succès',
@@ -210,13 +203,6 @@ export function ViewProofsModal({
                               e.currentTarget.style.display = 'none';
                             }}
                           />
-                          <button
-                            onClick={() => setSelectedProofForPreview(proof)}
-                            className="absolute top-2 right-2 p-2 bg-white bg-opacity-90 rounded-lg shadow-md hover:bg-opacity-100 transition-all"
-                            title="Agrandir"
-                          >
-                            <ZoomIn className="w-4 h-4 text-slate-700" />
-                          </button>
                         </div>
                       )}
 
@@ -251,13 +237,6 @@ export function ViewProofsModal({
                               <Eye className="w-5 h-5" />
                             </button>
                             <button
-                              onClick={() => downloadFile(proof.file_url, proof.file_name)}
-                              className="p-2 text-finixar-green hover:bg-green-50 rounded-lg transition-colors"
-                              title="Télécharger"
-                            >
-                              <Download className="w-5 h-5" />
-                            </button>
-                            <button
                               onClick={() =>
                                 setConfirmDelete({
                                   proofId: proof.id,
@@ -280,15 +259,6 @@ export function ViewProofsModal({
                   ))}
                 </div>
 
-                {proofs.length > 1 && (
-                  <button
-                    onClick={downloadAllAsZip}
-                    className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-5 h-5" />
-                    Télécharger Tous
-                  </button>
-                )}
               </>
             )}
           </div>
@@ -384,19 +354,6 @@ export function ViewProofsModal({
                 </p>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    downloadFile(
-                      selectedProofForPreview.file_url,
-                      selectedProofForPreview.file_name
-                    );
-                  }}
-                  className="p-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg transition-colors"
-                  title="Télécharger"
-                >
-                  <Download className="w-5 h-5" />
-                </button>
                 <button
                   onClick={e => {
                     e.stopPropagation();

@@ -28,17 +28,11 @@ export function TaxInfoTooltip({
       return 'Personne morale : pas de prélèvement forfaitaire';
     }
 
-    switch (taxRegime) {
-      case 'pea':
-        return "PEA : exonération d'impôt";
-      case 'assurance_vie':
-        return 'Assurance vie : fiscalité selon ancienneté';
-      case 'custom':
-        return customTaxRate ? `Taux personnalisé : ${customTaxRate}%` : 'Taux personnalisé';
-      case 'default':
-      default:
-        return 'PFU (Prélèvement Forfaitaire Unique) : 30%';
+    if (taxRegime === 'exempt') {
+      return 'Prélèvement désactivé : aucune retenue';
     }
+
+    return 'PFU (Prélèvement Forfaitaire Unique) : 30%';
   };
 
   return (

@@ -1035,7 +1035,7 @@ export function Payments({ organization }: PaymentsProps) {
         onClose={() => setPaymentToDelete(null)}
         onConfirm={handleDeleteSinglePayment}
         title="Supprimer le paiement"
-        message={`Êtes-vous sûr de vouloir supprimer le paiement ${paymentToDelete?.id_paiement || ''} ?`}
+        message="Êtes-vous sûr de vouloir supprimer ce paiement ?"
         variant="danger"
         impact="Cette action supprimera le paiement, ses justificatifs et mettra à jour les échéances liées."
         confirmText="Supprimer"

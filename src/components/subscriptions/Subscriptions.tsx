@@ -242,6 +242,19 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         });
       });
 
+      // Calculate next coupon date for each subscription
+      const nextCouponDateMap = new Map<string, string>();
+      const today = new Date().toISOString().split('T')[0];
+
+      echeances?.forEach(e => {
+        if (e.statut !== 'paye' && e.date_echeance >= today) {
+          const current = nextCouponDateMap.get(e.souscription_id);
+          if (!current || e.date_echeance < current) {
+            nextCouponDateMap.set(e.souscription_id, e.date_echeance);
+          }
+        }
+      });
+
       // Update subscriptions with payment status
       subscriptionsData.forEach(sub => {
         const status = finalStatusMap.get(sub.id);
@@ -251,6 +264,11 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
         } else {
           sub.echeances_payees = 0;
           sub.echeances_totales = 0;
+        }
+        // Set calculated next coupon date
+        const nextDate = nextCouponDateMap.get(sub.id);
+        if (nextDate) {
+          sub.prochaine_date_coupon = nextDate;
         }
       });
     }
@@ -471,14 +489,11 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
   }, [subscriptions, advancedFilters.filters.multiSelect]);
 
   const uniqueInvestorTypes = useMemo(
-    () =>
-      Array.from(new Set(subscriptions.map(s => s.investisseurs?.type).filter(Boolean))).map(
-        type => ({
-          value: type!,
-          label: type!.toLowerCase().includes('physique') ? 'Personne physique' : 'Personne morale',
-        })
-      ),
-    [subscriptions]
+    () => [
+      { value: 'physique', label: 'Personne physique' },
+      { value: 'morale', label: 'Personne morale' },
+    ],
+    []
   );
 
   // Count active filters
@@ -532,12 +547,13 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       }
     }
 
-    // Multi-select investor type filter
+    // Multi-select investor type filter (normalize type for comparison)
     const investorTypeFilter = advancedFilters.filters.multiSelect.find(
       f => f.field === 'investorType'
     );
     if (investorTypeFilter && investorTypeFilter.values.length > 0) {
-      if (!investorTypeFilter.values.includes(sub.investisseurs?.type || '')) {
+      const normalizedType = (sub.investisseurs?.type || '').toLowerCase().includes('morale') ? 'morale' : 'physique';
+      if (!investorTypeFilter.values.includes(normalizedType)) {
         return false;
       }
     }
