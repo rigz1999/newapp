@@ -279,7 +279,11 @@ export default function AdminPanel() {
         entityType: 'organization',
         entityId: editingOrg.id,
         description: `a renommé l'organisation en "${newOrgName.trim()}"`,
-        metadata: { name: newOrgName.trim() },
+        metadata: {
+          changes: {
+            name: { old: editingOrg.name, new: newOrgName.trim() },
+          },
+        },
       });
       setNewOrgName('');
       setShowEditOrgModal(false);

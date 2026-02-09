@@ -661,11 +661,17 @@ function Investors({ organization: _organization }: InvestorsProps) {
       return;
     }
 
+    const deletedInvestors = investors.filter(i => selectedInvestorIds.has(i.id));
     logAuditEvent({
       action: 'deleted',
       entityType: 'investisseur',
       description: `a supprimé ${idsToDelete.length} investisseur(s) en masse`,
-      metadata: { count: idsToDelete.length },
+      metadata: {
+        count: idsToDelete.length,
+        details: deletedInvestors.map(i => ({
+          nom_raison_sociale: i.nom_raison_sociale,
+        })),
+      },
     });
 
     toast.success(`${idsToDelete.length} investisseur(s) supprimé(s) avec succès`);

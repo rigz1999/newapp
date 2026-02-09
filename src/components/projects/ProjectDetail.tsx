@@ -569,12 +569,21 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
       logger.info('Project updated in database');
 
+      // Build old→new changes for audit detail view
+      const changes: Record<string, { old: unknown; new: unknown }> = {};
+      for (const [key, newVal] of Object.entries(updateData)) {
+        const oldVal = (project as Record<string, unknown>)[key];
+        if (oldVal !== newVal) {
+          changes[key] = { old: oldVal, new: newVal };
+        }
+      }
+
       logAuditEvent({
         action: 'updated',
         entityType: 'projet',
         entityId: project!.id,
         description: `a modifié le projet "${project!.projet}"${hasFinancialChanges ? ' (paramètres financiers)' : ''}`,
-        metadata: { updatedFields: Object.keys(updateData), hasFinancialChanges },
+        metadata: { updatedFields: Object.keys(updateData), hasFinancialChanges, changes },
       });
 
       // Close modal and show initial success immediately

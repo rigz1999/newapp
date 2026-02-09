@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -74,6 +74,10 @@ export function TrancheEditPage(): JSX.Element {
   // Subscriptions
   const [souscriptions, setSouscriptions] = useState<Souscription[]>([]);
   const [editingRow, setEditingRow] = useState<number | null>(null);
+  const originalSouscriptionRef = useRef<{
+    montant_investi: number;
+    nombre_obligations: number;
+  } | null>(null);
   const [loadingSouscriptions, setLoadingSouscriptions] = useState(false);
 
   // Investor details modal
@@ -319,12 +323,23 @@ export function TrancheEditPage(): JSX.Element {
         throw error;
       }
 
+      const oldSouscription = souscriptions.find(s => s.id === souscriptionId);
+      const newInvestor = availableInvestors.find(i => i.id === newInvestorId);
+
       logAuditEvent({
         action: 'updated',
         entityType: 'souscription',
         entityId: souscriptionId,
         description: `a réassigné une souscription à un autre investisseur — tranche "${tranche?.tranche_name || 'inconnue'}"`,
-        metadata: { souscriptionId, newInvestorId, tranche: tranche?.tranche_name },
+        metadata: {
+          tranche: tranche?.tranche_name,
+          changes: {
+            investisseur: {
+              old: oldSouscription?.investisseur_nom || 'inconnu',
+              new: newInvestor?.nom_raison_sociale || 'inconnu',
+            },
+          },
+        },
       });
 
       logger.info('Souscription réassignée', { souscriptionId, newInvestorId });
@@ -361,15 +376,34 @@ export function TrancheEditPage(): JSX.Element {
       if (error) {
         throw error;
       }
+      // Build old→new changes for audit detail view
+      const changes: Record<string, { old: unknown; new: unknown }> = {};
+      if (originalSouscriptionRef.current) {
+        if (originalSouscriptionRef.current.montant_investi !== souscription.montant_investi) {
+          changes.montant_investi = {
+            old: originalSouscriptionRef.current.montant_investi,
+            new: souscription.montant_investi,
+          };
+        }
+        if (
+          originalSouscriptionRef.current.nombre_obligations !== souscription.nombre_obligations
+        ) {
+          changes.nombre_obligations = {
+            old: originalSouscriptionRef.current.nombre_obligations,
+            new: souscription.nombre_obligations,
+          };
+        }
+      }
+
       logAuditEvent({
         action: 'updated',
         entityType: 'souscription',
         entityId: souscription.id,
         description: `a modifié une souscription de ${auditFormatCurrency(souscription.montant_investi)} — tranche "${tranche?.tranche_name || 'inconnue'}"`,
         metadata: {
-          montant_investi: souscription.montant_investi,
-          nombre_obligations: souscription.nombre_obligations,
+          investisseur: souscription.investisseur_nom,
           tranche: tranche?.tranche_name,
+          changes,
         },
       });
 
@@ -408,12 +442,24 @@ export function TrancheEditPage(): JSX.Element {
         throw updateError;
       }
 
+      // Build old→new changes for audit detail view
+      const trancheChanges: Record<string, { old: unknown; new: unknown }> = {};
+      if (tranche.tranche_name !== trancheName) {
+        trancheChanges.tranche_name = { old: tranche.tranche_name, new: trancheName };
+      }
+      if ((tranche.date_emission || null) !== (dateEmission || null)) {
+        trancheChanges.date_emission = {
+          old: tranche.date_emission || null,
+          new: dateEmission || null,
+        };
+      }
+
       logAuditEvent({
         action: 'updated',
         entityType: 'tranche',
         entityId: tranche.id,
         description: `a modifié la tranche "${trancheName}"`,
-        metadata: { tranche_name: trancheName, date_emission: dateEmission },
+        metadata: { changes: trancheChanges },
       });
 
       logger.info('Tranche mise à jour', { id: tranche.id });
@@ -710,7 +756,13 @@ export function TrancheEditPage(): JSX.Element {
                                 />
                               ) : (
                                 <button
-                                  onClick={() => setEditingRow(index)}
+                                  onClick={() => {
+                                    originalSouscriptionRef.current = {
+                                      montant_investi: souscription.montant_investi,
+                                      nombre_obligations: souscription.nombre_obligations,
+                                    };
+                                    setEditingRow(index);
+                                  }}
                                   disabled={processing}
                                   className="text-left w-full hover:text-blue-600 font-semibold text-slate-900 transition-colors"
                                 >

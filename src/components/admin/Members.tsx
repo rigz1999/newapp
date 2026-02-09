@@ -253,7 +253,12 @@ export default function Members() {
         entityType: 'membre',
         entityId: selectedMember.user_id,
         description: `a changé le rôle de "${selectedMember.profiles?.email || 'inconnu'}" de "${selectedMember.role}" en "${newRole}"`,
-        metadata: { email: selectedMember.profiles?.email, oldRole: selectedMember.role, newRole },
+        metadata: {
+          email: selectedMember.profiles?.email,
+          changes: {
+            role: { old: selectedMember.role, new: newRole },
+          },
+        },
       });
       setShowRoleModal(false);
       setSelectedMember(null);
