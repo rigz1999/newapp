@@ -77,7 +77,7 @@ export function DiagnosticPage() {
   };
 
   if (loading) {
-    return <div className="p-8">Running diagnostics...</div>;
+    return <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">Running diagnostics...</div>;
   }
 
   return (
