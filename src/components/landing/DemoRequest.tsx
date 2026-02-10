@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, ArrowRight, AlertTriangle, Shield } from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 export function DemoRequest() {
   const [formData, setFormData] = useState({
@@ -40,7 +41,7 @@ export function DemoRequest() {
 
       // Handle 401/404 - function not deployed yet
       if (response.status === 401 || response.status === 404) {
-        console.error('Edge function not deployed. Please deploy send-demo-request function.');
+        logger.error('Edge function not deployed. Please deploy send-demo-request function.');
         setSubmitStatus('error');
         return;
       }
@@ -51,11 +52,11 @@ export function DemoRequest() {
         setSubmitStatus('success');
         setFormData({ name: '', email: '', company: '', role: '' });
       } else {
-        console.error('Demo request failed:', data);
+        logger.error('Demo request failed:', data);
         setSubmitStatus('error');
       }
     } catch (error) {
-      console.error('Demo request error:', error);
+      logger.error('Demo request error:', error);
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);

@@ -20,6 +20,7 @@ import { Pagination, paginate } from '../common/Pagination';
 import { TableSkeleton } from '../common/Skeleton';
 import { DateRangePicker } from '../filters/DateRangePicker';
 import * as ExcelJS from 'exceljs';
+import { logger } from '../../utils/logger';
 
 interface AuditLog {
   id: string;
@@ -133,7 +134,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
 
       setLogs((data || []) as AuditLog[]);
     } catch (err) {
-      console.error('Error fetching audit logs:', err);
+      logger.error('Error fetching audit logs:', err);
     } finally {
       setLoading(false);
     }

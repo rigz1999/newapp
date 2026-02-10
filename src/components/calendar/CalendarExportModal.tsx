@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Calendar, AlertCircle, CheckCircle2, Settings } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { logger } from '../../utils/logger';
 
 interface CalendarExportModalProps {
   isOpen: boolean;
@@ -85,7 +86,7 @@ export function CalendarExportModal({
       const data = await response.json();
       setSuccess(data.summary);
     } catch (err) {
-      console.error('Error exporting to calendar:', err);
+      logger.error('Error exporting to calendar:', err);
 
       // Check for specific error messages
       let errorMessage = '';

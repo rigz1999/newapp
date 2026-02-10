@@ -78,12 +78,12 @@ export async function logAuditEvent(params: AuditLogParams): Promise<void> {
 
     if (error) {
       // Always log to console so audit failures are visible
-      console.error('[AuditLog] Failed to write audit log:', error.message, { error, row });
+      logger.error('[AuditLog] Failed to write audit log:', error.message, { error, row });
       logger.error(new Error('Failed to write audit log'), { error, params });
     }
   } catch (err) {
     // Never let audit logging break the main flow
-    console.error('[AuditLog] Exception in audit logger:', err);
+    logger.error('[AuditLog] Exception in audit logger:', err);
     logger.error(err instanceof Error ? err : new Error('Audit log error'), {
       params,
     });

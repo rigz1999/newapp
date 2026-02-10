@@ -27,6 +27,7 @@ import { AlertModal } from '../common/Modals';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { logAuditEvent, auditFormatDate } from '../../utils/auditLogger';
 import { isValidShortId } from '../../utils/shortId';
+import { logger } from '../../utils/logger';
 
 interface Echeance {
   id: string;
@@ -330,7 +331,7 @@ export function EcheancierPage() {
       });
       setShowAlertModal(true);
     } catch (error: unknown) {
-      console.error('Error uploading proof:', error);
+      logger.error('Error uploading proof:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message:
@@ -558,7 +559,7 @@ export function EcheancierPage() {
       });
       setShowAlertModal(true);
     } catch (error) {
-      console.error('Error sending reminder:', error);
+      logger.error('Error sending reminder:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message:

@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
@@ -34,7 +34,7 @@ Deno.serve(async (req: Request) => {
     const userExistsInAuth = !getUserError && existingUser?.user;
 
     if (userExistsInAuth) {
-      console.log('Found user to delete:', existingUser.user.email);
+      console.log('Found user to delete:', userId);
 
       // Delete user from auth.users
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);

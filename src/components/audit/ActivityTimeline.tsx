@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 interface AuditLog {
   id: string;
@@ -53,7 +54,7 @@ export function ActivityTimeline({ entityType, entityId, maxItems = 10 }: Activi
         setLogs(data as AuditLog[]);
       }
     } catch (err) {
-      console.error('Error fetching activity timeline:', err);
+      logger.error('Error fetching activity timeline:', err);
     } finally {
       setLoading(false);
     }

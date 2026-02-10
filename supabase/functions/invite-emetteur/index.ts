@@ -18,7 +18,7 @@ interface EmetteurInvitationRequest {
 }
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
@@ -39,37 +39,20 @@ Deno.serve(async (req: Request) => {
 
     const token = authHeader.replace('Bearer ', '');
 
-    let user: { id: string; email: string };
-
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        throw new Error('Invalid token format');
-      }
-
-      const payload = JSON.parse(atob(parts[1]));
-
-      user = {
-        id: payload.sub,
-        email: payload.email,
-      };
-
-      if (!user.id || !user.email) {
-        throw new Error('Invalid token payload');
-      }
-
-      console.log('User authenticated:', user.email);
-    } catch (decodeError) {
-      console.error('Token decode error:', decodeError);
-      throw new Error('Invalid token');
-    }
-
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
       },
     });
+
+    const { data: { user: authUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
+
+    if (userError || !authUser) {
+      throw new Error('Invalid token');
+    }
+
+    const user = { id: authUser.id, email: authUser.email! };
 
     const {
       email,

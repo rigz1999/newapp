@@ -295,7 +295,7 @@ export function EcheancierContent({
       });
       setShowAlertModal(true);
     } catch (error) {
-      console.error('Error sending reminder:', error);
+      logger.error('Error sending reminder:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message:
@@ -459,7 +459,7 @@ export function EcheancierContent({
               .remove(filesToDelete);
 
             if (storageError) {
-              console.error('Error deleting storage files:', storageError);
+              logger.error('Error deleting storage files:', storageError);
               // Don't throw - continue with deletion even if storage cleanup fails
             }
           }
