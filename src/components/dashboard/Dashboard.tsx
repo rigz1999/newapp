@@ -20,7 +20,7 @@ import {
   type Payment,
   type UpcomingCoupon,
 } from '../../utils/dashboardAlerts';
-import { RefreshCw, AlertCircle, X, Plus, ChevronDown } from 'lucide-react';
+import { AlertCircle, X, Plus, ChevronDown } from 'lucide-react';
 
 // generateAlerts function now imported from utils/dashboardAlerts.ts
 
@@ -176,7 +176,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
     const cached = checkCachedData();
     return !cached; // Only show loading if no cache
   });
-  const [refreshing, setRefreshing] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
   // Chart state + cache of raw subs for local filtering
@@ -818,15 +818,6 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
               </>
             )}
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            aria-label="Actualiser le tableau de bord"
-            className="flex items-center gap-1.5 px-3 py-2 bg-finixar-brand-blue text-white rounded-lg hover:bg-finixar-brand-blue-hover transition-colors disabled:opacity-50 text-sm"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Actualiser</span>
-          </button>
         </div>
       </div>
 
