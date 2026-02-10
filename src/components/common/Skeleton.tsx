@@ -49,30 +49,36 @@ export function CardSkeleton() {
 
 export function StatCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <Skeleton className="h-10 w-10 rounded-lg" />
-        <Skeleton className="h-6 w-16" />
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <Skeleton className="h-8 w-8 rounded-lg" />
+        <Skeleton className="h-5 w-14" />
       </div>
-      <Skeleton className="h-8 w-32 mb-2" />
-      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-6 w-28 mb-1.5" />
+      <Skeleton className="h-3 w-20" />
     </div>
   );
 }
 
 export function DashboardSkeleton() {
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCardSkeleton />
         <StatCardSkeleton />
         <StatCardSkeleton />
         <StatCardSkeleton />
       </div>
 
+      {/* Chart */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <Skeleton className="h-5 w-48 mb-3" />
+        <Skeleton className="h-48 w-full rounded-lg" />
+      </div>
+
       {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <CardSkeleton />
         <CardSkeleton />
       </div>

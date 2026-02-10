@@ -552,7 +552,9 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       f => f.field === 'investorType'
     );
     if (investorTypeFilter && investorTypeFilter.values.length > 0) {
-      const normalizedType = (sub.investisseurs?.type || '').toLowerCase().includes('morale') ? 'morale' : 'physique';
+      const normalizedType = (sub.investisseurs?.type || '').toLowerCase().includes('morale')
+        ? 'morale'
+        : 'physique';
       if (!investorTypeFilter.values.includes(normalizedType)) {
         return false;
       }
@@ -639,14 +641,14 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-100 rounded-xl">
             <FileText className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Toutes les souscriptions</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Toutes les souscriptions</h1>
             <p className="text-slate-600">
               {stats.totalSubscriptions} souscription{stats.totalSubscriptions > 1 ? 's' : ''}
             </p>
@@ -663,8 +665,8 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-600 text-sm">Total souscriptions</span>
             <Users className="w-5 h-5 text-blue-600" />
@@ -672,7 +674,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           <p className="text-2xl font-bold text-slate-900">{stats.totalSubscriptions}</p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-600 text-sm">Montant investi</span>
             <TrendingUp className="w-5 h-5 text-green-600" />
@@ -682,7 +684,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           </p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-600 text-sm">Coupons annuels</span>
             <Euro className="w-5 h-5 text-purple-600" />
@@ -692,7 +694,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           </p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-600 text-sm">Investissement moyen</span>
             <Calendar className="w-5 h-5 text-orange-600" />
@@ -704,7 +706,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         {/* Basic Search */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
@@ -821,7 +823,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
       </div>
 
       {loading ? (
-        <div className="p-6">
+        <div className="p-4">
           <TableSkeleton rows={8} columns={7} />
         </div>
       ) : filteredSubscriptions.length === 0 ? (

@@ -524,11 +524,11 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="mb-6">
+      <div className="p-4">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-slate-900">Coupons</h1>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
           <TableSkeleton rows={10} columns={7} />
         </div>
       </div>
@@ -536,15 +536,15 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-100 rounded-xl">
             <Receipt className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Coupons</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Coupons</h1>
             <p className="text-slate-600">
               {totalCount} coupon{totalCount > 1 ? 's' : ''}
             </p>
@@ -570,13 +570,13 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <button
           onClick={() => {
             filterState.clearFilters();
             filterState.setStatut(['en_attente']);
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-yellow-300 hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-yellow-300 hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
             <Clock className="w-8 h-8 text-yellow-600" />
@@ -595,7 +595,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
             filterState.clearFilters();
             filterState.setStatut(['paye']);
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-green-300 hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-green-300 hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
             <CheckCircle className="w-8 h-8 text-green-600" />
@@ -612,7 +612,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
             filterState.clearFilters();
             filterState.setStatut(['en_retard']);
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-red-300 hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-red-300 hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
             <AlertTriangle className="w-8 h-8 text-red-600" />
@@ -628,7 +628,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       </div>
 
       {/* Search & View Switcher */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">

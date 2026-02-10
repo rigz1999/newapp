@@ -241,7 +241,7 @@ export default function EmetteurDashboard() {
 
   if (error) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
         <ErrorMessage message={error} />
       </div>
     );
@@ -261,9 +261,9 @@ export default function EmetteurDashboard() {
 
   if (projects.length === 0) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
         <div className="max-w-md mx-auto text-center py-24">
-          <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-200">
+          <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-slate-200">
             <FolderOpen className="w-9 h-9 text-slate-300" />
           </div>
           <h2 className="text-xl font-semibold text-slate-900 mb-3">Aucun projet assigne</h2>
@@ -276,7 +276,7 @@ export default function EmetteurDashboard() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4 space-y-4">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
           {firstName ? `Bonjour, ${firstName}` : 'Mes Projets'}
@@ -287,7 +287,7 @@ export default function EmetteurDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 transition-shadow hover:shadow-sm">
+        <div className="relative overflow-hidden bg-white rounded-xl border border-slate-200/80 p-4 transition-shadow hover:shadow-sm">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
               <FolderOpen className="w-[18px] h-[18px] text-blue-600" />
@@ -301,7 +301,7 @@ export default function EmetteurDashboard() {
           </div>
         </div>
 
-        <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 transition-shadow hover:shadow-sm">
+        <div className="relative overflow-hidden bg-white rounded-xl border border-slate-200/80 p-4 transition-shadow hover:shadow-sm">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
               <Banknote className="w-[18px] h-[18px] text-amber-600" />
@@ -330,7 +330,7 @@ export default function EmetteurDashboard() {
           </div>
         </div>
 
-        <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 transition-shadow hover:shadow-sm">
+        <div className="relative overflow-hidden bg-white rounded-xl border border-slate-200/80 p-4 transition-shadow hover:shadow-sm">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
               <MessageSquare className="w-[18px] h-[18px] text-emerald-600" />
@@ -365,8 +365,8 @@ export default function EmetteurDashboard() {
               to={`/emetteur/projets/${project.projet_id}`}
               className="block group"
             >
-              <div className="bg-white rounded-2xl border border-slate-200/80 hover:border-slate-300 hover:shadow-md transition-all duration-200 overflow-hidden">
-                <div className="p-5 sm:p-6">
+              <div className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-md transition-all duration-200 overflow-hidden">
+                <div className="p-4">
                   <div className="flex items-start gap-4">
                     <div
                       className={`w-10 h-10 rounded-xl bg-gradient-to-br ${accentGradient} flex items-center justify-center flex-shrink-0 shadow-sm`}

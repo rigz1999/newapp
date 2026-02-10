@@ -41,15 +41,15 @@ export const DashboardChart = memo(
     }, [monthlyData, viewMode]);
 
     return (
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-8">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <h2 className="text-xl font-bold text-slate-900">Évolution des montants levés</h2>
-          <div className="flex items-center gap-3 flex-wrap">
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-4">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h2 className="text-base font-semibold text-slate-900">Évolution des montants levés</h2>
+          <div className="flex items-center gap-2 flex-wrap">
             <select
               aria-label="Mode d'affichage"
               value={viewMode}
               onChange={e => onViewModeChange(e.target.value as 'monthly' | 'cumulative')}
-              className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent font-medium"
+              className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent font-medium"
             >
               <option value="monthly">Vue par mois</option>
               <option value="cumulative">Vue cumulée</option>
@@ -58,7 +58,7 @@ export const DashboardChart = memo(
               aria-label="Année"
               value={selectedYear}
               onChange={e => onYearChange(parseInt(e.target.value, 10))}
-              className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
+              className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
             >
               {Array.from({ length: 11 }, (_, i) => 2020 + i).map(year => (
                 <option key={year} value={year}>
@@ -73,7 +73,7 @@ export const DashboardChart = memo(
                 const [start, end] = e.target.value.split('-').map(Number);
                 onRangeChange(start, end);
               }}
-              className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
+              className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-finixar-brand-blue focus:border-transparent"
             >
               <option value="0-11">Année complète</option>
               <option value="0-2">Q1 (Jan-Mar)</option>
@@ -87,14 +87,14 @@ export const DashboardChart = memo(
         </div>
 
         {monthlyData.length === 0 ? (
-          <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white rounded-lg">
+          <div className="h-48 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white rounded-lg">
             <div className="text-center text-slate-400">
-              <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <TrendingUp className="w-10 h-10 mx-auto mb-2 opacity-50" />
               <p>Aucune donnée disponible</p>
             </div>
           </div>
         ) : (
-          <div className="h-80 flex items-end justify-between gap-2 px-4 pb-4">
+          <div className="h-56 flex items-end justify-between gap-1.5 px-2 pb-3">
             {monthlyData.map((data, index) => {
               const displayAmount = viewMode === 'cumulative' ? data.cumulative || 0 : data.amount;
               const heightPercentage = Math.max(
