@@ -7,8 +7,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
-import {
 import { logger } from '../../utils/logger';
+import {
   CheckCircle,
   AlertCircle,
   Lock,
