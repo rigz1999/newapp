@@ -426,7 +426,7 @@ export function Projects({ organization }: ProjectsProps) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
-      {/* density-v2 */}
+      {/* density-v3 */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 rounded-lg">
