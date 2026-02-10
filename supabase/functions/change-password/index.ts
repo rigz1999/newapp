@@ -4,6 +4,7 @@
 // ============================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
@@ -17,6 +18,13 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Rate limit: 5 attempts per 15 minutes per IP
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`change-password:${ip}`, { maxRequests: 5, windowSeconds: 900 });
+    if (!rl.allowed) {
+      return rateLimitResponse(rl.retryAfterSeconds, corsHeaders);
+    }
+
     const authHeader = req.headers.get('Authorization');
 
     if (!authHeader) {

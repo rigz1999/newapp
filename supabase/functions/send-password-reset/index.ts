@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -23,6 +24,15 @@ serve(async req => {
   }
 
   try {
+    // Rate limit: 3 attempts per 15 minutes per IP (strictest - unauthenticated endpoint)
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`send-password-reset:${ip}`, { maxRequests: 3, windowSeconds: 900 });
+    if (!rl.allowed) {
+      return rateLimitResponse(rl.retryAfterSeconds, {
+        'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
+      });
+    }
+
     console.log('=== Password reset function invoked ===');
 
     // Create admin client for database operations

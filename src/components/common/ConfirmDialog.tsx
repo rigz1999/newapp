@@ -1,6 +1,7 @@
 import { AlertTriangle, Loader2, Trash2, AlertCircle, X } from 'lucide-react';
 import { useState } from 'react';
 import { logger } from '../../utils/logger';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export function ConfirmDialog({
   impact,
 }: ConfirmDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const focusTrapRef = useFocusTrap(isOpen);
 
   if (!isOpen) {
     return null;
@@ -79,8 +81,12 @@ export function ConfirmDialog({
       onMouseDown={e => {
         if (e.target === e.currentTarget && !isProcessing) onClose();
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
     >
       <div
+        ref={focusTrapRef}
         className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in"
       >
         <div className="p-6">

@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -47,6 +48,15 @@ serve(async req => {
   }
 
   try {
+    // Rate limit: 5 attempts per 15 minutes per IP
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`reset-password:${ip}`, { maxRequests: 5, windowSeconds: 900 });
+    if (!rl.allowed) {
+      return rateLimitResponse(rl.retryAfterSeconds, {
+        'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
+      });
+    }
+
     // Create admin client for database operations
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {

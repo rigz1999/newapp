@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
@@ -15,6 +16,13 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Rate limit: 10 deletions per 15 minutes per IP
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`delete-pending-user:${ip}`, { maxRequests: 10, windowSeconds: 900 });
+    if (!rl.allowed) {
+      return rateLimitResponse(rl.retryAfterSeconds, corsHeaders);
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
