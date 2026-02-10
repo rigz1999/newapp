@@ -196,14 +196,14 @@ serve(async (req) => {
         // Send email if there are coupons (or if test mode, send anyway)
         console.log(`Found ${uniqueCoupons.length} coupon(s). testMode=${testMode}`);
         if (uniqueCoupons.length > 0 || testMode) {
-          console.log(`Sending email to ${userData.user.email}...`);
+          console.log(`Sending reminder email to user ${userData.user.id}...`);
           await sendReminderEmail(
             userData.user.email,
             uniqueCoupons,
             userSettings,
             testMode
           );
-          console.log(`Email sent successfully to ${userData.user.email}`);
+          console.log(`Reminder email sent successfully to user ${userData.user.id}`);
           results.push({
             user_id: userSettings.user_id,
             email: userData.user.email,

@@ -34,7 +34,7 @@ Deno.serve(async (req: Request) => {
     const userExistsInAuth = !getUserError && existingUser?.user;
 
     if (userExistsInAuth) {
-      console.log('Found user to delete:', existingUser.user.email);
+      console.log('Found user to delete:', userId);
 
       // Delete user from auth.users
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);

@@ -36,7 +36,7 @@ serve(async req => {
     // Parse request body
     const { email }: PasswordResetRequest = await req.json();
 
-    console.log('Processing password reset request for:', email);
+    console.log('Processing password reset request');
 
     if (!email) {
       throw new Error('Email is required');
@@ -351,12 +351,9 @@ serve(async req => {
       }
 
       const emailData = await emailResponse.json();
-      console.log('Password reset email sent successfully:', {
-        emailId: emailData.id,
-        to: email,
-      });
+      console.log('Password reset email sent successfully:', emailData.id);
     } else {
-      console.log('Password reset requested for non-existent user:', email);
+      console.log('Password reset requested for non-existent user');
     }
 
     // Always return success (don't reveal if user exists)

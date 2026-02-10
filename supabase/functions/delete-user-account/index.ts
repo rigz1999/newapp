@@ -55,7 +55,7 @@ serve(async req => {
       );
     }
 
-    console.log(`=== Account deletion requested by user ${user.id} (${user.email}) ===`);
+    console.log(`=== Account deletion requested by user ${user.id} ===`);
 
     // RGPD: Anonymize audit logs instead of deleting (financial records must be kept 10 years)
     await supabaseAdmin
