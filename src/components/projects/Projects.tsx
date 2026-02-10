@@ -276,7 +276,7 @@ export function Projects({ organization }: ProjectsProps) {
       await fetchProjects();
       triggerCacheInvalidation();
     } catch (err: unknown) {
-      console.error('Erreur lors de la suppression du projet:', err);
+      logger.error('Erreur lors de la suppression du projet:', err);
       toast.error(
         `Erreur lors de la suppression: ${err instanceof Error ? err.message : String(err)}`
       );

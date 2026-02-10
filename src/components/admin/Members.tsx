@@ -221,7 +221,7 @@ export default function Members() {
       });
       setShowAlertModal(true);
     } catch (error) {
-      console.error('Error removing member:', error);
+      logger.error('Error removing member:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: `Impossible de supprimer le membre: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,

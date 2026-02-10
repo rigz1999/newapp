@@ -17,6 +17,7 @@ import { Spinner } from '../common/Spinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { logger } from '../../utils/logger';
 
 interface EmetteurProject {
   projet_id: string;
@@ -177,7 +178,7 @@ export default function EmetteurDashboard() {
 
       setProjects(projectsWithDetails);
     } catch (err: unknown) {
-      console.error('Error loading emetteur projects:', err);
+      logger.error('Error loading emetteur projects:', err);
       setError((err as Error).message);
     } finally {
       setLoading(false);

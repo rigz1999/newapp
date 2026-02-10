@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
+import { logger } from '../../utils/logger';
 
 export interface Coupon {
   id: string;
@@ -149,7 +150,7 @@ export function useCoupons(options: UseCouponsOptions = {}): UseCouponsReturn {
           },
         });
       } catch (err) {
-        console.error('Error fetching coupons:', err);
+        logger.error('Error fetching coupons:', err);
         setError(err instanceof Error ? err.message : 'Erreur inconnue');
         toast.error('Erreur lors du chargement des coupons');
       } finally {

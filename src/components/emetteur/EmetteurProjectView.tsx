@@ -6,6 +6,7 @@ import { Spinner } from '../common/Spinner';
 import { ErrorMessage } from '../common/ErrorMessage';
 import { ProjectDetail } from '../projects/ProjectDetail';
 import { isValidShortId } from '../../utils/shortId';
+import { logger } from '../../utils/logger';
 
 export default function EmetteurProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -70,7 +71,7 @@ export default function EmetteurProjectView() {
         name: (org?.name as string) || 'Organisation',
       });
     } catch (err: unknown) {
-      console.error('Error checking emetteur access:', err);
+      logger.error('Error checking emetteur access:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);

@@ -5,6 +5,7 @@ import { AlertModal } from '../common/Modals';
 import { logAuditEvent } from '../../utils/auditLogger';
 import { ProxiedImage } from '../common/ProxiedImage';
 import { openFileInNewTab, extractStoragePath } from '../../utils/fileProxy';
+import { logger } from '../../utils/logger';
 
 interface PaymentInfo {
   id: string;
@@ -80,7 +81,7 @@ export function ViewProofsModal({
       const { error: dbError } = await supabase.from('payment_proofs').delete().eq('id', proofId);
 
       if (dbError) {
-        console.error('Database deletion error:', dbError);
+        logger.error('Database deletion error:', dbError);
         throw new Error(
           `Échec de la suppression du justificatif: ${dbError.message}. Vérifiez que vous avez les permissions nécessaires (rôle admin requis).`
         );
@@ -94,7 +95,7 @@ export function ViewProofsModal({
           .remove([filePath]);
 
         if (storageError) {
-          console.warn('Storage deletion warning:', storageError);
+          logger.warn('Storage deletion warning:', storageError);
         }
       }
 
@@ -137,7 +138,7 @@ export function ViewProofsModal({
         setTimeout(() => onClose(), 1000);
       }
     } catch (err: unknown) {
-      console.error('Delete proof error:', err);
+      logger.error('Delete proof error:', err);
       setAlertModalConfig({
         title: 'Erreur de suppression',
         message:

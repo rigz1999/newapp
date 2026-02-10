@@ -16,6 +16,7 @@ import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidatio
 import { sanitizeFileName } from '../../utils/sanitizer';
 import { ProxiedImage } from '../common/ProxiedImage';
 import { openFileInNewTab } from '../../utils/fileProxy';
+import { logger } from '../../utils/logger';
 
 interface EcheanceProofsModalProps {
   echeanceDate: string;
@@ -111,7 +112,7 @@ export function EcheanceProofsModal({
 
       setProofs(enrichedProofs);
     } catch (err) {
-      console.error('Error fetching proofs:', err);
+      logger.error('Error fetching proofs:', err);
     } finally {
       setLoading(false);
     }
@@ -227,7 +228,7 @@ export function EcheanceProofsModal({
       fetchProofs();
       onSuccess();
     } catch (err: unknown) {
-      console.error('Upload error:', err);
+      logger.error('Upload error:', err);
       setError(err instanceof Error ? err.message : 'Erreur lors du téléchargement');
     } finally {
       setUploading(false);
@@ -254,7 +255,7 @@ export function EcheanceProofsModal({
       fetchProofs();
       onSuccess();
     } catch (err: unknown) {
-      console.error('Delete error:', err);
+      logger.error('Delete error:', err);
       toast.error(err instanceof Error ? err.message : 'Erreur lors de la suppression');
     } finally {
       setDeleting(false);

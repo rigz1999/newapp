@@ -30,6 +30,7 @@ import { supabase } from '../../lib/supabase';
 import { extractStoragePath } from '../../utils/fileProxy';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { logAuditEvent, auditFormatDate } from '../../utils/auditLogger';
+import { logger } from '../../utils/logger';
 
 interface CouponsPageNewProps {
   organization?: { id: string; name: string; role: string };
@@ -239,7 +240,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               .remove(filesToDelete);
 
             if (storageError) {
-              console.error('Error deleting storage files:', storageError);
+              logger.error('Error deleting storage files:', storageError);
               // Don't throw - continue with deletion even if storage cleanup fails
             }
           }
@@ -293,7 +294,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         'Le coupon a été marqué comme non payé et tous les enregistrements associés ont été supprimés.'
       );
     } catch (err: unknown) {
-      console.error('Error marking as unpaid:', err);
+      logger.error('Error marking as unpaid:', err);
       const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
       toast.error(`Erreur lors de la mise à jour: ${errorMessage}`);
     } finally {
@@ -384,7 +385,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                   .remove(filesToDelete);
 
                 if (storageError) {
-                  console.error('Error deleting storage files:', storageError);
+                  logger.error('Error deleting storage files:', storageError);
                 }
               }
             }
@@ -417,7 +418,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
           successCount++;
         } catch (err) {
-          console.error('Error unmarking coupon:', coupon.id, err);
+          logger.error('Error unmarking coupon:', coupon.id, err);
           failCount++;
         }
       }
@@ -447,7 +448,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         );
       }
     } catch (err: unknown) {
-      console.error('Error in bulk unmark:', err);
+      logger.error('Error in bulk unmark:', err);
       const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
       toast.error(`Erreur lors de la mise à jour: ${errorMessage}`);
     } finally {
@@ -502,7 +503,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
       toast.success(`${coupons.length} coupons exportés`);
     } catch (error) {
-      console.error('Error exporting Excel:', error);
+      logger.error('Error exporting Excel:', error);
       toast.error("Erreur lors de l'export");
     } finally {
       setExportingExcel(false);

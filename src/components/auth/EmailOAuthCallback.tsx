@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 type OAuthProvider = 'microsoft' | 'google';
 
@@ -101,7 +102,7 @@ export function EmailOAuthCallback() {
           navigate('/parametres');
         }, 2000);
       } catch (err) {
-        console.error('OAuth callback error:', err);
+        logger.error('OAuth callback error:', err);
         setStatus('error');
         setErrorMessage(err instanceof Error ? err.message : 'Une erreur est survenue');
 

@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { sanitizeHTML } from '../../utils/sanitizer';
+import { logger } from '../../utils/logger';
 
 interface Comment {
   id: string;
@@ -85,7 +86,7 @@ export function ProjectCommentsPage() {
       }
       setProject(data);
     } catch (error) {
-      console.error('Error fetching project:', error);
+      logger.error('Error fetching project:', error);
     }
   };
 
@@ -136,7 +137,7 @@ export function ProjectCommentsPage() {
       const totalFetched = loadMore ? comments.length + (data?.length || 0) : data?.length || 0;
       setHasMore(totalFetched < (count || 0));
     } catch (error) {
-      console.error('Error fetching comments:', error);
+      logger.error('Error fetching comments:', error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -166,7 +167,7 @@ export function ProjectCommentsPage() {
       setNewComment('');
       await fetchComments();
     } catch (error) {
-      console.error('Error posting comment:', error);
+      logger.error('Error posting comment:', error);
       alert('Erreur lors de la publication du commentaire');
     } finally {
       setSubmitting(false);
@@ -194,7 +195,7 @@ export function ProjectCommentsPage() {
       setEditText('');
       await fetchComments();
     } catch (error) {
-      console.error('Error updating comment:', error);
+      logger.error('Error updating comment:', error);
       alert('Erreur lors de la modification du commentaire');
     }
   };
@@ -214,7 +215,7 @@ export function ProjectCommentsPage() {
       setCommentToDelete(null);
       await fetchComments();
     } catch (error) {
-      console.error('Error deleting comment:', error);
+      logger.error('Error deleting comment:', error);
       alert('Erreur lors de la suppression du commentaire');
     }
   };

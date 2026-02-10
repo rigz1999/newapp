@@ -1,5 +1,6 @@
 import { AlertTriangle, Loader2, Trash2, AlertCircle, X } from 'lucide-react';
 import { useState } from 'react';
+import { logger } from '../../utils/logger';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -38,7 +39,7 @@ export function ConfirmDialog({
       await onConfirm();
       onClose();
     } catch (error) {
-      console.error('Confirm action failed:', error);
+      logger.error('Confirm action failed:', error);
     } finally {
       setIsProcessing(false);
     }

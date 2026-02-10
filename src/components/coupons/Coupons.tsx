@@ -32,6 +32,7 @@ import PaymentRemindersCard from './PaymentRemindersCard';
 import PaymentRemindersModal from './PaymentRemindersModal';
 import { useAuth } from '../../hooks/useAuth';
 import { toast } from '../../utils/toast';
+import { logger } from '../../utils/logger';
 
 // Tax rate for physical investors (30% withholding tax)
 const TAX_RATE_PHYSICAL = 0.3;
@@ -275,7 +276,7 @@ export function Coupons() {
 
       setCoupons(processedCoupons);
     } catch (error) {
-      console.error('Error fetching coupons:', error);
+      logger.error('Error fetching coupons:', error);
       toast.error('Erreur lors du chargement des coupons');
     } finally {
       setLoading(false);
@@ -301,7 +302,7 @@ export function Coupons() {
         setRemind30Days(reminderSettings.remind_30_days);
       }
     } catch (error) {
-      console.error('Error fetching reminder settings:', error);
+      logger.error('Error fetching reminder settings:', error);
       // Don't show toast for this - it's not critical
     }
   };
@@ -562,7 +563,7 @@ export function Coupons() {
 
       toast.success(`${filteredCoupons.length} coupons exportés avec succès`);
     } catch (error) {
-      console.error('Error exporting Excel:', error);
+      logger.error('Error exporting Excel:', error);
       toast.error("Erreur lors de l'export Excel");
     } finally {
       setExportingExcel(false);

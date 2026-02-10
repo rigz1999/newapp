@@ -428,7 +428,7 @@ export function Payments({ organization }: PaymentsProps) {
       await fetchPayments();
       setSelectedPayments(new Set());
     } catch (err) {
-      console.error('Bulk delete failed:', err);
+      logger.error('Bulk delete failed:', err);
       setError('Échec de la suppression des paiements sélectionnés');
     }
   };
@@ -497,7 +497,7 @@ export function Payments({ organization }: PaymentsProps) {
       await fetchPayments();
       setPaymentToDelete(null);
     } catch (err) {
-      console.error('Delete failed:', err);
+      logger.error('Delete failed:', err);
       setError('Échec de la suppression du paiement');
       setPaymentToDelete(null);
     }
