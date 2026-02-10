@@ -237,9 +237,6 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
 
   const fetchData = async (): Promise<void> => {
     const isRefresh = !loading;
-    if (isRefresh) {
-      setRefreshing(true);
-    }
 
     try {
       const cachedData = getCachedData();
@@ -661,16 +658,10 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       setCachedData(cacheData);
 
       setLoading(false);
-      if (isRefresh) {
-        setRefreshing(false);
-      }
     } catch (error) {
       logger.error(error instanceof Error ? error : new Error('Dashboard: Error fetching data'));
       localStorage.removeItem(CACHE_KEY);
       setLoading(false);
-      if (isRefresh) {
-        setRefreshing(false);
-      }
     }
   };
 
