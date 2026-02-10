@@ -140,7 +140,7 @@ describe('ConfirmModal', () => {
   });
 
   it('should close when clicking backdrop', () => {
-    const { container } = render(
+    render(
       <ConfirmModal
         isOpen={true}
         title="Confirm"
@@ -150,11 +150,27 @@ describe('ConfirmModal', () => {
       />
     );
 
-    // The backdrop is the outermost div with the onClick handler
-    const backdrop = container.firstElementChild as HTMLElement;
-    fireEvent.click(backdrop);
+    // The backdrop uses onMouseDown with e.target === e.currentTarget
+    const backdrop = screen.getByRole('dialog');
+    fireEvent.mouseDown(backdrop);
 
     expect(mockOnCancel).toHaveBeenCalled();
+  });
+
+  it('should have correct ARIA attributes', () => {
+    render(
+      <ConfirmModal
+        isOpen={true}
+        title="Confirm Action"
+        message="Are you sure?"
+        onConfirm={mockOnConfirm}
+        onClose={mockOnCancel}
+      />
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-label', 'Confirm Action');
   });
 });
 
@@ -269,14 +285,24 @@ describe('AlertModal', () => {
   });
 
   it('should close when clicking backdrop', () => {
-    const { container } = render(
+    render(
       <AlertModal isOpen={true} title="Alert" message="Message" onClose={mockOnClose} />
     );
 
-    // The backdrop is the outermost div with onClick
-    const backdrop = container.firstElementChild as HTMLElement;
-    fireEvent.click(backdrop);
+    // The backdrop uses onMouseDown with e.target === e.currentTarget
+    const backdrop = screen.getByRole('dialog');
+    fireEvent.mouseDown(backdrop);
 
     expect(mockOnClose).toHaveBeenCalled();
+  });
+
+  it('should have correct ARIA attributes', () => {
+    render(
+      <AlertModal isOpen={true} title="Important Alert" message="Read this" onClose={mockOnClose} />
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-label', 'Important Alert');
   });
 });

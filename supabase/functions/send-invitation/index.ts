@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { checkRateLimit, getClientIp, rateLimitResponse } from '../_shared/rate-limit.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -28,6 +29,13 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limit: 10 invitations per 15 minutes per IP
+    const ip = getClientIp(req)
+    const rl = checkRateLimit(`send-invitation:${ip}`, { maxRequests: 10, windowSeconds: 900 })
+    if (!rl.allowed) {
+      return rateLimitResponse(rl.retryAfterSeconds, corsHeaders)
+    }
+
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       throw new Error('No authorization header')
