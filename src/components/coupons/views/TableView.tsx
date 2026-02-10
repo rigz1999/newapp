@@ -347,7 +347,7 @@ export function TableView({
                       </div>
                     </td>
                     <td className="px-4 py-4 align-middle" onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2 flex-nowrap">
                         {group.hasUnpaid && (
                           <button
                             onClick={() => {
@@ -371,7 +371,7 @@ export function TableView({
                               onMarkGroupAsUnpaid(group.date, paidCoupons);
                             }}
                             disabled={markingUnpaid === 'bulk'}
-                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-wait"
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-wait whitespace-nowrap"
                             title="Marquer tous les coupons de cette échéance comme impayés"
                           >
                             {markingUnpaid === 'bulk' ? (
