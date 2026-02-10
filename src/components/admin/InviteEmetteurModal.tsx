@@ -158,11 +158,12 @@ export default function InviteEmetteurModal({
   return createPortal(
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
-      onClick={onClose}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         className="bg-white rounded-lg max-w-md w-full max-h-[90vh] shadow-xl flex flex-col"
-        onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>

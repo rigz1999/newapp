@@ -75,11 +75,12 @@ export function ConfirmDialog({
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[70] animate-fade-in"
-      onClick={!isProcessing ? onClose : undefined}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget && !isProcessing) onClose();
+      }}
     >
       <div
         className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in"
-        onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           <div className="flex items-start gap-4">

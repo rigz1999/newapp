@@ -24,7 +24,7 @@ import {
   X,
   Bell,
 } from 'lucide-react';
-import * as ExcelJS from 'exceljs';
+import type * as ExcelJSType from 'exceljs';
 import { toast } from '../../utils/toast';
 import { supabase } from '../../lib/supabase';
 import { extractStoragePath } from '../../utils/fileProxy';
@@ -477,6 +477,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
       }));
 
+      const ExcelJS = await import('exceljs') as typeof ExcelJSType;
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Coupons');
 
@@ -803,11 +804,12 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       {showDetailsModal && selectedCoupon && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowDetailsModal(false)}
+          onMouseDown={e => {
+            if (e.target === e.currentTarget) setShowDetailsModal(false);
+          }}
         >
           <div
             className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
           >
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-xl font-bold text-slate-900">Détail du Coupon</h3>

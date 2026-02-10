@@ -38,11 +38,12 @@ function EcheancierModalContent({
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fade-in"
-      onClick={onClose}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] m-4 flex flex-col animate-slide-in-right"
-        onClick={e => e.stopPropagation()}
       >
         {/* Close button in top-right corner */}
         <button
