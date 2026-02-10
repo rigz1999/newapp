@@ -425,14 +425,14 @@ export function Projects({ organization }: ProjectsProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-100 rounded-xl">
             <FolderOpen className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Tous les projets</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Tous les projets</h1>
             <p className="text-slate-600">
               {projects.length} projet{projects.length > 1 ? 's' : ''}
             </p>
@@ -449,7 +449,7 @@ export function Projects({ organization }: ProjectsProps) {
       </div>
 
       {/* Search Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -473,7 +473,7 @@ export function Projects({ organization }: ProjectsProps) {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <CardSkeleton />
           <CardSkeleton />
           <CardSkeleton />
@@ -503,13 +503,13 @@ export function Projects({ organization }: ProjectsProps) {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredProjects.map(project => (
             <div
               key={project.id}
               className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all overflow-hidden"
             >
-              <div className="p-6">
+              <div className="p-4">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="bg-finixar-brand-blue p-3 rounded-lg flex-shrink-0">
                     <Layers className="w-6 h-6 text-white" />
@@ -571,9 +571,7 @@ export function Projects({ organization }: ProjectsProps) {
 
       {/* MODAL EXACT DU DASHBOARD */}
       {showCreateModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-white">
               <div>

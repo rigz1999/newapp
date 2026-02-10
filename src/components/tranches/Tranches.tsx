@@ -211,7 +211,7 @@ export function Tranches({
       />
 
       <main className="flex-1 overflow-y-auto ml-64">
-        <div className="max-w-7xl mx-auto px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
           <button
             onClick={onBack}
             className="flex items-center gap-2 text-slate-700 hover:text-slate-900 mb-4"
@@ -219,18 +219,18 @@ export function Tranches({
             <ArrowLeft className="w-5 h-5" />
             <span>Retour aux projets</span>
           </button>
-          <div className="mb-6">
+          <div className="mb-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-blue-100 rounded-xl">
                 <FileText className="w-8 h-8 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">Tranches</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Tranches</h1>
                 <p className="text-slate-600">{projectName}</p>
               </div>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h2 className="text-2xl font-bold text-slate-900">Gérer les tranches</h2>
             <div className="flex gap-3">
               <button
@@ -251,7 +251,7 @@ export function Tranches({
           </div>
 
           {uploading && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
               <div className="flex items-center gap-3">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                 <span className="text-blue-900 font-medium">Import en cours...</span>
@@ -263,7 +263,7 @@ export function Tranches({
             <div
               className={`${
                 uploadResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-              } border rounded-lg p-4 mb-6`}
+              } border rounded-lg p-4 mb-4`}
             >
               <div className="flex items-start gap-3">
                 <AlertCircle

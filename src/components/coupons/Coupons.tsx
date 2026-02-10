@@ -578,11 +578,11 @@ export function Coupons() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="mb-6">
+      <div className="p-4">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-slate-900">Coupons</h1>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
           <TableSkeleton rows={10} columns={7} />
         </div>
       </div>
@@ -590,15 +590,15 @@ export function Coupons() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-100 rounded-xl">
             <Receipt className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Tous les coupons</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Tous les coupons</h1>
             <p className="text-slate-600">
               {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total:{' '}
               <span className="font-bold text-finixar-green">{formatCurrency(totalAmount)}</span>
@@ -630,13 +630,13 @@ export function Coupons() {
       {/* ✅ SUPPRIMÉ : Sélecteur de période KPI (plus nécessaire) */}
 
       {/* Stats Cards - ✅ MODIFIÉ : Affiche TOUS les coupons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <button
           onClick={() => {
             advancedFilters.clearAllFilters();
             advancedFilters.addMultiSelectFilter('statut', 'en_attente');
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-finixar-amber hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-finixar-amber hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
             <Clock className="w-8 h-8 text-finixar-amber" />
@@ -660,7 +660,7 @@ export function Coupons() {
             advancedFilters.clearAllFilters();
             advancedFilters.addMultiSelectFilter('statut', 'paye');
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-finixar-green hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-finixar-green hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
             <CheckCircle className="w-8 h-8 text-finixar-green" />
@@ -682,7 +682,7 @@ export function Coupons() {
             advancedFilters.clearAllFilters();
             advancedFilters.addMultiSelectFilter('statut', 'en_retard');
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-finixar-red hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-finixar-red hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
             <AlertTriangle className="w-8 h-8 text-finixar-red" />
@@ -713,7 +713,7 @@ export function Coupons() {
 
       {/* Filters */}
       {/* Filters Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         {/* Basic Search */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">

@@ -465,15 +465,15 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-indigo-100 rounded-xl">
-            <History className="w-8 h-8 text-indigo-600" />
+          <div className="p-2 bg-indigo-100 rounded-lg">
+            <History className="w-6 h-6 text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Journal d'audit</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Journal d'audit</h1>
             <p className="text-slate-600">
               {filteredLogs.length} action{filteredLogs.length > 1 ? 's' : ''} enregistrée
               {filteredLogs.length > 1 ? 's' : ''}
@@ -491,7 +491,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -577,7 +577,8 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
               </div>
 
               {/* Date range */}
-              <DateRangePicker className="min-w-0"
+              <DateRangePicker
+                className="min-w-0"
                 startDate={startDate}
                 endDate={endDate}
                 onStartDateChange={setStartDate}
@@ -600,7 +601,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
 
         {/* Log entries */}
         {loading ? (
-          <div className="p-6">
+          <div className="p-4">
             <TableSkeleton rows={8} columns={5} />
           </div>
         ) : filteredLogs.length === 0 ? (

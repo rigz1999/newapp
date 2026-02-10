@@ -559,10 +559,10 @@ export function Payments({ organization }: PaymentsProps) {
     advancedFilters.filters.multiSelect.length > 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       {/* Error Banner */}
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-finixar-red flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <h3 className="font-semibold text-red-900 mb-1">Erreur de chargement</h3>
@@ -580,15 +580,13 @@ export function Payments({ organization }: PaymentsProps) {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-blue-100 rounded-xl">
             <Euro className="w-8 h-8 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-              Historique des paiements
-            </h1>
+            <h1 className="text-2xl font-bold text-slate-900">Historique des paiements</h1>
             <p className="text-slate-600">
               {filteredPayments.length} paiement{filteredPayments.length > 1 ? 's' : ''}
             </p>
@@ -604,8 +602,8 @@ export function Payments({ organization }: PaymentsProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-600 text-sm">Montant total payé</span>
             <CheckCircle2 className="w-5 h-5 text-finixar-green" />
@@ -613,7 +611,7 @@ export function Payments({ organization }: PaymentsProps) {
           <p className="text-2xl font-bold text-slate-900">{formatCurrency(stats.totalPaid)}</p>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-600 text-sm">Nombre de paiements</span>
             <Euro className="w-5 h-5 text-blue-600" />
@@ -622,7 +620,7 @@ export function Payments({ organization }: PaymentsProps) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         {/* Basic Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
@@ -732,7 +730,7 @@ export function Payments({ organization }: PaymentsProps) {
         )}
 
         {loading ? (
-          <div className="p-6">
+          <div className="p-4">
             <TableSkeleton rows={8} columns={8} />
           </div>
         ) : filteredPayments.length === 0 ? (
@@ -781,7 +779,7 @@ export function Payments({ organization }: PaymentsProps) {
               </div>
             )}
 
-            <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
               <table className="w-full min-w-max">
                 <thead>
                   <tr className="border-b border-slate-200">

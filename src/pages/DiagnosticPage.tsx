@@ -81,10 +81,10 @@ export function DiagnosticPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Database Diagnostics</h1>
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
+      <h1 className="text-2xl font-bold mb-4">Database Diagnostics</h1>
 
-      <div className="space-y-6">
+      <div className="space-y-3">
         {Object.entries(diagnostics).map(([key, value]) => (
           <div key={key} className="bg-white border rounded-lg p-4">
             <h2 className="text-lg font-semibold mb-2 capitalize">{key}</h2>
