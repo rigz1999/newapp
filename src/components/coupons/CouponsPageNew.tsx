@@ -540,8 +540,8 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <Receipt className="w-8 h-8 text-blue-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Receipt className="w-5 h-5 text-blue-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Coupons</h1>
@@ -553,7 +553,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         <div className="flex gap-3">
           <button
             onClick={() => setShowRemindersModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md font-medium"
+            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md font-medium"
           >
             <Bell className="w-4 h-4" />
             Rappels
@@ -561,7 +561,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium disabled:opacity-50"
           >
             <Download className={`w-4 h-4 ${exportingExcel ? 'animate-bounce' : ''}`} />
             Exporter
@@ -579,7 +579,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-yellow-300 hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <Clock className="w-8 h-8 text-yellow-600" />
+            <Clock className="w-5 h-5 text-yellow-600" />
             <span className="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full">
               Prévu
             </span>
@@ -598,7 +598,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-green-300 hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+            <CheckCircle className="w-5 h-5 text-green-600" />
             <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
               Payés
             </span>
@@ -615,7 +615,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-red-300 hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <AlertTriangle className="w-8 h-8 text-red-600" />
+            <AlertTriangle className="w-5 h-5 text-red-600" />
             <span className="text-xs font-medium text-red-700 bg-red-100 px-2 py-1 rounded-full">
               En Retard
             </span>
@@ -638,14 +638,14 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               placeholder="Rechercher par investisseur, projet, tranche..."
               value={filterState.filters.search || ''}
               onChange={e => filterState.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           {/* Filters Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               showFilters || filterState.activeFilterCount > 0
                 ? 'bg-blue-50 border-blue-300 text-blue-700'
                 : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'

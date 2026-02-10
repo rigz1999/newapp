@@ -594,8 +594,8 @@ export function Coupons() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <Receipt className="w-8 h-8 text-blue-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Receipt className="w-5 h-5 text-blue-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Tous les coupons</h1>
@@ -611,7 +611,7 @@ export function Coupons() {
               setWizardPreselect({});
               setShowPaymentWizard(true);
             }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-all shadow-sm hover:shadow-md font-medium"
+            className="flex items-center gap-2 px-3 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-all shadow-sm hover:shadow-md font-medium"
           >
             <Upload className="w-4 h-4" />
             Enregistrer Paiement
@@ -619,7 +619,7 @@ export function Coupons() {
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className={`w-4 h-4 ${exportingExcel ? 'animate-bounce' : ''}`} />
             {exportingExcel ? 'Export en cours...' : 'Exporter Excel'}
@@ -639,7 +639,7 @@ export function Coupons() {
           className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-finixar-amber hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <Clock className="w-8 h-8 text-finixar-amber" />
+            <Clock className="w-5 h-5 text-finixar-amber" />
             <span className="text-xs font-medium text-finixar-amber bg-yellow-100 px-2 py-1 rounded-full">
               Prévu
             </span>
@@ -663,7 +663,7 @@ export function Coupons() {
           className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-finixar-green hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <CheckCircle className="w-8 h-8 text-finixar-green" />
+            <CheckCircle className="w-5 h-5 text-finixar-green" />
             <span className="text-xs font-medium text-finixar-green bg-green-100 px-2 py-1 rounded-full">
               Payés
             </span>
@@ -685,7 +685,7 @@ export function Coupons() {
           className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-finixar-red hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <AlertTriangle className="w-8 h-8 text-finixar-red" />
+            <AlertTriangle className="w-5 h-5 text-finixar-red" />
             <span className="text-xs font-medium text-finixar-red bg-red-100 px-2 py-1 rounded-full">
               En Retard
             </span>
@@ -723,13 +723,13 @@ export function Coupons() {
               placeholder="Rechercher par investisseur, projet, tranche..."
               value={advancedFilters.filters.search}
               onChange={e => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             />
           </div>
 
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               showAdvancedFilters || activeFiltersCount > 0
                 ? 'bg-blue-50 border-blue-300 text-blue-700'
                 : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -842,8 +842,8 @@ export function Coupons() {
 
       {/* Coupons List */}
       {filteredCoupons.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+          <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun coupon</h3>
           <p className="text-slate-600">
             {coupons.length === 0
@@ -852,7 +852,7 @@ export function Coupons() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {paginate(groupedData, currentPage, itemsPerPage).map(({ date, tranches }) => {
             const daysUntil = getDaysUntil(date);
             const dateTotal = tranches.reduce((sum, t) => sum + t.total, 0);
@@ -863,7 +863,7 @@ export function Coupons() {
                 className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
               >
                 {/* Date Header */}
-                <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">{formatDate(date)}</h3>
                     <p className="text-sm text-slate-600">
@@ -894,7 +894,7 @@ export function Coupons() {
                     return (
                       <div key={tranche.trancheId}>
                         {/* Tranche Header */}
-                        <div className="w-full px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
+                        <div className="w-full px-4 py-2.5 hover:bg-slate-50 transition-colors flex items-center justify-between">
                           <button
                             onClick={() => toggleTranche(trancheKey)}
                             className="flex items-center gap-3 flex-1"
@@ -961,7 +961,7 @@ export function Coupons() {
                                 return (
                                   <div
                                     key={coupon.id}
-                                    className="px-6 py-4 pl-20 hover:bg-slate-100 transition-colors"
+                                    className="px-4 py-2.5 pl-20 hover:bg-slate-100 transition-colors"
                                   >
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-3 flex-1">

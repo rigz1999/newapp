@@ -82,13 +82,13 @@ export function DiagnosticPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
-      <h1 className="text-2xl font-bold mb-4">Database Diagnostics</h1>
+      <h1 className="text-2xl font-bold mb-3">Database Diagnostics</h1>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {Object.entries(diagnostics).map(([key, value]) => (
-          <div key={key} className="bg-white border rounded-lg p-4">
-            <h2 className="text-lg font-semibold mb-2 capitalize">{key}</h2>
-            <pre className="bg-gray-50 p-4 rounded overflow-auto text-sm">
+          <div key={key} className="bg-white border rounded-lg p-3">
+            <h2 className="text-sm font-semibold mb-1.5 capitalize">{key}</h2>
+            <pre className="bg-gray-50 p-3 rounded overflow-auto text-xs">
               {JSON.stringify(value, null, 2)}
             </pre>
           </div>
@@ -97,7 +97,7 @@ export function DiagnosticPage() {
 
       <button
         onClick={runDiagnostics}
-        className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        className="mt-4 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
       >
         Run Diagnostics Again
       </button>

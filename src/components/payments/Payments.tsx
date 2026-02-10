@@ -582,8 +582,8 @@ export function Payments({ organization }: PaymentsProps) {
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <Euro className="w-8 h-8 text-blue-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Euro className="w-5 h-5 text-blue-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Historique des paiements</h1>
@@ -630,14 +630,14 @@ export function Payments({ organization }: PaymentsProps) {
               placeholder="Rechercher par projet, tranche, investisseur..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             />
           </div>
 
           <select
             value={sortOrder}
             onChange={e => setSortOrder(e.target.value as SortOrder)}
-            className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
           >
             <option value="desc">Plus récents</option>
             <option value="asc">Plus anciens</option>
@@ -645,7 +645,7 @@ export function Payments({ organization }: PaymentsProps) {
 
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               showAdvancedFilters || hasActiveFilters
                 ? 'bg-finixar-teal text-white border-blue-600'
                 : 'border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -734,8 +734,8 @@ export function Payments({ organization }: PaymentsProps) {
             <TableSkeleton rows={8} columns={8} />
           </div>
         ) : filteredPayments.length === 0 ? (
-          <div className="text-center py-12">
-            <Euro className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <div className="text-center py-8">
+            <Euro className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun paiement</h3>
             <p className="text-slate-600">
               {searchTerm || hasActiveFilters
@@ -783,7 +783,7 @@ export function Payments({ organization }: PaymentsProps) {
               <table className="w-full min-w-max">
                 <thead>
                   <tr className="border-b border-slate-200">
-                    <th className="px-2 md:px-4 py-3 text-left">
+                    <th className="px-2 md:px-4 py-2 text-left">
                       <input
                         type="checkbox"
                         checked={
@@ -796,22 +796,22 @@ export function Payments({ organization }: PaymentsProps) {
                         className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                       />
                     </th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">
+                    <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm font-semibold text-slate-900">
                       Projet
                     </th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">
+                    <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">
                       Tranche
                     </th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden sm:table-cell">
+                    <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm font-semibold text-slate-900 hidden sm:table-cell">
                       Investisseur
                     </th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900">
+                    <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm font-semibold text-slate-900">
                       Montant
                     </th>
-                    <th className="px-2 md:px-4 py-3 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">
+                    <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm font-semibold text-slate-900 hidden md:table-cell">
                       Date
                     </th>
-                    <th className="px-2 md:px-4 py-3 text-right text-xs md:text-sm font-semibold text-slate-900"></th>
+                    <th className="px-2 md:px-4 py-2 text-right text-xs md:text-sm font-semibold text-slate-900"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -821,7 +821,7 @@ export function Payments({ organization }: PaymentsProps) {
                       onClick={() => navigate(`/paiements/${payment.id}`)}
                       className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
                     >
-                      <td className="px-2 md:px-4 py-3">
+                      <td className="px-2 md:px-4 py-2">
                         <input
                           type="checkbox"
                           checked={selectedPayments.has(payment.id)}
@@ -830,7 +830,7 @@ export function Payments({ organization }: PaymentsProps) {
                           className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
                         />
                       </td>
-                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600">
+                      <td className="px-2 md:px-4 py-2 text-xs md:text-sm text-slate-600">
                         <div>
                           <p className="font-medium text-slate-900">
                             {payment.tranche?.projet?.projet || '-'}
@@ -843,13 +843,13 @@ export function Payments({ organization }: PaymentsProps) {
                           </p>
                         </div>
                       </td>
-                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 hidden md:table-cell">
+                      <td className="px-2 md:px-4 py-2 text-xs md:text-sm text-slate-600 hidden md:table-cell">
                         {payment.tranche?.tranche_name || '-'}
                       </td>
-                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 hidden sm:table-cell">
+                      <td className="px-2 md:px-4 py-2 text-xs md:text-sm text-slate-600 hidden sm:table-cell">
                         {payment.investisseur?.nom_raison_sociale || '-'}
                       </td>
-                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm font-semibold text-slate-900">
+                      <td className="px-2 md:px-4 py-2 text-xs md:text-sm font-semibold text-slate-900">
                         <div>
                           {formatCurrency(payment.montant)}
                           <p className="text-xs text-slate-500 md:hidden mt-0.5">
@@ -857,10 +857,10 @@ export function Payments({ organization }: PaymentsProps) {
                           </p>
                         </div>
                       </td>
-                      <td className="px-2 md:px-4 py-3 text-xs md:text-sm text-slate-600 hidden md:table-cell">
+                      <td className="px-2 md:px-4 py-2 text-xs md:text-sm text-slate-600 hidden md:table-cell">
                         {formatDate(payment.date_paiement)}
                       </td>
-                      <td className="px-2 md:px-4 py-3">
+                      <td className="px-2 md:px-4 py-2">
                         <div className="flex items-center justify-end gap-2 relative">
                           {paymentsWithProofs.has(payment.id) && (
                             <button

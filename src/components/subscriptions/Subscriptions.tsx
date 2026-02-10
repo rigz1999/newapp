@@ -644,8 +644,8 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
     <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <FileText className="w-8 h-8 text-blue-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <FileText className="w-5 h-5 text-blue-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Toutes les souscriptions</h1>
@@ -716,13 +716,13 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
               placeholder="Rechercher par projet, tranche, investisseur..."
               value={advancedFilters.filters.search}
               onChange={e => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             />
           </div>
 
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               showAdvancedFilters || activeFiltersCount > 0
                 ? 'bg-blue-50 border-blue-300 text-blue-700'
                 : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -827,8 +827,8 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
           <TableSkeleton rows={8} columns={7} />
         </div>
       ) : filteredSubscriptions.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+          <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">Aucune souscription</h3>
           <p className="text-slate-600">
             {advancedFilters.filters.search
@@ -842,40 +842,40 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
                     Projet / Tranche
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
                     Investisseur
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
                     CGP
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
                     Montant
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
                     Coupon Net
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
                     Échéances
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider"></th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-slate-600 uppercase tracking-wider"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {paginate(filteredSubscriptions, currentPage, itemsPerPage).map(sub => (
                   <tr key={sub.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       <div className="font-medium text-slate-900">
                         {sub.tranches.projets.projet}
                       </div>
                       <div className="text-sm text-slate-600">{sub.tranches.tranche_name}</div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       <div className="font-medium text-slate-900">
                         {sub.investisseurs.nom_raison_sociale ||
                           sub.investisseurs.representant_legal ||
@@ -887,19 +887,19 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                           : 'Personne morale'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
+                    <td className="px-4 py-2.5 text-sm text-slate-600">
                       {sub.cgp || sub.investisseurs.cgp || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-slate-600">
                       {formatDate(sub.date_souscription)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-slate-900">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-right text-sm font-medium text-slate-900">
                       {formatCurrency(sub.montant_investi)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-finixar-green">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-right text-sm font-medium text-finixar-green">
                       {formatCurrency(sub.coupon_net)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm">
                       {sub.echeances_totales && sub.echeances_totales > 0 ? (
                         <span
                           className={`font-medium ${
@@ -916,7 +916,7 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       <div className="flex items-center justify-end relative">
                         <button
                           onClick={e => {

@@ -97,10 +97,10 @@ export function DataPrivacySettings() {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-      <div className="p-6 border-b border-slate-200">
+      <div className="p-4 border-b border-slate-200">
         <div className="flex items-center gap-2">
           <Database className="w-5 h-5 text-slate-700" />
-          <h2 className="text-xl font-bold text-slate-900">Mes donn&eacute;es (RGPD)</h2>
+          <h2 className="text-base font-bold text-slate-900">Mes donn&eacute;es (RGPD)</h2>
         </div>
         <p className="text-sm text-slate-600 mt-1">
           Conform&eacute;ment au RGPD, vous pouvez exporter ou supprimer vos donn&eacute;es
@@ -108,7 +108,7 @@ export function DataPrivacySettings() {
         </p>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 space-y-4">
         {/* Data Export */}
         <div className="flex items-start gap-4">
           <div className="flex-1">
@@ -184,14 +184,14 @@ export function DataPrivacySettings() {
           }}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8"
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
             onClick={e => e.stopPropagation()}
           >
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/30">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/30">
                 <AlertTriangle className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Supprimer votre compte ?</h3>
+              <h3 className="text-base font-bold text-slate-900 mb-2">Supprimer votre compte ?</h3>
               <p className="text-sm text-slate-600">
                 Cette action est <strong>irr&eacute;versible</strong>. Toutes vos donn&eacute;es
                 personnelles seront supprim&eacute;es. Les donn&eacute;es financi&egrave;res seront
@@ -209,7 +209,7 @@ export function DataPrivacySettings() {
                   type="text"
                   value={deleteConfirmation}
                   onChange={e => setDeleteConfirmation(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
                   placeholder="SUPPRIMER MON COMPTE"
                 />
               </div>
@@ -227,14 +227,14 @@ export function DataPrivacySettings() {
                     setDeleteConfirmation('');
                     setError('');
                   }}
-                  className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium text-sm"
+                  className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium text-sm"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleDeleteAccount}
                   disabled={deleting || deleteConfirmation !== 'SUPPRIMER MON COMPTE'}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
                 >
                   {deleting ? (
                     <>

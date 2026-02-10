@@ -500,13 +500,13 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
               placeholder="Rechercher dans le journal..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
             />
           </div>
 
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               showFilters || hasActiveFilters
                 ? 'bg-finixar-teal text-white border-blue-600'
                 : 'border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -524,7 +524,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
 
         {showFilters && (
           <div className="border-t border-slate-200 pt-4 mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
               {/* Action filter */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Action</label>
@@ -605,8 +605,8 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
             <TableSkeleton rows={8} columns={5} />
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="text-center py-12">
-            <History className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <div className="text-center py-8">
+            <History className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">Aucune activité</h3>
             <p className="text-slate-600">
               {searchTerm || hasActiveFilters
@@ -624,7 +624,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
                 return (
                   <div
                     key={log.id}
-                    className={`py-4 -mx-2 px-2 rounded-lg transition-colors ${hasMetadata ? 'cursor-pointer hover:bg-slate-50' : ''} ${isExpanded ? 'bg-slate-50' : ''}`}
+                    className={`py-3 -mx-2 px-2 rounded-lg transition-colors ${hasMetadata ? 'cursor-pointer hover:bg-slate-50' : ''} ${isExpanded ? 'bg-slate-50' : ''}`}
                     onClick={() => hasMetadata && setExpandedLogId(isExpanded ? null : log.id)}
                   >
                     <div className="flex items-start gap-4">
