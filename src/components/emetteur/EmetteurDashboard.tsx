@@ -262,9 +262,9 @@ export default function EmetteurDashboard() {
   if (projects.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
-        <div className="max-w-md mx-auto text-center py-24">
-          <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-slate-200">
-            <FolderOpen className="w-9 h-9 text-slate-300" />
+        <div className="max-w-md mx-auto text-center py-12">
+          <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-slate-200">
+            <FolderOpen className="w-6 h-6 text-slate-300" />
           </div>
           <h2 className="text-xl font-semibold text-slate-900 mb-3">Aucun projet assigne</h2>
           <p className="text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">
@@ -286,10 +286,10 @@ export default function EmetteurDashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="relative overflow-hidden bg-white rounded-xl border border-slate-200/80 p-4 transition-shadow hover:shadow-sm">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
               <FolderOpen className="w-[18px] h-[18px] text-blue-600" />
             </div>
             <div>
@@ -303,7 +303,7 @@ export default function EmetteurDashboard() {
 
         <div className="relative overflow-hidden bg-white rounded-xl border border-slate-200/80 p-4 transition-shadow hover:shadow-sm">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
               <Banknote className="w-[18px] h-[18px] text-amber-600" />
             </div>
             <div className="min-w-0 flex-1">
@@ -332,7 +332,7 @@ export default function EmetteurDashboard() {
 
         <div className="relative overflow-hidden bg-white rounded-xl border border-slate-200/80 p-4 transition-shadow hover:shadow-sm">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
               <MessageSquare className="w-[18px] h-[18px] text-emerald-600" />
             </div>
             <div>
@@ -367,9 +367,9 @@ export default function EmetteurDashboard() {
             >
               <div className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-md transition-all duration-200 overflow-hidden">
                 <div className="p-4">
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
                     <div
-                      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${accentGradient} flex items-center justify-center flex-shrink-0 shadow-sm`}
+                      className={`w-9 h-9 rounded-lg bg-gradient-to-br ${accentGradient} flex items-center justify-center flex-shrink-0 shadow-sm`}
                     >
                       <span className="text-white font-semibold text-sm">
                         {project.projet_name.charAt(0).toUpperCase()}
@@ -391,7 +391,7 @@ export default function EmetteurDashboard() {
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">{project.org_name}</p>
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
                         {project.montant_global != null && (
                           <div className="flex items-center gap-1.5">
                             <Banknote className="w-3.5 h-3.5 text-slate-400" />
@@ -428,7 +428,7 @@ export default function EmetteurDashboard() {
                   </div>
 
                   {(project.next_payment_date || project.latest_actualite) && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-2.5">
                       {project.next_payment_date && (
                         <div
                           className={`flex items-center gap-2.5 px-3 py-2 rounded-lg ${accentBg} flex-shrink-0`}

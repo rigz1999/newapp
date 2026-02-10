@@ -428,8 +428,8 @@ export function Projects({ organization }: ProjectsProps) {
     <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <FolderOpen className="w-8 h-8 text-blue-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <FolderOpen className="w-5 h-5 text-blue-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Tous les projets</h1>
@@ -458,13 +458,13 @@ export function Projects({ organization }: ProjectsProps) {
               placeholder="Rechercher un projet par nom ou émetteur..."
               value={advancedFilters.filters.search}
               onChange={e => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
             />
           </div>
           {advancedFilters.filters.search && (
             <button
               onClick={() => advancedFilters.setSearch('')}
-              className="px-4 py-3 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              className="px-3 py-2 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors text-sm"
             >
               Effacer
             </button>
@@ -482,8 +482,8 @@ export function Projects({ organization }: ProjectsProps) {
           <CardSkeleton />
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <FolderOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+          <FolderOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">
             {advancedFilters.filters.search ? 'Aucun projet trouvé' : 'Aucun projet'}
           </h3>
@@ -510,19 +510,19 @@ export function Projects({ organization }: ProjectsProps) {
               className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all overflow-hidden"
             >
               <div className="p-4">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-finixar-brand-blue p-3 rounded-lg flex-shrink-0">
-                    <Layers className="w-6 h-6 text-white" />
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="bg-finixar-brand-blue p-2 rounded-lg flex-shrink-0">
+                    <Layers className="w-4 h-4 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-slate-900 mb-1 truncate">
+                    <h3 className="text-sm font-bold text-slate-900 mb-0.5 truncate">
                       {project.projet}
                     </h3>
                     <p className="text-sm text-slate-600 truncate">{project.emetteur}</p>
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-4">
+                <div className="space-y-1.5 mb-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600">Tranches</span>
                     <span className="font-semibold text-slate-900">{project.tranches_count}</span>
@@ -545,7 +545,7 @@ export function Projects({ organization }: ProjectsProps) {
                 </div>
               </div>
 
-              <div className="bg-slate-50 px-6 py-3 flex gap-2 border-t border-slate-200">
+              <div className="bg-slate-50 px-4 py-2 flex gap-2 border-t border-slate-200">
                 <button
                   onClick={() => navigate(`/projets/${project.id}`)}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-finixar-action-view text-white text-sm font-medium rounded-lg hover:bg-finixar-action-view-hover transition-colors"

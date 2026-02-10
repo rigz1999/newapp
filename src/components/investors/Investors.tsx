@@ -975,8 +975,8 @@ function Investors({ organization: _organization }: InvestorsProps) {
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <Users className="w-8 h-8 text-blue-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Users className="w-5 h-5 text-blue-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Investisseurs</h1>
@@ -1041,14 +1041,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
               placeholder="Rechercher par nom, CGP, e-mail..."
               value={advancedFilters.filters.search}
               onChange={e => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
               aria-label="Rechercher des investisseurs par nom, CGP ou e-mail"
             />
           </div>
 
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               showAdvancedFilters || activeFiltersCount > 0
                 ? 'bg-blue-50 border-blue-300 text-blue-700'
                 : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -1181,7 +1181,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     aria-label="Sélectionner tous les investisseurs"
                   />
                 </th>
-                <th scope="col" className="px-6 py-3 text-left">
+                <th scope="col" className="px-4 py-2 text-left">
                   <button
                     onClick={() => handleSort('nom_raison_sociale')}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
@@ -1190,7 +1190,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     Nom / Raison Sociale <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left">
+                <th scope="col" className="px-4 py-2 text-left">
                   <button
                     onClick={() => handleSort('type')}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
@@ -1199,7 +1199,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     Type <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left">
+                <th scope="col" className="px-4 py-2 text-left">
                   <button
                     onClick={() => handleSort('cgp')}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
@@ -1208,7 +1208,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     CGP <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left">
+                <th scope="col" className="px-4 py-2 text-left">
                   <button
                     onClick={() => handleSort('total_investi')}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
@@ -1217,7 +1217,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     Total Investi <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left">
+                <th scope="col" className="px-4 py-2 text-left">
                   <button
                     onClick={() => handleSort('nb_souscriptions')}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
@@ -1226,7 +1226,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     Souscriptions <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-center">
+                <th scope="col" className="px-4 py-2 text-center">
                   <button
                     onClick={handleSortRib}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900 mx-auto"
@@ -1235,7 +1235,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     RIB <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-center">
+                <th scope="col" className="px-4 py-2 text-center">
                   <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Actions
                   </span>
@@ -1262,7 +1262,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         aria-label={`Sélectionner ${investor.nom_raison_sociale}`}
                       />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       <div className="flex items-center gap-3">
                         <div
                           className={`p-2 rounded-lg ${investor.archived ? 'bg-slate-200' : isInvestorMorale ? 'bg-purple-100' : 'bg-blue-100'}`}
@@ -1286,7 +1286,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           isInvestorMorale
@@ -1297,16 +1297,16 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         {formatType(investor.type)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-slate-600">
                       <p>{investor.cgp || '-'}</p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-finixar-green">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm font-semibold text-finixar-green">
                       {formatCurrency(investor.total_investi)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-slate-900">
                       {investor.nb_souscriptions}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1">
                         {hasRib ? (
                           <>
@@ -1345,7 +1345,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1">
                         {investor.archived ? (
                           <button
