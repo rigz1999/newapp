@@ -61,7 +61,7 @@ export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
       <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
-            <span className="text-slate-600 text-sm font-medium block mb-0.5">
+            <span className="text-slate-900 text-sm font-medium block mb-0.5">
               Montant total collecté
             </span>
             <span className="text-[11px] text-slate-400 block mb-1.5">{formattedMonth}</span>
@@ -82,7 +82,7 @@ export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
       <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
-            <span className="text-slate-600 text-sm font-medium block mb-0.5">Coupons versés</span>
+            <span className="text-slate-900 text-sm font-medium block mb-0.5">Coupons versés</span>
             <span className="text-[11px] text-slate-400 block mb-1.5">{formattedMonth}</span>
             <p className="text-2xl font-bold text-slate-900 mb-2 truncate">
               {formatCurrency(stats.couponsPaidThisMonth)}
@@ -101,7 +101,7 @@ export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
       <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
-            <span className="text-slate-600 text-sm font-medium block mb-0.5">Projets actifs</span>
+            <span className="text-slate-900 text-sm font-medium block mb-0.5">Projets actifs</span>
             <span className="text-[11px] text-slate-400 block mb-1.5">{formattedMonth}</span>
             <p className="text-2xl font-bold text-slate-900 mb-2">{stats.activeProjects}</p>
             <div className="flex items-center gap-2 flex-wrap">
@@ -118,7 +118,7 @@ export const DashboardStats = memo(({ stats }: DashboardStatsProps) => {
       <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md border border-slate-200 transition-all duration-200">
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
-            <span className="text-slate-600 text-sm font-medium block mb-0.5">Coupons à venir</span>
+            <span className="text-slate-900 text-sm font-medium block mb-0.5">Coupons à venir</span>
             <span className="text-[11px] text-slate-400 block mb-1.5">90 prochains jours</span>
             <p className="text-2xl font-bold text-slate-900">{stats.upcomingCoupons}</p>
           </div>
