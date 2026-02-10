@@ -44,11 +44,12 @@ export function PaymentsModal({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      onClick={onClose}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         className="bg-white rounded-xl shadow-xl max-w-5xl w-full max-h-[90vh] m-4 flex flex-col"
-        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-6 border-b border-slate-200">

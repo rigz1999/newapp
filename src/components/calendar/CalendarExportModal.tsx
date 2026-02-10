@@ -146,14 +146,15 @@ export function CalendarExportModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
+      <div className="fixed inset-0 bg-black/50" onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose();
+      }} aria-hidden="true" />
 
       {/* Centered Container */}
       <div className="flex min-h-full items-center justify-center p-4">
         {/* Modal */}
         <div
           className="relative bg-white rounded-lg shadow-xl max-w-md w-full"
-          onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">

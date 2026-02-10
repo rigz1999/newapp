@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Upload, X, CheckCircle, AlertTriangle, XCircle, Trash2, Loader2 } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist';
 import { validateFile, FILE_VALIDATION_PRESETS } from '../../utils/fileValidation';
 import { sanitizeFileName } from '../../utils/sanitizer';
 
-// Configure le worker avec la version 5.4 (correspond au package installé)
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+let pdfjsLoaded: typeof import('pdfjs-dist') | null = null;
+async function getPdfjs() {
+  if (!pdfjsLoaded) {
+    pdfjsLoaded = await import('pdfjs-dist');
+    pdfjsLoaded.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+  }
+  return pdfjsLoaded;
+}
 
 interface Subscription {
   id: string;
@@ -145,6 +150,7 @@ export function PaymentProofUpload({
       for (const file of files) {
         if (file.type === 'application/pdf') {
           const arrayBuffer = await file.arrayBuffer();
+          const pdfjsLib = await getPdfjs();
           const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
           const numPages = pdf.numPages;
 

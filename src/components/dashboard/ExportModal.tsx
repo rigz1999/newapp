@@ -1335,11 +1335,12 @@ export function ExportModal({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      onClick={onClose}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-slate-200">
