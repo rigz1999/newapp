@@ -860,9 +860,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
   return (
     <>
-      <div className="space-y-6 px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4 space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(userRole === 'emetteur' ? '/' : '/projets')}
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
@@ -873,7 +873,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-slate-900">{project.projet}</h1>
+                <h1 className="text-2xl font-bold text-slate-900">{project.projet}</h1>
                 <Tooltip content="Copier l'ID du projet">
                   <button
                     onClick={() => copyToClipboard(project.id, 'ID du projet copié!')}
@@ -974,8 +974,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-slate-600 text-sm">Montant total levé</p>
@@ -989,7 +989,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-slate-600 text-sm">Investisseurs</p>
@@ -1001,7 +1001,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-slate-600 text-sm">Tranches</p>
@@ -1013,7 +1013,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-slate-600 text-sm">Prochain Coupon</p>
@@ -1031,9 +1031,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-4">Détails du Projet</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h2 className="text-base font-semibold text-slate-900 mb-3">Détails du Projet</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
               <p className="text-sm text-slate-600">SIREN</p>
               <p className="text-base font-medium text-slate-900">
@@ -1092,10 +1092,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         </div>
 
         {/* 3) REMPLACEMENT COMPLET DE LA SECTION "Tranches" */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-baseline gap-3">
-              <h2 className="text-xl font-bold text-slate-900">Tranches</h2>
+              <h2 className="text-base font-semibold text-slate-900">Tranches</h2>
               <button
                 onClick={() => setShowTranchesModal(true)}
                 className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
@@ -1150,7 +1150,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                         aria-expanded={isExpanded}
                         aria-label={`${isExpanded ? 'Réduire' : 'Développer'} les détails de la tranche ${tranche.tranche_name}`}
                       >
-                        <div className="flex items-center gap-4 flex-1">
+                        <div className="flex items-center gap-3 flex-1">
                           {isExpanded ? (
                             <ChevronDown
                               className="w-5 h-5 text-slate-400 flex-shrink-0"
