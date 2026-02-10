@@ -842,64 +842,64 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs md:text-sm font-semibold text-slate-900">
                     Projet / Tranche
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs md:text-sm font-semibold text-slate-900">
                     Investisseur
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs md:text-sm font-semibold text-slate-900">
                     CGP
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs md:text-sm font-semibold text-slate-900">
                     Date
                   </th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-right text-xs md:text-sm font-semibold text-slate-900">
                     Montant
                   </th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-right text-xs md:text-sm font-semibold text-slate-900">
                     Coupon Net
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs md:text-sm font-semibold text-slate-900">
                     Échéances
                   </th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-slate-600 uppercase tracking-wider"></th>
+                  <th className="px-4 py-2 text-right text-xs md:text-sm font-semibold text-slate-900"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {paginate(filteredSubscriptions, currentPage, itemsPerPage).map(sub => (
                   <tr key={sub.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-2.5">
-                      <div className="font-medium text-slate-900">
+                    <td className="px-4 py-2.5 text-xs md:text-sm text-slate-600">
+                      <p className="font-medium text-slate-900">
                         {sub.tranches.projets.projet}
-                      </div>
-                      <div className="text-sm text-slate-600">{sub.tranches.tranche_name}</div>
+                      </p>
+                      <p className="text-xs text-slate-500">{sub.tranches.tranche_name}</p>
                     </td>
-                    <td className="px-4 py-2.5">
-                      <div className="font-medium text-slate-900">
+                    <td className="px-4 py-2.5 text-xs md:text-sm text-slate-600">
+                      <p className="font-medium text-slate-900">
                         {sub.investisseurs.nom_raison_sociale ||
                           sub.investisseurs.representant_legal ||
                           '-'}
-                      </div>
-                      <div className="text-sm text-slate-600">
+                      </p>
+                      <p className="text-xs text-slate-500">
                         {sub.investisseurs.type.toLowerCase().includes('physique')
                           ? 'Personne physique'
                           : 'Personne morale'}
-                      </div>
+                      </p>
                     </td>
-                    <td className="px-4 py-2.5 text-sm text-slate-600">
+                    <td className="px-4 py-2.5 text-xs md:text-sm text-slate-600">
                       {sub.cgp || sub.investisseurs.cgp || '-'}
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-slate-600">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs md:text-sm text-slate-600">
                       {formatDate(sub.date_souscription)}
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap text-right text-sm font-medium text-slate-900">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-right text-xs md:text-sm font-semibold text-slate-900">
                       {formatCurrency(sub.montant_investi)}
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap text-right text-sm font-medium text-finixar-green">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-right text-xs md:text-sm font-semibold text-finixar-green">
                       {formatCurrency(sub.coupon_net)}
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap text-sm">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-xs md:text-sm">
                       {sub.echeances_totales && sub.echeances_totales > 0 ? (
                         <span
                           className={`font-medium ${
