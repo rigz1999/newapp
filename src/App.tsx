@@ -187,17 +187,9 @@ function App(): JSX.Element {
                 authLoading ? (
                   <Layout organization={DEFAULT_ORG} isLoading={true} />
                 ) : user ? (
-                  // Super admin bypasses MFA
-                  isAdmin ? (
-                    <Layout organization={organization || DEFAULT_ORG} isLoading={orgLoading} />
-                  ) : // MFA enforcement: mandatory for all other roles
-                  mfaStatus === 'loading' ? (
-                    <Layout organization={DEFAULT_ORG} isLoading={true} />
-                  ) : mfaStatus === 'needs_verification' ? (
-                    <MFAChallenge onVerified={() => refreshMFA()} />
-                  ) : mfaStatus === 'no_factors' ? (
-                    <MFAEnroll onComplete={() => refreshMFA()} />
-                  ) : organization || orgLoading ? (
+                  // TODO: Re-enable MFA enforcement once 2FA rollout is ready
+                  // MFA temporarily disabled for all users
+                  organization || orgLoading ? (
                     <Layout organization={organization || DEFAULT_ORG} isLoading={orgLoading} />
                   ) : (
                     <Navigate to="/login" replace />
