@@ -187,14 +187,17 @@ function App(): JSX.Element {
                 authLoading ? (
                   <Layout organization={DEFAULT_ORG} isLoading={true} />
                 ) : user ? (
-                  // MFA enforcement: mandatory for all roles
+                  // Super admin bypasses MFA
+                  isAdmin ? (
+                    <Layout organization={organization || DEFAULT_ORG} isLoading={orgLoading} />
+                  ) : // MFA enforcement: mandatory for all other roles
                   mfaStatus === 'loading' ? (
                     <Layout organization={DEFAULT_ORG} isLoading={true} />
                   ) : mfaStatus === 'needs_verification' ? (
                     <MFAChallenge onVerified={() => refreshMFA()} />
                   ) : mfaStatus === 'no_factors' ? (
                     <MFAEnroll onComplete={() => refreshMFA()} />
-                  ) : isAdmin || organization || orgLoading ? (
+                  ) : organization || orgLoading ? (
                     <Layout organization={organization || DEFAULT_ORG} isLoading={orgLoading} />
                   ) : (
                     <Navigate to="/login" replace />
