@@ -2,8 +2,9 @@
 // Accessible uniquement aux super admins
 
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { FileSpreadsheet, Plus, Eye, Edit2, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { FileSpreadsheet, Plus, Eye, Edit2, Trash2, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { TableSkeleton } from '../common/Skeleton';
 import { AlertModal } from '../common/Modals';
 import { logger } from '../../utils/logger';
@@ -98,6 +99,15 @@ export default function FormatProfiles(): JSX.Element {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Back to admin */}
+      <Link
+        to="/admin"
+        className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 mb-4 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Retour au panneau d'administration
+      </Link>
+
       {/* En-tête */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
