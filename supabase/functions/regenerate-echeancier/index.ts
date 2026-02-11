@@ -51,7 +51,7 @@ Deno.serve(async req => {
     console.log('\n=== REGENERATE ECHEANCIER ===');
     console.log('Tranche ID:', tranche_id);
 
-    // Get tranche details with project fallback
+    // Get tranche details with project fallback (including prorogation fields)
     const { data: tranche, error: trancheError } = await supabase
       .from('tranches')
       .select(
@@ -67,7 +67,11 @@ Deno.serve(async req => {
           taux_nominal,
           periodicite_coupons,
           duree_mois,
-          base_interet
+          base_interet,
+          prorogation_possible,
+          prorogation_activee,
+          duree_prorogation_mois,
+          step_up_taux
         )
       `
       )
@@ -83,7 +87,16 @@ Deno.serve(async req => {
     }
 
     // Inherit from project if tranche values are null
-    const project = tranche.projets as { taux_nominal?: number | null; periodicite_coupons?: string | null; duree_mois?: number | null; base_interet?: number | null } | null;
+    const project = tranche.projets as {
+      taux_nominal?: number | null;
+      periodicite_coupons?: string | null;
+      duree_mois?: number | null;
+      base_interet?: number | null;
+      prorogation_possible?: boolean;
+      prorogation_activee?: boolean;
+      duree_prorogation_mois?: number | null;
+      step_up_taux?: number | null;
+    } | null;
     const tauxNominal = tranche.taux_nominal ?? project?.taux_nominal;
     // IMPORTANT: periodicite ALWAYS comes from project, never from tranche
     const periodiciteCoupons = project?.periodicite_coupons;
@@ -92,12 +105,23 @@ Deno.serve(async req => {
     const dureeMois = tranche.duree_mois ?? project?.duree_mois;
     const baseInteret = project?.base_interet ?? 360;
 
+    // Prorogation (maturity extension with step-up rate)
+    const prorogationActive = project?.prorogation_possible && project?.prorogation_activee;
+    const dureeProrogation = prorogationActive ? (project?.duree_prorogation_mois ?? 0) : 0;
+    const stepUpTaux = prorogationActive ? (project?.step_up_taux ?? 0) : 0;
+
     console.log('Tranche parameters:');
     console.log('  Taux nominal:', tauxNominal);
     console.log('  Périodicité:', periodiciteCoupons);
     console.log('  Date émission:', dateEmission);
     console.log('  Durée (mois):', dureeMois);
     console.log('  Base de calcul:', baseInteret);
+    if (prorogationActive) {
+      console.log('  PROROGATION ACTIVE:');
+      console.log('    Durée prorogation:', dureeProrogation, 'mois');
+      console.log('    Step-up taux:', `+${stepUpTaux}%`);
+      console.log('    Taux prorogé:', `${(tauxNominal ?? 0) + stepUpTaux}%`);
+    }
 
     // Validate required parameters
     if (tauxNominal === null || !periodiciteCoupons || !dateEmission || dureeMois === null) {
@@ -119,6 +143,7 @@ Deno.serve(async req => {
     }
 
     // Step 1: Recalculate souscriptions coupon_brut and coupon_net
+    // Note: souscription stores the BASE rate coupon. Extension coupons are computed at generation time.
     console.log('\n=== RECALCULATING SOUSCRIPTIONS ===');
     const { data: souscriptions, error: souscriptionsError } = await supabase
       .from('souscriptions')
@@ -146,24 +171,42 @@ Deno.serve(async req => {
 
     console.log(`Found ${souscriptions.length} souscriptions`);
 
-    // Update each souscription with recalculated coupons
+    // Update each souscription with recalculated coupons (base rate)
     const periodRatio = getPeriodRatio(periodiciteCoupons, baseInteret);
     console.log(`Period ratio: ${periodRatio} (${periodiciteCoupons}, base ${baseInteret})`);
+
+    // Pre-compute coupon amounts per souscription for both base and extension periods
+    const subCouponData = new Map<
+      string,
+      { couponNetBase: number; couponNetExtension: number; montant: number }
+    >();
 
     let updatedSouscriptions = 0;
     for (const sub of souscriptions) {
       const montant = Number(sub.montant_investi);
-      const couponAnnuel = (montant * tauxNominal) / 100;
-      const couponBrut = couponAnnuel * periodRatio;
       const investorType = (sub.investisseurs as { type?: string } | null)?.type;
-      // Case-insensitive comparison to handle both 'physique' and 'Physique'
-      const couponNet = investorType?.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
+      const isPhysique = investorType?.toLowerCase() === 'physique';
+      const taxMultiplier = isPhysique ? 0.7 : 1.0;
 
+      // Base rate coupon
+      const couponAnnuelBase = (montant * tauxNominal) / 100;
+      const couponBrutBase = couponAnnuelBase * periodRatio;
+      const couponNetBase = couponBrutBase * taxMultiplier;
+
+      // Extension rate coupon (base + step-up)
+      const tauxProroge = tauxNominal + stepUpTaux;
+      const couponAnnuelExt = (montant * tauxProroge) / 100;
+      const couponBrutExt = couponAnnuelExt * periodRatio;
+      const couponNetExt = couponBrutExt * taxMultiplier;
+
+      subCouponData.set(sub.id, { couponNetBase, couponNetExtension: couponNetExt, montant });
+
+      // Update souscription record with base rate coupon (stored value)
       const { error: updateError } = await supabase
         .from('souscriptions')
         .update({
-          coupon_brut: couponBrut,
-          coupon_net: couponNet,
+          coupon_brut: couponBrutBase,
+          coupon_net: couponNetBase,
         })
         .eq('id', sub.id);
 
@@ -172,7 +215,10 @@ Deno.serve(async req => {
       } else {
         updatedSouscriptions++;
         console.log(
-          `  ✓ Souscription ${sub.id}: Annuel=${couponAnnuel.toFixed(2)}, Ratio=${periodRatio}, Brut=${couponBrut.toFixed(2)}, Net=${couponNet.toFixed(2)}`
+          `  ✓ Souscription ${sub.id}: Base=${couponNetBase.toFixed(2)}€` +
+            (prorogationActive
+              ? `, Extension=${couponNetExt.toFixed(2)}€ (taux ${tauxProroge}%)`
+              : '')
         );
       }
     }
@@ -225,14 +271,22 @@ Deno.serve(async req => {
       );
     }
 
-    // Calculate number of payments
-    const numberOfPayments = Math.ceil(dureeMois / freq.months);
-    console.log(`Number of payments: ${numberOfPayments}`);
-    console.log(`Frequency: ${periodiciteCoupons} (every ${freq.months} months)`);
+    // Calculate total duration including prorogation
+    const totalDureeMois = dureeMois + dureeProrogation;
+    const basePayments = Math.ceil(dureeMois / freq.months);
+    const totalPayments = Math.ceil(totalDureeMois / freq.months);
+
+    console.log(`Base payments: ${basePayments} (${dureeMois} months)`);
+    if (prorogationActive) {
+      console.log(
+        `Extension payments: ${totalPayments - basePayments} (${dureeProrogation} months)`
+      );
+      console.log(`Total payments: ${totalPayments} (${totalDureeMois} months)`);
+    }
 
     // Calculate final maturity date
     const finalMaturityDate = new Date(dateEmission);
-    finalMaturityDate.setMonth(finalMaturityDate.getMonth() + numberOfPayments * freq.months);
+    finalMaturityDate.setMonth(finalMaturityDate.getMonth() + totalPayments * freq.months);
     const dateEcheanceFinale = finalMaturityDate.toISOString().split('T')[0];
 
     console.log('Final maturity date:', dateEcheanceFinale);
@@ -266,29 +320,14 @@ Deno.serve(async req => {
     // Generate coupons for all souscriptions
     const couponsToInsert: any[] = [];
 
-    // Refetch souscriptions with updated coupon_net values
-    const { data: refetchedSouscriptions } = await supabase
-      .from('souscriptions')
-      .select('id, montant_investi, coupon_net')
-      .in(
-        'id',
-        souscriptions.map(s => s.id)
-      );
-
-    const souscriptionsMap = new Map(refetchedSouscriptions?.map(s => [s.id, s]) || []);
-
     for (const sub of souscriptions) {
-      const updatedSub = souscriptionsMap.get(sub.id);
-      const montantCoupon = updatedSub?.coupon_net || 0;
-
-      console.log(
-        `  Souscription ${sub.id}: Coupon net (already calculated)=${montantCoupon.toFixed(2)}€`
-      );
+      const couponData = subCouponData.get(sub.id);
+      if (!couponData) continue;
 
       const paidDates = paidCouponDates.get(sub.id);
 
-      // Generate payment dates
-      for (let i = 1; i <= numberOfPayments; i++) {
+      // Generate payment dates for full duration (base + extension)
+      for (let i = 1; i <= totalPayments; i++) {
         const paymentDate = new Date(dateEmission);
         paymentDate.setMonth(paymentDate.getMonth() + i * freq.months);
         const dateEcheance = paymentDate.toISOString().split('T')[0];
@@ -297,6 +336,18 @@ Deno.serve(async req => {
         if (paidDates?.has(dateEcheance)) {
           console.log(`    Skipping ${dateEcheance} (already paid)`);
           continue;
+        }
+
+        // Use stepped-up rate for extension period coupons
+        const isExtensionPeriod = i > basePayments;
+        const montantCoupon = isExtensionPeriod
+          ? couponData.couponNetExtension
+          : couponData.couponNetBase;
+
+        if (isExtensionPeriod) {
+          console.log(
+            `    ${dateEcheance}: ${montantCoupon.toFixed(2)}€ (PROROGATION - taux majoré)`
+          );
         }
 
         couponsToInsert.push({
@@ -330,6 +381,9 @@ Deno.serve(async req => {
     console.log(`Updated souscriptions: ${updatedSouscriptions}`);
     console.log(`Deleted pending coupons: ${deletedCount}`);
     console.log(`Created new coupons: ${createdCount}`);
+    if (prorogationActive) {
+      console.log(`Extension: +${dureeProrogation} months at +${stepUpTaux}% step-up`);
+    }
 
     return new Response(
       JSON.stringify({
@@ -340,6 +394,7 @@ Deno.serve(async req => {
         deleted_coupons: deletedCount,
         created_coupons: createdCount,
         final_maturity_date: dateEcheanceFinale,
+        prorogation_active: !!prorogationActive,
       }),
       { status: 200, headers: { ...corsHeaders, 'content-type': 'application/json' } }
     );
