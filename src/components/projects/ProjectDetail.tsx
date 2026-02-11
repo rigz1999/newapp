@@ -64,6 +64,7 @@ interface Project {
   date_emission: string | null;
   base_interet: number | null;
   type: string | null;
+  valeur_nominale: number | null;
 }
 
 interface Tranche {
@@ -556,6 +557,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       }
       if (editedProject.base_interet !== undefined) {
         updateData.base_interet = editedProject.base_interet;
+      }
+      if (editedProject.valeur_nominale !== undefined) {
+        updateData.valeur_nominale = editedProject.valeur_nominale;
       }
       if (editedProject.type !== undefined) {
         updateData.type = editedProject.type;
@@ -1086,6 +1090,12 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               <p className="text-sm text-slate-600">Base de calcul</p>
               <p className="text-base font-medium text-slate-900">
                 {project.base_interet ? `${project.base_interet} jours` : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Valeur nominale</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.valeur_nominale ? `${project.valeur_nominale} €` : '100 €'}
               </p>
             </div>
           </div>
@@ -1652,6 +1662,30 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                               </select>
                             </div>
                           </div>
+
+                          <div>
+                            <label
+                              htmlFor="edit-valeur-nominale"
+                              className="block text-sm font-medium text-slate-900 mb-2"
+                            >
+                              Valeur nominale de l'obligation (€)
+                            </label>
+                            <input
+                              id="edit-valeur-nominale"
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              value={editedProject.valeur_nominale?.toString() || '100'}
+                              onChange={e =>
+                                setEditedProject({
+                                  ...editedProject,
+                                  valeur_nominale: parseFloat(e.target.value) || null,
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                              placeholder="Ex: 100"
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -1872,14 +1906,29 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           type="number"
                           step="0.01"
                           value={editingSubscription.montant_investi || ''}
-                          onChange={e =>
+                          onChange={e => {
+                            const montant = parseFloat(e.target.value) || 0;
+                            const vn = project?.valeur_nominale || 100;
                             setEditingSubscription({
                               ...editingSubscription,
-                              montant_investi: parseFloat(e.target.value) || 0,
-                            })
-                          }
+                              montant_investi: montant,
+                              nombre_obligations: vn > 0 ? Math.round(montant / vn) : 0,
+                            });
+                          }}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
+                        {(() => {
+                          const vn = project?.valeur_nominale || 100;
+                          const montant = editingSubscription.montant_investi || 0;
+                          if (vn > 0 && montant > 0 && montant % vn !== 0) {
+                            return (
+                              <p className="text-xs text-amber-600 mt-1">
+                                Le montant ne correspond pas à un nombre entier d'obligations
+                              </p>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       <div>
@@ -1893,17 +1942,26 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           id="edit-nombre-obligations"
                           type="number"
                           value={editingSubscription.nombre_obligations || ''}
-                          onChange={e =>
+                          onChange={e => {
+                            const nb = parseInt(e.target.value) || 0;
+                            const vn = project?.valeur_nominale || 100;
                             setEditingSubscription({
                               ...editingSubscription,
-                              nombre_obligations: parseInt(e.target.value) || 0,
-                            })
-                          }
+                              nombre_obligations: nb,
+                              montant_investi: nb * vn,
+                            });
+                          }}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
 
                       <div className="p-4 bg-slate-50 rounded-lg">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Valeur nominale :</span>
+                          <span className="font-medium text-slate-900">
+                            {project?.valeur_nominale || 100} €
+                          </span>
+                        </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-600">Tranche :</span>
                           <span className="font-medium text-slate-900">

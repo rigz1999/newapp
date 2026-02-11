@@ -56,6 +56,7 @@ export function Projects({ organization }: ProjectsProps) {
     periodicite_coupon: '',
     maturite_mois: '',
     base_interet: '360',
+    valeur_nominale: '100',
     apply_flat_tax: true,
     emetteur: '',
     siren_emetteur: '',
@@ -307,6 +308,9 @@ export function Projects({ organization }: ProjectsProps) {
         : null;
       const maturite = newProjectData.maturite_mois ? parseInt(newProjectData.maturite_mois) : null;
       const baseInteret = newProjectData.base_interet ? parseInt(newProjectData.base_interet) : 360;
+      const valeurNominale = newProjectData.valeur_nominale
+        ? parseFloat(newProjectData.valeur_nominale)
+        : 100;
 
       const projectToCreate: Record<string, unknown> = {
         projet: newProjectData.projet,
@@ -326,6 +330,7 @@ export function Projects({ organization }: ProjectsProps) {
         maturite_mois: maturite,
         duree_mois: maturite,
         base_interet: baseInteret,
+        valeur_nominale: valeurNominale,
         apply_flat_tax: newProjectData.apply_flat_tax ?? true,
       };
 
@@ -386,6 +391,7 @@ export function Projects({ organization }: ProjectsProps) {
       periodicite_coupon: '',
       maturite_mois: '',
       base_interet: '360',
+      valeur_nominale: '100',
       apply_flat_tax: true,
       emetteur: '',
       siren_emetteur: '',
@@ -900,10 +906,38 @@ export function Projects({ organization }: ProjectsProps) {
 
                     <div>
                       <label
-                        htmlFor="periodicite"
+                        htmlFor="valeur_nominale"
                         className="block text-sm font-medium text-slate-900 mb-2"
                       >
-                        Périodicité du coupon <span className="text-finixar-red">*</span>
+                        Valeur nominale de l'obligation (€){' '}
+                        <span className="text-finixar-red">*</span>
+                      </label>
+                      <input
+                        id="valeur_nominale"
+                        type="number"
+                        required
+                        aria-required="true"
+                        min="0.01"
+                        step="0.01"
+                        value={newProjectData.valeur_nominale}
+                        onChange={e =>
+                          setNewProjectData({
+                            ...newProjectData,
+                            valeur_nominale: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                        placeholder="Ex: 100"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="periodicite"
+                      className="block text-sm font-medium text-slate-900 mb-2"
+                    >
+                      Périodicité du coupon <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="periodicite"
