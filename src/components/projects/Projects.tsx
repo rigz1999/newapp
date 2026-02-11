@@ -930,14 +930,13 @@ export function Projects({ organization }: ProjectsProps) {
                         placeholder="Ex: 100"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label
-                      htmlFor="periodicite"
-                      className="block text-sm font-medium text-slate-900 mb-2"
-                    >
-                      Périodicité du coupon <span className="text-finixar-red">*</span>
+                    <div>
+                      <label
+                        htmlFor="periodicite"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
+                        Périodicité du coupon <span className="text-finixar-red">*</span>
                       </label>
                       <select
                         id="periodicite"
