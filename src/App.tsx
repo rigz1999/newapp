@@ -71,7 +71,7 @@ function App(): JSX.Element {
     refreshMFA,
   } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
-  const { mfaEnabled } = usePlatformSettings();
+  const { mfaEnabled, loading: platformLoading } = usePlatformSettings(user?.id);
   const isEmetteur = userRole === 'emetteur';
 
   const LoadingFallback = (): JSX.Element => <DashboardSkeleton />;
@@ -192,6 +192,9 @@ function App(): JSX.Element {
                   // Super admin bypasses MFA
                   isAdmin ? (
                     <Layout organization={organization || DEFAULT_ORG} isLoading={orgLoading} />
+                  ) : // Wait for platform settings before deciding on MFA
+                  platformLoading ? (
+                    <Layout organization={DEFAULT_ORG} isLoading={true} />
                   ) : // MFA enforcement: only when enabled in platform settings
                   !mfaEnabled ? (
                     // MFA disabled by admin — skip enrollment/verification
