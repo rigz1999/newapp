@@ -1,7 +1,20 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { FolderOpen, Plus, Layers, Search, Eye, Users, X, Trash2 } from 'lucide-react';
+import {
+  FolderOpen,
+  Plus,
+  Layers,
+  Search,
+  Eye,
+  Users,
+  X,
+  Trash2,
+  Upload,
+  FileSpreadsheet,
+  ChevronDown,
+  Loader2,
+} from 'lucide-react';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { CardSkeleton } from '../common/Skeleton';
 import { ConfirmModal } from '../common/Modals';
@@ -11,6 +24,11 @@ import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
 import { logger } from '../../utils/logger';
 import { logAuditEvent } from '../../utils/auditLogger';
+import {
+  parseProjectFile,
+  type ExtractedProject,
+  type ProjectImportResult,
+} from '../../utils/projectImportParser';
 
 interface ProjectWithStats {
   id: string;
@@ -70,6 +88,14 @@ export function Projects({ organization }: ProjectsProps) {
 
   const [sirenError, setSirenError] = useState('');
   const [creatingProject, setCreatingProject] = useState(false);
+
+  // Import mode state
+  const [importMode, setImportMode] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importParsing, setImportParsing] = useState(false);
+  const [importResult, setImportResult] = useState<ProjectImportResult | null>(null);
+  const [selectedProjectIndex, setSelectedProjectIndex] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // For superadmin: organization selection
   const isSuperAdmin = organization.id === 'super_admin';
@@ -404,6 +430,84 @@ export function Projects({ organization }: ProjectsProps) {
     });
     setSirenError('');
     setSelectedOrgId('');
+    resetImportState();
+  };
+
+  // Handle file import
+  const handleFileImport = async (file: File) => {
+    setImportFile(file);
+    setImportParsing(true);
+    try {
+      const result = await parseProjectFile(file);
+      setImportResult(result);
+
+      if (result.projects.length === 0) {
+        toast.error('Aucun projet trouvé dans le fichier. Vérifiez le format.');
+        return;
+      }
+
+      // Auto-select first project and fill the form
+      setSelectedProjectIndex(0);
+      applyExtractedProject(result.projects[0]);
+
+      toast.success(
+        result.projects.length === 1
+          ? 'Données extraites du fichier'
+          : `${result.projects.length} projets trouvés dans le fichier`
+      );
+    } catch (err) {
+      logger.error('Erreur import fichier projet:', err as Record<string, unknown>);
+      toast.error(
+        "Erreur lors de la lecture du fichier. Vérifiez qu'il s'agit d'un fichier Excel valide."
+      );
+      setImportFile(null);
+    } finally {
+      setImportParsing(false);
+    }
+  };
+
+  const applyExtractedProject = (project: ExtractedProject) => {
+    setNewProjectData(prev => ({
+      ...prev,
+      projet: project.projet || prev.projet,
+      type: project.type || prev.type,
+      taux_interet: project.taux_interet || prev.taux_interet,
+      montant_global_eur: project.montant_global_eur || prev.montant_global_eur,
+      maturite_mois: project.maturite_mois || prev.maturite_mois,
+      base_interet: project.base_interet || prev.base_interet,
+      valeur_nominale: project.valeur_nominale || prev.valeur_nominale,
+      periodicite_coupon: project.periodicite_coupon || prev.periodicite_coupon,
+      emetteur: project.emetteur || prev.emetteur,
+      siren_emetteur: project.siren_emetteur || prev.siren_emetteur,
+      nom_representant: project.nom_representant || prev.nom_representant,
+      prenom_representant: project.prenom_representant || prev.prenom_representant,
+      email_representant: project.email_representant || prev.email_representant,
+      representant_masse: project.representant_masse || prev.representant_masse,
+      email_rep_masse: project.email_rep_masse || prev.email_rep_masse,
+      telephone_rep_masse: project.telephone_rep_masse || prev.telephone_rep_masse,
+      apply_flat_tax: project.apply_flat_tax ?? prev.apply_flat_tax,
+    }));
+  };
+
+  const handleProjectSelection = (index: number) => {
+    setSelectedProjectIndex(index);
+    if (importResult && importResult.projects[index]) {
+      // Reset form first, then apply
+      resetNewProjectForm();
+      setImportMode(true);
+      applyExtractedProject(importResult.projects[index]);
+    }
+  };
+
+  const resetImportState = () => {
+    setImportMode(false);
+    setImportFile(null);
+    setImportParsing(false);
+    setImportResult(null);
+    setSelectedProjectIndex(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const isFormValid =
@@ -599,6 +703,155 @@ export function Projects({ organization }: ProjectsProps) {
             <div className="flex-1 overflow-y-auto bg-white">
               <form onSubmit={handleCreateProject} className="p-6 bg-white" autoComplete="off">
                 <div className="space-y-4">
+                  {/* Import mode toggle */}
+                  <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (importMode) {
+                          resetImportState();
+                          resetNewProjectForm();
+                        }
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                        !importMode
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Saisie manuelle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImportMode(true)}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                        importMode
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      Importer un fichier
+                    </button>
+                  </div>
+
+                  {/* File upload zone (only in import mode) */}
+                  {importMode && (
+                    <div className="space-y-3">
+                      {!importFile ? (
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          onDragOver={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDrop={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const file = e.dataTransfer.files?.[0];
+                            if (
+                              file &&
+                              (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))
+                            ) {
+                              handleFileImport(file);
+                            } else {
+                              toast.error('Format non supporté. Utilisez un fichier .xlsx ou .xls');
+                            }
+                          }}
+                          className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:border-slate-400 hover:bg-slate-50 transition-all"
+                        >
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".xlsx,.xls"
+                            className="hidden"
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handleFileImport(file);
+                              }
+                            }}
+                          />
+                          {importParsing ? (
+                            <>
+                              <Loader2 className="w-10 h-10 mx-auto mb-3 text-blue-500 animate-spin" />
+                              <p className="text-sm font-medium text-slate-700">
+                                Extraction des données...
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-10 h-10 mx-auto mb-3 text-slate-400" />
+                              <p className="text-sm font-medium text-slate-700">
+                                Glissez votre fichier Excel ici ou cliquez pour sélectionner
+                              </p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                Formats acceptés : .xlsx, .xls
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <FileSpreadsheet className="w-5 h-5 text-blue-600" />
+                              <div>
+                                <p className="text-sm font-medium text-slate-900">
+                                  {importFile.name}
+                                </p>
+                                {importResult && (
+                                  <p className="text-xs text-slate-600">
+                                    {importResult.projects.length} projet
+                                    {importResult.projects.length > 1 ? 's' : ''} trouvé
+                                    {importResult.projects.length > 1 ? 's' : ''}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                resetImportState();
+                                resetNewProjectForm();
+                                setImportMode(true);
+                              }}
+                              className="text-slate-400 hover:text-slate-600 p-1"
+                              title="Supprimer le fichier"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Project row picker (when multiple rows) */}
+                          {importResult && importResult.projects.length > 1 && (
+                            <div className="mt-3">
+                              <label className="block text-xs font-medium text-slate-700 mb-1">
+                                Sélectionner le projet à importer
+                              </label>
+                              <div className="relative">
+                                <select
+                                  value={selectedProjectIndex}
+                                  onChange={e => handleProjectSelection(Number(e.target.value))}
+                                  className="w-full px-3 py-2 pr-8 text-sm border border-blue-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                >
+                                  {importResult.projects.map((p, i) => (
+                                    <option key={i} value={i}>
+                                      {p.projet || p.emetteur || `Ligne ${i + 2}`}
+                                      {p.emetteur && p.projet ? ` — ${p.emetteur}` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div>
                     <label
                       htmlFor="projet"
