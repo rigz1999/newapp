@@ -84,6 +84,9 @@ export function Projects({ organization }: ProjectsProps) {
     representant_masse: '',
     email_rep_masse: '',
     telephone_rep_masse: '',
+    prorogation_possible: false,
+    duree_prorogation_mois: '',
+    step_up_taux: '',
   });
 
   const [sirenError, setSirenError] = useState('');
@@ -358,6 +361,16 @@ export function Projects({ organization }: ProjectsProps) {
         base_interet: baseInteret,
         valeur_nominale: valeurNominale,
         apply_flat_tax: newProjectData.apply_flat_tax ?? true,
+        prorogation_possible: newProjectData.prorogation_possible,
+        duree_prorogation_mois:
+          newProjectData.prorogation_possible && newProjectData.duree_prorogation_mois
+            ? parseInt(newProjectData.duree_prorogation_mois)
+            : null,
+        step_up_taux:
+          newProjectData.prorogation_possible && newProjectData.step_up_taux
+            ? parseFloat(newProjectData.step_up_taux)
+            : null,
+        prorogation_activee: false,
       };
 
       // Determine org_id based on user type
@@ -1035,6 +1048,98 @@ export function Projects({ organization }: ProjectsProps) {
                       />
                       <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
+                  </div>
+
+                  {/* Prorogation (extension clause) */}
+                  <div className="py-4 px-4 bg-amber-50 border border-amber-200 rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <label
+                          htmlFor="prorogation_possible"
+                          className="block text-sm font-medium text-slate-900 mb-1"
+                        >
+                          Clause de prorogation
+                        </label>
+                        <p className="text-sm text-slate-600">
+                          L'émetteur peut prolonger la maturité avec un taux majoré
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer ml-4">
+                        <input
+                          id="prorogation_possible"
+                          type="checkbox"
+                          checked={newProjectData.prorogation_possible}
+                          onChange={e =>
+                            setNewProjectData({
+                              ...newProjectData,
+                              prorogation_possible: e.target.checked,
+                            })
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                      </label>
+                    </div>
+
+                    {newProjectData.prorogation_possible && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-amber-200">
+                        <div>
+                          <label
+                            htmlFor="duree_prorogation"
+                            className="block text-sm font-medium text-slate-900 mb-2"
+                          >
+                            Durée de prorogation (mois) <span className="text-finixar-red">*</span>
+                          </label>
+                          <input
+                            id="duree_prorogation"
+                            type="number"
+                            required
+                            min="1"
+                            max="120"
+                            value={newProjectData.duree_prorogation_mois}
+                            onChange={e =>
+                              setNewProjectData({
+                                ...newProjectData,
+                                duree_prorogation_mois: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                            placeholder="Ex: 6"
+                          />
+                          <p className="mt-1 text-xs text-slate-600">
+                            Durée additionnelle si prorogation exercée
+                          </p>
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="step_up_taux"
+                            className="block text-sm font-medium text-slate-900 mb-2"
+                          >
+                            Majoration du taux (%) <span className="text-finixar-red">*</span>
+                          </label>
+                          <input
+                            id="step_up_taux"
+                            type="number"
+                            required
+                            step="0.01"
+                            min="0.01"
+                            max="50"
+                            value={newProjectData.step_up_taux}
+                            onChange={e =>
+                              setNewProjectData({ ...newProjectData, step_up_taux: e.target.value })
+                            }
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                            placeholder="Ex: 1.00"
+                          />
+                          <p className="mt-1 text-xs text-slate-600">
+                            Taux pendant la prorogation :{' '}
+                            {newProjectData.taux_interet && newProjectData.step_up_taux
+                              ? `${(parseFloat(newProjectData.taux_interet) + parseFloat(newProjectData.step_up_taux)).toFixed(2)}%`
+                              : '—'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
