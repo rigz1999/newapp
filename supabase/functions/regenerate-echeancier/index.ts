@@ -51,7 +51,7 @@ Deno.serve(async req => {
     console.log('\n=== REGENERATE ECHEANCIER ===');
     console.log('Tranche ID:', tranche_id);
 
-    // Get tranche details with project fallback (including prorogation fields)
+    // Get tranche details with project fallback
     const { data: tranche, error: trancheError } = await supabase
       .from('tranches')
       .select(
@@ -67,11 +67,7 @@ Deno.serve(async req => {
           taux_nominal,
           periodicite_coupons,
           duree_mois,
-          base_interet,
-          prorogation_possible,
-          prorogation_activee,
-          duree_prorogation_mois,
-          step_up_taux
+          base_interet
         )
       `
       )
@@ -86,16 +82,30 @@ Deno.serve(async req => {
       });
     }
 
+    // Fetch prorogation fields separately (columns may not exist yet)
+    let prorogationData: {
+      prorogation_possible?: boolean;
+      prorogation_activee?: boolean;
+      duree_prorogation_mois?: number | null;
+      step_up_taux?: number | null;
+    } = {};
+
+    const { data: prorogationRow } = await supabase
+      .from('projets')
+      .select('prorogation_possible, prorogation_activee, duree_prorogation_mois, step_up_taux')
+      .eq('id', tranche.projet_id)
+      .maybeSingle();
+
+    if (prorogationRow) {
+      prorogationData = prorogationRow;
+    }
+
     // Inherit from project if tranche values are null
     const project = tranche.projets as {
       taux_nominal?: number | null;
       periodicite_coupons?: string | null;
       duree_mois?: number | null;
       base_interet?: number | null;
-      prorogation_possible?: boolean;
-      prorogation_activee?: boolean;
-      duree_prorogation_mois?: number | null;
-      step_up_taux?: number | null;
     } | null;
     const tauxNominal = tranche.taux_nominal ?? project?.taux_nominal;
     // IMPORTANT: periodicite ALWAYS comes from project, never from tranche
@@ -106,9 +116,10 @@ Deno.serve(async req => {
     const baseInteret = project?.base_interet ?? 360;
 
     // Prorogation (maturity extension with step-up rate)
-    const prorogationActive = project?.prorogation_possible && project?.prorogation_activee;
-    const dureeProrogation = prorogationActive ? (project?.duree_prorogation_mois ?? 0) : 0;
-    const stepUpTaux = prorogationActive ? (project?.step_up_taux ?? 0) : 0;
+    const prorogationActive =
+      prorogationData.prorogation_possible && prorogationData.prorogation_activee;
+    const dureeProrogation = prorogationActive ? (prorogationData.duree_prorogation_mois ?? 0) : 0;
+    const stepUpTaux = prorogationActive ? (prorogationData.step_up_taux ?? 0) : 0;
 
     console.log('Tranche parameters:');
     console.log('  Taux nominal:', tauxNominal);
