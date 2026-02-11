@@ -3,6 +3,7 @@
 // Accessible uniquement aux super admins
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import {
   FileSpreadsheet,
@@ -661,6 +662,15 @@ export default function FormatProfiles(): JSX.Element {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Back to admin */}
+      <Link
+        to="/admin"
+        className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 mb-4 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Retour au panneau d'administration
+      </Link>
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
