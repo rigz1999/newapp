@@ -31,13 +31,13 @@ export interface ProjectImportResult {
   sheetName: string;
 }
 
-type FieldAliases = Record<keyof ExtractedProject, string[]>;
+export type FieldAliases = Record<keyof ExtractedProject, string[]>;
 
 // =============================================================================
 // DEFAULT FIELD ALIASES (used when no org profile is configured)
 // =============================================================================
 
-const DEFAULT_FIELD_ALIASES: FieldAliases = {
+export const DEFAULT_FIELD_ALIASES: FieldAliases = {
   projet: [
     'Nom du projet',
     "Nom de l'émission",
@@ -148,7 +148,7 @@ const DEFAULT_FIELD_ALIASES: FieldAliases = {
 // FUZZY MATCHING (same algorithm as import-registre edge function)
 // =============================================================================
 
-function normalizeString(str: string): string {
+export function normalizeString(str: string): string {
   return str
     .toLowerCase()
     .trim()
@@ -214,7 +214,11 @@ function levenshteinSimilarity(str1: string, str2: string): number {
   return 1 - distance / Math.max(len1, len2);
 }
 
-function findBestColumnMatch(aliases: string[], headers: string[], threshold = 0.7): string | null {
+export function findBestColumnMatch(
+  aliases: string[],
+  headers: string[],
+  threshold = 0.7
+): string | null {
   let bestHeader: string | null = null;
   let bestScore = 0;
 
@@ -362,18 +366,62 @@ function parseBoolean(value: string): boolean | undefined {
 }
 
 // =============================================================================
-// MAIN PARSER
+// HEADER EXTRACTION (used by admin panel for upload-based mapping)
 // =============================================================================
 
-export async function parseProjectFile(
-  file: File,
-  profileConfig?: Record<string, string[]>
-): Promise<ProjectImportResult> {
+export async function extractExcelHeaders(
+  file: File
+): Promise<{ headers: string[]; sheetName: string }> {
   const workbook = new ExcelJS.Workbook();
   const arrayBuffer = await file.arrayBuffer();
   await workbook.xlsx.load(arrayBuffer);
 
-  // Find the best sheet
+  const worksheet = pickBestSheet(workbook);
+
+  const headerRow = worksheet.getRow(1);
+  const headers: string[] = [];
+  headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+    const text = cell.text?.trim();
+    if (text) {
+      headers[colNumber - 1] = text;
+    }
+  });
+
+  return { headers: headers.filter(Boolean), sheetName: worksheet.name };
+}
+
+/**
+ * Auto-map: given a list of target fields with their known aliases,
+ * and a list of extracted client headers, return the best match for each field.
+ * Returns { fieldKey: clientColumnName | '' }
+ */
+export function autoMapFields(
+  fields: { key: string; aliases: string[] }[],
+  clientHeaders: string[]
+): Record<string, string> {
+  const result: Record<string, string> = {};
+  const usedHeaders = new Set<string>();
+
+  // Sort fields by number of aliases (more specific first)
+  const sorted = [...fields].sort((a, b) => a.aliases.length - b.aliases.length);
+
+  for (const field of sorted) {
+    const match = findBestColumnMatch(
+      field.aliases,
+      clientHeaders.filter(h => !usedHeaders.has(h))
+    );
+    if (match) {
+      result[field.key] = match;
+      usedHeaders.add(match);
+    } else {
+      result[field.key] = '';
+    }
+  }
+
+  return result;
+}
+
+function pickBestSheet(workbook: ExcelJS.Workbook): ExcelJS.Worksheet {
   let worksheet = workbook.worksheets[0];
   const dataSheetNames = ['Registre', 'Data', 'Données', 'Projets', 'Projects', 'Sheet1'];
   const nonDataSheets = ['Instructions', 'Aide', 'Help'];
@@ -393,6 +441,31 @@ export async function parseProjectFile(
     }
   }
 
+  return worksheet;
+}
+
+// =============================================================================
+// MAIN PARSER
+// =============================================================================
+
+/**
+ * Parse a project Excel file.
+ * @param file The Excel file
+ * @param profileConfig Optional: direct column mappings { fieldKey: "Client Column Name" }
+ *                      from the org's saved profile. Takes precedence over fuzzy matching.
+ * @param aliasOverrides Optional: alias overrides (legacy format) for fuzzy matching
+ */
+export async function parseProjectFile(
+  file: File,
+  profileConfig?: Record<string, string>,
+  aliasOverrides?: Record<string, string[]>
+): Promise<ProjectImportResult> {
+  const workbook = new ExcelJS.Workbook();
+  const arrayBuffer = await file.arrayBuffer();
+  await workbook.xlsx.load(arrayBuffer);
+
+  const worksheet = pickBestSheet(workbook);
+
   // Read headers from first row
   const headerRow = worksheet.getRow(1);
   const headers: string[] = [];
@@ -401,15 +474,29 @@ export async function parseProjectFile(
   });
 
   // Build column mapping: project field -> column index
-  const aliases: FieldAliases = profileConfig
-    ? { ...DEFAULT_FIELD_ALIASES, ...profileConfig }
-    : DEFAULT_FIELD_ALIASES;
-
   const fieldToColumnIndex: Partial<Record<keyof ExtractedProject, number>> = {};
-  for (const [field, fieldAliases] of Object.entries(aliases)) {
-    const matchedHeader = findBestColumnMatch(fieldAliases, headers);
-    if (matchedHeader) {
-      fieldToColumnIndex[field as keyof ExtractedProject] = headers.indexOf(matchedHeader);
+
+  if (profileConfig) {
+    // Direct mappings from saved profile (admin mapped columns explicitly)
+    for (const [field, clientCol] of Object.entries(profileConfig)) {
+      if (clientCol) {
+        const idx = headers.indexOf(clientCol);
+        if (idx !== -1) {
+          fieldToColumnIndex[field as keyof ExtractedProject] = idx;
+        }
+      }
+    }
+  } else {
+    // Fuzzy matching with aliases
+    const aliases: FieldAliases = aliasOverrides
+      ? { ...DEFAULT_FIELD_ALIASES, ...aliasOverrides }
+      : DEFAULT_FIELD_ALIASES;
+
+    for (const [field, fieldAliases] of Object.entries(aliases)) {
+      const matchedHeader = findBestColumnMatch(fieldAliases, headers);
+      if (matchedHeader) {
+        fieldToColumnIndex[field as keyof ExtractedProject] = headers.indexOf(matchedHeader);
+      }
     }
   }
 
