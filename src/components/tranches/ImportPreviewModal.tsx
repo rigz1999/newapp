@@ -41,6 +41,7 @@ interface ImportPreviewModalProps {
   onCancel: () => void;
   onBack: () => void;
   isProcessing: boolean;
+  valeurNominale?: number;
 }
 
 export function ImportPreviewModal({
@@ -49,6 +50,7 @@ export function ImportPreviewModal({
   onCancel,
   onBack,
   isProcessing,
+  valeurNominale = 100,
 }: ImportPreviewModalProps): JSX.Element {
   const [editedDateEmission, setEditedDateEmission] = useState<string>(
     previewData.extracted_date_emission || ''
@@ -94,7 +96,22 @@ export function ImportPreviewModal({
     value: string | number
   ): void => {
     const updated = [...editedInvestors];
-    updated[index] = { ...updated[index], [field]: value };
+    const vn = valeurNominale || 100;
+    if (field === 'montant_investi' && typeof value === 'number') {
+      updated[index] = {
+        ...updated[index],
+        montant_investi: value,
+        nombre_obligations: vn > 0 ? Math.round(value / vn) : 0,
+      };
+    } else if (field === 'nombre_obligations' && typeof value === 'number') {
+      updated[index] = {
+        ...updated[index],
+        nombre_obligations: value,
+        montant_investi: value * vn,
+      };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
     setEditedInvestors(updated);
   };
 

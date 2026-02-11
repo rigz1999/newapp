@@ -132,6 +132,7 @@ export function TrancheWizard({
   const [souscriptions, setSouscriptions] = useState<Souscription[]>([]);
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [loadingSouscriptions, setLoadingSouscriptions] = useState(false);
+  const [valeurNominale, setValeurNominale] = useState<number>(100);
 
   // For investor details modal
   const [selectedInvestorDetails, setSelectedInvestorDetails] = useState<InvestorDetails | null>(
@@ -196,7 +197,7 @@ export function TrancheWizard({
       const fetchProjectData = async (): Promise<void> => {
         const { data: project } = await supabase
           .from('projets')
-          .select('taux_nominal, periodicite_coupons, duree_mois')
+          .select('taux_nominal, periodicite_coupons, duree_mois, valeur_nominale')
           .eq('id', editingTranche.projet_id)
           .single();
 
@@ -209,6 +210,9 @@ export function TrancheWizard({
           }
           if (project.duree_mois) {
             setDureeMois(project.duree_mois.toString());
+          }
+          if (project.valeur_nominale) {
+            setValeurNominale(project.valeur_nominale);
           }
         }
       };
@@ -461,7 +465,7 @@ export function TrancheWizard({
       // Fetch project financial data to auto-populate tranche fields
       const { data: project } = await supabase
         .from('projets')
-        .select('taux_nominal, duree_mois')
+        .select('taux_nominal, duree_mois, valeur_nominale')
         .eq('id', projectId)
         .single();
 
@@ -472,6 +476,9 @@ export function TrancheWizard({
         }
         if (project.duree_mois) {
           setDureeMois(project.duree_mois.toString());
+        }
+        if (project.valeur_nominale) {
+          setValeurNominale(project.valeur_nominale);
         }
       }
     }
@@ -496,7 +503,20 @@ export function TrancheWizard({
     value: number
   ): void => {
     const updated = [...souscriptions];
-    updated[index] = { ...updated[index], [field]: value };
+    const vn = valeurNominale || 100;
+    if (field === 'montant_investi') {
+      updated[index] = {
+        ...updated[index],
+        montant_investi: value,
+        nombre_obligations: vn > 0 ? Math.round(value / vn) : 0,
+      };
+    } else {
+      updated[index] = {
+        ...updated[index],
+        nombre_obligations: value,
+        montant_investi: value * vn,
+      };
+    }
     setSouscriptions(updated);
   };
 
@@ -1380,6 +1400,7 @@ export function TrancheWizard({
           onCancel={() => setPreviewData(null)}
           onBack={handleBackToUpload}
           isProcessing={processing}
+          valeurNominale={valeurNominale}
         />
       )}
 

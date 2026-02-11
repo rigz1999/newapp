@@ -214,6 +214,10 @@ export interface Database {
           duree_mois: number | null;
           montant_global: number | null;
           apply_flat_tax: boolean | null;
+          prorogation_possible: boolean;
+          duree_prorogation_mois: number | null;
+          step_up_taux: number | null;
+          prorogation_activee: boolean;
           created_at: string;
         };
         Insert: {
@@ -240,6 +244,10 @@ export interface Database {
           duree_mois?: number | null;
           montant_global?: number | null;
           apply_flat_tax?: boolean | null;
+          prorogation_possible?: boolean;
+          duree_prorogation_mois?: number | null;
+          step_up_taux?: number | null;
+          prorogation_activee?: boolean;
           created_at?: string;
         };
         Update: {
@@ -266,6 +274,10 @@ export interface Database {
           duree_mois?: number | null;
           montant_global?: number | null;
           apply_flat_tax?: boolean | null;
+          prorogation_possible?: boolean;
+          duree_prorogation_mois?: number | null;
+          step_up_taux?: number | null;
+          prorogation_activee?: boolean;
           created_at?: string;
         };
         Relationships: [
