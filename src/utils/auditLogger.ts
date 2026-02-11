@@ -43,6 +43,18 @@ export async function logAuditEvent(params: AuditLogParams): Promise<void> {
       return;
     }
 
+    // Get user profile for display name and superadmin check
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, is_superadmin')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    // Never log super admin actions
+    if (profile?.is_superadmin) {
+      return;
+    }
+
     // Resolve orgId: use provided value, or auto-detect from user's membership
     let orgId = params.orgId || null;
     if (!orgId) {
@@ -54,13 +66,6 @@ export async function logAuditEvent(params: AuditLogParams): Promise<void> {
         .maybeSingle();
       orgId = membership?.org_id || null;
     }
-
-    // Get user profile for display name
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .maybeSingle();
 
     const row = {
       org_id: orgId,

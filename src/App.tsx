@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useOrganization } from './hooks/useOrganization';
+import { usePlatformSettings } from './hooks/usePlatformSettings';
 import { Login } from './components/auth/Login';
 import { Layout } from './components/layouts/Layout';
 import { InvitationAccept } from './components/auth/InvitationAccept';
@@ -70,6 +71,7 @@ function App(): JSX.Element {
     refreshMFA,
   } = useAuth();
   const { organization, loading: orgLoading } = useOrganization(user?.id);
+  const { mfaEnabled } = usePlatformSettings();
   const isEmetteur = userRole === 'emetteur';
 
   const LoadingFallback = (): JSX.Element => <DashboardSkeleton />;
@@ -190,8 +192,15 @@ function App(): JSX.Element {
                   // Super admin bypasses MFA
                   isAdmin ? (
                     <Layout organization={organization || DEFAULT_ORG} isLoading={orgLoading} />
-                  ) : // MFA enforcement: mandatory for all other roles
-                  mfaStatus === 'loading' ? (
+                  ) : // MFA enforcement: only when enabled in platform settings
+                  !mfaEnabled ? (
+                    // MFA disabled by admin — skip enrollment/verification
+                    organization || orgLoading ? (
+                      <Layout organization={organization || DEFAULT_ORG} isLoading={orgLoading} />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  ) : mfaStatus === 'loading' ? (
                     <Layout organization={DEFAULT_ORG} isLoading={true} />
                   ) : mfaStatus === 'needs_verification' ? (
                     <MFAChallenge onVerified={() => refreshMFA()} />
