@@ -92,7 +92,7 @@ export function MFAEnroll({ onComplete }: MFAEnrollProps) {
 
   const handleLogout = async () => {
     setSigningOut(true);
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
   };
 
   return (
