@@ -436,11 +436,11 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="mb-6">
+      <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-slate-900">Paramètres</h1>
         </div>
-        <div className="space-y-6">
+        <div className="space-y-4">
           <CardSkeleton />
           <CardSkeleton />
           <CardSkeleton />
@@ -450,16 +450,16 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-4">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-3 bg-slate-900 rounded-xl">
-            <User className="w-8 h-8 text-white" />
+          <div className="p-2 bg-slate-900 rounded-lg">
+            <User className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Paramètres</h1>
-            <p className="text-slate-600">Gérer votre profil et vos préférences</p>
+            <h1 className="text-2xl font-bold text-slate-900">Paramètres</h1>
+            <p className="text-sm text-slate-600">Gérer votre profil et vos préférences</p>
           </div>
         </div>
       </div>
@@ -468,7 +468,7 @@ export default function Settings() {
       {errorMessage && (
         <div
           ref={errorMessageRef}
-          className="mb-6 bg-red-50 border-2 border-red-200 rounded-lg p-4 flex items-start gap-3"
+          className="mb-4 bg-red-50 border-2 border-red-200 rounded-lg p-3 flex items-start gap-3"
         >
           <AlertCircle className="w-5 h-5 text-finixar-red flex-shrink-0 mt-0.5" />
           <div className="flex-1">
@@ -484,17 +484,17 @@ export default function Settings() {
         </div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Profile Information Card */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-          <div className="p-6 border-b border-slate-200">
+          <div className="p-4 border-b border-slate-200">
             <div className="flex items-center gap-2">
-              <User className="w-5 h-5 text-slate-700" />
-              <h2 className="text-xl font-bold text-slate-900">Informations du profil</h2>
+              <User className="w-4 h-4 text-slate-700" />
+              <h2 className="text-base font-bold text-slate-900">Informations du profil</h2>
             </div>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-4 space-y-4">
             {/* Email (Read-only) */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -506,7 +506,7 @@ export default function Settings() {
                   type="email"
                   value={email}
                   disabled
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg bg-slate-50 text-slate-600 cursor-not-allowed"
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-600 cursor-not-allowed text-sm"
                 />
               </div>
               <p className="text-xs text-slate-500 mt-2">L'e-mail ne peut pas être modifié</p>
@@ -519,7 +519,7 @@ export default function Settings() {
                 type="text"
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
                 placeholder="Jean"
               />
             </div>
@@ -531,17 +531,17 @@ export default function Settings() {
                 type="text"
                 value={lastName}
                 onChange={e => setLastName(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
                 placeholder="Dupont"
               />
             </div>
 
             {/* Save Button */}
-            <div className="pt-4">
+            <div className="pt-2">
               <button
                 onClick={handleUpdateProfile}
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="flex items-center gap-2 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {saving ? (
                   <>
@@ -561,14 +561,14 @@ export default function Settings() {
 
         {/* Change Password Card */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-          <div className="p-6 border-b border-slate-200">
+          <div className="p-4 border-b border-slate-200">
             <div className="flex items-center gap-2">
-              <Lock className="w-5 h-5 text-slate-700" />
-              <h2 className="text-xl font-bold text-slate-900">Changer le mot de passe</h2>
+              <Lock className="w-4 h-4 text-slate-700" />
+              <h2 className="text-base font-bold text-slate-900">Changer le mot de passe</h2>
             </div>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-4 space-y-4">
             {/* Current Password */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -580,7 +580,7 @@ export default function Settings() {
                   type={showCurrentPassword ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={e => setCurrentPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                  className="w-full pl-10 pr-12 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
                   placeholder="••••••••"
                 />
                 <button
@@ -609,7 +609,7 @@ export default function Settings() {
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                  className="w-full pl-10 pr-12 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
                   placeholder="••••••••"
                 />
                 <button
@@ -673,7 +673,7 @@ export default function Settings() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                  className="w-full pl-10 pr-12 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
                   placeholder="••••••••"
                 />
                 <button
@@ -706,7 +706,7 @@ export default function Settings() {
             </div>
 
             {/* Change Password Button */}
-            <div className="pt-4">
+            <div className="pt-2">
               <button
                 onClick={handleChangePassword}
                 disabled={
@@ -714,7 +714,7 @@ export default function Settings() {
                   !!(newPassword && !isPasswordValid) ||
                   !!(confirmPassword && newPassword !== confirmPassword)
                 }
-                className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
               >
                 {saving ? (
                   <>
@@ -738,11 +738,11 @@ export default function Settings() {
         {/* Email Reminder Settings Card - Hidden for emetteur role */}
         {userRole !== 'emetteur' && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-            <div className="p-6 border-b border-slate-200">
+            <div className="p-4 border-b border-slate-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-slate-700" />
-                  <h2 className="text-xl font-bold text-slate-900">Rappels de paiements</h2>
+                  <Bell className="w-4 h-4 text-slate-700" />
+                  <h2 className="text-base font-bold text-slate-900">Rappels de paiements</h2>
                 </div>
                 {/* Master toggle */}
                 <button
@@ -763,9 +763,9 @@ export default function Settings() {
               </p>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-4 space-y-4">
               {/* Reminder periods */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-slate-700 mb-3">
                   Périodes de rappel
                 </label>
@@ -856,11 +856,11 @@ export default function Settings() {
               </div>
 
               {/* Action buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleUpdateReminderSettings}
                   disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
                 >
                   {saving ? (
                     <>
@@ -878,7 +878,7 @@ export default function Settings() {
                 <button
                   onClick={handleSendTestEmail}
                   disabled={sendingTestEmail || !remindersEnabled}
-                  className="flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
                 >
                   {sendingTestEmail ? (
                     <>
@@ -906,21 +906,21 @@ export default function Settings() {
             id="email-connection"
             className="bg-white rounded-xl shadow-sm border border-slate-200 scroll-mt-4"
           >
-            <div className="p-6 border-b border-slate-200">
+            <div className="p-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <Mail className="w-5 h-5 text-slate-700" />
-                <h2 className="text-xl font-bold text-slate-900">Connexion E-mail</h2>
+                <Mail className="w-4 h-4 text-slate-700" />
+                <h2 className="text-base font-bold text-slate-900">Connexion E-mail</h2>
               </div>
-              <p className="text-sm text-slate-600 mt-2">
+              <p className="text-xs text-slate-600 mt-1">
                 Connectez votre compte e-mail pour envoyer des rappels de paiement directement
                 depuis votre boîte de réception
               </p>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-4 space-y-4">
               {emailConnection ? (
                 /* Connected State */
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-start gap-3">
                       <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
@@ -959,7 +959,7 @@ export default function Settings() {
                   <button
                     onClick={confirmDisconnectEmail}
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium border border-red-200"
+                    className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm border border-red-200"
                   >
                     {saving ? (
                       <>
@@ -976,10 +976,10 @@ export default function Settings() {
                 </div>
               ) : (
                 /* Not Connected State */
-                <div className="space-y-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <Mail className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <Mail className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
                         <p className="font-semibold text-blue-900 mb-1">
                           Connectez votre compte Microsoft Outlook
@@ -1016,7 +1016,7 @@ export default function Settings() {
                   <button
                     onClick={handleConnectEmail}
                     disabled={connectingEmail}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-finixar-action-process text-white rounded-lg hover:bg-finixar-action-process-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
                   >
                     {connectingEmail ? (
                       <>

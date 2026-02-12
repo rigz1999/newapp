@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { logger } from '../utils/logger';
 
 /**
  * File proxy utility — hides Supabase Storage URLs by serving files through blob URLs.
@@ -58,7 +59,7 @@ export async function getProxiedFileUrl(fileUrl: string): Promise<string> {
       .download(path);
 
     if (error || !data) {
-      console.warn('File proxy download failed:', error?.message);
+      logger.warn('File proxy download failed:', error?.message);
       return fileUrl;
     }
 

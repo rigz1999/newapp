@@ -24,12 +24,13 @@ import {
   X,
   Bell,
 } from 'lucide-react';
-import * as ExcelJS from 'exceljs';
+import type * as ExcelJSType from 'exceljs';
 import { toast } from '../../utils/toast';
 import { supabase } from '../../lib/supabase';
 import { extractStoragePath } from '../../utils/fileProxy';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { logAuditEvent, auditFormatDate } from '../../utils/auditLogger';
+import { logger } from '../../utils/logger';
 
 interface CouponsPageNewProps {
   organization?: { id: string; name: string; role: string };
@@ -239,7 +240,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               .remove(filesToDelete);
 
             if (storageError) {
-              console.error('Error deleting storage files:', storageError);
+              logger.error('Error deleting storage files:', storageError);
               // Don't throw - continue with deletion even if storage cleanup fails
             }
           }
@@ -293,7 +294,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         'Le coupon a été marqué comme non payé et tous les enregistrements associés ont été supprimés.'
       );
     } catch (err: unknown) {
-      console.error('Error marking as unpaid:', err);
+      logger.error('Error marking as unpaid:', err);
       const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
       toast.error(`Erreur lors de la mise à jour: ${errorMessage}`);
     } finally {
@@ -384,7 +385,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
                   .remove(filesToDelete);
 
                 if (storageError) {
-                  console.error('Error deleting storage files:', storageError);
+                  logger.error('Error deleting storage files:', storageError);
                 }
               }
             }
@@ -417,7 +418,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
           successCount++;
         } catch (err) {
-          console.error('Error unmarking coupon:', coupon.id, err);
+          logger.error('Error unmarking coupon:', coupon.id, err);
           failCount++;
         }
       }
@@ -447,7 +448,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         );
       }
     } catch (err: unknown) {
-      console.error('Error in bulk unmark:', err);
+      logger.error('Error in bulk unmark:', err);
       const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
       toast.error(`Erreur lors de la mise à jour: ${errorMessage}`);
     } finally {
@@ -477,6 +478,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         'Date Paiement': c.date_paiement ? formatDate(c.date_paiement) : '',
       }));
 
+      const ExcelJS = await import('exceljs') as typeof ExcelJSType;
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Coupons');
 
@@ -501,7 +503,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
       toast.success(`${coupons.length} coupons exportés`);
     } catch (error) {
-      console.error('Error exporting Excel:', error);
+      logger.error('Error exporting Excel:', error);
       toast.error("Erreur lors de l'export");
     } finally {
       setExportingExcel(false);
@@ -524,11 +526,11 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="mb-6">
+      <div className="p-4">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-slate-900">Coupons</h1>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
           <TableSkeleton rows={10} columns={7} />
         </div>
       </div>
@@ -536,15 +538,15 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <Receipt className="w-8 h-8 text-blue-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Receipt className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Coupons</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Coupons</h1>
             <p className="text-slate-600">
               {totalCount} coupon{totalCount > 1 ? 's' : ''}
             </p>
@@ -553,7 +555,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
         <div className="flex gap-3">
           <button
             onClick={() => setShowRemindersModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md font-medium"
+            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md font-medium"
           >
             <Bell className="w-4 h-4" />
             Rappels
@@ -561,7 +563,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium disabled:opacity-50"
           >
             <Download className={`w-4 h-4 ${exportingExcel ? 'animate-bounce' : ''}`} />
             Exporter
@@ -570,16 +572,16 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
         <button
           onClick={() => {
             filterState.clearFilters();
             filterState.setStatut(['en_attente']);
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-yellow-300 hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-yellow-300 hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <Clock className="w-8 h-8 text-yellow-600" />
+            <Clock className="w-5 h-5 text-yellow-600" />
             <span className="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full">
               Prévu
             </span>
@@ -595,10 +597,10 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
             filterState.clearFilters();
             filterState.setStatut(['paye']);
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-green-300 hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-green-300 hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+            <CheckCircle className="w-5 h-5 text-green-600" />
             <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
               Payés
             </span>
@@ -612,10 +614,10 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
             filterState.clearFilters();
             filterState.setStatut(['en_retard']);
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-red-300 hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-red-300 hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <AlertTriangle className="w-8 h-8 text-red-600" />
+            <AlertTriangle className="w-5 h-5 text-red-600" />
             <span className="text-xs font-medium text-red-700 bg-red-100 px-2 py-1 rounded-full">
               En Retard
             </span>
@@ -628,7 +630,7 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       </div>
 
       {/* Search & View Switcher */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
@@ -638,14 +640,14 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
               placeholder="Rechercher par investisseur, projet, tranche..."
               value={filterState.filters.search || ''}
               onChange={e => filterState.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           {/* Filters Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               showFilters || filterState.activeFilterCount > 0
                 ? 'bg-blue-50 border-blue-300 text-blue-700'
                 : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -803,11 +805,12 @@ export function CouponsPageNew(_props: CouponsPageNewProps) {
       {showDetailsModal && selectedCoupon && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowDetailsModal(false)}
+          onMouseDown={e => {
+            if (e.target === e.currentTarget) setShowDetailsModal(false);
+          }}
         >
           <div
             className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
           >
             <div className="p-6 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-xl font-bold text-slate-900">Détail du Coupon</h3>

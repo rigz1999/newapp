@@ -27,6 +27,7 @@ import { AlertModal } from '../common/Modals';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { logAuditEvent, auditFormatDate } from '../../utils/auditLogger';
 import { isValidShortId } from '../../utils/shortId';
+import { logger } from '../../utils/logger';
 
 interface Echeance {
   id: string;
@@ -330,7 +331,7 @@ export function EcheancierPage() {
       });
       setShowAlertModal(true);
     } catch (error: unknown) {
-      console.error('Error uploading proof:', error);
+      logger.error('Error uploading proof:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message:
@@ -558,7 +559,7 @@ export function EcheancierPage() {
       });
       setShowAlertModal(true);
     } catch (error) {
-      console.error('Error sending reminder:', error);
+      logger.error('Error sending reminder:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message:
@@ -711,9 +712,9 @@ export function EcheancierPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Top Navigation Bar - Sticky */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
-        <div className="max-w-[1600px] mx-auto px-8 py-5">
+        <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => {
                   // Use short_id for cleaner URLs when available
@@ -766,42 +767,42 @@ export function EcheancierPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-[1600px] mx-auto px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 bg-blue-50 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-50 rounded-lg">
                 <Calendar className="w-5 h-5 text-blue-600" />
               </div>
               <p className="text-sm font-medium text-slate-600">Total échéances</p>
             </div>
-            <p className="text-3xl font-bold text-slate-900">{stats.total}</p>
+            <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 bg-orange-50 rounded-lg">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-orange-50 rounded-lg">
                 <TrendingUp className="w-5 h-5 text-orange-600" />
               </div>
               <p className="text-sm font-medium text-slate-600">À venir</p>
             </div>
-            <p className="text-3xl font-bold text-orange-600">{stats.aVenir}</p>
+            <p className="text-2xl font-bold text-orange-600">{stats.aVenir}</p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 bg-green-50 rounded-lg">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-green-50 rounded-lg">
                 <Coins className="w-5 h-5 text-finixar-green" />
               </div>
               <p className="text-sm font-medium text-slate-600">Payés</p>
             </div>
-            <p className="text-3xl font-bold text-finixar-green">{stats.paye}</p>
+            <p className="text-2xl font-bold text-finixar-green">{stats.paye}</p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 bg-purple-50 rounded-lg">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-purple-50 rounded-lg">
                 <Coins className="w-5 h-5 text-purple-600" />
               </div>
               <p className="text-sm font-medium text-slate-600">Montant total net</p>
@@ -813,7 +814,7 @@ export function EcheancierPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 mb-6">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 mb-4">
           <div className="flex items-center gap-3">
             <p className="text-sm font-medium text-slate-700 mr-2">Filtrer par statut:</p>
             <button
@@ -881,7 +882,7 @@ export function EcheancierPage() {
               {trancheGroups.map(trancheGroup => (
                 <div key={trancheGroup.trancheName}>
                   {/* Tranche Header */}
-                  <div className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <div className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
                     <button
                       onClick={() => toggleTranche(trancheGroup.trancheName)}
                       className="flex items-center gap-3 flex-1"
@@ -893,7 +894,7 @@ export function EcheancierPage() {
                           <ChevronRight className="w-5 h-5 text-slate-400" />
                         )}
                         <div className="text-left">
-                          <h3 className="text-lg font-semibold text-slate-900">
+                          <h3 className="text-sm font-semibold text-slate-900">
                             {trancheGroup.trancheName}
                           </h3>
                           <p className="text-sm text-slate-500">
@@ -906,13 +907,13 @@ export function EcheancierPage() {
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <p className="text-sm text-slate-500">Total brut</p>
-                        <p className="text-lg font-semibold text-slate-900">
+                        <p className="text-sm font-semibold text-slate-900">
                           {formatCurrency(trancheGroup.totalBrut)}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-slate-500">Total net</p>
-                        <p className="text-lg font-semibold text-slate-900">
+                        <p className="text-sm font-semibold text-slate-900">
                           {formatCurrency(trancheGroup.totalNet)}
                         </p>
                       </div>
@@ -968,7 +969,7 @@ export function EcheancierPage() {
                         return (
                           <div key={dateKey} className="border-t border-slate-200">
                             {/* Date Header */}
-                            <div className="w-full px-10 py-3 flex items-center justify-between hover:bg-slate-100 transition-colors">
+                            <div className="w-full px-8 py-2.5 flex items-center justify-between hover:bg-slate-100 transition-colors">
                               <button
                                 onClick={() => toggleDate(dateKey)}
                                 className="flex items-center gap-3 flex-1"
@@ -1117,16 +1118,16 @@ export function EcheancierPage() {
 
                             {/* Echeance Details */}
                             {expandedDates.has(dateKey) && (
-                              <div className="px-14 pb-4 space-y-2">
+                              <div className="px-12 pb-3 space-y-2">
                                 {dateGroup.echeances.map(echeance => {
                                   const status = getEcheanceStatus(echeance);
                                   return (
                                     <div
                                       key={echeance.id}
-                                      className="bg-white rounded-lg p-4 shadow-sm border border-slate-200"
+                                      className="bg-white rounded-lg p-3 shadow-sm border border-slate-200"
                                     >
                                       <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4 flex-1">
+                                        <div className="flex items-center gap-3 flex-1">
                                           <div className="p-2 bg-slate-100 rounded-lg">
                                             {echeance.souscription.investisseur.type ===
                                             'Physique' ? (
@@ -1144,7 +1145,7 @@ export function EcheancierPage() {
                                             </p>
                                           </div>
                                         </div>
-                                        <div className="flex items-center gap-6">
+                                        <div className="flex items-center gap-4">
                                           {echeance.isLastEcheance && (
                                             <div className="text-right">
                                               <p className="text-xs text-purple-600 font-medium">

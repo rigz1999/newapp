@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '../../utils/logger';
 import {
   CheckCircle,
   AlertCircle,
@@ -191,7 +192,7 @@ export function InvitationAccept() {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('Error response:', data);
+        logger.error('Error response:', data);
 
         // Handle specific errors from the Edge Function
         if (data.userExists) {
@@ -204,7 +205,7 @@ export function InvitationAccept() {
       }
 
       if (!data?.success) {
-        console.error('No success flag in response:', data);
+        logger.error('No success flag in response:', data);
         throw new Error('Erreur lors de la création du compte.');
       }
 
@@ -221,12 +222,12 @@ export function InvitationAccept() {
         navigate('/');
       }, 3000);
     } catch (err: unknown) {
-      console.error('Caught error:', err);
+      logger.error('Caught error:', err);
       const errorMessage =
         err instanceof Error
           ? err.message
           : 'Erreur lors de la création du compte. Veuillez réessayer.';
-      console.error('Error message to display:', errorMessage);
+      logger.error('Error message to display:', errorMessage);
       setError(errorMessage);
     } finally {
       setCreating(false);

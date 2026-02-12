@@ -13,11 +13,13 @@ import {
   Paperclip,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { sanitizeHTML } from '../../utils/sanitizer';
 import { FileUpload } from './actualites/FileUpload';
 import { AttachmentDisplay } from './actualites/AttachmentDisplay';
+import { logger } from '../../utils/logger';
 
 interface Attachment {
   filename: string;
@@ -47,6 +49,7 @@ interface Project {
 export function ProjectActualitesPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const { isSuperAdmin } = useAuth();
   const [actualites, setActualites] = useState<Actualite[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,7 +101,7 @@ export function ProjectActualitesPage() {
       }
       setProject(data);
     } catch (error) {
-      console.error('Error fetching project:', error);
+      logger.error('Error fetching project:', error);
     }
   };
 
@@ -150,7 +153,7 @@ export function ProjectActualitesPage() {
       const totalFetched = loadMore ? actualites.length + (data?.length || 0) : data?.length || 0;
       setHasMore(totalFetched < (count || 0));
     } catch (error) {
-      console.error('Error fetching actualites:', error);
+      logger.error('Error fetching actualites:', error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -173,7 +176,7 @@ export function ProjectActualitesPage() {
         });
 
       if (uploadError) {
-        console.error('Error uploading file:', uploadError);
+        logger.error('Error uploading file:', uploadError);
         continue;
       }
 
@@ -230,7 +233,7 @@ export function ProjectActualitesPage() {
           .eq('id', insertedData.id);
 
         if (updateError) {
-          console.error('Error updating attachments:', updateError);
+          logger.error('Error updating attachments:', updateError);
         }
 
         try {
@@ -251,10 +254,10 @@ export function ProjectActualitesPage() {
           );
 
           if (!response.ok) {
-            console.error('Failed to send email notification');
+            logger.error('Failed to send email notification');
           }
         } catch (emailError) {
-          console.error('Error sending email notification:', emailError);
+          logger.error('Error sending email notification:', emailError);
         }
       }
 
@@ -263,7 +266,7 @@ export function ProjectActualitesPage() {
       setShowFileUpload(false);
       await fetchActualites();
     } catch (error) {
-      console.error('Error posting actualite:', error);
+      logger.error('Error posting actualite:', error);
       alert("Erreur lors de la publication de l'actualité");
     } finally {
       setSubmitting(false);
@@ -291,7 +294,7 @@ export function ProjectActualitesPage() {
       setEditText('');
       await fetchActualites();
     } catch (error) {
-      console.error('Error updating actualite:', error);
+      logger.error('Error updating actualite:', error);
       alert("Erreur lors de la modification de l'actualité");
     }
   };
@@ -325,7 +328,7 @@ export function ProjectActualitesPage() {
       setActualiteToDelete(null);
       await fetchActualites();
     } catch (error) {
-      console.error('Error deleting actualite:', error);
+      logger.error('Error deleting actualite:', error);
       alert("Erreur lors de la suppression de l'actualité");
     }
   };
@@ -568,18 +571,20 @@ export function ProjectActualitesPage() {
                           </span>
                         </div>
                       </div>
-                      {currentUserId === actualite.user_id && (
+                      {(currentUserId === actualite.user_id || isSuperAdmin) && (
                         <div className="flex gap-1">
-                          <button
-                            onClick={() => {
-                              setEditingId(actualite.id);
-                              setEditText(actualite.comment_text);
-                            }}
-                            className="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded"
-                            title="Modifier"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
+                          {currentUserId === actualite.user_id && (
+                            <button
+                              onClick={() => {
+                                setEditingId(actualite.id);
+                                setEditText(actualite.comment_text);
+                              }}
+                              className="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded"
+                              title="Modifier"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               setActualiteToDelete(actualite.id);

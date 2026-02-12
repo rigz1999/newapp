@@ -3,6 +3,7 @@ import { X, FileText, Euro, Calendar, AlertTriangle, Download, ChevronDown } fro
 import Decimal from 'decimal.js';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { supabase } from '../../lib/supabase';
+import { logger } from '../../utils/logger';
 
 interface JsPDFWithAutoTable {
   text: (text: string, x: number, y: number, options?: Record<string, unknown>) => void;
@@ -441,7 +442,7 @@ export function ExportModal({
         await exportToPDF();
       }
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
       let errorMessage = "Une erreur est survenue lors de l'export.";
 
       if (error instanceof Error) {
@@ -645,7 +646,7 @@ export function ExportModal({
         onClose();
       }, 500);
     } catch (error) {
-      console.error('Excel export error:', error);
+      logger.error('Excel export error:', error);
       setExportProgress(0);
       throw error; // Re-throw to be caught by handleExport
     }
@@ -1282,7 +1283,7 @@ export function ExportModal({
         onClose();
       }, 500);
     } catch (error) {
-      console.error('PDF export error:', error);
+      logger.error('PDF export error:', error);
       setExportProgress(0);
       throw error; // Re-throw to be caught by handleExport
     }
@@ -1335,11 +1336,12 @@ export function ExportModal({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      onClick={onClose}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-slate-200">

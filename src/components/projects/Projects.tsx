@@ -1,7 +1,20 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { FolderOpen, Plus, Layers, Search, Eye, Users, X, Trash2 } from 'lucide-react';
+import {
+  FolderOpen,
+  Plus,
+  Layers,
+  Search,
+  Eye,
+  Users,
+  X,
+  Trash2,
+  Upload,
+  FileSpreadsheet,
+  ChevronDown,
+  Loader2,
+} from 'lucide-react';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { CardSkeleton } from '../common/Skeleton';
 import { ConfirmModal } from '../common/Modals';
@@ -11,6 +24,11 @@ import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { formatCurrency, formatMontantDisplay } from '../../utils/formatters';
 import { logger } from '../../utils/logger';
 import { logAuditEvent } from '../../utils/auditLogger';
+import {
+  parseProjectFile,
+  type ExtractedProject,
+  type ProjectImportResult,
+} from '../../utils/projectImportParser';
 
 interface ProjectWithStats {
   id: string;
@@ -56,6 +74,7 @@ export function Projects({ organization }: ProjectsProps) {
     periodicite_coupon: '',
     maturite_mois: '',
     base_interet: '360',
+    valeur_nominale: '100',
     apply_flat_tax: true,
     emetteur: '',
     siren_emetteur: '',
@@ -65,10 +84,21 @@ export function Projects({ organization }: ProjectsProps) {
     representant_masse: '',
     email_rep_masse: '',
     telephone_rep_masse: '',
+    prorogation_possible: false,
+    duree_prorogation_mois: '',
+    step_up_taux: '',
   });
 
   const [sirenError, setSirenError] = useState('');
   const [creatingProject, setCreatingProject] = useState(false);
+
+  // Import mode state
+  const [importMode, setImportMode] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importParsing, setImportParsing] = useState(false);
+  const [importResult, setImportResult] = useState<ProjectImportResult | null>(null);
+  const [selectedProjectIndex, setSelectedProjectIndex] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // For superadmin: organization selection
   const isSuperAdmin = organization.id === 'super_admin';
@@ -276,7 +306,7 @@ export function Projects({ organization }: ProjectsProps) {
       await fetchProjects();
       triggerCacheInvalidation();
     } catch (err: unknown) {
-      console.error('Erreur lors de la suppression du projet:', err);
+      logger.error('Erreur lors de la suppression du projet:', err);
       toast.error(
         `Erreur lors de la suppression: ${err instanceof Error ? err.message : String(err)}`
       );
@@ -307,6 +337,9 @@ export function Projects({ organization }: ProjectsProps) {
         : null;
       const maturite = newProjectData.maturite_mois ? parseInt(newProjectData.maturite_mois) : null;
       const baseInteret = newProjectData.base_interet ? parseInt(newProjectData.base_interet) : 360;
+      const valeurNominale = newProjectData.valeur_nominale
+        ? parseFloat(newProjectData.valeur_nominale)
+        : 100;
 
       const projectToCreate: Record<string, unknown> = {
         projet: newProjectData.projet,
@@ -326,7 +359,18 @@ export function Projects({ organization }: ProjectsProps) {
         maturite_mois: maturite,
         duree_mois: maturite,
         base_interet: baseInteret,
+        valeur_nominale: valeurNominale,
         apply_flat_tax: newProjectData.apply_flat_tax ?? true,
+        prorogation_possible: newProjectData.prorogation_possible,
+        duree_prorogation_mois:
+          newProjectData.prorogation_possible && newProjectData.duree_prorogation_mois
+            ? parseInt(newProjectData.duree_prorogation_mois)
+            : null,
+        step_up_taux:
+          newProjectData.prorogation_possible && newProjectData.step_up_taux
+            ? parseFloat(newProjectData.step_up_taux)
+            : null,
+        prorogation_activee: false,
       };
 
       // Determine org_id based on user type
@@ -386,6 +430,7 @@ export function Projects({ organization }: ProjectsProps) {
       periodicite_coupon: '',
       maturite_mois: '',
       base_interet: '360',
+      valeur_nominale: '100',
       apply_flat_tax: true,
       emetteur: '',
       siren_emetteur: '',
@@ -398,6 +443,84 @@ export function Projects({ organization }: ProjectsProps) {
     });
     setSirenError('');
     setSelectedOrgId('');
+    resetImportState();
+  };
+
+  // Handle file import
+  const handleFileImport = async (file: File) => {
+    setImportFile(file);
+    setImportParsing(true);
+    try {
+      const result = await parseProjectFile(file);
+      setImportResult(result);
+
+      if (result.projects.length === 0) {
+        toast.error('Aucun projet trouvé dans le fichier. Vérifiez le format.');
+        return;
+      }
+
+      // Auto-select first project and fill the form
+      setSelectedProjectIndex(0);
+      applyExtractedProject(result.projects[0]);
+
+      toast.success(
+        result.projects.length === 1
+          ? 'Données extraites du fichier'
+          : `${result.projects.length} projets trouvés dans le fichier`
+      );
+    } catch (err) {
+      logger.error('Erreur import fichier projet:', err as Record<string, unknown>);
+      toast.error(
+        "Erreur lors de la lecture du fichier. Vérifiez qu'il s'agit d'un fichier Excel valide."
+      );
+      setImportFile(null);
+    } finally {
+      setImportParsing(false);
+    }
+  };
+
+  const applyExtractedProject = (project: ExtractedProject) => {
+    setNewProjectData(prev => ({
+      ...prev,
+      projet: project.projet || prev.projet,
+      type: project.type || prev.type,
+      taux_interet: project.taux_interet || prev.taux_interet,
+      montant_global_eur: project.montant_global_eur || prev.montant_global_eur,
+      maturite_mois: project.maturite_mois || prev.maturite_mois,
+      base_interet: project.base_interet || prev.base_interet,
+      valeur_nominale: project.valeur_nominale || prev.valeur_nominale,
+      periodicite_coupon: project.periodicite_coupon || prev.periodicite_coupon,
+      emetteur: project.emetteur || prev.emetteur,
+      siren_emetteur: project.siren_emetteur || prev.siren_emetteur,
+      nom_representant: project.nom_representant || prev.nom_representant,
+      prenom_representant: project.prenom_representant || prev.prenom_representant,
+      email_representant: project.email_representant || prev.email_representant,
+      representant_masse: project.representant_masse || prev.representant_masse,
+      email_rep_masse: project.email_rep_masse || prev.email_rep_masse,
+      telephone_rep_masse: project.telephone_rep_masse || prev.telephone_rep_masse,
+      apply_flat_tax: project.apply_flat_tax ?? prev.apply_flat_tax,
+    }));
+  };
+
+  const handleProjectSelection = (index: number) => {
+    setSelectedProjectIndex(index);
+    if (importResult && importResult.projects[index]) {
+      // Reset form first, then apply
+      resetNewProjectForm();
+      setImportMode(true);
+      applyExtractedProject(importResult.projects[index]);
+    }
+  };
+
+  const resetImportState = () => {
+    setImportMode(false);
+    setImportFile(null);
+    setImportParsing(false);
+    setImportResult(null);
+    setSelectedProjectIndex(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const isFormValid =
@@ -425,14 +548,15 @@ export function Projects({ organization }: ProjectsProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
+      {/* density-v3 */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <FolderOpen className="w-8 h-8 text-blue-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <FolderOpen className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Tous les projets</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Tous les projets</h1>
             <p className="text-slate-600">
               {projects.length} projet{projects.length > 1 ? 's' : ''}
             </p>
@@ -449,7 +573,7 @@ export function Projects({ organization }: ProjectsProps) {
       </div>
 
       {/* Search Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -458,13 +582,13 @@ export function Projects({ organization }: ProjectsProps) {
               placeholder="Rechercher un projet par nom ou émetteur..."
               value={advancedFilters.filters.search}
               onChange={e => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
             />
           </div>
           {advancedFilters.filters.search && (
             <button
               onClick={() => advancedFilters.setSearch('')}
-              className="px-4 py-3 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+              className="px-3 py-2 text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors text-sm"
             >
               Effacer
             </button>
@@ -473,7 +597,7 @@ export function Projects({ organization }: ProjectsProps) {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <CardSkeleton />
           <CardSkeleton />
           <CardSkeleton />
@@ -482,8 +606,8 @@ export function Projects({ organization }: ProjectsProps) {
           <CardSkeleton />
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <FolderOpen className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+          <FolderOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">
             {advancedFilters.filters.search ? 'Aucun projet trouvé' : 'Aucun projet'}
           </h3>
@@ -503,26 +627,26 @@ export function Projects({ organization }: ProjectsProps) {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredProjects.map(project => (
             <div
               key={project.id}
               className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all overflow-hidden"
             >
-              <div className="p-6">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-finixar-brand-blue p-3 rounded-lg flex-shrink-0">
-                    <Layers className="w-6 h-6 text-white" />
+              <div className="p-4">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="bg-finixar-brand-blue p-2 rounded-lg flex-shrink-0">
+                    <Layers className="w-4 h-4 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-slate-900 mb-1 truncate">
+                    <h3 className="text-sm font-bold text-slate-900 mb-0.5 truncate">
                       {project.projet}
                     </h3>
                     <p className="text-sm text-slate-600 truncate">{project.emetteur}</p>
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-4">
+                <div className="space-y-1.5 mb-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600">Tranches</span>
                     <span className="font-semibold text-slate-900">{project.tranches_count}</span>
@@ -545,7 +669,7 @@ export function Projects({ organization }: ProjectsProps) {
                 </div>
               </div>
 
-              <div className="bg-slate-50 px-6 py-3 flex gap-2 border-t border-slate-200">
+              <div className="bg-slate-50 px-4 py-2 flex gap-2 border-t border-slate-200">
                 <button
                   onClick={() => navigate(`/projets/${project.id}`)}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-finixar-action-view text-white text-sm font-medium rounded-lg hover:bg-finixar-action-view-hover transition-colors"
@@ -571,9 +695,7 @@ export function Projects({ organization }: ProjectsProps) {
 
       {/* MODAL EXACT DU DASHBOARD */}
       {showCreateModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-white">
               <div>
@@ -594,6 +716,155 @@ export function Projects({ organization }: ProjectsProps) {
             <div className="flex-1 overflow-y-auto bg-white">
               <form onSubmit={handleCreateProject} className="p-6 bg-white" autoComplete="off">
                 <div className="space-y-4">
+                  {/* Import mode toggle */}
+                  <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (importMode) {
+                          resetImportState();
+                          resetNewProjectForm();
+                        }
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                        !importMode
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Saisie manuelle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImportMode(true)}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                        importMode
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-white text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      Importer un fichier
+                    </button>
+                  </div>
+
+                  {/* File upload zone (only in import mode) */}
+                  {importMode && (
+                    <div className="space-y-3">
+                      {!importFile ? (
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          onDragOver={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onDrop={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const file = e.dataTransfer.files?.[0];
+                            if (
+                              file &&
+                              (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))
+                            ) {
+                              handleFileImport(file);
+                            } else {
+                              toast.error('Format non supporté. Utilisez un fichier .xlsx ou .xls');
+                            }
+                          }}
+                          className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:border-slate-400 hover:bg-slate-50 transition-all"
+                        >
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".xlsx,.xls"
+                            className="hidden"
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handleFileImport(file);
+                              }
+                            }}
+                          />
+                          {importParsing ? (
+                            <>
+                              <Loader2 className="w-10 h-10 mx-auto mb-3 text-blue-500 animate-spin" />
+                              <p className="text-sm font-medium text-slate-700">
+                                Extraction des données...
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-10 h-10 mx-auto mb-3 text-slate-400" />
+                              <p className="text-sm font-medium text-slate-700">
+                                Glissez votre fichier Excel ici ou cliquez pour sélectionner
+                              </p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                Formats acceptés : .xlsx, .xls
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <FileSpreadsheet className="w-5 h-5 text-blue-600" />
+                              <div>
+                                <p className="text-sm font-medium text-slate-900">
+                                  {importFile.name}
+                                </p>
+                                {importResult && (
+                                  <p className="text-xs text-slate-600">
+                                    {importResult.projects.length} projet
+                                    {importResult.projects.length > 1 ? 's' : ''} trouvé
+                                    {importResult.projects.length > 1 ? 's' : ''}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                resetImportState();
+                                resetNewProjectForm();
+                                setImportMode(true);
+                              }}
+                              className="text-slate-400 hover:text-slate-600 p-1"
+                              title="Supprimer le fichier"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Project row picker (when multiple rows) */}
+                          {importResult && importResult.projects.length > 1 && (
+                            <div className="mt-3">
+                              <label className="block text-xs font-medium text-slate-700 mb-1">
+                                Sélectionner le projet à importer
+                              </label>
+                              <div className="relative">
+                                <select
+                                  value={selectedProjectIndex}
+                                  onChange={e => handleProjectSelection(Number(e.target.value))}
+                                  className="w-full px-3 py-2 pr-8 text-sm border border-blue-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                >
+                                  {importResult.projects.map((p, i) => (
+                                    <option key={i} value={i}>
+                                      {p.projet || p.emetteur || `Ligne ${i + 2}`}
+                                      {p.emetteur && p.projet ? ` — ${p.emetteur}` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div>
                     <label
                       htmlFor="projet"
@@ -779,6 +1050,98 @@ export function Projects({ organization }: ProjectsProps) {
                     </label>
                   </div>
 
+                  {/* Prorogation (extension clause) */}
+                  <div className="py-4 px-4 bg-amber-50 border border-amber-200 rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <label
+                          htmlFor="prorogation_possible"
+                          className="block text-sm font-medium text-slate-900 mb-1"
+                        >
+                          Clause de prorogation
+                        </label>
+                        <p className="text-sm text-slate-600">
+                          L'émetteur peut prolonger la maturité avec un taux majoré
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer ml-4">
+                        <input
+                          id="prorogation_possible"
+                          type="checkbox"
+                          checked={newProjectData.prorogation_possible}
+                          onChange={e =>
+                            setNewProjectData({
+                              ...newProjectData,
+                              prorogation_possible: e.target.checked,
+                            })
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                      </label>
+                    </div>
+
+                    {newProjectData.prorogation_possible && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-amber-200">
+                        <div>
+                          <label
+                            htmlFor="duree_prorogation"
+                            className="block text-sm font-medium text-slate-900 mb-2"
+                          >
+                            Durée de prorogation (mois) <span className="text-finixar-red">*</span>
+                          </label>
+                          <input
+                            id="duree_prorogation"
+                            type="number"
+                            required
+                            min="1"
+                            max="120"
+                            value={newProjectData.duree_prorogation_mois}
+                            onChange={e =>
+                              setNewProjectData({
+                                ...newProjectData,
+                                duree_prorogation_mois: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                            placeholder="Ex: 6"
+                          />
+                          <p className="mt-1 text-xs text-slate-600">
+                            Durée additionnelle si prorogation exercée
+                          </p>
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="step_up_taux"
+                            className="block text-sm font-medium text-slate-900 mb-2"
+                          >
+                            Majoration du taux (%) <span className="text-finixar-red">*</span>
+                          </label>
+                          <input
+                            id="step_up_taux"
+                            type="number"
+                            required
+                            step="0.01"
+                            min="0.01"
+                            max="50"
+                            value={newProjectData.step_up_taux}
+                            onChange={e =>
+                              setNewProjectData({ ...newProjectData, step_up_taux: e.target.value })
+                            }
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                            placeholder="Ex: 1.00"
+                          />
+                          <p className="mt-1 text-xs text-slate-600">
+                            Taux pendant la prorogation :{' '}
+                            {newProjectData.taux_interet && newProjectData.step_up_taux
+                              ? `${(parseFloat(newProjectData.taux_interet) + parseFloat(newProjectData.step_up_taux)).toFixed(2)}%`
+                              : '—'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label
@@ -896,6 +1259,33 @@ export function Projects({ organization }: ProjectsProps) {
                         }}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         placeholder="Ex: 1 500 000 €"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="valeur_nominale"
+                        className="block text-sm font-medium text-slate-900 mb-2"
+                      >
+                        Valeur nominale de l'obligation (€){' '}
+                        <span className="text-finixar-red">*</span>
+                      </label>
+                      <input
+                        id="valeur_nominale"
+                        type="number"
+                        required
+                        aria-required="true"
+                        min="0.01"
+                        step="0.01"
+                        value={newProjectData.valeur_nominale}
+                        onChange={e =>
+                          setNewProjectData({
+                            ...newProjectData,
+                            valeur_nominale: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                        placeholder="Ex: 100"
                       />
                     </div>
 

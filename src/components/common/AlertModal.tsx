@@ -1,4 +1,5 @@
 import { CheckCircle, AlertTriangle, Info, XCircle, Loader2 } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface AlertModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ export function AlertModal({
   cancelText = 'Annuler',
   isLoading = false,
 }: AlertModalProps) {
+  const focusTrapRef = useFocusTrap(isOpen);
+
   if (!isOpen) {
     return null;
   }
@@ -69,11 +72,16 @@ export function AlertModal({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]"
-      onClick={!isLoading ? onClose : undefined}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget && !isLoading) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
     >
       <div
+        ref={focusTrapRef}
         className="bg-white rounded-xl shadow-2xl max-w-md w-full"
-        onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           <div className="flex flex-col items-center text-center">

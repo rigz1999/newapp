@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { OTPInput } from '../common/OTPInput';
-import { ShieldCheck, Smartphone, Copy, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Smartphone, Copy, CheckCircle, AlertCircle, RefreshCw, LogOut } from 'lucide-react';
 
 interface MFAEnrollProps {
   onComplete: () => void;
@@ -11,6 +11,7 @@ interface MFAEnrollProps {
 type EnrollStep = 'intro' | 'qr' | 'verify' | 'success';
 
 export function MFAEnroll({ onComplete }: MFAEnrollProps) {
+  const [signingOut, setSigningOut] = useState(false);
   const [step, setStep] = useState<EnrollStep>('intro');
   const [qrCode, setQrCode] = useState('');
   const [secret, setSecret] = useState('');
@@ -87,6 +88,11 @@ export function MFAEnroll({ onComplete }: MFAEnrollProps) {
     } catch {
       // Fallback for older browsers
     }
+  };
+
+  const handleLogout = async () => {
+    setSigningOut(true);
+    await supabase.auth.signOut({ scope: 'local' });
   };
 
   return (
@@ -250,6 +256,19 @@ export function MFAEnroll({ onComplete }: MFAEnrollProps) {
                 </button>
               </div>
             </>
+          )}
+
+          {step !== 'success' && (
+            <div className="mt-6 pt-6 border-t border-slate-200">
+              <button
+                onClick={handleLogout}
+                disabled={signingOut}
+                className="w-full flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 text-sm transition-colors disabled:opacity-50"
+              >
+                <LogOut className="w-4 h-4" />
+                {signingOut ? 'D\u00e9connexion...' : 'Se d\u00e9connecter'}
+              </button>
+            </div>
           )}
         </div>
       </div>

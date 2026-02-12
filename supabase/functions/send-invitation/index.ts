@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { checkRateLimit, getClientIp, rateLimitResponse } from '../_shared/rate-limit.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -8,7 +9,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const APP_URL = 'https://app.finixar.com'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
   'Access-Control-Allow-Methods': 'POST',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
@@ -28,6 +29,13 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limit: 10 invitations per 15 minutes per IP
+    const ip = getClientIp(req)
+    const rl = checkRateLimit(`send-invitation:${ip}`, { maxRequests: 10, windowSeconds: 900 })
+    if (!rl.allowed) {
+      return rateLimitResponse(rl.retryAfterSeconds, corsHeaders)
+    }
+
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       throw new Error('No authorization header')
@@ -35,37 +43,20 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '')
 
-    let user: { id: string; email: string }
-
-    try {
-      const parts = token.split('.')
-      if (parts.length !== 3) {
-        throw new Error('Invalid token format')
-      }
-
-      const payload = JSON.parse(atob(parts[1]))
-
-      user = {
-        id: payload.sub,
-        email: payload.email,
-      }
-
-      if (!user.id || !user.email) {
-        throw new Error('Invalid token payload')
-      }
-
-      console.log('User authenticated:', user.email)
-    } catch (decodeError) {
-      console.error('Token decode error:', decodeError)
-      throw new Error('Invalid token')
-    }
-
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     })
+
+    const { data: { user: authUser }, error: userError } = await supabaseAdmin.auth.getUser(token)
+
+    if (userError || !authUser) {
+      throw new Error('Invalid token')
+    }
+
+    const user = { id: authUser.id, email: authUser.email! }
 
     const { email, firstName, lastName, role, orgId, orgName }: InvitationRequest = await req.json()
 

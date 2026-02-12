@@ -3,6 +3,7 @@ import { X, CreditCard, Upload, Loader2, CheckCircle, User, Building2 } from 'lu
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
+import { logger } from '../../utils/logger';
 
 interface SimplePaymentModalProps {
   echeanceId: string;
@@ -135,7 +136,7 @@ export function SimplePaymentModal({
       toast.success('Paiement enregistré avec succès');
       onSuccess();
     } catch (error) {
-      console.error('Payment error:', error);
+      logger.error('Payment error:', error);
       toast.error(error instanceof Error ? error.message : 'Erreur lors du paiement');
     } finally {
       setProcessing(false);
@@ -145,7 +146,9 @@ export function SimplePaymentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose();
+      }} />
 
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">

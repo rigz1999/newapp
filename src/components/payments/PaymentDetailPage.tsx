@@ -19,6 +19,7 @@ import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { logAuditEvent, auditFormatCurrency } from '../../utils/auditLogger';
 import { ActivityTimeline } from '../audit/ActivityTimeline';
 import { extractStoragePath } from '../../utils/fileProxy';
+import { logger } from '../../utils/logger';
 
 interface PaymentDetail {
   id: string;
@@ -104,7 +105,7 @@ export function PaymentDetailPage() {
       }
       setPayment(data as unknown as PaymentDetail);
     } catch (err) {
-      console.error('Error fetching payment:', err);
+      logger.error('Error fetching payment:', err);
       setError('Impossible de charger les détails du paiement');
     } finally {
       setLoading(false);
@@ -123,7 +124,7 @@ export function PaymentDetailPage() {
         setProofs(data as typeof proofs);
       }
     } catch (err) {
-      console.error('Error fetching proofs:', err);
+      logger.error('Error fetching proofs:', err);
     }
   };
 
@@ -179,7 +180,7 @@ export function PaymentDetailPage() {
       // Navigate back to payments list
       navigate('/paiements');
     } catch (err) {
-      console.error('Error deleting payment:', err);
+      logger.error('Error deleting payment:', err);
       setError('Erreur lors de la suppression du paiement');
     } finally {
       setDeleting(false);

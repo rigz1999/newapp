@@ -32,6 +32,7 @@ import PaymentRemindersCard from './PaymentRemindersCard';
 import PaymentRemindersModal from './PaymentRemindersModal';
 import { useAuth } from '../../hooks/useAuth';
 import { toast } from '../../utils/toast';
+import { logger } from '../../utils/logger';
 
 // Tax rate for physical investors (30% withholding tax)
 const TAX_RATE_PHYSICAL = 0.3;
@@ -275,7 +276,7 @@ export function Coupons() {
 
       setCoupons(processedCoupons);
     } catch (error) {
-      console.error('Error fetching coupons:', error);
+      logger.error('Error fetching coupons:', error);
       toast.error('Erreur lors du chargement des coupons');
     } finally {
       setLoading(false);
@@ -301,7 +302,7 @@ export function Coupons() {
         setRemind30Days(reminderSettings.remind_30_days);
       }
     } catch (error) {
-      console.error('Error fetching reminder settings:', error);
+      logger.error('Error fetching reminder settings:', error);
       // Don't show toast for this - it's not critical
     }
   };
@@ -562,7 +563,7 @@ export function Coupons() {
 
       toast.success(`${filteredCoupons.length} coupons exportés avec succès`);
     } catch (error) {
-      console.error('Error exporting Excel:', error);
+      logger.error('Error exporting Excel:', error);
       toast.error("Erreur lors de l'export Excel");
     } finally {
       setExportingExcel(false);
@@ -578,11 +579,11 @@ export function Coupons() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="mb-6">
+      <div className="p-4">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-slate-900">Coupons</h1>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
           <TableSkeleton rows={10} columns={7} />
         </div>
       </div>
@@ -590,15 +591,15 @@ export function Coupons() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <Receipt className="w-8 h-8 text-blue-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Receipt className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Tous les coupons</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Tous les coupons</h1>
             <p className="text-slate-600">
               {filteredCoupons.length} coupon{filteredCoupons.length > 1 ? 's' : ''} • Total:{' '}
               <span className="font-bold text-finixar-green">{formatCurrency(totalAmount)}</span>
@@ -611,7 +612,7 @@ export function Coupons() {
               setWizardPreselect({});
               setShowPaymentWizard(true);
             }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-all shadow-sm hover:shadow-md font-medium"
+            className="flex items-center gap-2 px-3 py-2 bg-finixar-teal text-white rounded-lg hover:bg-finixar-teal-hover transition-all shadow-sm hover:shadow-md font-medium"
           >
             <Upload className="w-4 h-4" />
             Enregistrer Paiement
@@ -619,7 +620,7 @@ export function Coupons() {
           <button
             onClick={handleExportExcel}
             disabled={exportingExcel}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-all shadow-sm hover:shadow-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className={`w-4 h-4 ${exportingExcel ? 'animate-bounce' : ''}`} />
             {exportingExcel ? 'Export en cours...' : 'Exporter Excel'}
@@ -630,16 +631,16 @@ export function Coupons() {
       {/* ✅ SUPPRIMÉ : Sélecteur de période KPI (plus nécessaire) */}
 
       {/* Stats Cards - ✅ MODIFIÉ : Affiche TOUS les coupons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <button
           onClick={() => {
             advancedFilters.clearAllFilters();
             advancedFilters.addMultiSelectFilter('statut', 'en_attente');
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-finixar-amber hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-finixar-amber hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <Clock className="w-8 h-8 text-finixar-amber" />
+            <Clock className="w-5 h-5 text-finixar-amber" />
             <span className="text-xs font-medium text-finixar-amber bg-yellow-100 px-2 py-1 rounded-full">
               Prévu
             </span>
@@ -660,10 +661,10 @@ export function Coupons() {
             advancedFilters.clearAllFilters();
             advancedFilters.addMultiSelectFilter('statut', 'paye');
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-finixar-green hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-finixar-green hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <CheckCircle className="w-8 h-8 text-finixar-green" />
+            <CheckCircle className="w-5 h-5 text-finixar-green" />
             <span className="text-xs font-medium text-finixar-green bg-green-100 px-2 py-1 rounded-full">
               Payés
             </span>
@@ -682,10 +683,10 @@ export function Coupons() {
             advancedFilters.clearAllFilters();
             advancedFilters.addMultiSelectFilter('statut', 'en_retard');
           }}
-          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:border-finixar-red hover:shadow-md transition-all text-left"
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:border-finixar-red hover:shadow-md transition-all text-left"
         >
           <div className="flex items-center justify-between mb-2">
-            <AlertTriangle className="w-8 h-8 text-finixar-red" />
+            <AlertTriangle className="w-5 h-5 text-finixar-red" />
             <span className="text-xs font-medium text-finixar-red bg-red-100 px-2 py-1 rounded-full">
               En Retard
             </span>
@@ -713,7 +714,7 @@ export function Coupons() {
 
       {/* Filters */}
       {/* Filters Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         {/* Basic Search */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
@@ -723,13 +724,13 @@ export function Coupons() {
               placeholder="Rechercher par investisseur, projet, tranche..."
               value={advancedFilters.filters.search}
               onChange={e => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
             />
           </div>
 
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               showAdvancedFilters || activeFiltersCount > 0
                 ? 'bg-blue-50 border-blue-300 text-blue-700'
                 : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -842,8 +843,8 @@ export function Coupons() {
 
       {/* Coupons List */}
       {filteredCoupons.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+          <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-slate-900 mb-2">Aucun coupon</h3>
           <p className="text-slate-600">
             {coupons.length === 0
@@ -852,7 +853,7 @@ export function Coupons() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {paginate(groupedData, currentPage, itemsPerPage).map(({ date, tranches }) => {
             const daysUntil = getDaysUntil(date);
             const dateTotal = tranches.reduce((sum, t) => sum + t.total, 0);
@@ -863,7 +864,7 @@ export function Coupons() {
                 className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
               >
                 {/* Date Header */}
-                <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">{formatDate(date)}</h3>
                     <p className="text-sm text-slate-600">
@@ -894,7 +895,7 @@ export function Coupons() {
                     return (
                       <div key={tranche.trancheId}>
                         {/* Tranche Header */}
-                        <div className="w-full px-6 py-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
+                        <div className="w-full px-4 py-2.5 hover:bg-slate-50 transition-colors flex items-center justify-between">
                           <button
                             onClick={() => toggleTranche(trancheKey)}
                             className="flex items-center gap-3 flex-1"
@@ -961,7 +962,7 @@ export function Coupons() {
                                 return (
                                   <div
                                     key={coupon.id}
-                                    className="px-6 py-4 pl-20 hover:bg-slate-100 transition-colors"
+                                    className="px-4 py-2.5 pl-20 hover:bg-slate-100 transition-colors"
                                   >
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-3 flex-1">

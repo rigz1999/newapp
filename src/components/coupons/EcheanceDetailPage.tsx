@@ -23,6 +23,7 @@ import { EcheanceProofsModal } from './EcheanceProofsModal';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { isValidShortId } from '../../utils/shortId';
 import * as ExcelJS from 'exceljs';
+import { logger } from '../../utils/logger';
 
 interface EcheanceItem {
   id: string;
@@ -271,7 +272,7 @@ export function EcheanceDetailPage() {
         pendingAmount: unpaid.reduce((sum, e) => sum + e.montant_coupon, 0),
       });
     } catch (err) {
-      console.error('Error fetching écheance details:', err);
+      logger.error('Error fetching écheance details:', err);
     } finally {
       setLoading(false);
     }

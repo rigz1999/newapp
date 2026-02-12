@@ -1,11 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
   'Access-Control-Allow-Methods': 'POST',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
@@ -16,6 +17,13 @@ serve(async req => {
   }
 
   try {
+    // Rate limit: 3 attempts per 15 minutes per IP
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`delete-user-account:${ip}`, { maxRequests: 3, windowSeconds: 900 });
+    if (!rl.allowed) {
+      return rateLimitResponse(rl.retryAfterSeconds, corsHeaders);
+    }
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Non autorisé' }), {
@@ -55,7 +63,7 @@ serve(async req => {
       );
     }
 
-    console.log(`=== Account deletion requested by user ${user.id} (${user.email}) ===`);
+    console.log(`=== Account deletion requested by user ${user.id} ===`);
 
     // RGPD: Anonymize audit logs instead of deleting (financial records must be kept 10 years)
     await supabaseAdmin

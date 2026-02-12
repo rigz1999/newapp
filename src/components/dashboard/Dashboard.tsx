@@ -20,7 +20,7 @@ import {
   type Payment,
   type UpcomingCoupon,
 } from '../../utils/dashboardAlerts';
-import { RefreshCw, AlertCircle, X } from 'lucide-react';
+import { AlertCircle, X, Plus, ChevronDown } from 'lucide-react';
 
 // generateAlerts function now imported from utils/dashboardAlerts.ts
 
@@ -176,7 +176,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
     const cached = checkCachedData();
     return !cached; // Only show loading if no cache
   });
-  const [refreshing, setRefreshing] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
   // Chart state + cache of raw subs for local filtering
@@ -192,6 +192,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
   const [showQuickPayment, setShowQuickPayment] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(false);
 
   // Alert modal state
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -236,9 +237,6 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
 
   const fetchData = async (): Promise<void> => {
     const isRefresh = !loading;
-    if (isRefresh) {
-      setRefreshing(true);
-    }
 
     try {
       const cachedData = getCachedData();
@@ -660,16 +658,10 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
       setCachedData(cacheData);
 
       setLoading(false);
-      if (isRefresh) {
-        setRefreshing(false);
-      }
     } catch (error) {
       logger.error(error instanceof Error ? error : new Error('Dashboard: Error fetching data'));
       localStorage.removeItem(CACHE_KEY);
       setLoading(false);
-      if (isRefresh) {
-        setRefreshing(false);
-      }
     }
   };
 
@@ -778,24 +770,50 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
   }, [selectedYear, startMonth, endMonth, chartSubscriptionsAll]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 lg:px-6 xl:px-8 py-8">
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Tableau de bord</h1>
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-2xl font-bold text-slate-900">Tableau de bord</h1>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              onClick={() => setShowQuickActions(!showQuickActions)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Actions</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 transition-transform ${showQuickActions ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {showQuickActions && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setShowQuickActions(false)} />
+                <DashboardQuickActions
+                  onNewProject={() => {
+                    navigate('/projets?create=true');
+                    setShowQuickActions(false);
+                  }}
+                  onNewTranche={() => {
+                    setShowTrancheWizard(true);
+                    setShowQuickActions(false);
+                  }}
+                  onNewPayment={() => {
+                    setShowQuickPayment(true);
+                    setShowQuickActions(false);
+                  }}
+                  onExport={() => {
+                    setShowExportModal(true);
+                    setShowQuickActions(false);
+                  }}
+                />
+              </>
+            )}
+          </div>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          aria-label="Actualiser le tableau de bord"
-          className="flex items-center gap-2 px-4 py-2 bg-finixar-brand-blue text-white rounded-lg hover:bg-finixar-brand-blue-hover transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          <span>Actualiser</span>
-        </button>
       </div>
 
       {error && !loading && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-finixar-red flex-shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -834,13 +852,6 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
               setAlertsDismissed(true);
             }}
             dismissed={alertsDismissed}
-          />
-
-          <DashboardQuickActions
-            onNewProject={() => navigate('/projets?create=true')}
-            onNewTranche={() => setShowTrancheWizard(true)}
-            onNewPayment={() => setShowQuickPayment(true)}
-            onExport={() => setShowExportModal(true)}
           />
 
           <DashboardStats stats={stats} />

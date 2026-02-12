@@ -20,6 +20,7 @@ import {
   Clock,
   Send,
   UserCog,
+  Loader2,
 } from 'lucide-react';
 import { formatErrorMessage } from '../../utils/errorMessages';
 import { AlertModal } from '../common/Modals';
@@ -220,7 +221,7 @@ export default function Members() {
       });
       setShowAlertModal(true);
     } catch (error) {
-      console.error('Error removing member:', error);
+      logger.error('Error removing member:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message: `Impossible de supprimer le membre: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
@@ -826,20 +827,32 @@ function RemoveMemberModal({
   onConfirm: () => void;
 }) {
   const { user } = useAuth();
+  const [isDeleting, setIsDeleting] = useState(false);
+
   if (!isOpen || !member) {
     return null;
   }
 
   const isDeletingSelf = member.user_id === user?.id;
 
+  const handleConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await onConfirm();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget && !isDeleting) onClose();
+      }}
     >
       <div
         className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
-        onClick={e => e.stopPropagation()}
       >
         <div className="flex items-start gap-4 mb-4">
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -879,15 +892,24 @@ function RemoveMemberModal({
         <div className="flex gap-3 mt-6">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Annuler
           </button>
           <button
-            onClick={onConfirm}
-            className="flex-1 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors"
+            onClick={handleConfirm}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 bg-finixar-red text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isDeletingSelf ? 'Oui, Supprimer Mon Compte' : 'Confirmer'}
+            {isDeleting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Suppression...
+              </>
+            ) : (
+              isDeletingSelf ? 'Oui, Supprimer Mon Compte' : 'Confirmer'
+            )}
           </button>
         </div>
       </div>
@@ -944,11 +966,12 @@ function ChangeRoleModal({
     <>
       <div
         className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-        onClick={onClose}
+        onMouseDown={e => {
+          if (e.target === e.currentTarget) onClose();
+        }}
       >
         <div
           className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
-          onClick={e => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-slate-900">Changer le Rôle</h3>

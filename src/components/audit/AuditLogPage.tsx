@@ -20,6 +20,7 @@ import { Pagination, paginate } from '../common/Pagination';
 import { TableSkeleton } from '../common/Skeleton';
 import { DateRangePicker } from '../filters/DateRangePicker';
 import * as ExcelJS from 'exceljs';
+import { logger } from '../../utils/logger';
 
 interface AuditLog {
   id: string;
@@ -121,7 +122,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
         .order('created_at', { ascending: false })
         .limit(500);
 
-      if (orgId && orgId !== 'admin') {
+      if (orgId && orgId !== 'admin' && orgId !== 'super_admin') {
         query = query.eq('org_id', orgId);
       }
 
@@ -133,7 +134,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
 
       setLogs((data || []) as AuditLog[]);
     } catch (err) {
-      console.error('Error fetching audit logs:', err);
+      logger.error('Error fetching audit logs:', err);
     } finally {
       setLoading(false);
     }
@@ -465,15 +466,15 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-indigo-100 rounded-xl">
-            <History className="w-8 h-8 text-indigo-600" />
+          <div className="p-2 bg-indigo-100 rounded-lg">
+            <History className="w-6 h-6 text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Journal d'audit</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Journal d'audit</h1>
             <p className="text-slate-600">
               {filteredLogs.length} action{filteredLogs.length > 1 ? 's' : ''} enregistrée
               {filteredLogs.length > 1 ? 's' : ''}
@@ -491,7 +492,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -500,13 +501,13 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
               placeholder="Rechercher dans le journal..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue text-sm"
             />
           </div>
 
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               showFilters || hasActiveFilters
                 ? 'bg-finixar-teal text-white border-blue-600'
                 : 'border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -524,7 +525,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
 
         {showFilters && (
           <div className="border-t border-slate-200 pt-4 mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
               {/* Action filter */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Action</label>
@@ -577,7 +578,8 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
               </div>
 
               {/* Date range */}
-              <DateRangePicker className="min-w-0"
+              <DateRangePicker
+                className="min-w-0"
                 startDate={startDate}
                 endDate={endDate}
                 onStartDateChange={setStartDate}
@@ -600,12 +602,12 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
 
         {/* Log entries */}
         {loading ? (
-          <div className="p-6">
+          <div className="p-4">
             <TableSkeleton rows={8} columns={5} />
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="text-center py-12">
-            <History className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <div className="text-center py-8">
+            <History className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-2">Aucune activité</h3>
             <p className="text-slate-600">
               {searchTerm || hasActiveFilters
@@ -623,7 +625,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
                 return (
                   <div
                     key={log.id}
-                    className={`py-4 -mx-2 px-2 rounded-lg transition-colors ${hasMetadata ? 'cursor-pointer hover:bg-slate-50' : ''} ${isExpanded ? 'bg-slate-50' : ''}`}
+                    className={`py-3 -mx-2 px-2 rounded-lg transition-colors ${hasMetadata ? 'cursor-pointer hover:bg-slate-50' : ''} ${isExpanded ? 'bg-slate-50' : ''}`}
                     onClick={() => hasMetadata && setExpandedLogId(isExpanded ? null : log.id)}
                   >
                     <div className="flex items-start gap-4">

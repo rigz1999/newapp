@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { toast } from '../../utils/toast';
 import { triggerCacheInvalidation } from '../../utils/cacheManager';
 import { logAuditEvent, auditFormatCurrency, auditFormatDate } from '../../utils/auditLogger';
+import { logger } from '../../utils/logger';
 
 interface QuickPaymentModalProps {
   preselectedProjectId?: string;
@@ -429,7 +430,7 @@ export function QuickPaymentModal({
           .upload(fileName, file);
 
         if (uploadError) {
-          console.error('Error uploading file:', uploadError);
+          logger.error('Error uploading file:', uploadError);
           toast.warning(`Erreur lors du téléchargement de ${file.name}`);
           continue;
         }
@@ -441,7 +442,7 @@ export function QuickPaymentModal({
       setFileUrls(newFileUrls);
       setAnalyzed(false); // Reset analyzed state when new files are added
     } catch (err) {
-      console.error('Error uploading files:', err);
+      logger.error('Error uploading files:', err);
       setError('Erreur lors du téléchargement des fichiers');
     } finally {
       setProcessing(false);
@@ -524,7 +525,7 @@ export function QuickPaymentModal({
       setAnalyzed(true);
       toast.success('Analyse terminée !');
     } catch (err: unknown) {
-      console.error('Error analyzing files:', err);
+      logger.error('Error analyzing files:', err);
       setError(
         `Erreur lors de l'analyse IA: ${err instanceof Error ? err.message : 'Unknown error'}`
       );
@@ -641,7 +642,7 @@ export function QuickPaymentModal({
             });
 
             if (proofError) {
-              console.error('Error linking proof:', proofError);
+              logger.error('Error linking proof:', proofError);
             }
           }
         }
@@ -688,7 +689,7 @@ export function QuickPaymentModal({
       onSuccess();
       onClose();
     } catch (err: unknown) {
-      console.error('Error recording payment:', err);
+      logger.error('Error recording payment:', err);
       setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement du paiement");
     } finally {
       setProcessing(false);
@@ -703,11 +704,12 @@ export function QuickPaymentModal({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-6 border-b border-slate-200 flex items-center justify-between">

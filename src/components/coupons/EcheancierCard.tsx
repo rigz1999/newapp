@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Calendar, AlertCircle, Download } from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 interface Echeance {
   date_echeance: string;
@@ -84,7 +85,7 @@ export function EcheancierCard({
             allEcheances.push(...echeances);
           }
         } catch (error) {
-          console.error(`Error fetching echeances for tranche ${tranche.id}:`, error);
+          logger.error(`Error fetching echeances for tranche ${tranche.id}:`, error);
         }
       }
 
@@ -226,7 +227,7 @@ export function EcheancierCard({
           );
         }
       } catch (error) {
-        console.error(`Error fetching data for tranche ${tranche.id}:`, error);
+        logger.error(`Error fetching data for tranche ${tranche.id}:`, error);
       }
     }
 

@@ -5,6 +5,7 @@
 
 import { AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 import { useEffect } from 'react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface BaseModalProps {
   isOpen: boolean;
@@ -42,6 +43,8 @@ export function ConfirmModal({
   type = 'danger',
   isLoading = false,
 }: ConfirmModalProps) {
+  const focusTrapRef = useFocusTrap(isOpen);
+
   // Handle ESC key
   useEffect(() => {
     if (!isOpen) {
@@ -95,11 +98,16 @@ export function ConfirmModal({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget && !isLoading) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
     >
       <div
+        ref={focusTrapRef}
         className="bg-white rounded-xl shadow-2xl max-w-md w-full"
-        onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Icon */}
@@ -154,6 +162,8 @@ export function AlertModal({
   autoDismiss = false,
   autoDismissDelay = 3000,
 }: AlertModalProps) {
+  const focusTrapRef = useFocusTrap(isOpen);
+
   // Handle ESC key
   useEffect(() => {
     if (!isOpen) {
@@ -223,11 +233,16 @@ export function AlertModal({
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
     >
       <div
+        ref={focusTrapRef}
         className="bg-white rounded-xl shadow-2xl max-w-md w-full"
-        onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Icon */}

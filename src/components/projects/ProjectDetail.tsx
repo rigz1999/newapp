@@ -39,6 +39,8 @@ import {
   ChevronRight,
   Mail,
   Copy,
+  User,
+  Building2,
 } from 'lucide-react';
 import { DashboardSkeleton } from '../common/Skeleton';
 
@@ -64,6 +66,11 @@ interface Project {
   date_emission: string | null;
   base_interet: number | null;
   type: string | null;
+  valeur_nominale: number | null;
+  prorogation_possible: boolean;
+  duree_prorogation_mois: number | null;
+  step_up_taux: number | null;
+  prorogation_activee: boolean;
 }
 
 interface Tranche {
@@ -89,6 +96,7 @@ interface Subscription {
   investisseur: {
     nom_raison_sociale: string;
     cgp?: string;
+    type?: string;
   };
   tranche: {
     tranche_name: string;
@@ -245,7 +253,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               `
           id, id_souscription, date_souscription, nombre_obligations, montant_investi,
           coupon_net, investisseur_id, cgp,
-          investisseur:investisseurs(nom_raison_sociale, cgp),
+          investisseur:investisseurs(nom_raison_sociale, cgp, type),
           tranche:tranches(tranche_name, date_emission)
         `
             )
@@ -486,7 +494,10 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
         editedProject.taux_nominal !== project.taux_nominal) ||
       (editedProject.duree_mois !== undefined && editedProject.duree_mois !== project.duree_mois) ||
       (editedProject.base_interet !== undefined &&
-        editedProject.base_interet !== project.base_interet);
+        editedProject.base_interet !== project.base_interet) ||
+      ((editedProject as Record<string, unknown>).prorogation_activee !== undefined &&
+        (editedProject as Record<string, unknown>).prorogation_activee !==
+          project.prorogation_activee);
 
     if (hasFinancialChanges && subscriptions.length > 0) {
       const confirmMsg =
@@ -557,8 +568,24 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
       if (editedProject.base_interet !== undefined) {
         updateData.base_interet = editedProject.base_interet;
       }
+      if (editedProject.valeur_nominale !== undefined) {
+        updateData.valeur_nominale = editedProject.valeur_nominale;
+      }
       if (editedProject.type !== undefined) {
         updateData.type = editedProject.type;
+      }
+      const ep = editedProject as Record<string, unknown>;
+      if (ep.prorogation_possible !== undefined) {
+        updateData.prorogation_possible = ep.prorogation_possible;
+      }
+      if (ep.duree_prorogation_mois !== undefined) {
+        updateData.duree_prorogation_mois = ep.duree_prorogation_mois;
+      }
+      if (ep.step_up_taux !== undefined) {
+        updateData.step_up_taux = ep.step_up_taux;
+      }
+      if (ep.prorogation_activee !== undefined) {
+        updateData.prorogation_activee = ep.prorogation_activee;
       }
 
       const { error } = await supabase.from('projets').update(updateData).eq('id', project!.id);
@@ -860,9 +887,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
 
   return (
     <>
-      <div className="space-y-6 px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4 space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(userRole === 'emetteur' ? '/' : '/projets')}
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
@@ -873,7 +900,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-slate-900">{project.projet}</h1>
+                <h1 className="text-2xl font-bold text-slate-900">{project.projet}</h1>
                 <Tooltip content="Copier l'ID du projet">
                   <button
                     onClick={() => copyToClipboard(project.id, 'ID du projet copié!')}
@@ -974,8 +1001,8 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-slate-600 text-sm">Montant total levé</p>
@@ -989,7 +1016,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-slate-600 text-sm">Investisseurs</p>
@@ -1001,7 +1028,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-slate-600 text-sm">Tranches</p>
@@ -1013,7 +1040,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-slate-600 text-sm">Prochain Coupon</p>
@@ -1031,9 +1058,9 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h2 className="text-xl font-bold text-slate-900 mb-4">Détails du Projet</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+          <h2 className="text-base font-semibold text-slate-900 mb-3">Détails du Projet</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
               <p className="text-sm text-slate-600">SIREN</p>
               <p className="text-base font-medium text-slate-900">
@@ -1088,14 +1115,64 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                 {project.base_interet ? `${project.base_interet} jours` : '-'}
               </p>
             </div>
+            <div>
+              <p className="text-sm text-slate-600">Valeur nominale</p>
+              <p className="text-base font-medium text-slate-900">
+                {project.valeur_nominale ? `${project.valeur_nominale} €` : '100 €'}
+              </p>
+            </div>
           </div>
+
+          {/* Prorogation info */}
+          {project.prorogation_possible && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold text-amber-800">Clause de prorogation</p>
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    project.prorogation_activee
+                      ? 'bg-amber-200 text-amber-900'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {project.prorogation_activee ? 'Activée' : 'Non exercée'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-slate-500">Durée supplémentaire</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {project.duree_prorogation_mois} mois
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Majoration du taux</p>
+                  <p className="text-sm font-medium text-slate-900">+{project.step_up_taux}%</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Taux prorogé</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {project.taux_nominal != null && project.step_up_taux != null
+                      ? `${(project.taux_nominal + project.step_up_taux).toFixed(2)}%`
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+              {project.prorogation_activee && (
+                <p className="mt-2 text-xs text-amber-700">
+                  Maturité totale :{' '}
+                  {(project.duree_mois ?? 0) + (project.duree_prorogation_mois ?? 0)} mois
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 3) REMPLACEMENT COMPLET DE LA SECTION "Tranches" */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-baseline gap-3">
-              <h2 className="text-xl font-bold text-slate-900">Tranches</h2>
+              <h2 className="text-base font-semibold text-slate-900">Tranches</h2>
               <button
                 onClick={() => setShowTranchesModal(true)}
                 className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
@@ -1144,13 +1221,21 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                       className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-all"
                     >
                       {/* Header cliquable */}
-                      <button
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => toggleTrancheExpand(tranche.id)}
-                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleTrancheExpand(tranche.id);
+                          }
+                        }}
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer"
                         aria-expanded={isExpanded}
                         aria-label={`${isExpanded ? 'Réduire' : 'Développer'} les détails de la tranche ${tranche.tranche_name}`}
                       >
-                        <div className="flex items-center gap-4 flex-1">
+                        <div className="flex items-center gap-3 flex-1">
                           {isExpanded ? (
                             <ChevronDown
                               className="w-5 h-5 text-slate-400 flex-shrink-0"
@@ -1224,7 +1309,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             </button>
                           </div>
                         )}
-                      </button>
+                      </div>
 
                       {/* Dropdown des souscriptions */}
                       {isExpanded && (
@@ -1287,9 +1372,14 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                                   }
                                 >
                                   <span
-                                    className="flex-1 text-sm font-medium text-slate-900"
+                                    className="flex-1 flex items-center gap-2 text-sm font-medium text-slate-900"
                                     role="cell"
                                   >
+                                    {sub.investisseur?.type?.toLowerCase().includes('morale') ? (
+                                      <Building2 className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                                    ) : (
+                                      <User className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                    )}
                                     {sub.investisseur?.nom_raison_sociale || 'N/A'}
                                   </span>
                                   <span
@@ -1652,6 +1742,206 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                               </select>
                             </div>
                           </div>
+
+                          <div>
+                            <label
+                              htmlFor="edit-valeur-nominale"
+                              className="block text-sm font-medium text-slate-900 mb-2"
+                            >
+                              Valeur nominale de l'obligation (€)
+                            </label>
+                            <input
+                              id="edit-valeur-nominale"
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              value={editedProject.valeur_nominale?.toString() || '100'}
+                              onChange={e =>
+                                setEditedProject({
+                                  ...editedProject,
+                                  valeur_nominale: parseFloat(e.target.value) || null,
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+                              placeholder="Ex: 100"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Prorogation */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-amber-800 mb-4 pb-2 border-b border-amber-200">
+                          Clause de prorogation
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between py-3 px-4 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-slate-900">
+                                Prorogation possible
+                              </p>
+                              <p className="text-sm text-slate-600">
+                                L'émetteur peut prolonger la maturité avec un taux majoré
+                              </p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer ml-4">
+                              <input
+                                type="checkbox"
+                                checked={
+                                  ((editedProject as Record<string, unknown>)
+                                    .prorogation_possible as boolean | undefined) ??
+                                  project?.prorogation_possible ??
+                                  false
+                                }
+                                onChange={e => {
+                                  const checked = e.target.checked;
+                                  setEditedProject(
+                                    prev =>
+                                      ({
+                                        ...prev,
+                                        prorogation_possible: checked,
+                                        ...(!checked
+                                          ? {
+                                              duree_prorogation_mois: null,
+                                              step_up_taux: null,
+                                              prorogation_activee: false,
+                                            }
+                                          : {}),
+                                      }) as Partial<Project>
+                                  );
+                                }}
+                                className="sr-only peer"
+                              />
+                              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                          </div>
+
+                          {(((editedProject as Record<string, unknown>).prorogation_possible as
+                            | boolean
+                            | undefined) ??
+                            project?.prorogation_possible) && (
+                            <>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label
+                                    htmlFor="edit-duree-prorogation"
+                                    className="block text-sm font-medium text-slate-900 mb-2"
+                                  >
+                                    Durée de prorogation (mois)
+                                  </label>
+                                  <input
+                                    id="edit-duree-prorogation"
+                                    type="number"
+                                    min="1"
+                                    max="120"
+                                    value={
+                                      (
+                                        (editedProject as Record<string, unknown>)
+                                          .duree_prorogation_mois as number | undefined
+                                      )?.toString() ??
+                                      project?.duree_prorogation_mois?.toString() ??
+                                      ''
+                                    }
+                                    onChange={e =>
+                                      setEditedProject(
+                                        prev =>
+                                          ({
+                                            ...prev,
+                                            duree_prorogation_mois:
+                                              parseInt(e.target.value) || null,
+                                          }) as Partial<Project>
+                                      )
+                                    }
+                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                    placeholder="Ex: 6"
+                                  />
+                                </div>
+                                <div>
+                                  <label
+                                    htmlFor="edit-step-up"
+                                    className="block text-sm font-medium text-slate-900 mb-2"
+                                  >
+                                    Majoration du taux (%)
+                                  </label>
+                                  <input
+                                    id="edit-step-up"
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    max="50"
+                                    value={
+                                      (
+                                        (editedProject as Record<string, unknown>).step_up_taux as
+                                          | number
+                                          | undefined
+                                      )?.toString() ??
+                                      project?.step_up_taux?.toString() ??
+                                      ''
+                                    }
+                                    onChange={e =>
+                                      setEditedProject(
+                                        prev =>
+                                          ({
+                                            ...prev,
+                                            step_up_taux: parseFloat(e.target.value) || null,
+                                          }) as Partial<Project>
+                                      )
+                                    }
+                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                    placeholder="Ex: 1.00"
+                                  />
+                                  <p className="mt-1 text-xs text-slate-600">
+                                    Taux prorogé :{' '}
+                                    {(() => {
+                                      const taux =
+                                        editedProject.taux_nominal ?? project?.taux_nominal;
+                                      const stepUp =
+                                        ((editedProject as Record<string, unknown>).step_up_taux as
+                                          | number
+                                          | undefined) ?? project?.step_up_taux;
+                                      return taux != null && stepUp != null
+                                        ? `${(taux + stepUp).toFixed(2)}%`
+                                        : '—';
+                                    })()}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Activation toggle — only if prorogation is configured */}
+                              <div className="flex items-center justify-between py-3 px-4 bg-amber-100 border border-amber-300 rounded-lg">
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-amber-900">
+                                    Prorogation exercée par l'émetteur
+                                  </p>
+                                  <p className="text-xs text-amber-700">
+                                    Activer génère les coupons supplémentaires au taux majoré
+                                  </p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer ml-4">
+                                  <input
+                                    type="checkbox"
+                                    checked={
+                                      ((editedProject as Record<string, unknown>)
+                                        .prorogation_activee as boolean | undefined) ??
+                                      project?.prorogation_activee ??
+                                      false
+                                    }
+                                    onChange={e =>
+                                      setEditedProject(
+                                        prev =>
+                                          ({
+                                            ...prev,
+                                            prorogation_activee: e.target.checked,
+                                          }) as Partial<Project>
+                                      )
+                                    }
+                                    className="sr-only peer"
+                                  />
+                                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                                </label>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -1872,14 +2162,29 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           type="number"
                           step="0.01"
                           value={editingSubscription.montant_investi || ''}
-                          onChange={e =>
+                          onChange={e => {
+                            const montant = parseFloat(e.target.value) || 0;
+                            const vn = project?.valeur_nominale || 100;
                             setEditingSubscription({
                               ...editingSubscription,
-                              montant_investi: parseFloat(e.target.value) || 0,
-                            })
-                          }
+                              montant_investi: montant,
+                              nombre_obligations: vn > 0 ? Math.round(montant / vn) : 0,
+                            });
+                          }}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
+                        {(() => {
+                          const vn = project?.valeur_nominale || 100;
+                          const montant = editingSubscription.montant_investi || 0;
+                          if (vn > 0 && montant > 0 && montant % vn !== 0) {
+                            return (
+                              <p className="text-xs text-amber-600 mt-1">
+                                Le montant ne correspond pas à un nombre entier d'obligations
+                              </p>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       <div>
@@ -1893,17 +2198,26 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                           id="edit-nombre-obligations"
                           type="number"
                           value={editingSubscription.nombre_obligations || ''}
-                          onChange={e =>
+                          onChange={e => {
+                            const nb = parseInt(e.target.value) || 0;
+                            const vn = project?.valeur_nominale || 100;
                             setEditingSubscription({
                               ...editingSubscription,
-                              nombre_obligations: parseInt(e.target.value) || 0,
-                            })
-                          }
+                              nombre_obligations: nb,
+                              montant_investi: nb * vn,
+                            });
+                          }}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
                         />
                       </div>
 
                       <div className="p-4 bg-slate-50 rounded-lg">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Valeur nominale :</span>
+                          <span className="font-medium text-slate-900">
+                            {project?.valeur_nominale || 100} €
+                          </span>
+                        </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-600">Tranche :</span>
                           <span className="font-medium text-slate-900">

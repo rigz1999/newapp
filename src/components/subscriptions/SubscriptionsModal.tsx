@@ -135,13 +135,14 @@ export function SubscriptionsModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50" onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose();
+      }} />
 
       {/* Centered Container */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
           className="relative bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
-          onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className="p-6 border-b border-slate-200">

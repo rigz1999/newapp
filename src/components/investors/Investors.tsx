@@ -11,7 +11,7 @@ import {
   User,
   ArrowUpDown,
   X,
-  AlertTriangle,
+  _AlertTriangle,
   Download,
   Upload,
   FileText,
@@ -405,7 +405,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
     }
 
     return filtered;
-  }, [investors, advancedFilters.filters, sortField, sortDirection, ribSortDirection, showArchived]);
+  }, [
+    investors,
+    advancedFilters.filters,
+    sortField,
+    sortDirection,
+    ribSortDirection,
+    showArchived,
+  ]);
 
   // Count active filters
   const activeFiltersCount = useMemo(
@@ -616,7 +623,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
       setAlertModalConfig({
         title: 'Erreur',
         message: isPermissionError
-          ? 'Vous n\'avez pas les permissions nécessaires pour archiver cet investisseur.'
+          ? "Vous n'avez pas les permissions nécessaires pour archiver cet investisseur."
           : `Erreur lors de l'archivage: ${error.message}`,
         type: 'error',
       });
@@ -780,9 +787,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
       const fileName = `${selectedInvestor.id}_${Date.now()}.${fileExt}`;
       const filePath = `ribs/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('ribs')
-        .upload(filePath, ribFile);
+      const { error: uploadError } = await supabase.storage.from('ribs').upload(filePath, ribFile);
 
       clearInterval(progressInterval);
 
@@ -826,15 +831,17 @@ function Investors({ organization: _organization }: InvestorsProps) {
   };
 
   const handleDownloadRib = async (investor: InvestorWithStats) => {
-    if (!investor.rib_file_path) return;
+    if (!investor.rib_file_path) {
+      return;
+    }
 
     setDownloadingRib(investor.id);
     try {
-      const { data, error } = await supabase.storage
-        .from('ribs')
-        .download(investor.rib_file_path);
+      const { data, error } = await supabase.storage.from('ribs').download(investor.rib_file_path);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       const ext = investor.rib_file_path.split('.').pop() || 'pdf';
       const blobUrl = window.URL.createObjectURL(data);
@@ -952,7 +959,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
   }
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
+    <div className="max-w-7xl mx-auto px-4 lg:px-5 xl:px-6 py-4">
       {/* Breadcrumb Navigation */}
       {returnTo && (
         <div className="mb-4">
@@ -966,13 +973,13 @@ function Investors({ organization: _organization }: InvestorsProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <Users className="w-8 h-8 text-blue-600" />
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Users className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Investisseurs</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Investisseurs</h1>
             <p className="text-slate-600">
               {filteredInvestors.length} investisseur{filteredInvestors.length > 1 ? 's' : ''}
               {selectedInvestorIds.size > 0 && (
@@ -1017,7 +1024,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4">
         {/* Basic Search */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
@@ -1034,14 +1041,14 @@ function Investors({ organization: _organization }: InvestorsProps) {
               placeholder="Rechercher par nom, CGP, e-mail..."
               value={advancedFilters.filters.search}
               onChange={e => advancedFilters.setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
+              className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-finixar-brand-blue"
               aria-label="Rechercher des investisseurs par nom, CGP ou e-mail"
             />
           </div>
 
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
               showAdvancedFilters || activeFiltersCount > 0
                 ? 'bg-blue-50 border-blue-300 text-blue-700'
                 : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -1174,7 +1181,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     aria-label="Sélectionner tous les investisseurs"
                   />
                 </th>
-                <th scope="col" className="px-6 py-3 text-left">
+                <th scope="col" className="px-4 py-2 text-left">
                   <button
                     onClick={() => handleSort('nom_raison_sociale')}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
@@ -1183,7 +1190,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     Nom / Raison Sociale <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left">
+                <th scope="col" className="px-4 py-2 text-left">
                   <button
                     onClick={() => handleSort('type')}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
@@ -1192,7 +1199,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     Type <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left">
+                <th scope="col" className="px-4 py-2 text-left">
                   <button
                     onClick={() => handleSort('cgp')}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
@@ -1201,7 +1208,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     CGP <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left">
+                <th scope="col" className="px-4 py-2 text-left">
                   <button
                     onClick={() => handleSort('total_investi')}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
@@ -1210,7 +1217,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     Total Investi <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left">
+                <th scope="col" className="px-4 py-2 text-left">
                   <button
                     onClick={() => handleSort('nb_souscriptions')}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
@@ -1219,7 +1226,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     Souscriptions <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-center">
+                <th scope="col" className="px-4 py-2 text-center">
                   <button
                     onClick={handleSortRib}
                     className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900 mx-auto"
@@ -1228,7 +1235,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     RIB <ArrowUpDown className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-center">
+                <th scope="col" className="px-4 py-2 text-center">
                   <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Actions
                   </span>
@@ -1241,7 +1248,10 @@ function Investors({ organization: _organization }: InvestorsProps) {
                 const isInvestorMorale = isMorale(investor.type);
 
                 return (
-                  <tr key={investor.id} className={`hover:bg-slate-50 transition-colors ${investor.archived ? 'opacity-60 bg-slate-50' : ''}`}>
+                  <tr
+                    key={investor.id}
+                    className={`hover:bg-slate-50 transition-colors ${investor.archived ? 'opacity-60 bg-slate-50' : ''}`}
+                  >
                     <td className="px-4 py-4 text-center">
                       <input
                         type="checkbox"
@@ -1252,7 +1262,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         aria-label={`Sélectionner ${investor.nom_raison_sociale}`}
                       />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       <div className="flex items-center gap-3">
                         <div
                           className={`p-2 rounded-lg ${investor.archived ? 'bg-slate-200' : isInvestorMorale ? 'bg-purple-100' : 'bg-blue-100'}`}
@@ -1276,7 +1286,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           isInvestorMorale
@@ -1287,16 +1297,16 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         {formatType(investor.type)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-slate-600">
                       <p>{investor.cgp || '-'}</p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-finixar-green">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm font-semibold text-finixar-green">
                       {formatCurrency(investor.total_investi)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-slate-900">
                       {investor.nb_souscriptions}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1">
                         {hasRib ? (
                           <>
@@ -1307,7 +1317,10 @@ function Investors({ organization: _organization }: InvestorsProps) {
                               title="Télécharger le RIB"
                               aria-label={`Télécharger le RIB de ${investor.nom_raison_sociale}`}
                             >
-                              <Download className={`w-3.5 h-3.5 ${downloadingRib === investor.id ? 'animate-pulse' : ''}`} aria-hidden="true" />
+                              <Download
+                                className={`w-3.5 h-3.5 ${downloadingRib === investor.id ? 'animate-pulse' : ''}`}
+                                aria-hidden="true"
+                              />
                               {downloadingRib === investor.id ? '...' : 'Télécharger'}
                             </button>
                             <button
@@ -1332,7 +1345,7 @@ function Investors({ organization: _organization }: InvestorsProps) {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-2.5 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1">
                         {investor.archived ? (
                           <button
@@ -1694,7 +1707,9 @@ function Investors({ organization: _organization }: InvestorsProps) {
                     <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h5 className="font-semibold text-slate-900">Prélèvement Forfaitaire Unique (PFU)</h5>
+                          <h5 className="font-semibold text-slate-900">
+                            Prélèvement Forfaitaire Unique (PFU)
+                          </h5>
                           <p className="text-sm text-slate-600 mt-1">
                             Appliquer le prélèvement de 30% sur les coupons (flat tax)
                           </p>
@@ -1706,14 +1721,13 @@ function Investors({ organization: _organization }: InvestorsProps) {
                           onClick={() =>
                             setEditFormData({
                               ...editFormData,
-                              tax_regime: editFormData.tax_regime === 'exempt' ? 'default' : 'exempt',
+                              tax_regime:
+                                editFormData.tax_regime === 'exempt' ? 'default' : 'exempt',
                               custom_tax_rate: null,
                             })
                           }
                           className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                            editFormData.tax_regime !== 'exempt'
-                              ? 'bg-blue-600'
-                              : 'bg-slate-300'
+                            editFormData.tax_regime !== 'exempt' ? 'bg-blue-600' : 'bg-slate-300'
                           }`}
                         >
                           <span

@@ -1,5 +1,7 @@
 import { AlertTriangle, Loader2, Trash2, AlertCircle, X } from 'lucide-react';
 import { useState } from 'react';
+import { logger } from '../../utils/logger';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -27,6 +29,7 @@ export function ConfirmDialog({
   impact,
 }: ConfirmDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const focusTrapRef = useFocusTrap(isOpen);
 
   if (!isOpen) {
     return null;
@@ -38,7 +41,7 @@ export function ConfirmDialog({
       await onConfirm();
       onClose();
     } catch (error) {
-      console.error('Confirm action failed:', error);
+      logger.error('Confirm action failed:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -75,11 +78,16 @@ export function ConfirmDialog({
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[70] animate-fade-in"
-      onClick={!isProcessing ? onClose : undefined}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget && !isProcessing) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
     >
       <div
+        ref={focusTrapRef}
         className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-scale-in"
-        onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           <div className="flex items-start gap-4">

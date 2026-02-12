@@ -179,7 +179,7 @@ export function EcheancierContent({
             coupon_brut: sub?.coupon_brut || 0,
             coupon_net: sub?.coupon_net || 0,
             montant_investi: sub?.montant_investi || 0,
-            investisseur: sub?.investisseur || { nom_raison_sociale: '', type: 'Physique' },
+            investisseur: sub?.investisseur || { nom_raison_sociale: '', type: 'physique' },
             tranche: sub?.tranche || { tranche_name: '', date_echeance_finale: '' },
           },
           isLastEcheance,
@@ -295,7 +295,7 @@ export function EcheancierContent({
       });
       setShowAlertModal(true);
     } catch (error) {
-      console.error('Error sending reminder:', error);
+      logger.error('Error sending reminder:', error);
       setAlertModalConfig({
         title: 'Erreur',
         message:
@@ -459,7 +459,7 @@ export function EcheancierContent({
               .remove(filesToDelete);
 
             if (storageError) {
-              console.error('Error deleting storage files:', storageError);
+              logger.error('Error deleting storage files:', storageError);
               // Don't throw - continue with deletion even if storage cleanup fails
             }
           }
@@ -1015,8 +1015,8 @@ export function EcheancierContent({
                                         <tr key={echeance.id} className="hover:bg-slate-50">
                                           <td className="px-4 py-2">
                                             <div className="flex items-center gap-2">
-                                              {echeance.souscription.investisseur.type ===
-                                              'Morale' ? (
+                                              {echeance.souscription.investisseur.type?.toLowerCase() ===
+                                              'morale' ? (
                                                 <Building2 className="w-4 h-4 text-purple-600" />
                                               ) : (
                                                 <User className="w-4 h-4 text-blue-600" />

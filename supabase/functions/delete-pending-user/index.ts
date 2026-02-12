@@ -1,7 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
@@ -15,6 +16,13 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Rate limit: 10 deletions per 15 minutes per IP
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`delete-pending-user:${ip}`, { maxRequests: 10, windowSeconds: 900 });
+    if (!rl.allowed) {
+      return rateLimitResponse(rl.retryAfterSeconds, corsHeaders);
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -34,7 +42,7 @@ Deno.serve(async (req: Request) => {
     const userExistsInAuth = !getUserError && existingUser?.user;
 
     if (userExistsInAuth) {
-      console.log('Found user to delete:', existingUser.user.email);
+      console.log('Found user to delete:', userId);
 
       // Delete user from auth.users
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);

@@ -6,7 +6,7 @@
 // Auto-subscribes/unsubscribes to table changes
 // ============================================
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { features } from '../config';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -50,6 +50,16 @@ export function useRealtimeSubscription<
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
+  // Store callbacks in refs so the subscription doesn't churn on every render
+  const onInsertRef = useRef(onInsert);
+  const onUpdateRef = useRef(onUpdate);
+  const onDeleteRef = useRef(onDelete);
+  const onChangeRef = useRef(onChange);
+  onInsertRef.current = onInsert;
+  onUpdateRef.current = onUpdate;
+  onDeleteRef.current = onDelete;
+  onChangeRef.current = onChange;
+
   useEffect(() => {
     // Check if realtime is enabled in config
     if (!features.enableRealtimeUpdates || !enabled) {
@@ -80,18 +90,18 @@ export function useRealtimeSubscription<
       (payload: RealtimePostgresChangesPayload<T>) => {
         setLastUpdate(new Date());
 
-        // Call specific handlers
-        if (payload.eventType === 'INSERT' && onInsert) {
-          onInsert(payload);
-        } else if (payload.eventType === 'UPDATE' && onUpdate) {
-          onUpdate(payload);
-        } else if (payload.eventType === 'DELETE' && onDelete) {
-          onDelete(payload);
+        // Call specific handlers via refs (stable references)
+        if (payload.eventType === 'INSERT' && onInsertRef.current) {
+          onInsertRef.current(payload);
+        } else if (payload.eventType === 'UPDATE' && onUpdateRef.current) {
+          onUpdateRef.current(payload);
+        } else if (payload.eventType === 'DELETE' && onDeleteRef.current) {
+          onDeleteRef.current(payload);
         }
 
-        // Call generic handler
-        if (onChange) {
-          onChange(payload);
+        // Call generic handler via ref
+        if (onChangeRef.current) {
+          onChangeRef.current(payload);
         }
       }
     );
@@ -114,7 +124,7 @@ export function useRealtimeSubscription<
       newChannel.unsubscribe();
       setIsConnected(false);
     };
-  }, [table, event, filter, onInsert, onUpdate, onDelete, onChange, enabled]);
+  }, [table, event, filter, enabled]);
 
   return {
     isConnected,

@@ -71,7 +71,7 @@ type FileType = 'csv' | 'xlsx' | 'xls';
 // =============================================================================
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Max-Age': '86400',
@@ -974,19 +974,33 @@ async function upsertSubscription(
   investorType: string,
   tauxNominal: number,
   periodiciteCoupons: string,
-  baseInteret: number
+  baseInteret: number,
+  valeurNominale: number = 100
 ): Promise<void> {
   const datesouscription =
     parseDate(row['Date de souscription']) || parseDate(row['Date de Souscription']);
-  const montantInvesti = toNumber(row['Montant investi']) || toNumber(row['Montant']);
-  const nombreObligations =
+  const csvMontant = toNumber(row['Montant investi']) || toNumber(row['Montant']);
+  const csvNombreObligations =
     toNumber(row['Quantité de titres']) || toNumber(row['Quantité']) || toNumber(row['Quantite']);
+
+  // Derive missing values using valeur_nominale
+  let montantInvesti = csvMontant;
+  let nombreObligations = csvNombreObligations;
+
+  if (montantInvesti && !nombreObligations && valeurNominale > 0) {
+    // CSV has amount but no bond count → derive it
+    nombreObligations = Math.round(montantInvesti / valeurNominale);
+  } else if (!montantInvesti && nombreObligations && valeurNominale > 0) {
+    // CSV has bond count but no amount → derive it
+    montantInvesti = nombreObligations * valeurNominale;
+  }
 
   // Calculate coupon_brut and coupon_net
   const periodRatio = getPeriodRatio(periodiciteCoupons, baseInteret);
   const couponAnnuel = (montantInvesti * tauxNominal) / 100;
   const couponBrut = couponAnnuel * periodRatio;
-  const couponNet = investorType.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
+  // Apply 30% tax for all investors that are NOT explicitly 'morale'
+  const couponNet = investorType.toLowerCase() === 'morale' ? couponBrut : couponBrut * 0.7;
 
   const subData: any = {
     projet_id: projetId,
@@ -1179,12 +1193,13 @@ Deno.serve(async req => {
     let tauxNominalFinal: number;
     let periodiciteCoupons: string;
     let baseInteret: number;
+    let valeurNominale: number;
 
     if (previewMode && finalTrancheId === 'preview-mode') {
       // In preview mode, get project details directly (no tranche exists yet)
       const { data: projectData, error: projectErr } = await supabaseClient
         .from('projets')
-        .select('taux_nominal, periodicite_coupons, duree_mois, base_interet')
+        .select('taux_nominal, periodicite_coupons, duree_mois, base_interet, valeur_nominale')
         .eq('id', finalProjetId)
         .single();
 
@@ -1202,12 +1217,13 @@ Deno.serve(async req => {
       tauxNominalFinal = trancheDetails.taux_nominal ?? project.taux_nominal;
       periodiciteCoupons = project.periodicite_coupons;
       baseInteret = project.base_interet ?? 360;
+      valeurNominale = project.valeur_nominale ?? 100;
     } else {
       // Normal mode: get tranche details with project fallback
       const { data: trancheDetailsData, error: trancheDetailsErr } = await supabaseClient
         .from('tranches')
         .select(
-          'taux_nominal, date_emission, duree_mois, projets!inner(taux_nominal, periodicite_coupons, duree_mois, base_interet)'
+          'taux_nominal, date_emission, duree_mois, projets!inner(taux_nominal, periodicite_coupons, duree_mois, base_interet, valeur_nominale)'
         )
         .eq('id', finalTrancheId)
         .single();
@@ -1221,6 +1237,7 @@ Deno.serve(async req => {
       tauxNominalFinal = trancheDetails.taux_nominal ?? project.taux_nominal;
       periodiciteCoupons = project.periodicite_coupons;
       baseInteret = project.base_interet ?? 360;
+      valeurNominale = project.valeur_nominale ?? 100;
     }
 
     if (!tauxNominalFinal || !periodiciteCoupons) {
@@ -1528,7 +1545,8 @@ Deno.serve(async req => {
           row._investorType,
           tauxNominalFinal,
           periodiciteCoupons,
-          baseInteret
+          baseInteret,
+          valeurNominale
         );
         createdSouscriptions++;
       } catch (rowErr: any) {

@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { checkRateLimit, getClientIp, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -15,7 +16,7 @@ serve(async req => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
         'Access-Control-Allow-Methods': 'POST',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       },
@@ -23,6 +24,15 @@ serve(async req => {
   }
 
   try {
+    // Rate limit: 3 attempts per 15 minutes per IP (strictest - unauthenticated endpoint)
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`send-password-reset:${ip}`, { maxRequests: 3, windowSeconds: 900 });
+    if (!rl.allowed) {
+      return rateLimitResponse(rl.retryAfterSeconds, {
+        'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
+      });
+    }
+
     console.log('=== Password reset function invoked ===');
 
     // Create admin client for database operations
@@ -36,7 +46,7 @@ serve(async req => {
     // Parse request body
     const { email }: PasswordResetRequest = await req.json();
 
-    console.log('Processing password reset request for:', email);
+    console.log('Processing password reset request');
 
     if (!email) {
       throw new Error('Email is required');
@@ -351,12 +361,9 @@ serve(async req => {
       }
 
       const emailData = await emailResponse.json();
-      console.log('Password reset email sent successfully:', {
-        emailId: emailData.id,
-        to: email,
-      });
+      console.log('Password reset email sent successfully:', emailData.id);
     } else {
-      console.log('Password reset requested for non-existent user:', email);
+      console.log('Password reset requested for non-existent user');
     }
 
     // Always return success (don't reveal if user exists)
@@ -368,7 +375,7 @@ serve(async req => {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
         },
       }
     );
@@ -382,7 +389,7 @@ serve(async req => {
         status: 400,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
         },
       }
     );

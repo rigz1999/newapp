@@ -122,7 +122,7 @@ export function MFASettings() {
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        <div className="p-6 flex items-center justify-center">
+        <div className="p-4 flex items-center justify-center">
           <RefreshCw className="w-5 h-5 text-slate-400 animate-spin" />
         </div>
       </div>
@@ -131,14 +131,14 @@ export function MFASettings() {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-      <div className="p-6 border-b border-slate-200">
+      <div className="p-4 border-b border-slate-200">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-slate-700" />
-          <h2 className="text-xl font-bold text-slate-900">Double authentification (2FA)</h2>
+          <h2 className="text-base font-bold text-slate-900">Double authentification (2FA)</h2>
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 space-y-4">
         {/* Status */}
         <div
           className={`flex items-center gap-3 p-4 rounded-lg border ${
@@ -161,7 +161,8 @@ export function MFASettings() {
               <div>
                 <p className="text-sm font-semibold text-amber-900">2FA non activé</p>
                 <p className="text-xs text-amber-800">
-                  La double authentification sera configurée lors de votre prochaine connexion.
+                  La double authentification sera configurée lors de votre prochaine
+                  connexion.
                 </p>
               </div>
             </>
@@ -174,7 +175,9 @@ export function MFASettings() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Key className="w-4 h-4 text-slate-600" />
-                <h3 className="text-sm font-semibold text-slate-900">Codes de récupération</h3>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Codes de récupération
+                </h3>
               </div>
               {remainingCodes !== null && (
                 <span
@@ -192,9 +195,9 @@ export function MFASettings() {
             </div>
 
             <p className="text-xs text-slate-600">
-              Les codes de récupération vous permettent d'accéder à votre compte si vous perdez
-              votre application d'authentification. Chaque code ne peut être utilisé qu'une seule
-              fois.
+              Les codes de récupération vous permettent d'accéder à
+              votre compte si vous perdez votre application d'authentification. Chaque code ne peut
+              être utilisé qu'une seule fois.
             </p>
 
             {/* Show generated codes */}
@@ -243,8 +246,8 @@ export function MFASettings() {
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-amber-800">
-                      Sauvegardez ces codes maintenant. Ils ne seront plus affichés après avoir
-                      quitté cette page.
+                      Sauvegardez ces codes maintenant. Ils ne seront plus affichés
+                      après avoir quitté cette page.
                     </p>
                   </div>
                 </div>
