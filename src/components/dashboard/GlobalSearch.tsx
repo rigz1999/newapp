@@ -15,6 +15,8 @@ import {
   Receipt,
   TrendingUp,
   Clock,
+  User,
+  Building2,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -424,7 +426,9 @@ export function GlobalSearch({ orgId, onClose }: GlobalSearchProps) {
         title: inv.nom_raison_sociale || 'Sans nom',
         subtitle: inv.email || "Pas d'e-mail",
         metadata: [inv.type === 'morale' ? 'Personne Morale' : 'Personne Physique'].filter(Boolean),
-        icon: <Users className="w-5 h-5 text-finixar-green" />,
+        icon: inv.type === 'morale'
+          ? <Building2 className="w-5 h-5 text-purple-600" />
+          : <User className="w-5 h-5 text-blue-600" />,
         link: `/investisseurs?id=${inv.id}`,
       }));
 
