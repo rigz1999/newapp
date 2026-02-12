@@ -116,6 +116,8 @@ export default function AdminPanel() {
   const [pfuRate, setPfuRate] = useState('31.4');
   const [pfuRateLoading, setPfuRateLoading] = useState(true);
   const [pfuRateSaving, setPfuRateSaving] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+  const [recalcProgress, setRecalcProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Alert modal state
   const [showAlertModal, setShowAlertModal] = useState(false);
@@ -267,12 +269,110 @@ export default function AdminPanel() {
       });
       setAlertModalConfig({
         title: 'Taux PFU mis à jour',
-        message: `Le taux PFU a été mis à jour à ${numericRate}%. Les échéances non payées seront recalculées lors de la prochaine régénération des coupons.`,
+        message: `Le taux PFU a été mis à jour à ${numericRate}%. Cliquez sur « Appliquer aux échéances non payées » pour recalculer immédiatement toutes les échéances existantes.`,
         type: 'success',
       });
       setShowAlertModal(true);
     }
     setPfuRateSaving(false);
+  };
+
+  const recalculateAllEcheances = async () => {
+    setRecalculating(true);
+    setRecalcProgress(null);
+
+    try {
+      // Fetch all distinct tranche IDs that have unpaid echeances
+      const { data: tranches, error: fetchError } = await supabase
+        .from('coupons_echeances')
+        .select('souscriptions!inner(tranche_id, tranches!inner(id, tranche_name))')
+        .neq('statut', 'payé')
+        .limit(10000);
+
+      if (fetchError) throw fetchError;
+
+      // Deduplicate tranche IDs
+      const trancheMap = new Map<string, string>();
+      for (const row of tranches || []) {
+        const sub = row.souscriptions as any;
+        const tranche = sub?.tranches;
+        if (tranche?.id && !trancheMap.has(tranche.id)) {
+          trancheMap.set(tranche.id, tranche.tranche_name || tranche.id);
+        }
+      }
+
+      const trancheList = Array.from(trancheMap.entries());
+
+      if (trancheList.length === 0) {
+        setAlertModalConfig({
+          title: 'Aucune échéance à recalculer',
+          message: 'Il n\'y a aucune échéance non payée à mettre à jour.',
+          type: 'info',
+        });
+        setShowAlertModal(true);
+        setRecalculating(false);
+        return;
+      }
+
+      setRecalcProgress({ current: 0, total: trancheList.length });
+
+      let totalUpdated = 0;
+      let totalCreated = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < trancheList.length; i++) {
+        const [trancheId, trancheName] = trancheList[i];
+        setRecalcProgress({ current: i + 1, total: trancheList.length });
+
+        try {
+          const { data, error: invokeError } = await supabase.functions.invoke(
+            'regenerate-echeancier',
+            { body: { tranche_id: trancheId } }
+          );
+
+          if (invokeError) {
+            errors.push(`${trancheName}: ${invokeError.message}`);
+          } else if (data) {
+            totalUpdated += data.updated_souscriptions || 0;
+            totalCreated += data.created_coupons || 0;
+          }
+        } catch (err: any) {
+          errors.push(`${trancheName}: ${err.message}`);
+        }
+      }
+
+      logAuditEvent({
+        action: 'updated',
+        entityType: 'setting',
+        description: `a recalculé les échéances pour ${trancheList.length} tranche(s) avec le nouveau taux PFU`,
+        metadata: { tranches_count: trancheList.length, total_updated: totalUpdated, total_created: totalCreated },
+      });
+
+      if (errors.length > 0) {
+        setAlertModalConfig({
+          title: 'Recalcul partiel',
+          message: `${trancheList.length - errors.length}/${trancheList.length} tranches recalculées. Erreurs:\n${errors.join('\n')}`,
+          type: 'warning',
+        });
+      } else {
+        setAlertModalConfig({
+          title: 'Recalcul terminé',
+          message: `${trancheList.length} tranche(s) recalculée(s). ${totalUpdated} souscription(s) mise(s) à jour, ${totalCreated} échéance(s) régénérée(s).`,
+          type: 'success',
+        });
+      }
+      setShowAlertModal(true);
+    } catch (err: any) {
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: `Impossible de recalculer les échéances: ${err.message}`,
+        type: 'error',
+      });
+      setShowAlertModal(true);
+    } finally {
+      setRecalculating(false);
+      setRecalcProgress(null);
+    }
   };
 
   const handleCancelInvitation = async (invitationId: string) => {
@@ -651,7 +751,7 @@ export default function AdminPanel() {
                   <div>
                     <p className="font-medium text-slate-900">Taux PFU (Prélèvement Forfaitaire Unique)</p>
                     <p className="text-xs text-slate-600">
-                      Taux appliqué aux personnes physiques. Modifier ce taux affectera les futures échéances et les échéances non payées lors de la prochaine régénération.
+                      Taux appliqué aux personnes physiques.
                     </p>
                   </div>
                 </div>
@@ -676,6 +776,30 @@ export default function AdminPanel() {
                     </button>
                   </div>
                 )}
+              </div>
+              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <p className="text-xs text-slate-500">
+                  Recalculer toutes les échéances non payées avec le taux actuel.
+                </p>
+                <button
+                  onClick={recalculateAllEcheances}
+                  disabled={recalculating}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {recalculating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {recalcProgress
+                        ? `${recalcProgress.current}/${recalcProgress.total} tranches...`
+                        : 'Chargement...'}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Appliquer aux échéances non payées
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
