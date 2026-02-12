@@ -31,11 +31,9 @@ import { DateRangePicker } from '../filters/DateRangePicker';
 import PaymentRemindersCard from './PaymentRemindersCard';
 import PaymentRemindersModal from './PaymentRemindersModal';
 import { useAuth } from '../../hooks/useAuth';
+import { usePlatformSettings } from '../../hooks/usePlatformSettings';
 import { toast } from '../../utils/toast';
 import { logger } from '../../utils/logger';
-
-// Tax rate for physical investors (30% withholding tax)
-const TAX_RATE_PHYSICAL = 0.3;
 
 interface Coupon {
   id: string;
@@ -89,6 +87,7 @@ const getCouponStatus = (coupon: Coupon, now: Date = new Date()) => {
 
 export function Coupons() {
   const { user } = useAuth();
+  const { pfuRate } = usePlatformSettings(user?.id);
   const [searchParams, setSearchParams] = useSearchParams();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -246,7 +245,7 @@ export function Coupons() {
 
         const montant_net =
           (investisseur.type as string).toLowerCase() === 'physique'
-            ? (c.montant_coupon as number) * (1 - TAX_RATE_PHYSICAL)
+            ? (c.montant_coupon as number) * (1 - pfuRate)
             : (c.montant_coupon as number);
 
         return {

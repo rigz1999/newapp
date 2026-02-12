@@ -32,7 +32,7 @@ export function TaxInfoTooltip({
       return 'Prélèvement désactivé : aucune retenue';
     }
 
-    return 'PFU (Prélèvement Forfaitaire Unique) : 30%';
+    return `PFU (Prélèvement Forfaitaire Unique) : ${taxRate.toFixed(1).replace('.', ',')}%`;
   };
 
   return (
@@ -71,11 +71,6 @@ export function TaxInfoTooltip({
           {/* Tax regime info */}
           <div className="mt-3 pt-3 border-t border-gray-700">
             <div className="text-xs text-gray-400">{getTaxDescription()}</div>
-            {isPhysique && taxRegime === 'default' && (
-              <div className="text-xs text-gray-500 mt-1">
-                12,8% IR + 17,2% prélèvements sociaux
-              </div>
-            )}
           </div>
 
           {/* Arrow pointing down */}
