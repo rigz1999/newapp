@@ -18,4 +18,16 @@ CREATE POLICY "require_mfa_for_paiements" ON paiements
       SELECT 1 FROM auth.mfa_factors
       WHERE user_id = auth.uid() AND status = 'verified'
     )
+  )
+  WITH CHECK (
+    -- Same check for INSERT/UPDATE operations
+    NOT EXISTS (
+      SELECT 1 FROM platform_settings
+      WHERE key = 'mfa_enabled' AND value = 'true'::jsonb
+    )
+    OR (SELECT auth.jwt()->>'aal') = 'aal2'
+    OR NOT EXISTS (
+      SELECT 1 FROM auth.mfa_factors
+      WHERE user_id = auth.uid() AND status = 'verified'
+    )
   );
