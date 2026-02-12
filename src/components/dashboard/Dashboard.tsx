@@ -53,7 +53,7 @@ interface CachedDashboardData {
   recentPayments: Payment[];
   upcomingCoupons: UpcomingCoupon[];
   monthlyData: MonthlyData[];
-  chartSubscriptionsAll: { montant_investi: number; date_souscription: string }[];
+  chartSubscriptionsAll: { montant_investi: number; date_souscription: string; tranches: { date_emission: string | null } | null }[];
   alerts: Alert[];
 }
 
@@ -186,7 +186,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
   const [endMonth, setEndMonth] = useState(11);
   const [viewMode, setViewMode] = useState<'monthly' | 'cumulative'>('monthly');
   const [chartSubscriptionsAll, setChartSubscriptionsAll] = useState<
-    { montant_investi: number; date_souscription: string }[]
+    { montant_investi: number; date_souscription: string; tranches: { date_emission: string | null } | null }[]
   >([]);
 
   const [showTrancheWizard, setShowTrancheWizard] = useState(false);
@@ -283,11 +283,11 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         supabase.from('tranches').select('id, projet_id'),
         supabase
           .from('souscriptions')
-          .select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription'),
+          .select('montant_investi, tranche_id, prochaine_date_coupon, date_souscription, tranches(date_emission)'),
         supabase
           .from('souscriptions')
-          .select('montant_investi')
-          .gte('date_souscription', firstOfMonth.toISOString().split('T')[0]),
+          .select('montant_investi, tranches!inner(date_emission)')
+          .gte('tranches.date_emission', firstOfMonth.toISOString().split('T')[0]),
         supabase
           .from('paiements')
           .select('montant, statut')
@@ -296,9 +296,9 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         // Mois dernier
         supabase
           .from('souscriptions')
-          .select('montant_investi')
-          .gte('date_souscription', firstOfLastMonth.toISOString().split('T')[0])
-          .lt('date_souscription', firstOfMonth.toISOString().split('T')[0]),
+          .select('montant_investi, tranches!inner(date_emission)')
+          .gte('tranches.date_emission', firstOfLastMonth.toISOString().split('T')[0])
+          .lt('tranches.date_emission', firstOfMonth.toISOString().split('T')[0]),
         supabase
           .from('paiements')
           .select('montant, statut')
@@ -308,9 +308,9 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
         // Même mois année dernière
         supabase
           .from('souscriptions')
-          .select('montant_investi')
-          .gte('date_souscription', firstOfThisMonthLastYear.toISOString().split('T')[0])
-          .lt('date_souscription', firstOfNextMonthLastYear.toISOString().split('T')[0]),
+          .select('montant_investi, tranches!inner(date_emission)')
+          .gte('tranches.date_emission', firstOfThisMonthLastYear.toISOString().split('T')[0])
+          .lt('tranches.date_emission', firstOfNextMonthLastYear.toISOString().split('T')[0]),
         supabase
           .from('paiements')
           .select('montant, statut')
@@ -666,7 +666,7 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
   };
 
   const processMonthlyData = (
-    subscriptions: { montant_investi?: number | string; date_souscription?: string }[],
+    subscriptions: { montant_investi?: number | string; date_souscription?: string; tranches?: { date_emission: string | null } | null }[],
     year: number,
     start: number,
     end: number
@@ -696,8 +696,9 @@ export function Dashboard({ organization }: DashboardProps): JSX.Element {
     }
 
     subscriptions.forEach(sub => {
-      if (sub.date_souscription) {
-        const date = new Date(sub.date_souscription);
+      const dateStr = sub.tranches?.date_emission || sub.date_souscription;
+      if (dateStr) {
+        const date = new Date(dateStr);
         const subYear = date.getFullYear();
         const subMonth = date.getMonth();
         const monthKey = `${subYear}-${String(subMonth + 1).padStart(2, '0')}`;
