@@ -14,7 +14,6 @@ import {
   Building2,
   UserPlus,
   Shield,
-  ShieldCheck,
   Trash2,
   Plus,
   AlertCircle,
@@ -113,10 +112,6 @@ export default function AdminPanel() {
     new Set(['invitations', 'pending', 'super-admins', 'organizations'])
   );
 
-  // MFA toggle state
-  const [mfaEnabled, setMfaEnabled] = useState(false);
-  const [mfaToggleLoading, setMfaToggleLoading] = useState(true);
-
   // PFU tax rate state
   const [pfuRate, setPfuRate] = useState('31.4');
   const [pfuRateLoading, setPfuRateLoading] = useState(true);
@@ -132,7 +127,6 @@ export default function AdminPanel() {
 
   useEffect(() => {
     fetchData();
-    fetchMfaSetting();
     fetchPfuRate();
   }, []);
 
@@ -220,45 +214,6 @@ export default function AdminPanel() {
     setLoading(false);
   };
 
-  const fetchMfaSetting = async () => {
-    setMfaToggleLoading(true);
-    const { data, error } = await supabase
-      .from('platform_settings')
-      .select('value')
-      .eq('key', 'mfa_enabled')
-      .single();
-
-    if (!error && data) {
-      setMfaEnabled(data.value === true);
-    }
-    setMfaToggleLoading(false);
-  };
-
-  const toggleMfa = async () => {
-    const newValue = !mfaEnabled;
-    setMfaEnabled(newValue);
-
-    const { error } = await supabase
-      .from('platform_settings')
-      .upsert({ key: 'mfa_enabled', value: newValue, updated_at: new Date().toISOString() });
-
-    if (error) {
-      setMfaEnabled(!newValue); // revert on failure
-      setAlertModalConfig({
-        title: 'Erreur',
-        message: `Impossible de modifier le paramètre 2FA: ${error.message}`,
-        type: 'error',
-      });
-      setShowAlertModal(true);
-    } else {
-      logAuditEvent({
-        action: 'updated',
-        entityType: 'setting',
-        description: `a ${newValue ? 'activé' : 'désactivé'} l'authentification à deux facteurs (2FA)`,
-        metadata: { mfa_enabled: newValue },
-      });
-    }
-  };
 
   const fetchPfuRate = async () => {
     setPfuRateLoading(true);
@@ -681,45 +636,6 @@ export default function AdminPanel() {
                   <p className="text-xs text-slate-600">Gérer les formats d'import par société</p>
                 </div>
               </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Security Settings */}
-        {isSuperAdmin && (
-          <div className="mt-6">
-            <p className="text-sm font-semibold text-slate-700 mb-3">Sécurité</p>
-            <div className="bg-white border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="w-5 h-5 text-slate-700" />
-                  <div>
-                    <p className="font-medium text-slate-900">Authentification à deux facteurs (2FA)</p>
-                    <p className="text-xs text-slate-600">
-                      {mfaEnabled
-                        ? 'Tous les utilisateurs doivent configurer la 2FA pour accéder à la plateforme'
-                        : 'La 2FA est désactivée — les utilisateurs accèdent directement à la plateforme'}
-                    </p>
-                  </div>
-                </div>
-                {mfaToggleLoading ? (
-                  <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
-                ) : (
-                  <button
-                    onClick={toggleMfa}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      mfaEnabled ? 'bg-finixar-teal' : 'bg-slate-300'
-                    }`}
-                    aria-label={mfaEnabled ? 'Désactiver la 2FA' : 'Activer la 2FA'}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        mfaEnabled ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         )}
