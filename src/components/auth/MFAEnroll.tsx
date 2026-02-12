@@ -112,7 +112,7 @@ export function MFAEnroll({ onComplete }: MFAEnrollProps) {
                 Activez la double authentification
               </h1>
               <p className="text-center text-slate-600 mb-6">
-                Pour s&eacute;curiser votre compte Finixar, la double authentification (2FA) est
+                Pour sécuriser votre compte Finixar, la double authentification (2FA) est
                 obligatoire. Vous aurez besoin d'une application d'authentification.
               </p>
 
@@ -120,11 +120,11 @@ export function MFAEnroll({ onComplete }: MFAEnrollProps) {
                 <div className="flex gap-3">
                   <Smartphone className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-900">
-                    <p className="font-medium mb-2">Applications recommand&eacute;es :</p>
+                    <p className="font-medium mb-2">Applications recommandées :</p>
                     <ul className="space-y-1 text-blue-800">
-                      <li>&bull; Google Authenticator (iOS / Android)</li>
-                      <li>&bull; Microsoft Authenticator (iOS / Android)</li>
-                      <li>&bull; Authy (iOS / Android / Desktop)</li>
+                      <li>• Google Authenticator (iOS / Android)</li>
+                      <li>• Microsoft Authenticator (iOS / Android)</li>
+                      <li>• Authy (iOS / Android / Desktop)</li>
                     </ul>
                   </div>
                 </div>
@@ -144,7 +144,7 @@ export function MFAEnroll({ onComplete }: MFAEnrollProps) {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Pr&eacute;paration...
+                    Préparation...
                   </span>
                 ) : (
                   'Commencer la configuration'
@@ -172,7 +172,7 @@ export function MFAEnroll({ onComplete }: MFAEnrollProps) {
               {/* Manual entry fallback */}
               <div className="mb-6">
                 <p className="text-xs text-slate-500 text-center mb-2">
-                  Impossible de scanner ? Saisissez cette cl&eacute; manuellement :
+                  Impossible de scanner ? Saisissez cette clé manuellement :
                 </p>
                 <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg p-3">
                   <code className="flex-1 text-xs font-mono text-slate-700 break-all select-all">
@@ -196,19 +196,16 @@ export function MFAEnroll({ onComplete }: MFAEnrollProps) {
                 onClick={() => setStep('verify')}
                 className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 transition-colors"
               >
-                J'ai scann&eacute; le QR code
+                J'ai scanné le QR code
               </button>
             </>
           )}
 
           {step === 'verify' && (
             <>
-              <h1 className="text-2xl font-bold text-center text-slate-900 mb-2">
-                V&eacute;rification
-              </h1>
+              <h1 className="text-2xl font-bold text-center text-slate-900 mb-2">Vérification</h1>
               <p className="text-center text-slate-600 mb-8">
-                Saisissez le code &agrave; 6 chiffres affich&eacute; dans votre application
-                d'authentification.
+                Saisissez le code à 6 chiffres affiché dans votre application d'authentification.
               </p>
 
               <div className="mb-6">
@@ -218,7 +215,7 @@ export function MFAEnroll({ onComplete }: MFAEnrollProps) {
               {verifying && (
                 <div className="flex items-center justify-center gap-2 text-slate-600 mb-4">
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">V&eacute;rification...</span>
+                  <span className="text-sm">Vérification...</span>
                 </div>
               )}
 
@@ -245,12 +242,10 @@ export function MFAEnroll({ onComplete }: MFAEnrollProps) {
                   <CheckCircle className="w-10 h-10 text-white" />
                 </div>
 
-                <h1 className="text-2xl font-bold text-slate-900 mb-2">
-                  2FA activ&eacute; avec succ&egrave;s !
-                </h1>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">2FA activé avec succès !</h1>
                 <p className="text-slate-600 mb-8">
-                  Votre compte est maintenant prot&eacute;g&eacute; par la double authentification.
-                  Vous devrez saisir un code &agrave; chaque connexion.
+                  Votre compte est maintenant protégé par la double authentification. Vous devrez
+                  saisir un code à chaque connexion.
                 </p>
 
                 <button

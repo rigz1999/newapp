@@ -69,10 +69,10 @@ export function CookieConsentBanner() {
               <div>
                 <h3 className="text-lg font-bold text-slate-900 mb-1">Gestion des cookies</h3>
                 <p className="text-sm text-slate-600 leading-relaxed">
-                  Finixar utilise des cookies strictement n&eacute;cessaires au fonctionnement du
-                  site (authentification, s&eacute;curit&eacute;). Nous souhaitons &eacute;galement
-                  utiliser des cookies pour le suivi d'erreurs (Sentry) afin d'am&eacute;liorer la
-                  qualit&eacute; du service. Vous pouvez accepter ou refuser ces cookies optionnels.
+                  Finixar utilise des cookies strictement nécessaires au fonctionnement du site
+                  (authentification, sécurité). Nous souhaitons également utiliser des cookies pour
+                  le suivi d'erreurs (Sentry) afin d'améliorer la qualité du service. Vous pouvez
+                  accepter ou refuser ces cookies optionnels.
                 </p>
               </div>
             </div>
@@ -104,9 +104,7 @@ export function CookieConsentBanner() {
           /* Granular preferences panel */
           <>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-slate-900">
-                Pr&eacute;f&eacute;rences de cookies
-              </h3>
+              <h3 className="text-lg font-bold text-slate-900">Préférences de cookies</h3>
               <button
                 onClick={() => setShowDetails(false)}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -119,12 +117,10 @@ export function CookieConsentBanner() {
               {/* Strictly necessary - always on */}
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-slate-900">
-                    Strictement n&eacute;cessaires
-                  </p>
+                  <p className="text-sm font-semibold text-slate-900">Strictement nécessaires</p>
                   <p className="text-xs text-slate-600 mt-1">
-                    Authentification, s&eacute;curit&eacute; de session, stockage du consentement.
-                    Ces cookies sont indispensables au fonctionnement du site.
+                    Authentification, sécurité de session, stockage du consentement. Ces cookies
+                    sont indispensables au fonctionnement du site.
                   </p>
                 </div>
                 <div className="ml-4">
@@ -140,9 +136,8 @@ export function CookieConsentBanner() {
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-slate-900">Suivi d'erreurs (Sentry)</p>
                   <p className="text-xs text-slate-600 mt-1">
-                    Permet de d&eacute;tecter et corriger les erreurs techniques pour
-                    am&eacute;liorer la stabilit&eacute; de l'application. Donn&eacute;es
-                    anonymis&eacute;es.
+                    Permet de détecter et corriger les erreurs techniques pour améliorer la
+                    stabilité de l'application. Données anonymisées.
                   </p>
                 </div>
                 <div className="ml-4">
@@ -167,7 +162,7 @@ export function CookieConsentBanner() {
                 onClick={handleSavePreferences}
                 className="flex-1 px-5 py-3 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors text-sm"
               >
-                Enregistrer mes pr&eacute;f&eacute;rences
+                Enregistrer mes préférences
               </button>
               <button
                 onClick={handleRejectAll}
@@ -186,7 +181,7 @@ export function CookieConsentBanner() {
             href="/politique-de-confidentialite"
             className="text-slate-700 underline hover:text-slate-900"
           >
-            politique de confidentialit&eacute;
+            politique de confidentialité
           </a>
         </p>
       </div>
@@ -201,7 +196,7 @@ export function CookieConsentBanner() {
 export function CookieSettingsButton({ onClick }: { onClick: () => void }) {
   return (
     <button onClick={onClick} className="text-slate-400 hover:text-white transition-colors text-sm">
-      G&eacute;rer les cookies
+      Gérer les cookies
     </button>
   );
 }

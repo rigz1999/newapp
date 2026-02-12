@@ -109,11 +109,9 @@ export function MFAChallenge({ onVerified }: MFAChallengeProps) {
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-center text-slate-900 mb-2">
-            V&eacute;rification 2FA
-          </h1>
+          <h1 className="text-2xl font-bold text-center text-slate-900 mb-2">Vérification 2FA</h1>
           <p className="text-center text-slate-600 mb-8">
-            Saisissez le code &agrave; 6 chiffres de votre application d'authentification.
+            Saisissez le code à 6 chiffres de votre application d'authentification.
           </p>
 
           <div className="mb-6">
@@ -123,7 +121,7 @@ export function MFAChallenge({ onVerified }: MFAChallengeProps) {
           {verifying && (
             <div className="flex items-center justify-center gap-2 text-slate-600 mb-4">
               <RefreshCw className="w-4 h-4 animate-spin" />
-              <span className="text-sm">V&eacute;rification...</span>
+              <span className="text-sm">Vérification...</span>
             </div>
           )}
 
@@ -140,7 +138,7 @@ export function MFAChallenge({ onVerified }: MFAChallengeProps) {
               className="w-full flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 text-sm transition-colors"
             >
               <LogOut className="w-4 h-4" />
-              Se d&eacute;connecter
+              Se déconnecter
             </button>
           </div>
         </div>

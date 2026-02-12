@@ -513,16 +513,16 @@ export function InvitationAccept() {
                   rel="noopener noreferrer"
                   className="text-slate-900 underline hover:no-underline font-medium"
                 >
-                  politique de confidentialit&eacute;
+                  politique de confidentialité
                 </a>{' '}
                 et les{' '}
                 <a
-                  href="/mentions-legales"
+                  href="/cgu"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-slate-900 underline hover:no-underline font-medium"
                 >
-                  mentions l&eacute;gales
+                  conditions générales d'utilisation
                 </a>
                 . *
               </label>

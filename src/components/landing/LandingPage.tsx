@@ -1118,11 +1118,8 @@ export function LandingPage(): JSX.Element {
               <h4 className="font-semibold text-white mb-4">Légal</h4>
               <ul className="space-y-3 text-sm">
                 <li>
-                  <a
-                    href="/mentions-legales"
-                    className="text-slate-400 hover:text-white transition-colors"
-                  >
-                    Mentions légales
+                  <a href="/cgu" className="text-slate-400 hover:text-white transition-colors">
+                    Conditions générales d'utilisation
                   </a>
                 </li>
                 <li>
@@ -1130,15 +1127,7 @@ export function LandingPage(): JSX.Element {
                     href="/politique-de-confidentialite"
                     className="text-slate-400 hover:text-white transition-colors"
                   >
-                    Politique de confidentialité (RGPD)
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="mailto:contact@finixar.com?subject=CGU"
-                    className="text-slate-400 hover:text-white transition-colors"
-                  >
-                    CGU
+                    Politique de confidentialité
                   </a>
                 </li>
               </ul>
