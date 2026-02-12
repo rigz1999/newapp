@@ -31,6 +31,7 @@ import {
   RefreshCw,
   FileSpreadsheet,
   Loader2,
+  Percent,
 } from 'lucide-react';
 import { AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
@@ -116,6 +117,11 @@ export default function AdminPanel() {
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [mfaToggleLoading, setMfaToggleLoading] = useState(true);
 
+  // PFU tax rate state
+  const [pfuRate, setPfuRate] = useState('31.4');
+  const [pfuRateLoading, setPfuRateLoading] = useState(true);
+  const [pfuRateSaving, setPfuRateSaving] = useState(false);
+
   // Alert modal state
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertModalConfig, setAlertModalConfig] = useState<{
@@ -127,6 +133,7 @@ export default function AdminPanel() {
   useEffect(() => {
     fetchData();
     fetchMfaSetting();
+    fetchPfuRate();
   }, []);
 
   const fetchInvitations = async () => {
@@ -251,6 +258,66 @@ export default function AdminPanel() {
         metadata: { mfa_enabled: newValue },
       });
     }
+  };
+
+  const fetchPfuRate = async () => {
+    setPfuRateLoading(true);
+    const { data, error } = await supabase
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'default_tax_rate_physical')
+      .single();
+
+    if (!error && data) {
+      const rate = typeof data.value === 'number' ? data.value : parseFloat(String(data.value));
+      if (!isNaN(rate) && rate > 0 && rate < 1) {
+        setPfuRate((rate * 100).toFixed(1));
+      }
+    }
+    setPfuRateLoading(false);
+  };
+
+  const savePfuRate = async () => {
+    const numericRate = parseFloat(pfuRate.replace(',', '.'));
+    if (isNaN(numericRate) || numericRate <= 0 || numericRate >= 100) {
+      setAlertModalConfig({
+        title: 'Valeur invalide',
+        message: 'Le taux PFU doit être compris entre 0 et 100%.',
+        type: 'warning',
+      });
+      setShowAlertModal(true);
+      return;
+    }
+
+    const decimalRate = numericRate / 100;
+    setPfuRateSaving(true);
+
+    const { error } = await supabase
+      .from('platform_settings')
+      .upsert({ key: 'default_tax_rate_physical', value: decimalRate, updated_at: new Date().toISOString() });
+
+    if (error) {
+      setAlertModalConfig({
+        title: 'Erreur',
+        message: `Impossible de modifier le taux PFU: ${error.message}`,
+        type: 'error',
+      });
+      setShowAlertModal(true);
+    } else {
+      logAuditEvent({
+        action: 'updated',
+        entityType: 'setting',
+        description: `a modifié le taux PFU à ${numericRate}%`,
+        metadata: { pfu_rate: decimalRate },
+      });
+      setAlertModalConfig({
+        title: 'Taux PFU mis à jour',
+        message: `Le taux PFU a été mis à jour à ${numericRate}%. Les échéances non payées seront recalculées lors de la prochaine régénération des coupons.`,
+        type: 'success',
+      });
+      setShowAlertModal(true);
+    }
+    setPfuRateSaving(false);
   };
 
   const handleCancelInvitation = async (invitationId: string) => {
@@ -651,6 +718,47 @@ export default function AdminPanel() {
                       }`}
                     />
                   </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fiscalité Settings */}
+        {isSuperAdmin && (
+          <div className="mt-6">
+            <p className="text-sm font-semibold text-slate-700 mb-3">Fiscalité</p>
+            <div className="bg-white border border-slate-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Percent className="w-5 h-5 text-slate-700" />
+                  <div>
+                    <p className="font-medium text-slate-900">Taux PFU (Prélèvement Forfaitaire Unique)</p>
+                    <p className="text-xs text-slate-600">
+                      Taux appliqué aux personnes physiques. Modifier ce taux affectera les futures échéances et les échéances non payées lors de la prochaine régénération.
+                    </p>
+                  </div>
+                </div>
+                {pfuRateLoading ? (
+                  <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={pfuRate}
+                      onChange={e => setPfuRate(e.target.value)}
+                      className="w-20 px-2 py-1 text-right border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 text-sm"
+                      aria-label="Taux PFU en pourcentage"
+                    />
+                    <span className="text-sm text-slate-600">%</span>
+                    <button
+                      onClick={savePfuRate}
+                      disabled={pfuRateSaving}
+                      className="px-3 py-1 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50"
+                    >
+                      {pfuRateSaving ? 'Enregistrement...' : 'Enregistrer'}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
