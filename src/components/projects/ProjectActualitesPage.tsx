@@ -13,6 +13,7 @@ import {
   Paperclip,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { sanitizeHTML } from '../../utils/sanitizer';
@@ -48,6 +49,7 @@ interface Project {
 export function ProjectActualitesPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const { isSuperAdmin } = useAuth();
   const [actualites, setActualites] = useState<Actualite[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -569,18 +571,20 @@ export function ProjectActualitesPage() {
                           </span>
                         </div>
                       </div>
-                      {currentUserId === actualite.user_id && (
+                      {(currentUserId === actualite.user_id || isSuperAdmin) && (
                         <div className="flex gap-1">
-                          <button
-                            onClick={() => {
-                              setEditingId(actualite.id);
-                              setEditText(actualite.comment_text);
-                            }}
-                            className="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded"
-                            title="Modifier"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
+                          {currentUserId === actualite.user_id && (
+                            <button
+                              onClick={() => {
+                                setEditingId(actualite.id);
+                                setEditText(actualite.comment_text);
+                              }}
+                              className="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded"
+                              title="Modifier"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               setActualiteToDelete(actualite.id);
