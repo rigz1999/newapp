@@ -30,14 +30,11 @@ export function PolitiqueConfidentialite() {
           <Section title="1. Responsable du traitement">
             <div className="space-y-3 text-sm text-slate-700 leading-relaxed">
               <p>
-                <strong>Finixar SAS</strong>
+                <strong>Ayman Zrig</strong>, personne physique, éditeur du service Finixar.
                 <br />
-                Siège social : Paris, France
+                Paris, France
                 <br />
-                Contact : contact@finixar.com
-              </p>
-              <p>
-                <strong>Délégué à la protection des données (DPO) :</strong> dpo@finixar.com
+                Contact : support@finixar.com
               </p>
             </div>
           </Section>
@@ -149,6 +146,15 @@ export function PolitiqueConfidentialite() {
                     </td>
                   </tr>
                   <tr>
+                    <td className="p-3 border border-slate-200">
+                      Facturation et gestion de l'abonnement
+                    </td>
+                    <td className="p-3 border border-slate-200">
+                      Exécution du contrat (Art. 6.1.b) — traité par Paddle en tant que Merchant of
+                      Record
+                    </td>
+                  </tr>
+                  <tr>
                     <td className="p-3 border border-slate-200">Rappels de paiements par e-mail</td>
                     <td className="p-3 border border-slate-200">
                       Consentement (Art. 6.1.a) — désactivable dans les paramètres
@@ -200,7 +206,16 @@ export function PolitiqueConfidentialite() {
                       <td className="p-3 border border-slate-200">
                         Hébergement, base de données, authentification
                       </td>
-                      <td className="p-3 border border-slate-200">AWS EU (Irlande/Francfort)</td>
+                      <td className="p-3 border border-slate-200">
+                        AWS EU — Paris, France (eu-west-3)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 border border-slate-200 font-medium">Paddle</td>
+                      <td className="p-3 border border-slate-200">
+                        Facturation, paiements, TVA (Merchant of Record)
+                      </td>
+                      <td className="p-3 border border-slate-200">Royaume-Uni / UE</td>
                     </tr>
                     <tr>
                       <td className="p-3 border border-slate-200 font-medium">Resend</td>
@@ -219,6 +234,22 @@ export function PolitiqueConfidentialite() {
                   </tbody>
                 </table>
               </div>
+
+              <p>
+                <strong>Paddle en tant que Merchant of Record :</strong> Paddle agit comme revendeur
+                officiel et est responsable du traitement des données de paiement (carte bancaire,
+                facturation). Finixar n'a jamais accès aux données de carte bancaire. Paddle dispose
+                de sa propre{' '}
+                <a
+                  href="https://www.paddle.com/legal/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-finixar-brand-blue underline hover:no-underline"
+                >
+                  politique de confidentialité
+                </a>
+                .
+              </p>
 
               <p>
                 Pour les transferts hors UE, des Clauses Contractuelles Types (SCCs) approuvées par
@@ -261,6 +292,13 @@ export function PolitiqueConfidentialite() {
                     <td className="p-3 border border-slate-200">Obligation légale</td>
                   </tr>
                   <tr>
+                    <td className="p-3 border border-slate-200">Données de facturation</td>
+                    <td className="p-3 border border-slate-200">10 ans</td>
+                    <td className="p-3 border border-slate-200">
+                      Obligation légale — conservées par Paddle
+                    </td>
+                  </tr>
+                  <tr>
                     <td className="p-3 border border-slate-200">
                       Données prospect (demande de démo)
                     </td>
@@ -271,11 +309,6 @@ export function PolitiqueConfidentialite() {
                     <td className="p-3 border border-slate-200">Consentement cookies</td>
                     <td className="p-3 border border-slate-200">13 mois</td>
                     <td className="p-3 border border-slate-200">Directive ePrivacy / CNIL</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 border border-slate-200">Tokens de réinitialisation</td>
-                    <td className="p-3 border border-slate-200">1 heure</td>
-                    <td className="p-3 border border-slate-200">Sécurité</td>
                   </tr>
                   <tr>
                     <td className="p-3 border border-slate-200">Invitations</td>
@@ -347,7 +380,7 @@ export function PolitiqueConfidentialite() {
                 <p className="font-semibold text-blue-900 mb-2">Comment exercer vos droits ?</p>
                 <ul className="space-y-2 text-blue-800 text-sm">
                   <li>
-                    <strong>Par e-mail :</strong> dpo@finixar.com
+                    <strong>Par e-mail :</strong> support@finixar.com
                   </li>
                   <li>
                     <strong>Dans l'application :</strong> Paramètres → Mes données (export et
@@ -382,6 +415,7 @@ export function PolitiqueConfidentialite() {
                   Row Level Security (RLS) sur toutes les tables — chaque utilisateur n'accède qu'à
                   ses propres données
                 </li>
+                <li>Hébergement en France (AWS Paris, eu-west-3)</li>
                 <li>Journal d'audit immuable</li>
                 <li>Tokens de session avec expiration automatique</li>
               </ul>

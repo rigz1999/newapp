@@ -516,12 +516,12 @@ export function InvitationAccept() {
                 </a>{' '}
                 et les{' '}
                 <a
-                  href="/mentions-legales"
+                  href="/cgu"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-slate-900 underline hover:no-underline font-medium"
                 >
-                  mentions légales
+                  conditions générales d'utilisation
                 </a>
                 . *
               </label>

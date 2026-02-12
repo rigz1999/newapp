@@ -16,7 +16,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { DiagnosticPage } from './pages/DiagnosticPage';
 import { LandingPage } from './components/landing/LandingPage';
 import { DemoRequest } from './components/landing/DemoRequest';
-import { MentionsLegales } from './components/legal/MentionsLegales';
+import { CGU } from './components/legal/CGU';
 
 const PolitiqueConfidentialite = lazy(() =>
   import('./components/legal/PolitiqueConfidentialite').then(m => ({
@@ -83,15 +83,15 @@ function App(): JSX.Element {
     // Simple router for main domain
     const pathname = window.location.pathname;
     const isDemoPage = pathname === '/demo' || pathname === '/demo/';
-    const isMentionsLegales = pathname === '/mentions-legales' || pathname === '/mentions-legales/';
+    const isCGU = pathname === '/cgu' || pathname === '/cgu/';
     const isPolitiqueConfidentialite =
       pathname === '/politique-de-confidentialite' || pathname === '/politique-de-confidentialite/';
 
     let pageContent: React.ReactNode;
     if (isDemoPage) {
       pageContent = <DemoRequest />;
-    } else if (isMentionsLegales) {
-      pageContent = <MentionsLegales />;
+    } else if (isCGU) {
+      pageContent = <CGU />;
     } else if (isPolitiqueConfidentialite) {
       pageContent = (
         <Suspense fallback={<DashboardSkeleton />}>
@@ -132,7 +132,7 @@ function App(): JSX.Element {
             />
             <Route path="/invitation/accept" element={<InvitationAccept />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/mentions-legales" element={<MentionsLegales />} />
+            <Route path="/cgu" element={<CGU />} />
             <Route
               path="/politique-de-confidentialite"
               element={
