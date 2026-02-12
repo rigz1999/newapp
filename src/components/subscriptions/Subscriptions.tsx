@@ -18,6 +18,8 @@ import {
   TrendingUp,
   Euro,
   Calendar,
+  User,
+  Building2,
 } from 'lucide-react';
 import { AlertModal } from '../common/Modals';
 import { TableSkeleton } from '../common/Skeleton';
@@ -876,16 +878,27 @@ export function Subscriptions({ organization }: SubscriptionsProps) {
                       <p className="text-xs text-slate-500">{sub.tranches.tranche_name}</p>
                     </td>
                     <td className="px-4 py-2.5 text-xs md:text-sm text-slate-600">
-                      <p className="font-medium text-slate-900">
-                        {sub.investisseurs.nom_raison_sociale ||
-                          sub.investisseurs.representant_legal ||
-                          '-'}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {sub.investisseurs.type.toLowerCase().includes('physique')
-                          ? 'Personne physique'
-                          : 'Personne morale'}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1 rounded ${sub.investisseurs.type?.toLowerCase().includes('morale') ? 'bg-purple-100' : 'bg-blue-100'}`}>
+                          {sub.investisseurs.type?.toLowerCase().includes('morale') ? (
+                            <Building2 className="w-4 h-4 text-purple-600" />
+                          ) : (
+                            <User className="w-4 h-4 text-blue-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-slate-900">
+                            {sub.investisseurs.nom_raison_sociale ||
+                              sub.investisseurs.representant_legal ||
+                              '-'}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {sub.investisseurs.type?.toLowerCase().includes('morale')
+                              ? 'Personne morale'
+                              : 'Personne physique'}
+                          </p>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-2.5 text-xs md:text-sm text-slate-600">
                       {sub.cgp || sub.investisseurs.cgp || '-'}

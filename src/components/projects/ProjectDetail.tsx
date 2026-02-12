@@ -39,6 +39,8 @@ import {
   ChevronRight,
   Mail,
   Copy,
+  User,
+  Building2,
 } from 'lucide-react';
 import { DashboardSkeleton } from '../common/Skeleton';
 
@@ -94,6 +96,7 @@ interface Subscription {
   investisseur: {
     nom_raison_sociale: string;
     cgp?: string;
+    type?: string;
   };
   tranche: {
     tranche_name: string;
@@ -250,7 +253,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
               `
           id, id_souscription, date_souscription, nombre_obligations, montant_investi,
           coupon_net, investisseur_id, cgp,
-          investisseur:investisseurs(nom_raison_sociale, cgp),
+          investisseur:investisseurs(nom_raison_sociale, cgp, type),
           tranche:tranches(tranche_name, date_emission)
         `
             )
@@ -1369,9 +1372,14 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                                   }
                                 >
                                   <span
-                                    className="flex-1 text-sm font-medium text-slate-900"
+                                    className="flex-1 flex items-center gap-2 text-sm font-medium text-slate-900"
                                     role="cell"
                                   >
+                                    {sub.investisseur?.type?.toLowerCase().includes('morale') ? (
+                                      <Building2 className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                                    ) : (
+                                      <User className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                    )}
                                     {sub.investisseur?.nom_raison_sociale || 'N/A'}
                                   </span>
                                   <span
