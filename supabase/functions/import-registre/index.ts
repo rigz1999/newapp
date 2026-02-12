@@ -975,7 +975,8 @@ async function upsertSubscription(
   tauxNominal: number,
   periodiciteCoupons: string,
   baseInteret: number,
-  valeurNominale: number = 100
+  valeurNominale: number = 100,
+  pfuRate: number = 0.314
 ): Promise<void> {
   const datesouscription =
     parseDate(row['Date de souscription']) || parseDate(row['Date de Souscription']);
@@ -999,8 +1000,8 @@ async function upsertSubscription(
   const periodRatio = getPeriodRatio(periodiciteCoupons, baseInteret);
   const couponAnnuel = (montantInvesti * tauxNominal) / 100;
   const couponBrut = couponAnnuel * periodRatio;
-  // Apply 30% tax for all investors that are NOT explicitly 'morale'
-  const couponNet = investorType.toLowerCase() === 'morale' ? couponBrut : couponBrut * 0.7;
+  // Apply PFU tax for all investors that are NOT explicitly 'morale'
+  const couponNet = investorType.toLowerCase() === 'morale' ? couponBrut : couponBrut * (1 - pfuRate);
 
   const subData: any = {
     projet_id: projetId,
@@ -1091,7 +1092,15 @@ Deno.serve(async req => {
     const dateEmission = formData.get('date_emission') as string | null;
     const dureeMois = formData.get('duree_mois') as string | null;
 
-    console.log('📥 Received:', { projetId, trancheName, trancheId, hasFile: !!file, previewMode });
+    // Fetch dynamic PFU rate from platform_settings
+    const { data: pfuSetting } = await supabaseClient
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'default_tax_rate_physical')
+      .single();
+    const pfuRate = pfuSetting?.value ? Number(pfuSetting.value) : 0.314;
+
+    console.log('📥 Received:', { projetId, trancheName, trancheId, hasFile: !!file, previewMode, pfuRate });
 
     // 3. VALIDATE INPUT
     if (!file) {
@@ -1546,7 +1555,8 @@ Deno.serve(async req => {
           tauxNominalFinal,
           periodiciteCoupons,
           baseInteret,
-          valeurNominale
+          valeurNominale,
+          pfuRate
         );
         createdSouscriptions++;
       } catch (rowErr: any) {

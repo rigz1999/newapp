@@ -53,8 +53,17 @@ Deno.serve(async req => {
       });
     }
 
+    // Fetch dynamic PFU rate from platform_settings
+    const { data: pfuSetting } = await supabase
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'default_tax_rate_physical')
+      .single();
+    const pfuRate = pfuSetting?.value ? Number(pfuSetting.value) : 0.314;
+
     console.log('\n=== REGENERATE ECHEANCIER ===');
     console.log('Tranche ID:', tranche_id);
+    console.log('PFU Rate:', pfuRate);
 
     // Get tranche details with project fallback
     const { data: tranche, error: trancheError } = await supabase
@@ -201,10 +210,10 @@ Deno.serve(async req => {
     for (const sub of souscriptions) {
       const montant = Number(sub.montant_investi);
       const investorType = (sub.investisseurs as { type?: string } | null)?.type;
-      // Apply 30% tax for all investors that are NOT explicitly 'morale'
+      // Apply PFU tax for all investors that are NOT explicitly 'morale'
       // This handles null/empty types that display as 'physique' in the UI
       const isMorale = investorType?.toLowerCase() === 'morale';
-      const taxMultiplier = isMorale ? 1.0 : 0.7;
+      const taxMultiplier = isMorale ? 1.0 : (1 - pfuRate);
 
       // Base rate coupon
       const couponAnnuelBase = (montant * tauxNominal) / 100;
