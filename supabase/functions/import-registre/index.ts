@@ -976,10 +976,9 @@ async function upsertSubscription(
   periodiciteCoupons: string,
   baseInteret: number,
   valeurNominale: number = 100,
-  pfuRate: number = 0.314
+  pfuRate: number = 0.314,
+  dateEmissionTranche: string | null = null
 ): Promise<void> {
-  const datesouscription =
-    parseDate(row['Date de souscription']) || parseDate(row['Date de Souscription']);
   const csvMontant = toNumber(row['Montant investi']) || toNumber(row['Montant']);
   const csvNombreObligations =
     toNumber(row['Quantité de titres']) || toNumber(row['Quantité']) || toNumber(row['Quantite']);
@@ -1007,7 +1006,7 @@ async function upsertSubscription(
     projet_id: projetId,
     tranche_id: trancheId,
     investisseur_id: investorId,
-    date_souscription: datesouscription || new Date().toISOString().split('T')[0],
+    date_souscription: dateEmissionTranche || new Date().toISOString().split('T')[0],
     montant_investi: montantInvesti || 0,
     nombre_obligations: nombreObligations || 0,
     coupon_brut: Math.round(couponBrut * 100) / 100,
@@ -1556,7 +1555,8 @@ Deno.serve(async req => {
           periodiciteCoupons,
           baseInteret,
           valeurNominale,
-          pfuRate
+          pfuRate,
+          trancheDetails.date_emission
         );
         createdSouscriptions++;
       } catch (rowErr: any) {
