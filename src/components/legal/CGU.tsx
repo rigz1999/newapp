@@ -48,10 +48,17 @@ export function CGU() {
             <p className="mb-3">
               Finixar propose un essai gratuit d'un mois. Au-delà, un abonnement payant est requis.
             </p>
-            <p>
+            <p className="mb-3">
               Les paiements sont traités par <strong>Paddle</strong> (Merchant of Record), qui gère
               la facturation, la TVA et les remboursements. Finixar n'a jamais accès à vos données
               de carte bancaire.
+            </p>
+            <p>
+              <strong>Remboursements :</strong> Toute demande de remboursement doit être adressée à
+              support@finixar.com dans les 14 jours suivant le paiement. Les remboursements sont
+              traités par Paddle et crédités sous 5 à 10 jours ouvrés. Aucun remboursement n'est dû
+              pour une période d'essai gratuite ou une période d'abonnement déjà entamée au-delà du
+              délai de 14 jours.
             </p>
           </section>
 
