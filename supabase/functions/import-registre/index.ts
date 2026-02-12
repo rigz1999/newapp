@@ -999,7 +999,8 @@ async function upsertSubscription(
   const periodRatio = getPeriodRatio(periodiciteCoupons, baseInteret);
   const couponAnnuel = (montantInvesti * tauxNominal) / 100;
   const couponBrut = couponAnnuel * periodRatio;
-  const couponNet = investorType.toLowerCase() === 'physique' ? couponBrut * 0.7 : couponBrut;
+  // Apply 30% tax for all investors that are NOT explicitly 'morale'
+  const couponNet = investorType.toLowerCase() === 'morale' ? couponBrut : couponBrut * 0.7;
 
   const subData: any = {
     projet_id: projetId,

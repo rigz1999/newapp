@@ -196,8 +196,10 @@ Deno.serve(async req => {
     for (const sub of souscriptions) {
       const montant = Number(sub.montant_investi);
       const investorType = (sub.investisseurs as { type?: string } | null)?.type;
-      const isPhysique = investorType?.toLowerCase() === 'physique';
-      const taxMultiplier = isPhysique ? 0.7 : 1.0;
+      // Apply 30% tax for all investors that are NOT explicitly 'morale'
+      // This handles null/empty types that display as 'physique' in the UI
+      const isMorale = investorType?.toLowerCase() === 'morale';
+      const taxMultiplier = isMorale ? 1.0 : 0.7;
 
       // Base rate coupon
       const couponAnnuelBase = (montant * tauxNominal) / 100;
