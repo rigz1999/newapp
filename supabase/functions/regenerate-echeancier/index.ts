@@ -1,21 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 function getCorsHeaders(req?: Request) {
-  const allowedOrigins = (
-    Deno.env.get('ALLOWED_ORIGINS') ||
-    Deno.env.get('ALLOWED_ORIGIN') ||
-    'https://finixar.com'
-  ).split(',');
-  const origin = req?.headers.get('origin') || '';
-  const matchedOrigin = allowedOrigins.find(o => o.trim() === origin) || allowedOrigins[0].trim();
+  const origin = req?.headers.get('origin');
   return {
-    'Access-Control-Allow-Origin': matchedOrigin,
+    'Access-Control-Allow-Origin': origin || '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 }
-
-// Note: Use getCorsHeaders(req) in the handler for dynamic origin matching
 
 // Helper function to calculate period ratio based on periodicite and base_interet
 function getPeriodRatio(periodicite: string | null, baseInteret: number): number {
