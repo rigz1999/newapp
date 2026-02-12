@@ -1,10 +1,21 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? 'https://finixar.com',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+function getCorsHeaders(req?: Request) {
+  const allowedOrigins = (
+    Deno.env.get('ALLOWED_ORIGINS') ||
+    Deno.env.get('ALLOWED_ORIGIN') ||
+    'https://finixar.com'
+  ).split(',');
+  const origin = req?.headers.get('origin') || '';
+  const matchedOrigin = allowedOrigins.find(o => o.trim() === origin) || allowedOrigins[0].trim();
+  return {
+    'Access-Control-Allow-Origin': matchedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+}
+
+// Note: Use getCorsHeaders(req) in the handler for dynamic origin matching
 
 // Helper function to calculate period ratio based on periodicite and base_interet
 function getPeriodRatio(periodicite: string | null, baseInteret: number): number {
@@ -30,8 +41,10 @@ function getPeriodRatio(periodicite: string | null, baseInteret: number): number
 }
 
 Deno.serve(async req => {
+  const cors = getCorsHeaders(req);
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: cors });
   }
 
   try {
@@ -44,7 +57,7 @@ Deno.serve(async req => {
     if (!tranche_id) {
       return new Response(JSON.stringify({ success: false, error: 'tranche_id is required' }), {
         status: 400,
-        headers: { ...corsHeaders, 'content-type': 'application/json' },
+        headers: { ...cors, 'content-type': 'application/json' },
       });
     }
 
@@ -78,7 +91,7 @@ Deno.serve(async req => {
       console.error('Tranche not found:', trancheError);
       return new Response(JSON.stringify({ success: false, error: 'Tranche not found' }), {
         status: 404,
-        headers: { ...corsHeaders, 'content-type': 'application/json' },
+        headers: { ...cors, 'content-type': 'application/json' },
       });
     }
 
@@ -149,7 +162,7 @@ Deno.serve(async req => {
           error: `Missing required parameters: ${missing.join(', ')}`,
           missing_params: missing,
         }),
-        { status: 400, headers: { ...corsHeaders, 'content-type': 'application/json' } }
+        { status: 400, headers: { ...cors, 'content-type': 'application/json' } }
       );
     }
 
@@ -176,7 +189,7 @@ Deno.serve(async req => {
           deleted_coupons: 0,
           created_coupons: 0,
         }),
-        { status: 200, headers: { ...corsHeaders, 'content-type': 'application/json' } }
+        { status: 200, headers: { ...cors, 'content-type': 'application/json' } }
       );
     }
 
@@ -280,7 +293,7 @@ Deno.serve(async req => {
           success: false,
           error: `Unknown frequency: ${periodiciteCoupons}`,
         }),
-        { status: 400, headers: { ...corsHeaders, 'content-type': 'application/json' } }
+        { status: 400, headers: { ...cors, 'content-type': 'application/json' } }
       );
     }
 
@@ -409,7 +422,7 @@ Deno.serve(async req => {
         final_maturity_date: dateEcheanceFinale,
         prorogation_active: !!prorogationActive,
       }),
-      { status: 200, headers: { ...corsHeaders, 'content-type': 'application/json' } }
+      { status: 200, headers: { ...cors, 'content-type': 'application/json' } }
     );
   } catch (error: any) {
     console.error('=== ERROR ===');
@@ -420,7 +433,7 @@ Deno.serve(async req => {
         success: false,
         error: error.message || 'Internal server error',
       }),
-      { status: 500, headers: { ...corsHeaders, 'content-type': 'application/json' } }
+      { status: 500, headers: { ...cors, 'content-type': 'application/json' } }
     );
   }
 });

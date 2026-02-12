@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { Coupon } from '../../../hooks/coupons/useCoupons';
 import { TaxInfoTooltip } from '../../common/TaxInfoTooltip';
 import {
@@ -245,7 +245,7 @@ export function TableView({
               const statusDisplay = getEcheanceStatusDisplay(group);
 
               return (
-                <>
+                <Fragment key={group.key}>
                   {/* Échéance Header Row */}
                   <tr
                     key={`date-${group.date}`}
@@ -529,7 +529,7 @@ export function TableView({
                         </tr>
                       );
                     })}
-                </>
+                </Fragment>
               );
             })}
           </tbody>

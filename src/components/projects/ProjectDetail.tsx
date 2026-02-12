@@ -1218,9 +1218,17 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                       className="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-all"
                     >
                       {/* Header cliquable */}
-                      <button
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => toggleTrancheExpand(tranche.id)}
-                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleTrancheExpand(tranche.id);
+                          }
+                        }}
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer"
                         aria-expanded={isExpanded}
                         aria-label={`${isExpanded ? 'Réduire' : 'Développer'} les détails de la tranche ${tranche.tranche_name}`}
                       >
@@ -1298,7 +1306,7 @@ export function ProjectDetail({ organization: _organization }: ProjectDetailProp
                             </button>
                           </div>
                         )}
-                      </button>
+                      </div>
 
                       {/* Dropdown des souscriptions */}
                       {isExpanded && (

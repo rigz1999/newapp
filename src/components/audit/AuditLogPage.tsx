@@ -122,7 +122,7 @@ export function AuditLogPage({ organization }: AuditLogPageProps) {
         .order('created_at', { ascending: false })
         .limit(500);
 
-      if (orgId && orgId !== 'admin') {
+      if (orgId && orgId !== 'admin' && orgId !== 'super_admin') {
         query = query.eq('org_id', orgId);
       }
 
